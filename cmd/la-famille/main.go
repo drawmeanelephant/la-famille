@@ -49,7 +49,7 @@ func run(contentDir, templateFile, outputDir string) error {
 	return nil
 }
 
-func processFile(fileName, contentDir, outputDir string, tmpl *template.Template) error {
+func processFile(fileName, contentDir, outputDir string, tmpl *template.Template) (err error) {
 	// Read content
 	content, err := os.ReadFile(filepath.Join(contentDir, fileName))
 	if err != nil {
@@ -72,10 +72,14 @@ func processFile(fileName, contentDir, outputDir string, tmpl *template.Template
 		Content: template.HTML(sanitizedHTML),
 	}
 
-	outFile, err := os.Create(filepath.Join(outputDir, fileName+".html"))
-	if err != nil {
-		return err
+	outFile, createErr := os.Create(filepath.Join(outputDir, fileName+".html"))
+	if createErr != nil {
+		return createErr
 	}
-	defer outFile.Close()
+	defer func() {
+		if closeErr := outFile.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 	return tmpl.Execute(outFile, page)
 }
