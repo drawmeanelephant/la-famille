@@ -12,3 +12,4 @@ La Famille is a Go-based static site generator.
 - Follow standard Go idioms (`gofmt`, `go vet`).
 - Use descriptive naming.
 - Keep dependencies minimal.
+- Always tag `@jules` in GitHub PR comments or messages to ensure visibility.
