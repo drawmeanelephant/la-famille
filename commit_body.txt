@@ -1,0 +1,4 @@
+🎯 **What:** Handled the previously unhandled error returned by `outFile.Close()` inside the `processFile` function.
+💡 **Why:** Ensures data integrity and captures errors like full disks or lost network filesystems that might occur on close.
+✅ **Verification:** Ran `go test ./...` and verified the change using `go fmt`.
+✨ **Result:** Improved reliability by not silently ignoring file write flush failures.
