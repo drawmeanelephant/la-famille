@@ -213,15 +213,24 @@ func TestRun_MkdirAllError(t *testing.T) {
 func TestRun_ReadDirError(t *testing.T) {
 	tempDir := t.TempDir()
 
-	// Create an empty template file so ParseFiles doesn't fail first (since ReadDir happens before ParseFiles we don't strictly need it, but ParseFiles is later)
-	// Actually in run(), os.ReadDir happens BEFORE template.ParseFiles, so providing a non-existent dir is enough.
-	contentDir := filepath.Join(tempDir, "nonexistent")
+	// Use a non-existent directory as contentDir
+	contentDir := filepath.Join(tempDir, "non_existent_content_dir")
 	outputDir := filepath.Join(tempDir, "public")
-	templateFile := "some_template.html"
+
+	// We need a valid template so that template.ParseFiles succeeds before ReadDir is called.
+	// Oh wait, ReadDir is called BEFORE template.ParseFiles in the code!
+	// Let's create a valid output dir and mock template anyway just in case.
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatalf("Failed to create output dir: %v", err)
+	}
+	templateFile := filepath.Join(tempDir, "layout.html")
+	if err := os.WriteFile(templateFile, []byte("<html></html>"), 0644); err != nil {
+		t.Fatalf("Failed to write mock template file: %v", err)
+	}
 
 	err := run(contentDir, templateFile, outputDir)
 	if err == nil {
-		t.Fatalf("Expected error for non-existent content directory, got nil")
+		t.Fatalf("Expected error when contentDir does not exist, got nil")
 	}
 
 	if !strings.Contains(err.Error(), "failed to read content directory") {
@@ -235,88 +244,83 @@ func TestProcessFile_ReadFileError(t *testing.T) {
 	outputDir := filepath.Join(tempDir, "public")
 
 	if err := os.MkdirAll(contentDir, 0755); err != nil {
-		t.Fatalf("failed to create content dir: %v", err)
+		t.Fatalf("Failed to create content dir: %v", err)
 	}
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		t.Fatalf("failed to create output dir: %v", err)
+		t.Fatalf("Failed to create output dir: %v", err)
 	}
 
 	tmpl, err := template.New("layout").Parse("<html><body>{{.Content}}</body></html>")
 	if err != nil {
-		t.Fatalf("failed to parse template: %v", err)
+		t.Fatalf("Failed to parse template: %v", err)
 	}
 
-	// Do not create the file so os.ReadFile fails
-	fileName := "nonexistent.md"
+	// Create a directory that ends with .md so os.ReadFile will fail
+	badFileName := "bad_file.md"
+	if err := os.Mkdir(filepath.Join(contentDir, badFileName), 0755); err != nil {
+		t.Fatalf("Failed to create bad markdown dir: %v", err)
+	}
 
-	err = processFile(fileName, contentDir, outputDir, tmpl)
+	err = processFile(badFileName, contentDir, outputDir, tmpl)
 	if err == nil {
-		t.Fatalf("Expected error for non-existent file, got nil")
+		t.Fatalf("Expected processFile to fail when reading a directory, got nil")
 	}
 }
 
-func TestProcessFile_CreateFileError(t *testing.T) {
+func TestProcessFile_CreateOutputError(t *testing.T) {
 	tempDir := t.TempDir()
 	contentDir := filepath.Join(tempDir, "content")
 	outputDir := filepath.Join(tempDir, "public")
 
 	if err := os.MkdirAll(contentDir, 0755); err != nil {
-		t.Fatalf("failed to create content dir: %v", err)
+		t.Fatalf("Failed to create content dir: %v", err)
 	}
-
-	// Create a read-only output directory
+	// Make output dir read-only
 	if err := os.MkdirAll(outputDir, 0555); err != nil {
-		t.Fatalf("failed to create output dir: %v", err)
+		t.Fatalf("Failed to create read-only output dir: %v", err)
 	}
 
 	tmpl, err := template.New("layout").Parse("<html><body>{{.Content}}</body></html>")
 	if err != nil {
-		t.Fatalf("failed to parse template: %v", err)
+		t.Fatalf("Failed to parse template: %v", err)
 	}
 
 	fileName := "test.md"
-	content := []byte("# Hello World\nThis is a test.")
-	if err := os.WriteFile(filepath.Join(contentDir, fileName), content, 0644); err != nil {
-		t.Fatalf("failed to write test file: %v", err)
+	if err := os.WriteFile(filepath.Join(contentDir, fileName), []byte("# Hello"), 0644); err != nil {
+		t.Fatalf("Failed to write mock file: %v", err)
 	}
 
 	err = processFile(fileName, contentDir, outputDir, tmpl)
 	if err == nil {
-		t.Fatalf("Expected error when creating output file fails, got nil")
+		t.Fatalf("Expected processFile to fail when creating output in read-only dir, got nil")
 	}
 }
 
-func TestRun_ProcessFileError(t *testing.T) {
+func TestRun_ProcessFileErrorLog(t *testing.T) {
 	tempDir := t.TempDir()
 	contentDir := filepath.Join(tempDir, "content")
 	outputDir := filepath.Join(tempDir, "public")
-	templateDir := filepath.Join(tempDir, "templates")
+	templateFile := filepath.Join(tempDir, "layout.html")
 
 	if err := os.MkdirAll(contentDir, 0755); err != nil {
-		t.Fatalf("failed to create content dir: %v", err)
+		t.Fatalf("Failed to create content dir: %v", err)
 	}
-	// Create read-only output dir so processFile fails when trying to create output file
+	// Make output dir read-only
 	if err := os.MkdirAll(outputDir, 0555); err != nil {
-		t.Fatalf("failed to create output dir: %v", err)
+		t.Fatalf("Failed to create output dir: %v", err)
 	}
-	if err := os.MkdirAll(templateDir, 0755); err != nil {
-		t.Fatalf("failed to create templates dir: %v", err)
-	}
-
-	templateFile := filepath.Join(templateDir, "layout.html")
 	if err := os.WriteFile(templateFile, []byte("<html><body>{{.Content}}</body></html>"), 0644); err != nil {
-		t.Fatalf("failed to write template file: %v", err)
+		t.Fatalf("Failed to write template file: %v", err)
 	}
 
 	fileName := "test.md"
-	content := []byte("# Hello World\nThis is a test.")
-	if err := os.WriteFile(filepath.Join(contentDir, fileName), content, 0644); err != nil {
-		t.Fatalf("failed to write test file: %v", err)
+	if err := os.WriteFile(filepath.Join(contentDir, fileName), []byte("# Hello"), 0644); err != nil {
+		t.Fatalf("Failed to write mock file: %v", err)
 	}
 
-	// This should not return an error because processFile error is just logged
+	// run should not return an error but should log it.
 	err := run(contentDir, templateFile, outputDir)
 	if err != nil {
-		t.Fatalf("Expected run to return nil when processFile fails, got: %v", err)
+		t.Fatalf("Expected run to not return error when processFile fails, got %v", err)
 	}
 }
