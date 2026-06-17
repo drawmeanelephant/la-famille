@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 )
 
@@ -61,10 +62,14 @@ func processFile(fileName, contentDir, outputDir string, tmpl *template.Template
 		return err
 	}
 
+	// Sanitize HTML
+	p := bluemonday.UGCPolicy()
+	sanitizedHTML := p.SanitizeBytes(buf.Bytes())
+
 	// Render
 	page := Page{
 		Title:   fileName,
-		Content: template.HTML(buf.String()),
+		Content: template.HTML(sanitizedHTML),
 	}
 
 	outFile, err := os.Create(filepath.Join(outputDir, fileName+".html"))
