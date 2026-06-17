@@ -76,6 +76,9 @@ func processFile(fileName, contentDir, outputDir string, tmpl *template.Template
 	if err != nil {
 		return err
 	}
-	defer outFile.Close()
-	return tmpl.Execute(outFile, page)
+	err = tmpl.Execute(outFile, page)
+	if closeErr := outFile.Close(); closeErr != nil && err == nil {
+		return closeErr
+	}
+	return err
 }
