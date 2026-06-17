@@ -171,3 +171,41 @@ func TestMainXSS(t *testing.T) {
 		t.Errorf("Markdown was not rendered correctly: %s", outputStr)
 	}
 }
+
+func TestRun_TemplateParsingError(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("Failed to create content dir: %v", err)
+	}
+
+	outputDir := filepath.Join(tempDir, "public")
+	templateFile := "non_existent_template.html"
+
+	err := run(contentDir, templateFile, outputDir)
+	if err == nil {
+		t.Fatalf("Expected error for non-existent template file, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "failed to parse template file") {
+		t.Errorf("Expected error to mention 'failed to parse template file', got: %v", err)
+	}
+}
+
+func TestRun_MkdirAllError(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create a read-only directory
+	readOnlyDir := filepath.Join(tempDir, "readonly")
+	if err := os.Mkdir(readOnlyDir, 0555); err != nil {
+		t.Fatalf("failed to create read-only dir: %v", err)
+	}
+
+	// Try to use a subdirectory of the read-only directory as outputDir
+	outputDir := filepath.Join(readOnlyDir, "public")
+
+	err := run("content", "templates/layout.html", outputDir)
+	if err == nil {
+		t.Errorf("expected error when output directory cannot be created, got nil")
+	}
+}
