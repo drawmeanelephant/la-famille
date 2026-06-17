@@ -49,17 +49,17 @@ func run(contentDir, templateFile, outputDir string) error {
 	return nil
 }
 
-func processFile(fileName, contentDir, outputDir string, tmpl *template.Template) error {
+func processFile(fileName, contentDir, outputDir string, tmpl *template.Template) (err error) {
 	// Read content
-	content, err := os.ReadFile(filepath.Join(contentDir, fileName))
-	if err != nil {
-		return err
+	content, readErr := os.ReadFile(filepath.Join(contentDir, fileName))
+	if readErr != nil {
+		return readErr
 	}
 
 	// Convert Markdown to HTML
 	var buf bytes.Buffer
-	if err := goldmark.Convert(content, &buf); err != nil {
-		return err
+	if convertErr := goldmark.Convert(content, &buf); convertErr != nil {
+		return convertErr
 	}
 
 	// Sanitize HTML
@@ -72,10 +72,15 @@ func processFile(fileName, contentDir, outputDir string, tmpl *template.Template
 		Content: template.HTML(sanitizedHTML),
 	}
 
-	outFile, err := os.Create(filepath.Join(outputDir, fileName+".html"))
-	if err != nil {
-		return err
+	outFile, createErr := os.Create(filepath.Join(outputDir, fileName+".html"))
+	if createErr != nil {
+		return createErr
 	}
-	defer outFile.Close()
+	defer func() {
+		closeErr := outFile.Close()
+		if err == nil {
+			err = closeErr
+		}
+	}()
 	return tmpl.Execute(outFile, page)
 }
