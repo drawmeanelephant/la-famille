@@ -49,7 +49,7 @@ func run(contentDir, templateFile, outputDir string) error {
 	return nil
 }
 
-func processFile(fileName, contentDir, outputDir string, tmpl *template.Template) error {
+func processFile(fileName, contentDir, outputDir string, tmpl *template.Template) (err error) {
 	// Read content
 	content, err := os.ReadFile(filepath.Join(contentDir, fileName))
 	if err != nil {
@@ -76,6 +76,14 @@ func processFile(fileName, contentDir, outputDir string, tmpl *template.Template
 	if err != nil {
 		return err
 	}
-	defer outFile.Close()
+	defer func() {
+		if closeErr := outFile.Close(); closeErr != nil {
+			if err == nil {
+				err = closeErr
+			} else {
+				err = fmt.Errorf("close error: %v, original error: %w", closeErr, err)
+			}
+		}
+	}()
 	return tmpl.Execute(outFile, page)
 }
