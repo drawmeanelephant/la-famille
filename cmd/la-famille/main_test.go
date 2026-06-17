@@ -209,3 +209,22 @@ func TestRun_MkdirAllError(t *testing.T) {
 		t.Errorf("expected error when output directory cannot be created, got nil")
 	}
 }
+
+func TestRun_ReadDirError(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Intentionally use a non-existent directory
+	contentDir := filepath.Join(tempDir, "non_existent_content")
+
+	outputDir := filepath.Join(tempDir, "public")
+	templateFile := "non_existent_template.html"
+
+	err := run(contentDir, templateFile, outputDir)
+	if err == nil {
+		t.Fatalf("Expected error for non-existent content directory, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "failed to read content directory") {
+		t.Errorf("Expected error to mention 'failed to read content directory', got: %v", err)
+	}
+}
