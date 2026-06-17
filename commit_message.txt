@@ -1,0 +1,5 @@
+🧪 [Test main error path]
+
+🎯 What: The log.Fatal error path in main was previously untested, resulting in a gap in test coverage.
+📊 Coverage: Added a subprocess test to verify that main exits with status code 1 when the run function fails due to an error, like missing templates.
+✨ Result: The main function is now 100% tested.

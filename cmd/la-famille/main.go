@@ -33,6 +33,7 @@ func run(contentDir, templateFile, outputDir string) error {
 		return fmt.Errorf("failed to read content directory: %w", err)
 	}
 
+	// Error is handled gracefully instead of using template.Must
 	tmpl, err := template.ParseFiles(templateFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse template file: %w", err)

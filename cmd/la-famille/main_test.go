@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -323,4 +324,21 @@ func TestRun_ProcessFileErrorLog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected run to not return error when processFile fails, got %v", err)
 	}
+}
+
+func TestMain_ErrorPath(t *testing.T) {
+	if os.Getenv("BE_CRASHER") == "1" {
+		tempDir := t.TempDir()
+		os.Chdir(tempDir)
+		os.Mkdir("content", 0755)
+		main()
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=TestMain_ErrorPath")
+	cmd.Env = append(os.Environ(), "BE_CRASHER=1")
+	err := cmd.Run()
+	if e, ok := err.(*exec.ExitError); ok && e.ExitCode() == 1 {
+		return
+	}
+	t.Fatalf("process ran with err %v, want exit status 1", err)
 }
