@@ -15,19 +15,20 @@ type Page struct {
 	Content template.HTML
 }
 
-func main() {
-	contentDir := "content"
-	templateFile := "templates/layout.html"
-	outputDir := "public"
-
-	os.MkdirAll(outputDir, 0755)
+func buildSite(contentDir, templateFile, outputDir string) error {
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return err
+	}
 
 	files, err := os.ReadDir(contentDir)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	tmpl := template.Must(template.ParseFiles(templateFile))
+	tmpl, err := template.ParseFiles(templateFile)
+	if err != nil {
+		return err
+	}
 
 	for _, file := range files {
 		if filepath.Ext(file.Name()) == ".md" {
@@ -59,5 +60,16 @@ func main() {
 			tmpl.Execute(outFile, page)
 			outFile.Close()
 		}
+	}
+	return nil
+}
+
+func main() {
+	contentDir := "content"
+	templateFile := "templates/layout.html"
+	outputDir := "public"
+
+	if err := buildSite(contentDir, templateFile, outputDir); err != nil {
+		log.Fatal(err)
 	}
 }
