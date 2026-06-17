@@ -209,3 +209,114 @@ func TestRun_MkdirAllError(t *testing.T) {
 		t.Errorf("expected error when output directory cannot be created, got nil")
 	}
 }
+
+func TestRun_ReadDirError(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create an empty template file so ParseFiles doesn't fail first (since ReadDir happens before ParseFiles we don't strictly need it, but ParseFiles is later)
+	// Actually in run(), os.ReadDir happens BEFORE template.ParseFiles, so providing a non-existent dir is enough.
+	contentDir := filepath.Join(tempDir, "nonexistent")
+	outputDir := filepath.Join(tempDir, "public")
+	templateFile := "some_template.html"
+
+	err := run(contentDir, templateFile, outputDir)
+	if err == nil {
+		t.Fatalf("Expected error for non-existent content directory, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "failed to read content directory") {
+		t.Errorf("Expected error to mention 'failed to read content directory', got: %v", err)
+	}
+}
+
+func TestProcessFile_ReadFileError(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("failed to create content dir: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatalf("failed to create output dir: %v", err)
+	}
+
+	tmpl, err := template.New("layout").Parse("<html><body>{{.Content}}</body></html>")
+	if err != nil {
+		t.Fatalf("failed to parse template: %v", err)
+	}
+
+	// Do not create the file so os.ReadFile fails
+	fileName := "nonexistent.md"
+
+	err = processFile(fileName, contentDir, outputDir, tmpl)
+	if err == nil {
+		t.Fatalf("Expected error for non-existent file, got nil")
+	}
+}
+
+func TestProcessFile_CreateFileError(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("failed to create content dir: %v", err)
+	}
+
+	// Create a read-only output directory
+	if err := os.MkdirAll(outputDir, 0555); err != nil {
+		t.Fatalf("failed to create output dir: %v", err)
+	}
+
+	tmpl, err := template.New("layout").Parse("<html><body>{{.Content}}</body></html>")
+	if err != nil {
+		t.Fatalf("failed to parse template: %v", err)
+	}
+
+	fileName := "test.md"
+	content := []byte("# Hello World\nThis is a test.")
+	if err := os.WriteFile(filepath.Join(contentDir, fileName), content, 0644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	err = processFile(fileName, contentDir, outputDir, tmpl)
+	if err == nil {
+		t.Fatalf("Expected error when creating output file fails, got nil")
+	}
+}
+
+func TestRun_ProcessFileError(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("failed to create content dir: %v", err)
+	}
+	// Create read-only output dir so processFile fails when trying to create output file
+	if err := os.MkdirAll(outputDir, 0555); err != nil {
+		t.Fatalf("failed to create output dir: %v", err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatalf("failed to create templates dir: %v", err)
+	}
+
+	templateFile := filepath.Join(templateDir, "layout.html")
+	if err := os.WriteFile(templateFile, []byte("<html><body>{{.Content}}</body></html>"), 0644); err != nil {
+		t.Fatalf("failed to write template file: %v", err)
+	}
+
+	fileName := "test.md"
+	content := []byte("# Hello World\nThis is a test.")
+	if err := os.WriteFile(filepath.Join(contentDir, fileName), content, 0644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	// This should not return an error because processFile error is just logged
+	err := run(contentDir, templateFile, outputDir)
+	if err != nil {
+		t.Fatalf("Expected run to return nil when processFile fails, got: %v", err)
+	}
+}
