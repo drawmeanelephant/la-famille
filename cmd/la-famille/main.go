@@ -56,7 +56,9 @@ func main() {
 				log.Printf("Error creating %s: %v", file.Name()+".html", err)
 				continue
 			}
-			tmpl.Execute(outFile, page)
+			if err := tmpl.Execute(outFile, page); err != nil {
+				log.Printf("Error executing template for %s: %v", file.Name(), err)
+			}
 			outFile.Close()
 		}
 	}
