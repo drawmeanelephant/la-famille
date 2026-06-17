@@ -39,38 +39,38 @@ func run(contentDir, templateFile, outputDir string) error {
 
 	for _, file := range files {
 		if filepath.Ext(file.Name()) == ".md" {
-			// Read content
-			content, err := os.ReadFile(filepath.Join(contentDir, file.Name()))
+			err := processFile(file.Name(), contentDir, outputDir, tmpl)
 			if err != nil {
-				log.Printf("Error reading %s: %v", file.Name(), err)
-				continue
-			}
-
-			// Convert Markdown to HTML
-			var buf bytes.Buffer
-			if err := goldmark.Convert(content, &buf); err != nil {
-				log.Printf("Error converting %s: %v", file.Name(), err)
-				continue
-			}
-
-			// Render
-			page := Page{
-				Title:   file.Name(),
-				Content: template.HTML(buf.String()),
-			}
-
-			outFile, err := os.Create(filepath.Join(outputDir, file.Name()+".html"))
-			if err != nil {
-				log.Printf("Error creating %s: %v", file.Name()+".html", err)
-				continue
-			}
-			err = tmpl.Execute(outFile, page)
-			outFile.Close()
-			if err != nil {
-				log.Printf("Error executing template for %s: %v", file.Name(), err)
-				continue
+				log.Printf("Error processing %s: %v", file.Name(), err)
 			}
 		}
 	}
 	return nil
+}
+
+func processFile(fileName, contentDir, outputDir string, tmpl *template.Template) error {
+	// Read content
+	content, err := os.ReadFile(filepath.Join(contentDir, fileName))
+	if err != nil {
+		return err
+	}
+
+	// Convert Markdown to HTML
+	var buf bytes.Buffer
+	if err := goldmark.Convert(content, &buf); err != nil {
+		return err
+	}
+
+	// Render
+	page := Page{
+		Title:   fileName,
+		Content: template.HTML(buf.String()),
+	}
+
+	outFile, err := os.Create(filepath.Join(outputDir, fileName+".html"))
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+	return tmpl.Execute(outFile, page)
 }
