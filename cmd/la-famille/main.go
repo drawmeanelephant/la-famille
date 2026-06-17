@@ -20,7 +20,9 @@ func main() {
 	templateFile := "templates/layout.html"
 	outputDir := "public"
 
-	os.MkdirAll(outputDir, 0755)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		log.Fatal(err)
+	}
 
 	files, err := os.ReadDir(contentDir)
 	if err != nil {
