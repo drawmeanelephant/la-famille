@@ -296,12 +296,6 @@ func TestProcessFile_CreateOutputError(t *testing.T) {
 	}
 }
 
-func TestProcessFile_GoldmarkConvertError(t *testing.T) {
-	// goldmark convert rarely errors on just bytes, but maybe if we pass something weird?
-	// Actually goldmark.Convert is almost impossible to fail unless memory is exhausted or custom extensions error.
-	// We can test processFile error within run.
-}
-
 func TestRun_ProcessFileErrorLog(t *testing.T) {
 	tempDir := t.TempDir()
 	contentDir := filepath.Join(tempDir, "content")
