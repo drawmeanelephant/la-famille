@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 )
 
@@ -45,10 +46,14 @@ func main() {
 				continue
 			}
 
+			// Sanitize HTML
+			p := bluemonday.UGCPolicy()
+			sanitizedHTML := p.SanitizeBytes(buf.Bytes())
+
 			// Render
 			page := Page{
 				Title:   file.Name(),
-				Content: template.HTML(buf.String()),
+				Content: template.HTML(sanitizedHTML),
 			}
 
 			outFile, err := os.Create(filepath.Join(outputDir, file.Name()+".html"))
