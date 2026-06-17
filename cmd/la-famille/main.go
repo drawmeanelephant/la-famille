@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"log"
 	"os"
@@ -16,18 +17,25 @@ type Page struct {
 }
 
 func main() {
-	contentDir := "content"
-	templateFile := "templates/layout.html"
-	outputDir := "public"
+	if err := run("content", "templates/layout.html", "public"); err != nil {
+		log.Fatal(err)
+	}
+}
 
-	os.MkdirAll(outputDir, 0755)
+func run(contentDir, templateFile, outputDir string) error {
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
 
 	files, err := os.ReadDir(contentDir)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to read content directory: %w", err)
 	}
 
-	tmpl := template.Must(template.ParseFiles(templateFile))
+	tmpl, err := template.ParseFiles(templateFile)
+	if err != nil {
+		return fmt.Errorf("failed to parse template file: %w", err)
+	}
 
 	for _, file := range files {
 		if filepath.Ext(file.Name()) == ".md" {
@@ -56,12 +64,13 @@ func main() {
 				log.Printf("Error creating %s: %v", file.Name()+".html", err)
 				continue
 			}
-			if err := tmpl.Execute(outFile, page); err != nil {
-				log.Printf("Error executing template for %s: %v", file.Name()+".html", err)
-			}
-			if err := outFile.Close(); err != nil {
-				log.Printf("Error closing %s: %v", file.Name()+".html", err)
+			err = tmpl.Execute(outFile, page)
+			outFile.Close()
+			if err != nil {
+				log.Printf("Error executing template for %s: %v", file.Name(), err)
+				continue
 			}
 		}
 	}
+	return nil
 }
