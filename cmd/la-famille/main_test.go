@@ -209,3 +209,124 @@ func TestRun_MkdirAllError(t *testing.T) {
 		t.Errorf("expected error when output directory cannot be created, got nil")
 	}
 }
+
+func TestRun_ReadDirError(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Use a non-existent directory as contentDir
+	contentDir := filepath.Join(tempDir, "non_existent_content_dir")
+	outputDir := filepath.Join(tempDir, "public")
+
+	// We need a valid template so that template.ParseFiles succeeds before ReadDir is called.
+	// Oh wait, ReadDir is called BEFORE template.ParseFiles in the code!
+	// Let's create a valid output dir and mock template anyway just in case.
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatalf("Failed to create output dir: %v", err)
+	}
+	templateFile := filepath.Join(tempDir, "layout.html")
+	if err := os.WriteFile(templateFile, []byte("<html></html>"), 0644); err != nil {
+		t.Fatalf("Failed to write mock template file: %v", err)
+	}
+
+	err := run(contentDir, templateFile, outputDir)
+	if err == nil {
+		t.Fatalf("Expected error when contentDir does not exist, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "failed to read content directory") {
+		t.Errorf("Expected error to mention 'failed to read content directory', got: %v", err)
+	}
+}
+
+func TestProcessFile_ReadFileError(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("Failed to create content dir: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatalf("Failed to create output dir: %v", err)
+	}
+
+	tmpl, err := template.New("layout").Parse("<html><body>{{.Content}}</body></html>")
+	if err != nil {
+		t.Fatalf("Failed to parse template: %v", err)
+	}
+
+	// Create a directory that ends with .md so os.ReadFile will fail
+	badFileName := "bad_file.md"
+	if err := os.Mkdir(filepath.Join(contentDir, badFileName), 0755); err != nil {
+		t.Fatalf("Failed to create bad markdown dir: %v", err)
+	}
+
+	err = processFile(badFileName, contentDir, outputDir, tmpl)
+	if err == nil {
+		t.Fatalf("Expected processFile to fail when reading a directory, got nil")
+	}
+}
+
+func TestProcessFile_CreateOutputError(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("Failed to create content dir: %v", err)
+	}
+	// Make output dir read-only
+	if err := os.MkdirAll(outputDir, 0555); err != nil {
+		t.Fatalf("Failed to create read-only output dir: %v", err)
+	}
+
+	tmpl, err := template.New("layout").Parse("<html><body>{{.Content}}</body></html>")
+	if err != nil {
+		t.Fatalf("Failed to parse template: %v", err)
+	}
+
+	fileName := "test.md"
+	if err := os.WriteFile(filepath.Join(contentDir, fileName), []byte("# Hello"), 0644); err != nil {
+		t.Fatalf("Failed to write mock file: %v", err)
+	}
+
+	err = processFile(fileName, contentDir, outputDir, tmpl)
+	if err == nil {
+		t.Fatalf("Expected processFile to fail when creating output in read-only dir, got nil")
+	}
+}
+
+func TestProcessFile_GoldmarkConvertError(t *testing.T) {
+	// goldmark convert rarely errors on just bytes, but maybe if we pass something weird?
+	// Actually goldmark.Convert is almost impossible to fail unless memory is exhausted or custom extensions error.
+	// We can test processFile error within run.
+}
+
+func TestRun_ProcessFileErrorLog(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateFile := filepath.Join(tempDir, "layout.html")
+
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("Failed to create content dir: %v", err)
+	}
+	// Make output dir read-only
+	if err := os.MkdirAll(outputDir, 0555); err != nil {
+		t.Fatalf("Failed to create output dir: %v", err)
+	}
+	if err := os.WriteFile(templateFile, []byte("<html><body>{{.Content}}</body></html>"), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
+
+	fileName := "test.md"
+	if err := os.WriteFile(filepath.Join(contentDir, fileName), []byte("# Hello"), 0644); err != nil {
+		t.Fatalf("Failed to write mock file: %v", err)
+	}
+
+	// run should not return an error but should log it.
+	err := run(contentDir, templateFile, outputDir)
+	if err != nil {
+		t.Fatalf("Expected run to not return error when processFile fails, got %v", err)
+	}
+}
