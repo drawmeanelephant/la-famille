@@ -129,9 +129,15 @@ func TestMainXSS(t *testing.T) {
 	templateDir := filepath.Join(tempDir, "templates")
 	outputDir := filepath.Join(tempDir, "public")
 
-	os.MkdirAll(contentDir, 0755)
-	os.MkdirAll(templateDir, 0755)
-	os.MkdirAll(outputDir, 0755)
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("Failed to create content dir: %v", err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatalf("Failed to create template dir: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatalf("Failed to create output dir: %v", err)
+	}
 
 	// Create test template
 	templateFile := filepath.Join(templateDir, "layout.html")
@@ -192,7 +198,7 @@ func TestRun_TemplateParsingError(t *testing.T) {
 	}
 }
 
-func TestRun_MkdirAllError(t *testing.T) {
+func TestMkdirAll_ReadOnlyFilesystem(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create a read-only directory

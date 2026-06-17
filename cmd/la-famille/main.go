@@ -25,7 +25,7 @@ func main() {
 
 func run(contentDir, templateFile, outputDir string) error {
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
+		return fmt.Errorf("failed to create output dir: %w", err)
 	}
 
 	files, err := os.ReadDir(contentDir)
