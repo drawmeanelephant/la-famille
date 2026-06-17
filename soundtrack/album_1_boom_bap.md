@@ -6,14 +6,8 @@ An explainer-style album embodying the technical process and journey of the proj
 
 ## Track Listing
 
-1.  **"go run main.go" (Intro)** - Setting the stage, initializing the project, dropping the first beat.
-2.  **"Static vs Dynamic"** - A gritty track breaking down the benefits of pre-rendered HTML vs server-side rendering, heavy bassline.
-3.  **"Markdown Parser"** - Fast-paced lyrical flow detailing the conversion of text into ASTs and HTML nodes.
-4.  **"Goroutine Grind"** - A complex, syncopated beat representing concurrency, building sites in parallel.
-5.  **"The Build Step"** - High energy, the climax of the generation process, writing the final assets to the `public/` directory.
+*To be determined.*
 
 ## Engineering Details
 
-*   **Vibe:** 90s East Coast boom bap, sampled drum breaks, vinyl crackle, heavy bass.
-*   **Vocals:** Direct, informative but rhythmic, heavily compressed.
-*   **Production:** Use classic sampler emulation (SP-1200 / MPC60 vibes). Focus on gritty textures.
+*To be determined.*

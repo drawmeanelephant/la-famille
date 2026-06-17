@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
 	"log"
 	"os"
@@ -18,25 +17,18 @@ type Page struct {
 }
 
 func main() {
-	if err := run("content", "templates/layout.html", "public"); err != nil {
-		log.Fatal(err)
-	}
-}
+	contentDir := "content"
+	templateFile := "templates/layout.html"
+	outputDir := "public"
 
-func run(contentDir, templateFile, outputDir string) error {
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
-	}
+	os.MkdirAll(outputDir, 0755)
 
 	files, err := os.ReadDir(contentDir)
 	if err != nil {
-		return fmt.Errorf("failed to read content directory: %w", err)
+		log.Fatal(err)
 	}
 
-	tmpl, err := template.ParseFiles(templateFile)
-	if err != nil {
-		return fmt.Errorf("failed to parse template file: %w", err)
-	}
+	tmpl := template.Must(template.ParseFiles(templateFile))
 
 	for _, file := range files {
 		if filepath.Ext(file.Name()) == ".md" {
@@ -46,7 +38,6 @@ func run(contentDir, templateFile, outputDir string) error {
 			}
 		}
 	}
-	return nil
 }
 
 func processFile(fileName, contentDir, outputDir string, tmpl *template.Template) error {
