@@ -2,25 +2,25 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ main ]
+    branches: [ master, main ]
 
 jobs:
-  test:
-    name: Run Tests
+  run-tests:
+    name: Go Test Suite
     runs-on: ubuntu-latest
+
     steps:
-      - name: Check out code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: 'stable'
 
-      - name: Install dependencies
-        run: go mod download
-
-      - name: Run Tests
-        run: go test -v ./...
+      - name: Verify Code and Run Tests
+        run: |
+          go vet ./...
+          go test -v ./...
