@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyberpunk" class="bg-base-300">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} | La Famille</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style>
+        @keyframes neon-flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00ff, 0 0 30px #ff00ff, 0 0 40px #ff00ff, 0 0 55px #ff00ff, 0 0 75px #ff00ff;
+            }
+            20%, 22%, 24%, 55% {
+                text-shadow: none;
+            }
+        }
+        .neon-text {
+            animation: neon-flicker 2s infinite alternate;
+        }
+        .sidebar-gradient {
+            background: linear-gradient(180deg, hsl(var(--p)) 0%, hsl(var(--s)) 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col lg:flex-row font-mono">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content">Skip to content</a>
+
+    <!-- Sidebar Navigation -->
+    <aside class="lg:w-80 w-full bg-base-200 border-r-4 border-secondary flex flex-col h-auto lg:h-screen lg:sticky lg:top-0 overflow-y-auto">
+        <div class="p-8 border-b-4 border-secondary bg-primary text-primary-content">
+            <h1 class="text-4xl font-black italic neon-text uppercase tracking-tighter">La Famille</h1>
+            <p class="text-xs mt-2 opacity-80 uppercase tracking-widest font-bold">Static Systems // Cybernetic Content</p>
+        </div>
+
+        <nav aria-label="Main Navigation" class="flex-grow p-4">
+            <ul class="menu menu-lg w-full gap-2">
+                <li>
+                    <a href="/" class="hover:bg-secondary hover:text-secondary-content border-2 border-transparent hover:border-primary transition-all duration-200 uppercase font-bold">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                        Mainframe
+                    </a>
+                </li>
+                <li>
+                    <a href="/docs/index.html" class="hover:bg-secondary hover:text-secondary-content border-2 border-transparent hover:border-primary transition-all duration-200 uppercase font-bold">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Archives
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="p-4 bg-base-300 border-t-4 border-secondary">
+            <div class="flex items-center gap-4">
+                <div class="avatar online placeholder">
+                    <div class="bg-neutral text-neutral-content rounded-full w-12 border-2 border-primary">
+                        <span class="text-xl">J</span>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-sm font-bold uppercase">System: JULES</p>
+                    <p class="text-xs opacity-60 uppercase">Status: Operational</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="flex-grow min-h-screen p-4 lg:p-12">
+        <div class="max-w-4xl mx-auto">
+            <header class="mb-12 border-b-8 border-primary pb-8 relative">
+                <div class="absolute -top-4 -left-4 bg-accent text-accent-content px-4 py-1 font-black uppercase skew-x-[-20deg] z-10">
+                    Live Feed
+                </div>
+                <h2 class="text-5xl lg:text-7xl font-black uppercase tracking-tighter mb-4 break-words">{{.Title}}</h2>
+
+                {{if or .Author .Date}}
+                <div class="flex flex-wrap gap-4 mt-6">
+                    {{if .Author}}
+                    <div class="badge badge-secondary badge-lg rounded-none font-bold uppercase p-4">
+                        User: {{.Author}}
+                    </div>
+                    {{end}}
+                    {{if .Date}}
+                    <div class="badge badge-accent badge-lg rounded-none font-bold uppercase p-4 text-accent-content">
+                        Timestamp: {{.Date}}
+                    </div>
+                    {{end}}
+                </div>
+                {{end}}
+            </header>
+
+            <article class="prose lg:prose-xl max-w-none prose-headings:uppercase prose-headings:font-black prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-secondary">
+                {{.Content}}
+            </article>
+
+            <footer class="mt-24 pt-8 border-t-4 border-secondary grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div>
+                    <p class="text-sm font-bold uppercase opacity-60">Sequence: LA_FAMILLE_0x{{printf "%x" .Title}}</p>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <div class="kbd kbd-sm">CTRL</div>
+                    <div class="kbd kbd-sm">S</div>
+                    <span class="text-xs self-center uppercase font-bold opacity-40 ml-2">to save reality</span>
+                </div>
+            </footer >
+        </div>
+    </main>
+</body>
+</html>
