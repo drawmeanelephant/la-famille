@@ -25,3 +25,7 @@ This album explores the humorous origins of the project's name: "La Famille". As
 5.  **"La Famille (The Family Jewels)"**
     *   **Prompt Idea:** The grand finale. A full cabaret ensemble piece, complete with horns and a chorus, openly embracing the pun "The Family Jules". It celebrates the bizarre but effective human-AI partnership building the static site generator.
     *   **Vibe:** Triumphant, theatrical, big brass.
+
+6. **"Le Chemin Relatif (Relative Path)"**
+    *   **Prompt Idea:** A steady, rhythmic acoustic guitar piece with a light, walking bassline. The lyrics (if any) are about finding one's way through a labyrinth of directories, always knowing where you are in relation to where you're going.
+    *   **Vibe:** Methodical, precise, and satisfying.

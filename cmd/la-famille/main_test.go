@@ -275,3 +275,69 @@ func TestProcessFile_PathTraversalPrevented(t *testing.T) {
 		t.Errorf("Malicious stub was incorrectly generated outside the output directory at: %s", maliciousFile)
 	}
 }
+
+func TestRelPathFromTo(t *testing.T) {
+	tests := []struct {
+		name     string
+		base     string
+		target   string
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "same directory",
+			base:     "a.md",
+			target:   "b.html",
+			expected: "b.html",
+		},
+		{
+			name:     "target in subdirectory",
+			base:     "a.md",
+			target:   "dir/b.html",
+			expected: "dir/b.html",
+		},
+		{
+			name:     "base in subdirectory",
+			base:     "dir/a.md",
+			target:   "b.html",
+			expected: "../b.html",
+		},
+		{
+			name:     "deep nested",
+			base:     "dir1/dir2/a.md",
+			target:   "dir3/b.html",
+			expected: "../../dir3/b.html",
+		},
+		{
+			name:     "root files",
+			base:     "index.md",
+			target:   "index.html",
+			expected: "index.html",
+		},
+		{
+			name:     "same nested directory",
+			base:     "dir/a.md",
+			target:   "dir/b.html",
+			expected: "b.html",
+		},
+		{
+			name:     "target is base directory",
+			base:     "dir/a.md",
+			target:   "dir",
+			expected: ".",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := relPathFromTo(tt.base, tt.target)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("relPathFromTo() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.expected {
+				t.Errorf("relPathFromTo() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
