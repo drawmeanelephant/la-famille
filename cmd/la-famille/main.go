@@ -181,7 +181,7 @@ func run(contentDir, templateFile, outputDir string) error {
 
 		outPath := filepath.Join(outputDir, filepath.FromSlash(relPath))
 		if shouldRender {
-			outPath = outPath[:len(outPath)-len(filepath.Ext(outPath))] + ".html"
+			outPath = strings.TrimSuffix(outPath, filepath.Ext(outPath)) + ".html"
 		}
 
 		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
