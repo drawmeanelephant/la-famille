@@ -1,0 +1,11 @@
+{
+  "fallback-title": {
+    "author": "Bob",
+    "title": "fallback-title.md"
+  },
+  "post": {
+    "author": "Alice",
+    "date": "2023-10-27",
+    "title": "My Post"
+  }
+}

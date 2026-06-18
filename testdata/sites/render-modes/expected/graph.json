@@ -1,0 +1,17 @@
+{
+  "nodes": {
+    "hidden": {
+      "type": "page",
+      "render": false
+    },
+    "index": {
+      "type": "page",
+      "render": true
+    },
+    "raw": {
+      "type": "page",
+      "render": false
+    }
+  },
+  "edges": []
+}

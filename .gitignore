@@ -1,2 +1,12 @@
 /bin/
 /public/
+SUPPORT/
+
+# macOS hidden files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes

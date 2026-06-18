@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -9,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/adrg/frontmatter"
@@ -37,8 +40,33 @@ type FileMeta struct {
 	Rest    []byte // The content after frontmatter
 }
 
+type Node struct {
+	Type         string   `json:"type"`
+	Render       bool     `json:"render"`
+	Missing      bool     `json:"missing,omitempty"`
+	ReferencedBy []string `json:"referenced_by,omitempty"`
+}
+
+type Graph struct {
+	Nodes map[string]Node `json:"nodes"`
+	Edges [][2]string     `json:"edges"`
+}
+
 func main() {
-	if err := run("content", "templates/layout.html", "public"); err != nil {
+	contentDir := flag.String("content", "content", "Directory containing markdown files")
+	outputDir := flag.String("output", "public", "Directory for generated static site")
+	templateFile := flag.String("template", "templates/layout.html", "Path to HTML layout template")
+
+	flag.Parse()
+
+	args := flag.Args()
+	if len(args) > 0 && args[0] == "build" {
+		if len(args) > 1 {
+			*contentDir = args[1]
+		}
+	}
+
+	if err := run(*contentDir, *templateFile, *outputDir); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -107,16 +135,49 @@ func run(contentDir, templateFile, outputDir string) error {
 
 	// Track missing files that need stubs. map[missingPath][]parentFiles
 	missingFiles := make(map[string][]string)
+	backlinks := make(map[string][]string)
+	graph := Graph{
+		Nodes: make(map[string]Node),
+		Edges: [][2]string{},
+	}
+	metaData := make(map[string]map[string]string)
+
+	// 3. Pass 2: Process files in deterministic order
+	var keys []string
+	for k := range fileMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 
 	// Reusable buffer for markdown conversion
 	var buf bytes.Buffer
 
-	// 3. Pass 2: Process files
-	for relPath, meta := range fileMap {
+	for _, relPath := range keys {
+		meta := fileMap[relPath]
 		shouldRender := true
 		if meta.Render != nil && !*meta.Render {
 			shouldRender = false
 		}
+
+		id := strings.TrimSuffix(relPath, ".md")
+		graph.Nodes[id] = Node{
+			Type:   "page",
+			Render: shouldRender,
+		}
+
+		m := make(map[string]string)
+		title := meta.Title
+		if title == "" {
+			title = filepath.Base(relPath)
+		}
+		m["title"] = title
+		if meta.Author != "" {
+			m["author"] = meta.Author
+		}
+		if meta.Date != "" {
+			m["date"] = meta.Date
+		}
+		metaData[id] = m
 
 		outPath := filepath.Join(outputDir, filepath.FromSlash(relPath))
 		if shouldRender {
@@ -140,6 +201,8 @@ func run(contentDir, templateFile, outputDir string) error {
 			CurrentFile:  relPath,
 			FileMap:      fileMap,
 			MissingFiles: missingFiles,
+			Backlinks:    backlinks,
+			Graph:        &graph,
 		}
 
 		md := goldmark.New(
@@ -158,11 +221,6 @@ func run(contentDir, templateFile, outputDir string) error {
 
 		p := bluemonday.UGCPolicy()
 		sanitizedHTML := p.SanitizeBytes(buf.Bytes())
-
-		title := meta.Title
-		if title == "" {
-			title = filepath.Base(relPath)
-		}
 
 		page := Page{
 			Title:   title,
@@ -183,8 +241,24 @@ func run(contentDir, templateFile, outputDir string) error {
 		outFile.Close()
 	}
 
-	// 4. Generate stubs for missing files
-	for missingRelPath, parents := range missingFiles {
+	// 4. Generate stubs for missing files in deterministic order
+	var missingKeys []string
+	for k := range missingFiles {
+		missingKeys = append(missingKeys, k)
+	}
+	sort.Strings(missingKeys)
+
+	for _, missingRelPath := range missingKeys {
+		parents := missingFiles[missingRelPath]
+		sort.Strings(parents)
+		id := strings.TrimSuffix(missingRelPath, ".md")
+		graph.Nodes[id] = Node{
+			Type:         "stub",
+			Render:       true,
+			Missing:      true,
+			ReferencedBy: parents,
+		}
+
 		outPath := filepath.Join(outputDir, filepath.FromSlash(missingRelPath))
 		// ensure the missing relative path has .html
 		outPath = strings.TrimSuffix(outPath, ".md") + ".html"
@@ -226,16 +300,46 @@ func run(contentDir, templateFile, outputDir string) error {
 		outFile.Close()
 	}
 
+	// 5. Write JSON outputs
+	for _, parents := range backlinks {
+		sort.Strings(parents)
+	}
+	if err := writeJSON(filepath.Join(outputDir, "graph.json"), graph); err != nil {
+		return err
+	}
+	if err := writeJSON(filepath.Join(outputDir, "backlinks.json"), backlinks); err != nil {
+		return err
+	}
+	if err := writeJSON(filepath.Join(outputDir, "meta.json"), metaData); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func writeJSON(path string, data interface{}) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+	return enc.Encode(data)
 }
 
 type linkTransformer struct {
 	CurrentFile  string // The current file being processed (e.g., docs/index.md)
 	FileMap      map[string]*FileMeta
 	MissingFiles map[string][]string // map[targetFile]parents
+	Backlinks    map[string][]string
+	Graph        *Graph
 }
 
 func (t *linkTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
+	sourceId := strings.TrimSuffix(t.CurrentFile, ".md")
+
 	ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
@@ -262,6 +366,10 @@ func (t *linkTransformer) Transform(node *ast.Document, reader text.Reader, pc p
 			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) {
 				return ast.WalkContinue, nil
 			}
+
+			targetId := strings.TrimSuffix(targetRelPath, ".md")
+			t.Graph.Edges = append(t.Graph.Edges, [2]string{sourceId, targetId})
+			t.Backlinks[targetId] = append(t.Backlinks[targetId], sourceId)
 
 			// Check file map
 			meta, exists := t.FileMap[targetRelPath]

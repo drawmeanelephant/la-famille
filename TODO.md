@@ -1,6 +1,6 @@
 # Aspirational To-Do Recommendations for La Famille
 
-This document contains recommendations and aspirational goals for the future development of the **La Famille** project, designed specifically to be picked up by `@jules` (the AI assistant) in subsequent sessions.
+This document contains recommendations and aspirational goals for the future development of the **La Famille** project, designed specifically to be picked up by Jules (the AI assistant) in subsequent sessions.
 
 ## 🛠️ Technical & Architecture Enhancements
 

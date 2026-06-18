@@ -1,0 +1,13 @@
+{
+  "nodes": {
+    "about": {
+      "type": "page",
+      "render": true
+    },
+    "index": {
+      "type": "page",
+      "render": true
+    }
+  },
+  "edges": []
+}

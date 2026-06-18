@@ -1,0 +1,34 @@
+{
+  "nodes": {
+    "a": {
+      "type": "page",
+      "render": true
+    },
+    "b": {
+      "type": "page",
+      "render": true
+    },
+    "c": {
+      "type": "page",
+      "render": true
+    },
+    "index": {
+      "type": "page",
+      "render": true
+    }
+  },
+  "edges": [
+    [
+      "a",
+      "c"
+    ],
+    [
+      "index",
+      "a"
+    ],
+    [
+      "index",
+      "b"
+    ]
+  ]
+}

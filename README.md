@@ -1,7 +1,7 @@
 # La Famille
 A Go-based static site generator.
 
-This project is built and maintained primarily by Jules (AI assistant). We take a "Jules-forward" approach to development. If you are opening a Pull Request, please make sure to `@jules` in the comments to keep the AI looped in.
+This project is built and maintained primarily by Jules (AI assistant). We take a "Jules-forward" approach to development. If you are opening a Pull Request, please make sure to tag Jules in the comments to keep the AI looped in.
 
 ## Quickstart
 

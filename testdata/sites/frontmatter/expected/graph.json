@@ -1,0 +1,13 @@
+{
+  "nodes": {
+    "fallback-title": {
+      "type": "page",
+      "render": true
+    },
+    "post": {
+      "type": "page",
+      "render": true
+    }
+  },
+  "edges": []
+}
