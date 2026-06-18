@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/tbuddy/la-famille/internal/config"
 )
 
 func TestFixtures(t *testing.T) {
@@ -28,7 +30,12 @@ func TestFixtures(t *testing.T) {
 
 			outputDir := t.TempDir()
 
-			if err := run(contentDir, templateFile, outputDir); err != nil {
+			cfg := config.DefaultConfig()
+			cfg.ContentDir = contentDir
+			cfg.OutputDir = outputDir
+			cfg.Template = templateFile
+
+			if err := run(cfg); err != nil {
 				t.Fatalf("run failed: %v", err)
 			}
 
