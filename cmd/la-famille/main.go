@@ -255,6 +255,11 @@ func (t *linkTransformer) Transform(node *ast.Document, reader text.Reader, pc p
 				targetRelPath = filepath.ToSlash(filepath.Clean(u.Path))
 			}
 
+			// Prevent path traversal
+			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) {
+				return ast.WalkContinue, nil
+			}
+
 			// Check file map
 			meta, exists := t.FileMap[targetRelPath]
 			if exists {
