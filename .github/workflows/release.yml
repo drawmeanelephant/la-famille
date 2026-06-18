@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Build and Test
+        run: |
+          go test ./...
+          go build ./...
+
+      - name: Generate Release Artifacts
+        run: |
+          # Use the tag name as the version
+          echo "${GITHUB_REF#refs/tags/v}" > VERSION
+          # Extract lyrics from the tag message or commit message if possible
+          go run ./cmd/release-tool/main.go --track-lyrics "A new drop in the La Famille saga. Check the changelog for details."
+
+      - name: Commit Release Updates
+        run: |
+          git config --global user.name "Jules Bot"
+          git config --global user.email "jules@onrender.com"
+          git add VERSION content/soundtrack/ content/docs/ content/album_*.md
+          git commit -m "chore: release updates for ${GITHUB_REF#refs/tags/}" || echo "No changes to commit"
+          git push origin HEAD:main
+
+      - name: Build Binaries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o la-famille-linux-amd64 ./cmd/la-famille
+          GOOS=darwin GOARCH=amd64 go build -o la-famille-darwin-amd64 ./cmd/la-famille
+          GOOS=darwin GOARCH=arm64 go build -o la-famille-darwin-arm64 ./cmd/la-famille
+          GOOS=windows GOARCH=amd64 go build -o la-famille-windows-amd64.exe ./cmd/la-famille
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            la-famille-linux-amd64
+            la-famille-darwin-amd64
+            la-famille-darwin-arm64
+            la-famille-windows-amd64.exe
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}

@@ -19,3 +19,5 @@ An explainer-style album embodying the technical process and journey of the proj
 *   **Vibe:** 90s East Coast boom bap, sampled drum breaks, vinyl crackle, heavy bass.
 *   **Vocals:** Direct, informative but rhythmic, heavily compressed.
 *   **Production:** Use classic sampler emulation (SP-1200 / MPC60 vibes). Focus on gritty textures.
+
+1. **"Release 0.1.0-alpha.1"** - The 0.1.0-alpha.1 drop.
