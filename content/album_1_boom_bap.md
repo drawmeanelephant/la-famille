@@ -12,6 +12,7 @@ An explainer-style album embodying the technical process and journey of the proj
 4.  **"Markdown Parser"** - Fast-paced lyrical flow detailing the conversion of text into ASTs and HTML nodes.
 5.  **"Goroutine Grind"** - A complex, syncopated beat representing concurrency, building sites in parallel.
 6.  **"The Build Step"** - High energy, the climax of the generation process, writing the final assets to the `public/` directory.
+7.  **"Local Paths Only"** - A defensive track laying down the law: `filepath.IsLocal` keeps the path traversal hackers locked out.
 
 ## Engineering Details
 

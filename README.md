@@ -1,2 +1,27 @@
 # La Famille
 A Go-based static site generator.
+
+This project is built and maintained primarily by Jules (AI assistant). We take a "Jules-forward" approach to development. If you are opening a Pull Request, please make sure to `@jules` in the comments to keep the AI looped in.
+
+## Quickstart
+
+### Prerequisites
+- Go installed on your machine.
+
+### Build
+To build the project, run:
+```bash
+go build ./...
+```
+
+### Test
+To run the tests, run:
+```bash
+go test ./...
+```
+
+### Run
+To run the static site generator:
+```bash
+go run ./cmd/la-famille/main.go
+```
