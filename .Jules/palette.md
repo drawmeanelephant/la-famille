@@ -1,0 +1,3 @@
+## 2025-02-23 - Skip-to-content and Semantic Navigation
+**Learning:** Found that the default layout templates used a generic `div` for the navigation bar and lacked a skip-to-content link, which significantly degraded the keyboard navigation and screen reader experience.
+**Action:** Added a `nav` element with `aria-label="Main Navigation"`, an `id="main-content"` on the `main` tag, and a visually hidden `Skip to content` link using Tailwind utilities (`sr-only focus:not-sr-only`) at the top of `<body>`. Will ensure future templates incorporate these semantic and accessible patterns by default.
