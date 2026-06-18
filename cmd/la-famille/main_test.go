@@ -342,3 +342,73 @@ func TestMain_ErrorPath(t *testing.T) {
 	}
 	t.Fatalf("process ran with err %v, want exit status 1", err)
 }
+
+func TestProcessFile_WithFrontmatter(t *testing.T) {
+	// Setup mock input and output directories
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	err := os.MkdirAll(contentDir, 0755)
+	if err != nil {
+		t.Fatalf("failed to create content dir: %v", err)
+	}
+	err = os.MkdirAll(outputDir, 0755)
+	if err != nil {
+		t.Fatalf("failed to create output dir: %v", err)
+	}
+
+	// Create a dummy template
+	tmpl, err := template.New("layout").Parse("<html><head><title>{{.Title}}</title></head><body><h1>{{.Title}}</h1><h2>{{.Author}}</h2><h3>{{.Date}}</h3>{{.Content}}</body></html>")
+	if err != nil {
+		t.Fatalf("failed to parse template: %v", err)
+	}
+
+	// Create a dummy markdown file with YAML frontmatter
+	fileName := "test_fm.md"
+	content := []byte(`---
+title: "The Great Fart of 1922"
+author: "Don Corleone"
+date: "2026-06-17"
+---
+# Hello World
+This is a test.`)
+	err = os.WriteFile(filepath.Join(contentDir, fileName), content, 0644)
+	if err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	// Run processFile
+	err = processFile(fileName, contentDir, outputDir, tmpl)
+	if err != nil {
+		t.Errorf("processFile failed: %v", err)
+	}
+
+	// Assert the output file exists
+	outFileName := fileName + ".html"
+	outFile := filepath.Join(outputDir, outFileName)
+	_, err = os.Stat(outFile)
+	if os.IsNotExist(err) {
+		t.Errorf("expected output file %s does not exist", outFileName)
+	} else if err != nil {
+		t.Errorf("failed to check output file: %v", err)
+	}
+
+	outContent, err := os.ReadFile(outFile)
+	if err != nil {
+		t.Fatalf("Failed to read output file: %v", err)
+	}
+
+	outputStr := string(outContent)
+	if !strings.Contains(outputStr, "<title>The Great Fart of 1922</title>") {
+		t.Errorf("Output HTML does not contain expected title, got: %s", outputStr)
+	}
+	if !strings.Contains(outputStr, "<h1>The Great Fart of 1922</h1>") {
+		t.Errorf("Output HTML does not contain expected title heading, got: %s", outputStr)
+	}
+	if !strings.Contains(outputStr, "<h2>Don Corleone</h2>") {
+		t.Errorf("Output HTML does not contain expected author, got: %s", outputStr)
+	}
+	if !strings.Contains(outputStr, "<h3>2026-06-17</h3>") {
+		t.Errorf("Output HTML does not contain expected date, got: %s", outputStr)
+	}
+}

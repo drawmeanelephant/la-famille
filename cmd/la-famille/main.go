@@ -10,10 +10,13 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
+	"github.com/adrg/frontmatter"
 )
 
 type Page struct {
 	Title   string
+	Author  string
+	Date    string
 	Content template.HTML
 }
 
@@ -57,9 +60,25 @@ func processFile(fileName, contentDir, outputDir string, tmpl *template.Template
 		return err
 	}
 
+	var matter struct {
+		Title  string `yaml:"title"`
+		Author string `yaml:"author"`
+		Date   string `yaml:"date"`
+	}
+
+	rest, err := frontmatter.Parse(bytes.NewReader(content), &matter)
+	if err != nil {
+		return err
+	}
+
+	title := matter.Title
+	if title == "" {
+		title = fileName
+	}
+
 	// Convert Markdown to HTML
 	var buf bytes.Buffer
-	if err := goldmark.Convert(content, &buf); err != nil {
+	if err := goldmark.Convert(rest, &buf); err != nil {
 		return err
 	}
 
@@ -69,7 +88,9 @@ func processFile(fileName, contentDir, outputDir string, tmpl *template.Template
 
 	// Render
 	page := Page{
-		Title:   fileName,
+		Title:   title,
+		Author:  matter.Author,
+		Date:    matter.Date,
 		Content: template.HTML(sanitizedHTML),
 	}
 
