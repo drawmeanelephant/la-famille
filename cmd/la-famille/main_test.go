@@ -51,7 +51,7 @@ func TestRun(t *testing.T) {
 	}
 
 	// Verify output
-	outputFile := filepath.Join(outputDir, "test.md.html")
+	outputFile := filepath.Join(outputDir, "test.html")
 	if _, err := os.Stat(outputFile); os.IsNotExist(err) {
 		t.Errorf("Expected output file %s was not created", outputFile)
 	}
@@ -109,7 +109,7 @@ func TestProcessFile(t *testing.T) {
 	}
 
 	// Assert the output file exists
-	outFileName := fileName + ".html"
+	outFileName := strings.TrimSuffix(fileName, filepath.Ext(fileName)) + ".html"
 	_, err = os.Stat(filepath.Join(outputDir, outFileName))
 	if os.IsNotExist(err) {
 		t.Errorf("expected output file %s does not exist", outFileName)
@@ -157,7 +157,7 @@ func TestMainXSS(t *testing.T) {
 	main()
 
 	// Check output
-	outputFile := filepath.Join(outputDir, "test.md.html")
+	outputFile := filepath.Join(outputDir, "test.html")
 	outputContent, err := os.ReadFile(outputFile)
 	if err != nil {
 		t.Fatalf("Failed to read output file: %v", err)
@@ -384,7 +384,7 @@ This is a test.`)
 	}
 
 	// Assert the output file exists
-	outFileName := fileName + ".html"
+	outFileName := strings.TrimSuffix(fileName, filepath.Ext(fileName)) + ".html"
 	outFile := filepath.Join(outputDir, outFileName)
 	_, err = os.Stat(outFile)
 	if os.IsNotExist(err) {

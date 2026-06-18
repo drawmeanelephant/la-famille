@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/adrg/frontmatter"
 	"github.com/microcosm-cc/bluemonday"
@@ -94,7 +95,8 @@ func processFile(fileName, contentDir, outputDir string, tmpl *template.Template
 		Content: template.HTML(sanitizedHTML),
 	}
 
-	outFile, createErr := os.Create(filepath.Join(outputDir, fileName+".html"))
+	outFileName := strings.TrimSuffix(fileName, filepath.Ext(fileName)) + ".html"
+	outFile, createErr := os.Create(filepath.Join(outputDir, outFileName))
 	if createErr != nil {
 		return createErr
 	}
