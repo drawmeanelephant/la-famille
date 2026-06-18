@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="luxury">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} | La Famille</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&display=swap');
+
+        :root {
+            --font-serif: 'Playfair Display', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-sans);
+        }
+
+        h1, h2, h3, .font-serif {
+            font-family: var(--font-serif);
+        }
+
+        .magazine-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .magazine-grid {
+                grid-template-columns: 3fr 1fr;
+            }
+        }
+
+        .border-double-top {
+            border-top: 4px double hsl(var(--bc) / 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-base-200 text-base-content">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content">Skip to content</a>
+
+    <!-- Prestigious Header -->
+    <header class="bg-base-100 border-b border-base-300 sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <img src="/assets/img/favorites/primary_crest.jpg" alt="La Famille Crest" class="h-16 w-16 object-contain rounded-full border-2 border-gold-500 shadow-lg" />
+                <div>
+                    <h1 class="text-3xl font-black tracking-tighter uppercase">La Famille</h1>
+                    <p class="text-[10px] uppercase tracking-[0.3em] opacity-60">The Prestigious Digital Estate</p>
+                </div>
+            </div>
+
+            <nav aria-label="Primary" class="flex gap-1">
+                <a href="/" class="btn btn-ghost btn-sm uppercase text-xs tracking-widest">Home</a>
+                <a href="/docs/index.html" class="btn btn-ghost btn-sm uppercase text-xs tracking-widest">Archives</a>
+                <a href="/soundtrack/index.html" class="btn btn-ghost btn-sm uppercase text-xs tracking-widest">Soundtrack</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main id="main-content" class="container mx-auto px-4 py-12">
+        <div class="magazine-grid">
+
+            <!-- Article Section -->
+            <div class="space-y-12">
+                <header class="space-y-6">
+                    <div class="flex items-center gap-2">
+                        <span class="badge badge-outline badge-sm uppercase tracking-tighter opacity-50">Volume I</span>
+                        <div class="h-[1px] flex-grow bg-base-content/10"></div>
+                    </div>
+
+                    <h2 class="text-5xl md:text-7xl font-black italic tracking-tight">{{.Title}}</h2>
+
+                    <div class="flex flex-wrap items-center gap-6 py-4 border-y border-base-content/10 text-sm uppercase tracking-widest">
+                        {{if .Author}}
+                        <div class="flex items-center gap-2">
+                            <span class="opacity-40">By</span>
+                            <span class="font-bold">{{.Author}}</span>
+                        </div>
+                        {{end}}
+                        {{if .Date}}
+                        <div class="flex items-center gap-2">
+                            <span class="opacity-40">On</span>
+                            <span class="font-bold">{{.Date}}</span>
+                        </div>
+                        {{end}}
+                        <div class="flex-grow"></div>
+                        <div class="flex gap-2">
+                            <span class="badge badge-primary badge-sm">JULES-APPROVED</span>
+                        </div>
+                    </div>
+                </header>
+
+                <article class="prose lg:prose-xl max-w-none prose-headings:font-serif prose-headings:italic prose-headings:font-normal prose-img:rounded-xl prose-img:shadow-2xl">
+                    {{.Content}}
+                </article>
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="space-y-12">
+                <!-- Jules' Corner -->
+                <section class="card bg-base-100 shadow-xl overflow-hidden border border-primary/20">
+                    <figure class="relative h-48">
+                        <img src="/assets/img/favorites/Octopus_mascot_holding_diamond_i%E2%80%A6_202606181611_4.jpeg" alt="Jules the Octopus" class="w-full h-full object-cover" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-base-100 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <h3 class="text-xl font-bold italic text-white shadow-sm">Jules' Corner</h3>
+                        </div>
+                    </figure>
+                    <div class="card-body p-6 space-y-4">
+                        <p class="text-sm italic opacity-80 leading-relaxed">
+                            "Building digital estates requires both the strength of an octopus and the brilliance of a diamond."
+                        </p>
+                        <div class="flex justify-end">
+                            <div class="badge badge-secondary uppercase text-[10px] font-bold p-3">System Maintenance</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Navigation Card -->
+                <section class="card bg-neutral text-neutral-content shadow-xl">
+                    <div class="card-body p-6">
+                        <h3 class="card-title text-sm uppercase tracking-[0.2em] mb-4">The Archives</h3>
+                        <ul class="menu menu-sm p-0 gap-1">
+                            <li><a href="/docs/setup.html" class="hover:bg-primary/20">System Setup</a></li>
+                            <li><a href="/docs/raw.html" class="hover:bg-primary/20">Raw Feed</a></li>
+                            <li><a href="/genesis_retrospective.html" class="hover:bg-primary/20 italic">Genesis Retrospective</a></li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Badge -->
+                <div class="flex justify-center py-8">
+                    <img src="/assets/img/favorites/logo_badge.jpg" alt="Official Badge" class="h-32 w-32 object-contain opacity-40 hover:opacity-100 transition-opacity duration-500" />
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-neutral text-neutral-content mt-24">
+        <div class="container mx-auto px-4 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 items-center">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <img src="/assets/img/favorites/primary_crest.jpg" alt="Crest" class="h-10 w-10 rounded-full" />
+                        <span class="text-xl font-black uppercase tracking-tighter">La Famille</span>
+                    </div>
+                    <p class="text-xs opacity-50 max-w-xs uppercase leading-loose tracking-widest">
+                        A prestigious static site generator ensuring your content remains eternally elegant and highly performant.
+                    </p>
+                </div>
+
+                <div class="flex flex-col items-center">
+                    <img src="/assets/img/favorites/social_preview.jpg" alt="Social Preview" class="w-full max-w-sm rounded shadow-2xl border border-white/10" />
+                </div>
+
+                <div class="flex flex-col md:items-end gap-6">
+                    <div class="text-right">
+                        <p class="text-[10px] uppercase tracking-widest opacity-40 mb-2">Developed By</p>
+                        <p class="font-serif italic text-2xl">Jules the Octopus</p>
+                    </div>
+                    <div class="badge badge-outline rounded-none p-4 text-[10px] uppercase tracking-widest border-white/20">
+                        Built in Go and Jules and DaisyUI by Google
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-[0.4em] opacity-30">
+                <p>&copy; 2026 La Famille Jules</p>
+                <p>Status: High Fidelity</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
