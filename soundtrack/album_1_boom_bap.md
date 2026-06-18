@@ -7,10 +7,11 @@ An explainer-style album embodying the technical process and journey of the proj
 ## Track Listing
 
 1.  **"go run main.go" (Intro)** - Setting the stage, initializing the project, dropping the first beat.
-2.  **"Static vs Dynamic"** - A gritty track breaking down the benefits of pre-rendered HTML vs server-side rendering, heavy bassline.
-3.  **"Markdown Parser"** - Fast-paced lyrical flow detailing the conversion of text into ASTs and HTML nodes.
-4.  **"Goroutine Grind"** - A complex, syncopated beat representing concurrency, building sites in parallel.
-5.  **"The Build Step"** - High energy, the climax of the generation process, writing the final assets to the `public/` directory.
+2.  **"go.mod (The Ledger)"** - A methodical track checking the dependencies and securing the supply chain.
+3.  **"Static vs Dynamic"** - A gritty track breaking down the benefits of pre-rendered HTML vs server-side rendering, heavy bassline.
+4.  **"Markdown Parser"** - Fast-paced lyrical flow detailing the conversion of text into ASTs and HTML nodes.
+5.  **"Goroutine Grind"** - A complex, syncopated beat representing concurrency, building sites in parallel.
+6.  **"The Build Step"** - High energy, the climax of the generation process, writing the final assets to the `public/` directory.
 
 ## Engineering Details
 
