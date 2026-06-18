@@ -1,0 +1,32 @@
+name: La Famille Integration Pipeline
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify-and-merge:
+    # Only run this if the PR was created by the Jules bot / integration
+    if: github.actor == 'google-labs-code' || contains(github.head_ref, 'jules')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Run Verification Suite
+        run: |
+          go vet ./...
+          go test -v ./...
+
+      - name: Auto-Merge Green PRs
+        if: success()
+        uses: pascalgn/automerge-action@v0.16.4
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          MERGE_METHOD: "squash" # Keeps your main history beautiful and clean

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/adrg/frontmatter"
@@ -37,8 +39,56 @@ type FileMeta struct {
 	Rest    []byte // The content after frontmatter
 }
 
+type GraphNode struct {
+	Type         string   `json:"type"`
+	Render       bool     `json:"render"`
+	Missing      bool     `json:"missing,omitempty"`
+	ReferencedBy []string `json:"referenced_by,omitempty"`
+}
+
+type Graph struct {
+	Nodes map[string]GraphNode `json:"nodes"`
+	Edges [][]string           `json:"edges"`
+}
+
+type MetaData struct {
+	Title  string `json:"title"`
+	Author string `json:"author"`
+	Date   string `json:"date"`
+}
+
 func main() {
-	if err := run("content", "templates/layout.html", "public"); err != nil {
+	if len(os.Args) < 2 {
+		log.Fatal("Usage: la-famille build <contentDir> [outputDir]")
+	}
+
+	command := os.Args[1]
+
+	// tests sometimes pass flags to main, ignore them and assume test path
+	if strings.HasPrefix(command, "-test.") {
+		if err := run("content", "templates/layout.html", "public"); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	if command != "build" {
+		log.Fatalf("Unknown command: %s", command)
+	}
+
+	contentDir := "content"
+	if len(os.Args) >= 3 {
+		contentDir = os.Args[2]
+	}
+
+	outputDir := "public"
+	if len(os.Args) >= 4 {
+		outputDir = os.Args[3]
+	}
+
+	templateFile := "templates/layout.html"
+
+	if err := run(contentDir, templateFile, outputDir); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -110,6 +160,7 @@ func run(contentDir, templateFile, outputDir string) error {
 
 	// Reusable buffer for markdown conversion
 	var buf bytes.Buffer
+	var edges [][]string
 
 	// 3. Pass 2: Process files
 	for relPath, meta := range fileMap {
@@ -140,6 +191,7 @@ func run(contentDir, templateFile, outputDir string) error {
 			CurrentFile:  relPath,
 			FileMap:      fileMap,
 			MissingFiles: missingFiles,
+			Edges:        &edges,
 		}
 
 		md := goldmark.New(
@@ -226,13 +278,114 @@ func run(contentDir, templateFile, outputDir string) error {
 		outFile.Close()
 	}
 
+	// 5. Generate JSON artifacts
+	graph := Graph{
+		Nodes: make(map[string]GraphNode),
+		Edges: edges,
+	}
+	if graph.Edges == nil {
+		graph.Edges = [][]string{}
+	}
+	backlinks := make(map[string][]string)
+	metaDataMap := make(map[string]MetaData)
+
+	// Populate graph with existing pages
+	for relPath, meta := range fileMap {
+		nodeId := strings.TrimSuffix(relPath, ".md")
+
+		shouldRender := true
+		if meta.Render != nil && !*meta.Render {
+			shouldRender = false
+		}
+
+		graph.Nodes[nodeId] = GraphNode{
+			Type:   "page",
+			Render: shouldRender,
+		}
+
+		title := meta.Title
+		if title == "" {
+			title = filepath.Base(relPath)
+			title = strings.TrimSuffix(title, ".md")
+		}
+		metaDataMap[nodeId] = MetaData{
+			Title:  title,
+			Author: meta.Author,
+			Date:   meta.Date,
+		}
+	}
+
+	// Populate graph with missing pages
+	for target, parents := range missingFiles {
+		targetId := strings.TrimSuffix(target, ".md")
+		// Clean up parents to node IDs
+		var parentIds []string
+		for _, p := range parents {
+			parentIds = append(parentIds, strings.TrimSuffix(p, ".md"))
+		}
+
+		graph.Nodes[targetId] = GraphNode{
+			Type:         "stub",
+			Render:       true,
+			Missing:      true,
+			ReferencedBy: parentIds,
+		}
+	}
+
+	// Sort edges for determinism
+	sort.Slice(edges, func(i, j int) bool {
+		if edges[i][0] == edges[j][0] {
+			return edges[i][1] < edges[j][1]
+		}
+		return edges[i][0] < edges[j][0]
+	})
+
+	// Populate backlinks
+
+	for _, edge := range edges {
+		src := edge[0]
+		dst := edge[1]
+
+		found := false
+		for _, b := range backlinks[dst] {
+			if b == src {
+				found = true
+				break
+			}
+		}
+		if !found {
+			backlinks[dst] = append(backlinks[dst], src)
+		}
+	}
+
+	// Sort backlink arrays for determinism
+	for k := range backlinks {
+		sort.Strings(backlinks[k])
+	}
+
+	// Write graph.json
+
+	writeJson(filepath.Join(outputDir, "graph.json"), graph)
+	// Write backlinks.json
+	writeJson(filepath.Join(outputDir, "backlinks.json"), backlinks)
+	// Write meta.json
+	writeJson(filepath.Join(outputDir, "meta.json"), metaDataMap)
+
 	return nil
+}
+
+func writeJson(path string, data interface{}) {
+	b, err := json.MarshalIndent(data, "", "  ")
+	if err == nil {
+		os.WriteFile(path, b, 0644)
+	}
 }
 
 type linkTransformer struct {
 	CurrentFile  string // The current file being processed (e.g., docs/index.md)
 	FileMap      map[string]*FileMeta
 	MissingFiles map[string][]string // map[targetFile]parents
+	Edges        *[][]string         // track all link edges
 }
 
 func (t *linkTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
@@ -265,6 +418,10 @@ func (t *linkTransformer) Transform(node *ast.Document, reader text.Reader, pc p
 
 			// Check file map
 			meta, exists := t.FileMap[targetRelPath]
+			sourceId := strings.TrimSuffix(t.CurrentFile, ".md")
+			targetId := strings.TrimSuffix(targetRelPath, ".md")
+			*t.Edges = append(*t.Edges, []string{sourceId, targetId})
+
 			if exists {
 				// if render is explicitly false, it will be a raw .md file, so we leave the link as .md
 				if meta.Render != nil && !*meta.Render {
