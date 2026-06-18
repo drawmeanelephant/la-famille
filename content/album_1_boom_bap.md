@@ -13,11 +13,10 @@ An explainer-style album embodying the technical process and journey of the proj
 5.  **"Goroutine Grind"** - A complex, syncopated beat representing concurrency, building sites in parallel.
 6.  **"The Build Step"** - High energy, the climax of the generation process, writing the final assets to the `public/` directory.
 7.  **"Local Paths Only"** - A defensive track laying down the law: `filepath.IsLocal` keeps the path traversal hackers locked out.
+8. **"Release 0.1.0-alpha.1"** - The 0.1.0-alpha.1 drop.
 
 ## Engineering Details
 
 *   **Vibe:** 90s East Coast boom bap, sampled drum breaks, vinyl crackle, heavy bass.
 *   **Vocals:** Direct, informative but rhythmic, heavily compressed.
 *   **Production:** Use classic sampler emulation (SP-1200 / MPC60 vibes). Focus on gritty textures.
-
-1. **"Release 0.1.0-alpha.1"** - The 0.1.0-alpha.1 drop.

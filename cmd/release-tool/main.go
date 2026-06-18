@@ -62,19 +62,30 @@ func appendToAlbum(path, title, version string) error {
 	lines := strings.Split(string(content), "\n")
 	var newLines []string
 	foundTrackListing := false
+	inserted := false
+	lastTrackLineIndex := -1
 	lastTrackNum := 0
 
-	for _, line := range lines {
-		newLines = append(newLines, line)
+	for i, line := range lines {
 		if strings.HasPrefix(line, "## Track Listing") {
 			foundTrackListing = true
 		}
-		if foundTrackListing && strings.Contains(line, ". **\"") {
-			fmt.Sscanf(line, "%d.", &lastTrackNum)
+		if foundTrackListing {
+			if strings.Contains(line, ". **\"") {
+				fmt.Sscanf(line, "%d.", &lastTrackNum)
+				lastTrackLineIndex = i
+			} else if lastTrackLineIndex != -1 && strings.HasPrefix(line, "##") && !inserted {
+				// We reached the next section, insert before it
+				newTrackLine := fmt.Sprintf("%d. **\"%s\"** - The %s drop.", lastTrackNum+1, title, version)
+				newLines = append(newLines, newTrackLine)
+				newLines = append(newLines, "") // Add a blank line
+				inserted = true
+			}
 		}
+		newLines = append(newLines, line)
 	}
 
-	if foundTrackListing {
+	if foundTrackListing && !inserted {
 		newTrackLine := fmt.Sprintf("%d. **\"%s\"** - The %s drop.", lastTrackNum+1, title, version)
 		newLines = append(newLines, newTrackLine)
 	}

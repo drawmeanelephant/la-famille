@@ -39,7 +39,7 @@ jobs:
           git config --global user.email "jules@onrender.com"
           git add VERSION content/soundtrack/ content/docs/ content/album_*.md
           git commit -m "chore: release updates for ${GITHUB_REF#refs/tags/}" || echo "No changes to commit"
-          git push origin HEAD:main
+          git push origin HEAD:master
 
       - name: Build Binaries
         run: |
