@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  run-tests:
+    name: Go Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Verify Code and Run Tests
+        run: |
+          go vet ./...
+          go test -v ./...
