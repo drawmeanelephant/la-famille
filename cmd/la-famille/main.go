@@ -108,6 +108,9 @@ func run(contentDir, templateFile, outputDir string) error {
 	// Track missing files that need stubs. map[missingPath][]parentFiles
 	missingFiles := make(map[string][]string)
 
+	// Reusable buffer for markdown conversion
+	var buf bytes.Buffer
+
 	// 3. Pass 2: Process files
 	for relPath, meta := range fileMap {
 		shouldRender := true
@@ -147,7 +150,7 @@ func run(contentDir, templateFile, outputDir string) error {
 			),
 		)
 
-		var buf bytes.Buffer
+		buf.Reset()
 		if err := md.Convert(meta.Rest, &buf); err != nil {
 			log.Printf("Error converting %s: %v", relPath, err)
 			continue
