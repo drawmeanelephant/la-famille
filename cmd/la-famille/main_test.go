@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
+	"github.com/tbuddy/la-famille/internal/config"
 )
 
 func TestCLIOverrides(t *testing.T) {
@@ -165,5 +165,43 @@ func TestRelPathFromTo(t *testing.T) {
 				t.Errorf("relPathFromTo() = %v, want %v", got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestProcessFile_PathTraversalPrevented(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock config
+	cfg := config.Config{
+		ContentDir: filepath.Join(tempDir, "content"),
+		OutputDir:  filepath.Join(tempDir, "public"),
+		Template:   filepath.Join(tempDir, "layout.html"),
+	}
+
+	os.MkdirAll(cfg.ContentDir, 0755)
+	os.MkdirAll(cfg.OutputDir, 0755)
+	os.WriteFile(cfg.Template, []byte("<html><body>{{.Content}}</body></html>"), 0644)
+
+	fileName := "index.md"
+	// Path traverses out of the content directory to a theoretical /tmp directory
+	content := []byte("# Home\n[Malicious](../../../../../tmp/hack.md)")
+	os.WriteFile(filepath.Join(cfg.ContentDir, fileName), content, 0644)
+
+	err := run(cfg)
+	if err != nil {
+		t.Errorf("run failed: %v", err)
+	}
+
+	// Make sure the index file is generated but doesn't rewrite to .html (stays as original destination because traversal was blocked)
+	indexFile := filepath.Join(cfg.OutputDir, "index.html")
+	indexContent, _ := os.ReadFile(indexFile)
+	if strings.Contains(string(indexContent), `href="../../../../../tmp/hack.html"`) {
+		t.Errorf("Malicious link was incorrectly rewritten to .html: %s", string(indexContent))
+	}
+
+	// Verify that the malicious file stub is not created anywhere
+	maliciousFile := filepath.Join(tempDir, "tmp", "hack.html")
+	if _, err := os.Stat(maliciousFile); !os.IsNotExist(err) {
+		t.Errorf("Malicious stub was incorrectly generated outside the output directory at: %s", maliciousFile)
 	}
 }

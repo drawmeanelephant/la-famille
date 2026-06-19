@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/spf13/cobra"
 	"fmt"
+	"html"
 	"html/template"
 	"io/fs"
 	"log"
@@ -315,9 +316,9 @@ func run(cfg config.Config) error {
 			// determine relative path from missing file to parent file for linking
 			relParent, err := relPathFromTo(missingRelPath, parentHtml)
 			if err == nil {
-				htmlContent.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", relParent, parent))
+				htmlContent.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", html.EscapeString(relParent), html.EscapeString(parent)))
 			} else {
-				htmlContent.WriteString(fmt.Sprintf("<li>%s</li>\n", parent))
+				htmlContent.WriteString(fmt.Sprintf("<li>%s</li>\n", html.EscapeString(parent)))
 			}
 		}
 		htmlContent.WriteString("</ul>\n")
