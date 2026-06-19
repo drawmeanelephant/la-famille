@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/spf13/cobra"
 	"fmt"
+	"github.com/spf13/cobra"
 	"html"
 	"html/template"
 	"io/fs"
@@ -613,3 +613,24 @@ func writeBundle(outPath string, patterns []string, formatFunc func(path string,
 		} else {
 			output = fmt.Sprintf("<file path=\"%s\">\n<content>\n%s\n</content>\n</file>\n\n", filepath.ToSlash(path), string(content))
 		}
+		if _, err := f.WriteString(output); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func pathMatch(pattern, path string) bool {
+	if strings.Contains(pattern, "**/") {
+		prefix := strings.Split(pattern, "**/")[0]
+		suffix := strings.Split(pattern, "**/")[1]
+		if prefix != "" && !strings.HasPrefix(path, prefix) {
+			return false
+		}
+		match, _ := filepath.Match(suffix, filepath.Base(path))
+		return match
+	}
+	match, _ := filepath.Match(pattern, path)
+	return match
+}
