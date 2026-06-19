@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
+	"github.com/spf13/cobra"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -52,21 +52,33 @@ type Graph struct {
 	Edges [][2]string     `json:"edges"`
 }
 
+var (
+	contentDir   string
+	outputDir    string
+	templateFile string
+)
+
 func main() {
-	contentDir := flag.String("content", "content", "Directory containing markdown files")
-	outputDir := flag.String("output", "public", "Directory for generated static site")
-	templateFile := flag.String("template", "templates/layout.html", "Path to HTML layout template")
-
-	flag.Parse()
-
-	args := flag.Args()
-	if len(args) > 0 && args[0] == "build" {
-		if len(args) > 1 {
-			*contentDir = args[1]
-		}
+	var rootCmd = &cobra.Command{
+		Use:   "la-famille",
+		Short: "La Famille is a static site generator",
 	}
 
-	if err := run(*contentDir, *templateFile, *outputDir); err != nil {
+	var buildCmd = &cobra.Command{
+		Use:   "build",
+		Short: "Build the static site",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(contentDir, templateFile, outputDir)
+		},
+	}
+
+	buildCmd.Flags().StringVarP(&contentDir, "contentDir", "c", "content", "Directory containing markdown files")
+	buildCmd.Flags().StringVarP(&outputDir, "out", "o", "public", "Directory for generated static site")
+	buildCmd.Flags().StringVarP(&templateFile, "template", "t", "templates/layout.html", "Path to HTML layout template")
+
+	rootCmd.AddCommand(buildCmd)
+
+	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }

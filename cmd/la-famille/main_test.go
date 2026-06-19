@@ -39,7 +39,13 @@ func TestMainXSS(t *testing.T) {
 	os.Chdir(tempDir)
 	defer os.Chdir(originalWd)
 
-	main()
+	// Since we migrated to cobra, we test run() directly or set args
+	// We'll just set up args and call main()
+	// Since we migrated to cobra, we test run() directly. main() calls os.Exit on error so it's safer to call run()
+	err = run("content", "templates/layout.html", "public")
+	if err != nil {
+		t.Fatalf("run failed: %v", err)
+	}
 
 	outputFile := filepath.Join(outputDir, "test.html")
 	outputContent, err := os.ReadFile(outputFile)
@@ -128,6 +134,7 @@ func TestMain_ErrorPath(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Chdir(tempDir)
 		os.Mkdir("content", 0755)
+		os.Args = []string{"la-famille", "build", "--contentDir", "content", "--out", "public", "--template", "non_existent.html"}
 		main()
 		return
 	}
