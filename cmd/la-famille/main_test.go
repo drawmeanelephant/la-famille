@@ -2,12 +2,12 @@ package main
 
 import (
 	"bytes"
+	"github.com/tbuddy/la-famille/internal/config"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"github.com/tbuddy/la-famille/internal/config"
 )
 
 func TestCLIOverrides(t *testing.T) {
