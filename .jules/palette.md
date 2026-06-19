@@ -1,0 +1,3 @@
+## 2026-06-19 - Add missing focus-visible states to template links
+**Learning:** Keyboard accessibility is compromised when custom `hover` states (like `hover:underline` or `hover:bg-primary/20`) are added without corresponding `focus-visible` states. Default browser focus rings might not provide sufficient contrast or might conflict with custom hover styling.
+**Action:** Always pair interactive `hover` state utilities with matching `focus-visible` equivalents (e.g., `focus-visible:outline-none focus-visible:bg-primary/20`) to ensure custom styling is visible and functional for keyboard users.
