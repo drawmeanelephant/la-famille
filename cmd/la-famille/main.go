@@ -489,6 +489,7 @@ func runRAGExport() error {
 			"GEMINI.md",
 			"playwright_test.js",
 		},
+		[]string{"internal/config"},
 		nil,
 	); err != nil {
 		return fmt.Errorf("failed to write system bundle: %w", err)
@@ -499,9 +500,10 @@ func runRAGExport() error {
 	if err := writeBundle(
 		filepath.Join(outDir, "rag-config.md"),
 		[]string{
-			"templates/**/*.html",
+			"internal/config/**/*.go",
 			".jules/**/*.md",
 		},
+		nil,
 		nil,
 	); err != nil {
 		return fmt.Errorf("failed to write config bundle: %w", err)
@@ -535,6 +537,27 @@ func runRAGExport() error {
 	})
 	cfgFile.WriteString("</content>\n</file>\n\n")
 
+	cfgFile.WriteString("<file path=\"templates/\">\n<content>\n")
+	filepath.WalkDir("templates", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil // ignore missing templates dir
+		}
+		// if it's a directory, just print the path with a trailing slash
+		if d.IsDir() {
+			cfgFile.WriteString(filepath.ToSlash(path) + "/\n")
+		} else {
+			// for files, print size and name
+			info, err := d.Info()
+			size := int64(0)
+			if err == nil {
+				size = info.Size()
+			}
+			cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(path), size))
+		}
+		return nil
+	})
+	cfgFile.WriteString("</content>\n</file>\n\n")
+
 	fmt.Println("Created rag-config.md")
 
 	// 3. Content Bundle
@@ -543,6 +566,7 @@ func runRAGExport() error {
 		[]string{
 			"content/**/*.md",
 		},
+		nil,
 		nil, // Default formatting is verbatim with XML tags, which preserves the YAML frontmatter
 	); err != nil {
 		return fmt.Errorf("failed to write content bundle: %w", err)
@@ -552,7 +576,7 @@ func runRAGExport() error {
 	return nil
 }
 
-func writeBundle(outPath string, patterns []string, formatFunc func(path string, content []byte) string) error {
+func writeBundle(outPath string, patterns []string, excludes []string, formatFunc func(path string, content []byte) string) error {
 	f, err := os.Create(outPath)
 	if err != nil {
 		return err
@@ -579,6 +603,17 @@ func writeBundle(outPath string, patterns []string, formatFunc func(path string,
 
 			if (match && !strings.Contains(pattern, "/")) || pathMatch(pattern, path) {
 				if strings.Contains(path, "rag-archive") {
+					return nil
+				}
+				// Check excludes
+				isExcluded := false
+				for _, exclude := range excludes {
+					if strings.HasPrefix(filepath.ToSlash(path), filepath.ToSlash(exclude)) {
+						isExcluded = true
+						break
+					}
+				}
+				if isExcluded {
 					return nil
 				}
 				found := false
