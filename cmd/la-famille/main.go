@@ -21,9 +21,12 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
+
+	"github.com/tbuddy/la-famille/internal/config"
 )
 
 type Page struct {
+	Site    config.Config
 	Title   string
 	Author  string
 	Date    string
@@ -59,6 +62,12 @@ var (
 )
 
 func main() {
+	// Load config first to set defaults for flags
+	cfg, err := config.Load("config.yaml")
+	if err != nil {
+		log.Printf("Warning: failed to load config.yaml: %v", err)
+	}
+
 	var rootCmd = &cobra.Command{
 		Use:   "la-famille",
 		Short: "La Famille is a static site generator",
@@ -68,31 +77,48 @@ func main() {
 		Use:   "build",
 		Short: "Build the static site",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return run(contentDir, templateFile, outputDir)
+			// Update config from flags
+			cfg.ContentDir = contentDir
+			cfg.OutputDir = outputDir
+			cfg.Template = templateFile
+			return run(cfg)
 		},
 	}
 
-	buildCmd.Flags().StringVarP(&contentDir, "contentDir", "c", "content", "Directory containing markdown files")
-	buildCmd.Flags().StringVarP(&outputDir, "out", "o", "public", "Directory for generated static site")
-	buildCmd.Flags().StringVarP(&templateFile, "template", "t", "templates/layout.html", "Path to HTML layout template")
+	buildCmd.Flags().StringVarP(&contentDir, "contentDir", "c", cfg.ContentDir, "Directory containing markdown files")
+	buildCmd.Flags().StringVarP(&outputDir, "out", "o", cfg.OutputDir, "Directory for generated static site")
+	buildCmd.Flags().StringVarP(&templateFile, "template", "t", cfg.Template, "Path to HTML layout template")
+
+	var initCmd = &cobra.Command{
+		Use:   "init",
+		Short: "Initialize default configuration",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := config.WriteDefault("config.yaml"); err != nil {
+				return fmt.Errorf("failed to write config.yaml: %w", err)
+			}
+			fmt.Println("Created default config.yaml")
+			return nil
+		},
+	}
 
 	rootCmd.AddCommand(buildCmd)
+	rootCmd.AddCommand(initCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(contentDir, templateFile, outputDir string) error {
+func run(cfg config.Config) error {
 	// 1. Parse templates
-	tmpl, err := template.ParseFiles(templateFile)
+	tmpl, err := template.ParseFiles(cfg.Template)
 	if err != nil {
 		return fmt.Errorf("failed to parse template file: %w", err)
 	}
 
 	// 2. Pass 1: Walk content dir and gather metadata
 	fileMap := make(map[string]*FileMeta)
-	err = filepath.WalkDir(contentDir, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(cfg.ContentDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -103,7 +129,7 @@ func run(contentDir, templateFile, outputDir string) error {
 			return nil
 		}
 
-		relPath, err := filepath.Rel(contentDir, path)
+		relPath, err := filepath.Rel(cfg.ContentDir, path)
 		if err != nil {
 			return err
 		}
@@ -191,7 +217,7 @@ func run(contentDir, templateFile, outputDir string) error {
 		}
 		metaData[id] = m
 
-		outPath := filepath.Join(outputDir, filepath.FromSlash(relPath))
+		outPath := filepath.Join(cfg.OutputDir, filepath.FromSlash(relPath))
 		if shouldRender {
 			outPath = strings.TrimSuffix(outPath, filepath.Ext(outPath)) + ".html"
 		}
@@ -235,6 +261,7 @@ func run(contentDir, templateFile, outputDir string) error {
 		sanitizedHTML := p.SanitizeBytes(buf.Bytes())
 
 		page := Page{
+			Site:    cfg,
 			Title:   title,
 			Author:  meta.Author,
 			Date:    meta.Date,
@@ -271,7 +298,7 @@ func run(contentDir, templateFile, outputDir string) error {
 			ReferencedBy: parents,
 		}
 
-		outPath := filepath.Join(outputDir, filepath.FromSlash(missingRelPath))
+		outPath := filepath.Join(cfg.OutputDir, filepath.FromSlash(missingRelPath))
 		// ensure the missing relative path has .html
 		outPath = strings.TrimSuffix(outPath, ".md") + ".html"
 
@@ -296,6 +323,7 @@ func run(contentDir, templateFile, outputDir string) error {
 		htmlContent.WriteString("</ul>\n")
 
 		page := Page{
+			Site:    cfg,
 			Title:   "Missing Page",
 			Content: template.HTML(htmlContent.String()),
 		}
@@ -316,13 +344,13 @@ func run(contentDir, templateFile, outputDir string) error {
 	for _, parents := range backlinks {
 		sort.Strings(parents)
 	}
-	if err := writeJSON(filepath.Join(outputDir, "graph.json"), graph); err != nil {
+	if err := writeJSON(filepath.Join(cfg.OutputDir, "graph.json"), graph); err != nil {
 		return err
 	}
-	if err := writeJSON(filepath.Join(outputDir, "backlinks.json"), backlinks); err != nil {
+	if err := writeJSON(filepath.Join(cfg.OutputDir, "backlinks.json"), backlinks); err != nil {
 		return err
 	}
-	if err := writeJSON(filepath.Join(outputDir, "meta.json"), metaData); err != nil {
+	if err := writeJSON(filepath.Join(cfg.OutputDir, "meta.json"), metaData); err != nil {
 		return err
 	}
 
