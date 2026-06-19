@@ -21,7 +21,12 @@ go test ./...
 ```
 
 ### Run
-To run the static site generator:
+To run the static site generator using the new CLI:
 ```bash
-go run ./cmd/la-famille/main.go
+go run ./cmd/la-famille/main.go build
+```
+
+You can specify custom directories using flags:
+```bash
+go run ./cmd/la-famille/main.go build --contentDir ./docs --out ./dist --template ./templates/custom.html
 ```

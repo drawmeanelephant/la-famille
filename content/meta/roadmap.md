@@ -7,7 +7,7 @@ render: true
 
 # Project Roadmap
 
-This document outlines the proposed phases to evolve La Famille from a single-file script into a robust, extensible Go-based Static Site Generator (SSG). 
+This document outlines the proposed phases to evolve La Famille from a single-file script into a robust, extensible Go-based Static Site Generator (SSG).
 
 La Famille currently possesses strong fundamentals: Markdown parsing via Goldmark, frontmatter extraction, link transformation, and graph/backlink generation. The next steps focus on refactoring, improving the developer/authoring experience, and modernizing the output.
 

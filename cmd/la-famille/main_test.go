@@ -7,12 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"github.com/tbuddy/la-famille/internal/config"
 )
 
-// Helper to run the compiled binary to test CLI flags
 func TestCLIOverrides(t *testing.T) {
-	// We'll test this implicitly by making sure the generated html files end up in a custom output dir
-
 	// Create a temporary directory for the test
 	tmpDir := t.TempDir()
 
@@ -39,6 +37,7 @@ theme: "dark"
 title: Test Page
 ---
 # Hello World
+<script>alert('xss')</script>
 `)
 	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), mdContent, 0644); err != nil {
 		t.Fatalf("Failed to write index.md: %v", err)
@@ -67,10 +66,10 @@ title: Test Page
 		t.Fatalf("failed to build la-famille: %v", err)
 	}
 
-	cmdRun := exec.Command(exePath,
-		"-content", contentDir,
-		"-output", filepath.Join(tmpDir, "cli_output"),
-		"-template", filepath.Join(templateDir, "layout.html"))
+	cmdRun := exec.Command(exePath, "build",
+		"--contentDir", contentDir,
+		"--out", filepath.Join(tmpDir, "cli_output"),
+		"--template", filepath.Join(templateDir, "layout.html"))
 
 	// Run from tmpDir so it picks up config.yaml
 	cmdRun.Dir = tmpDir
@@ -100,6 +99,9 @@ title: Test Page
 	if !strings.Contains(htmlStr, `Test Page - Test Site From Config`) {
 		t.Errorf("Expected SiteName from config to be present, but it wasn't")
 	}
+	if strings.Contains(htmlStr, "<script>") {
+		t.Errorf("XSS payload was not sanitized: %s", htmlStr)
+	}
 }
 
 func TestInitCommand(t *testing.T) {
@@ -121,5 +123,85 @@ func TestInitCommand(t *testing.T) {
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		t.Fatalf("la-famille init did not create config.yaml")
+	}
+}
+
+func TestRelPathFromTo(t *testing.T) {
+	tests := []struct {
+		name     string
+		base     string
+		target   string
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "same directory",
+			base:     "a.md",
+			target:   "b.html",
+			expected: "b.html",
+		},
+		{
+			name:     "target in subdirectory",
+			base:     "a.md",
+			target:   "dir/b.html",
+			expected: "dir/b.html",
+		},
+		{
+			name:     "base in subdirectory",
+			base:     "dir/a.md",
+			target:   "b.html",
+			expected: "../b.html",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := relPathFromTo(tt.base, tt.target)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("relPathFromTo() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.expected {
+				t.Errorf("relPathFromTo() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestProcessFile_PathTraversalPrevented(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock config
+	cfg := config.Config{
+		ContentDir: filepath.Join(tempDir, "content"),
+		OutputDir:  filepath.Join(tempDir, "public"),
+		Template:   filepath.Join(tempDir, "layout.html"),
+	}
+
+	os.MkdirAll(cfg.ContentDir, 0755)
+	os.MkdirAll(cfg.OutputDir, 0755)
+	os.WriteFile(cfg.Template, []byte("<html><body>{{.Content}}</body></html>"), 0644)
+
+	fileName := "index.md"
+	// Path traverses out of the content directory to a theoretical /tmp directory
+	content := []byte("# Home\n[Malicious](../../../../../tmp/hack.md)")
+	os.WriteFile(filepath.Join(cfg.ContentDir, fileName), content, 0644)
+
+	err := run(cfg)
+	if err != nil {
+		t.Errorf("run failed: %v", err)
+	}
+
+	// Make sure the index file is generated but doesn't rewrite to .html (stays as original destination because traversal was blocked)
+	indexFile := filepath.Join(cfg.OutputDir, "index.html")
+	indexContent, _ := os.ReadFile(indexFile)
+	if strings.Contains(string(indexContent), `href="../../../../../tmp/hack.html"`) {
+		t.Errorf("Malicious link was incorrectly rewritten to .html: %s", string(indexContent))
+	}
+
+	// Verify that the malicious file stub is not created anywhere
+	maliciousFile := filepath.Join(tempDir, "tmp", "hack.html")
+	if _, err := os.Stat(maliciousFile); !os.IsNotExist(err) {
+		t.Errorf("Malicious stub was incorrectly generated outside the output directory at: %s", maliciousFile)
 	}
 }

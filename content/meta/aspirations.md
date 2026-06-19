@@ -7,17 +7,17 @@ render: true
 
 # Aspirational To-Do Recommendations for La Famille
 
-This document contains recommendations and aspirational goals for the future development of the **La Famille** project. 
+This document contains recommendations and aspirational goals for the future development of the **La Famille** project.
 
 ## 🛠️ Technical & Architecture Enhancements
 
 ### 1. Frontmatter Support
-Currently, the generator assigns the Markdown filename as the page title. 
+Currently, the generator assigns the Markdown filename as the page title.
 - **Action:** Integrate a YAML frontmatter parser to extract metadata like `Title`, `Date`, `Author`, and `Draft` status from the top of the `.md` files before rendering with Goldmark. *(Note: partially implemented)*
 
 ### 2. Multi-Template System & Partials
 The generator currently only relies on a single `layout.html`.
-- **Action:** Expand the templating engine to support partials (e.g., headers, footers, navbars) and specific page templates (e.g., `post.html` vs. `index.html`). 
+- **Action:** Expand the templating engine to support partials (e.g., headers, footers, navbars) and specific page templates (e.g., `post.html` vs. `index.html`).
 - **Action:** Implement a static asset pipeline to seamlessly copy CSS, JavaScript, and image files from an `assets/` folder to the `public/` directory.
 
 ### 3. CLI Configuration & Flags

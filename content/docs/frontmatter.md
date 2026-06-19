@@ -6,7 +6,7 @@ date: "2026-06-18"
 
 # Using YAML Frontmatter
 
-La Famille supports optional YAML frontmatter at the top of your `.md` files. 
+La Famille supports optional YAML frontmatter at the top of your `.md` files.
 
 ## Supported Fields
 
@@ -15,7 +15,7 @@ Here are the currently supported fields:
 * `title`: The title of the page. If omitted, it falls back to the filename.
 * `author`: The author of the post.
 * `date`: A date string.
-* `render`: A boolean (`true` or `false`). 
+* `render`: A boolean (`true` or `false`).
 
 ### The `render` Flag
 

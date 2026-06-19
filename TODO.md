@@ -13,9 +13,9 @@ The generator currently only relies on a single `layout.html`.
 - **Action:** Expand the templating engine to support partials (e.g., headers, footers, navbars) and specific page templates (e.g., `post.html` vs. `index.html`). 
 - **Action:** Implement a static asset pipeline to seamlessly copy CSS, JavaScript, and image files from an `assets/` folder to the `public/` directory.
 
-### 3. CLI Configuration & Flags
-The input/output paths are currently hardcoded in `cmd/la-famille/main.go`.
-- **Action:** Implement command-line flags (via the standard `flag` package or a library like `cobra`/`viper`) so users can execute `go run ./cmd/la-famille/main.go --contentDir ./docs --out ./dist`.
+### ~3. CLI Configuration & Flags~
+~The input/output paths are currently hardcoded in `cmd/la-famille/main.go`.~
+~- **Action:** Implement command-line flags (via the standard `flag` package or a library like `cobra`/`viper`) so users can execute `go run ./cmd/la-famille/main.go --contentDir ./docs --out ./dist`.~ (Completed: Migrated to spf13/cobra with `build` subcommand)
 
 ### 4. Dev Server & Live Reload
 To improve the authoring experience:

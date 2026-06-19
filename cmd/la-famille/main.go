@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
+	"github.com/spf13/cobra"
 	"fmt"
 	"html"
 	"html/template"
@@ -56,42 +56,56 @@ type Graph struct {
 	Edges [][2]string     `json:"edges"`
 }
 
+var (
+	contentDir   string
+	outputDir    string
+	templateFile string
+)
+
 func main() {
-	// Load config first
+	// Load config first to set defaults for flags
 	cfg, err := config.Load("config.yaml")
 	if err != nil {
 		log.Printf("Warning: failed to load config.yaml: %v", err)
 	}
 
-	contentDir := flag.String("content", cfg.ContentDir, "Directory containing markdown files")
-	outputDir := flag.String("output", cfg.OutputDir, "Directory for generated static site")
-	templateFile := flag.String("template", cfg.Template, "Path to HTML layout template")
-
-	flag.Parse()
-
-	args := flag.Args()
-
-	// Check for init command
-	if len(args) > 0 && args[0] == "init" {
-		if err := config.WriteDefault("config.yaml"); err != nil {
-			log.Fatalf("Failed to write config.yaml: %v", err)
-		}
-		fmt.Println("Created default config.yaml")
-		return
+	var rootCmd = &cobra.Command{
+		Use:   "la-famille",
+		Short: "La Famille is a static site generator",
 	}
 
-	if len(args) > 0 && args[0] == "build" {
-		if len(args) > 1 {
-			*contentDir = args[1]
-		}
+	var buildCmd = &cobra.Command{
+		Use:   "build",
+		Short: "Build the static site",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Update config from flags
+			cfg.ContentDir = contentDir
+			cfg.OutputDir = outputDir
+			cfg.Template = templateFile
+			return run(cfg)
+		},
 	}
 
-	// Update config from flags
-	cfg.ContentDir = *contentDir
-	cfg.OutputDir = *outputDir
-	cfg.Template = *templateFile
+	buildCmd.Flags().StringVarP(&contentDir, "contentDir", "c", cfg.ContentDir, "Directory containing markdown files")
+	buildCmd.Flags().StringVarP(&outputDir, "out", "o", cfg.OutputDir, "Directory for generated static site")
+	buildCmd.Flags().StringVarP(&templateFile, "template", "t", cfg.Template, "Path to HTML layout template")
 
-	if err := run(cfg); err != nil {
+	var initCmd = &cobra.Command{
+		Use:   "init",
+		Short: "Initialize default configuration",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := config.WriteDefault("config.yaml"); err != nil {
+				return fmt.Errorf("failed to write config.yaml: %w", err)
+			}
+			fmt.Println("Created default config.yaml")
+			return nil
+		},
+	}
+
+	rootCmd.AddCommand(buildCmd)
+	rootCmd.AddCommand(initCmd)
+
+	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
