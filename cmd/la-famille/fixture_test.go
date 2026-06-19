@@ -11,7 +11,7 @@ import (
 )
 
 func TestFixtures(t *testing.T) {
-	fixtureDir := filepath.Join("..", "..", "testdata", "sites")
+	fixtureDir := filepath.Join("..", "..", "assets", "testdata", "sites")
 	fixtures, err := os.ReadDir(fixtureDir)
 	if err != nil {
 		t.Fatalf("failed to read fixtures directory: %v", err)
