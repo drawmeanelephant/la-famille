@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="wireframe">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} | La Famille</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap');
+
+        :root {
+            --font-brutalist: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-brutalist);
+        }
+
+        .brutalist-border {
+            border: 4px solid black;
+            box-shadow: 8px 8px 0px 0px black;
+        }
+
+        .brutalist-border-sm {
+            border: 2px solid black;
+            box-shadow: 4px 4px 0px 0px black;
+        }
+
+        .brutalist-btn {
+            border-radius: 0 !important;
+            border-width: 4px !important;
+            border-color: black !important;
+            box-shadow: 4px 4px 0px 0px black !important;
+            transition: all 0.15s !important;
+        }
+
+        .brutalist-btn:hover {
+            box-shadow: none !important;
+            transform: translate(2px, 2px) !important;
+        }
+
+        .marquee {
+            overflow: hidden;
+            white-space: nowrap;
+            background: black;
+            color: white;
+            padding: 0.5rem 0;
+        }
+
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-base-100 text-base-content antialiased">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-yellow-400 focus:text-black border-4 border-black">SKIP TO CONTENT</a>
+
+    <!-- Top Bar -->
+    <div class="marquee border-b-4 border-black">
+        <div class="marquee-content font-bold uppercase tracking-widest">
+            LA FAMILLE STATIC SYSTEM // BUILT BY JULES // GO + TAILWIND + DAISYUI // NO FRILLS // ALL POWER //
+            LA FAMILLE STATIC SYSTEM // BUILT BY JULES // GO + TAILWIND + DAISYUI // NO FRILLS // ALL POWER //
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 border-4 border-black p-8 bg-white brutalist-border">
+            <div class="flex items-center gap-6">
+                <div class="border-4 border-black p-2 bg-yellow-400">
+                    <img src="/assets/img/favorites/primary_crest.jpg" alt="La Famille" class="h-20 w-20 grayscale contrast-125" />
+                </div>
+                <div>
+                    <h1 class="text-6xl font-black uppercase tracking-tighter leading-none">LA FAMILLE</h1>
+                    <p class="text-xl font-bold uppercase mt-2">PRESTIGE STATIC GENERATOR</p>
+                </div>
+            </div>
+            <nav aria-label="Main Navigation">
+                <ul class="flex flex-wrap gap-4">
+                    <li><a href="/" class="brutalist-btn btn-ghost">HOME</a></li>
+                    <li><a href="/docs/index.html" class="brutalist-btn btn-primary">ARCHIVES</a></li>
+                    <li><a href="/soundtrack/index.html" class="brutalist-btn btn-secondary">AUDIO</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content" class="container mx-auto px-4 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+
+            <!-- Sidebar -->
+            <aside class="lg:col-span-3 space-y-8">
+                <div class="border-4 border-black p-6 bg-base-200 brutalist-border-sm">
+                    <h3 class="text-2xl font-black uppercase mb-4 border-b-4 border-black pb-2">SYSTEM INFO</h3>
+                    <div class="space-y-4 font-bold uppercase text-sm">
+                        <div class="flex justify-between">
+                            <span>OPERATOR:</span>
+                            <span class="text-primary">JULES</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>STATUS:</span>
+                            <span class="text-success">ACTIVE</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>VERSION:</span>
+                            <span>v1.0.0-RAW</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-4 border-black p-6 bg-yellow-400 brutalist-border-sm">
+                    <h3 class="text-2xl font-black uppercase mb-4 border-b-4 border-black pb-2">QUICK NAV</h3>
+                    <ul class="space-y-2 font-black uppercase">
+                        <li><a href="#" class="hover:underline">-> SYSTEM LOGS</a></li>
+                        <li><a href="#" class="hover:underline">-> RAW FEED</a></li>
+                        <li><a href="#" class="hover:underline">-> CORE ASSETS</a></li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <article class="lg:col-span-9 border-4 border-black p-8 md:p-12 bg-white brutalist-border">
+                <header class="mb-12 border-b-8 border-black pb-8">
+                    <h2 class="text-5xl md:text-8xl font-black uppercase tracking-tighter mb-6 break-words">{{.Title}}</h2>
+
+                    {{if or .Author .Date}}
+                    <div class="flex flex-wrap gap-4 font-black uppercase">
+                        {{if .Author}}
+                        <div class="border-4 border-black px-4 py-2 bg-base-300">
+                            BY: {{.Author}}
+                        </div>
+                        {{end}}
+                        {{if .Date}}
+                        <div class="border-4 border-black px-4 py-2 bg-primary text-primary-content">
+                            DATE: {{.Date}}
+                        </div>
+                        {{end}}
+                    </div>
+                    {{end}}
+                </header>
+
+                <div class="prose lg:prose-xl max-w-none prose-headings:uppercase prose-headings:font-black prose-headings:tracking-tighter prose-a:font-black prose-a:underline prose-img:border-4 prose-img:border-black prose-img:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                    {{.Content}}
+                </div>
+            </article>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-24 border-t-8 border-black bg-base-200">
+        <div class="container mx-auto px-4 py-16">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+                <div class="lg:col-span-2">
+                    <h3 class="text-4xl font-black uppercase mb-6">LA FAMILLE</h3>
+                    <p class="text-xl font-bold uppercase max-w-md leading-tight">
+                        BRUTALIST ARCHITECTURE FOR THE MODERN WEB. BUILT WITH UNCOMPROMISING PRECISION BY JULES.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="font-black uppercase mb-4 text-lg">LEGAL</h4>
+                    <ul class="font-bold uppercase space-y-2 text-sm">
+                        <li><a href="#" class="hover:underline">TERMS OF SERVICE</a></li>
+                        <li><a href="#" class="hover:underline">PRIVACY POLICY</a></li>
+                        <li><a href="#" class="hover:underline">SYSTEM ACCESS</a></li>
+                    </ul>
+                </div>
+
+                <div class="flex flex-col items-center md:items-end justify-center">
+                    <div class="border-4 border-black p-4 bg-white brutalist-border-sm inline-block">
+                        <img src="/assets/img/favorites/logo_badge.jpg" alt="Official Badge" class="h-24 w-24 grayscale" />
+                    </div>
+                    <p class="mt-4 font-black text-xs uppercase text-center md:text-right">
+                        BUILT IN GO AND JULES AND DAISYUI BY GOOGLE
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-16 pt-8 border-t-4 border-black flex flex-col md:flex-row justify-between items-center gap-4 font-black uppercase text-sm">
+                <p>&copy; 2026 LA FAMILLE // ALL RIGHTS RESERVED</p>
+                <p>STATUS: RAW_AND_FUNCTIONAL</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
