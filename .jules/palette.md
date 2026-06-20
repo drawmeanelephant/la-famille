@@ -9,3 +9,7 @@
 ## 2026-06-19 - Add missing focus-visible states to template links
 **Learning:** Keyboard accessibility is compromised when custom `hover` states (like `hover:underline` or `hover:bg-primary/20`) are added without corresponding `focus-visible` states. Default browser focus rings might not provide sufficient contrast or might conflict with custom hover styling.
 **Action:** Always pair interactive `hover` state utilities with matching `focus-visible` equivalents (e.g., `focus-visible:outline-none focus-visible:bg-primary/20`) to ensure custom styling is visible and functional for keyboard users.
+
+## 2026-06-20 - Focus States for Tailwind Typography Prose
+**Learning:** In the default `layout.html`, links inside `<article class="prose">` lacked distinct, high-contrast focus rings when navigating via keyboard, making it difficult for keyboard users to track where they are within the document content.
+**Action:** Used the `prose-a:` and `focus-visible:prose-a:` utility prefixes (e.g. `prose-a:text-primary hover:prose-a:opacity-80 focus-visible:prose-a:outline focus-visible:prose-a:outline-2 focus-visible:prose-a:outline-offset-2 focus-visible:prose-a:outline-primary`) to explicitly style links inside the content area for better visibility and contrast.
