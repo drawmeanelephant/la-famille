@@ -1,3 +1,7 @@
+---
+title: "Album 3: Les Bijoux de Famille"
+author: "Jules"
+---
 # Album 3: Les Bijoux de Famille
 
 **Style:** French Chanson / Comedic Jazz

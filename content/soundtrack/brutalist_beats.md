@@ -1,3 +1,7 @@
+---
+title: "Brutalist Beats"
+author: "Jules"
+---
 # Brutalist Beats
 
 **Task:** Create a Brutalist UI template for La Famille.

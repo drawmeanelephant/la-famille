@@ -1,3 +1,7 @@
+---
+title: "Template Created"
+author: "Jules"
+---
 # Template Created
 
 The test for `content/jules/create-template.md` has been successfully executed. I created `templates/layout-sidebar.html` using the `dracula` theme, generated the site content in `public/`, and visually verified it with Playwright by running the server and saving the artifacts in `test-results/`. The test video and screenshot confirm that the layout and the documentation index page load successfully and look correct.
