@@ -205,3 +205,28 @@ func TestProcessFile_PathTraversalPrevented(t *testing.T) {
 		t.Errorf("Malicious stub was incorrectly generated outside the output directory at: %s", maliciousFile)
 	}
 }
+
+
+func TestRun_WalkError(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock config
+	cfg := config.Config{
+		ContentDir: filepath.Join(tempDir, "does-not-exist"),
+		OutputDir:  filepath.Join(tempDir, "public"),
+		Template:   filepath.Join(tempDir, "layout.html"),
+	}
+
+	// Create valid output dir and template file so it only fails on content dir
+	os.MkdirAll(cfg.OutputDir, 0755)
+	os.WriteFile(cfg.Template, []byte("<html><body>{{.Content}}</body></html>"), 0644)
+
+	err := run(cfg)
+	if err == nil {
+		t.Fatalf("expected an error when walking a non-existent directory, but got nil")
+	}
+
+	if !strings.Contains(err.Error(), "failed to walk content directory") {
+		t.Errorf("expected error message to contain 'failed to walk content directory', got: %v", err)
+	}
+}
