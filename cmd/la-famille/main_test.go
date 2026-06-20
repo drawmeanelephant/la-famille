@@ -240,3 +240,33 @@ func TestRun_WalkError(t *testing.T) {
 		t.Errorf("expected error message to contain 'failed to walk content directory', got: %v", err)
 	}
 }
+
+func TestStub_XSSPrevented(t *testing.T) {
+	tempDir := t.TempDir()
+
+	cfg := config.Config{
+		ContentDir: filepath.Join(tempDir, "content"),
+		OutputDir:  filepath.Join(tempDir, "public"),
+		Template:   filepath.Join(tempDir, "layout.html"),
+	}
+
+	os.MkdirAll(cfg.ContentDir, 0755)
+	os.MkdirAll(cfg.OutputDir, 0755)
+	os.WriteFile(cfg.Template, []byte("<html><body>{{.Content}}</body></html>"), 0644)
+
+	fileName := "index.md"
+	content := []byte("[Malicious](javascript:alert(1).md)")
+	os.WriteFile(filepath.Join(cfg.ContentDir, fileName), content, 0644)
+
+	err := run(cfg)
+	if err != nil {
+		t.Errorf("run failed: %v", err)
+	}
+
+	// Make sure the missing file stub does not contain the malicious link
+	stubFile := filepath.Join(cfg.OutputDir, "javascript:alert(1).html")
+	stubContent, _ := os.ReadFile(stubFile)
+	if strings.Contains(string(stubContent), `href="javascript:alert(1).html"`) {
+		t.Errorf("Malicious link was not sanitized in stub: %s", string(stubContent))
+	}
+}

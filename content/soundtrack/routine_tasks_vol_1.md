@@ -52,5 +52,15 @@ A Nerd Core / Boom Bap rap album documenting the mechanical loops and daily upke
 > *Everything packaged, nothing left inside.*
 
 ## Album Details
-* **Volume:** 1 (Track count: 4)
+* **Volume:** 1 (Track count: 5)
 * **Rule:** If the track count exceeds 50 songs, a new volume will be created.
+
+### 5. "The Escape Plan" (Security Enhancement)
+**Vibe:** Gritty, boom-bap beat with a tense string sample.
+**Bars:**
+> *Scanning the codebase, looking for the crack*
+> *XSS trying to sneak in, plotting an attack*
+> *Escape string is cool, but it don't check the scheme*
+> *`javascript:alert` waking up from the dream*
+> *Bring in `bluemonday`, sanitize the whole flow*
+> *Lock down the stubs, now the hackers gotta go.*
