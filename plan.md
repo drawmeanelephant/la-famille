@@ -27,3 +27,7 @@ Design and implement a new DaisyUI template layout (e.g., `templates/devlog.html
 ### 4. Build and Test
 - Write any necessary unit tests for the new frontmatter parsing logic.
 - Run `go test ./...` and `go vet ./...` locally before pushing to verify the implementation.
+
+### 5. Robust Bot Author Suffix Matching
+Update the PR sync author matching logic (specifically in `internal/github/github.go`'s `ListOpenPRs` method) to perform case-insensitive suffix-agnostic matching. For example, the configured bot author `"google-labs-jules"` should successfully match both `"google-labs-jules"` and `"google-labs-jules[bot]"`. Add unit tests to verify this matching logic.
+
