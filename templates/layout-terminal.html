@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="synthwave">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - Terminal Console</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style>
+        /* Terminal specific styles */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #1a1a2e; /* Synthwave dark background */
+        }
+        .terminal-window {
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+            background-color: #2d2b55; /* A slightly lighter purple/blue for the terminal background */
+            border: 1px solid #ff7edb; /* Neon pink border */
+            overflow: hidden; /* For rounded corners to work */
+        }
+        .terminal-header {
+            background-color: #1e1e3f; /* Darker header */
+            border-bottom: 1px solid #ff7edb;
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+        }
+        .terminal-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .close-btn { background-color: #ff5f56; }
+        .min-btn { background-color: #ffbd2e; }
+        .max-btn { background-color: #27c93f; }
+        .terminal-title {
+            color: #36f9f6; /* Neon cyan */
+            font-size: 0.875rem;
+            margin-left: 1rem;
+            font-weight: bold;
+        }
+
+        .mascot-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #36f9f6; /* Neon cyan border */
+            object-fit: cover;
+        }
+
+        .blink {
+            animation: blinker 1s linear infinite;
+        }
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+
+        /* Override prose link states to ensure order and synthwave vibe */
+        .prose a {
+            color: #ff7edb !important; /* Neon pink for links */
+            text-decoration: underline;
+        }
+        .prose a:focus-visible {
+             outline: 2px solid #36f9f6 !important;
+             outline-offset: 2px;
+        }
+        .prose a:hover {
+            color: #36f9f6 !important; /* Neon cyan on hover */
+        }
+    </style>
+</head>
+<body class="min-h-screen text-primary-content flex flex-col p-4 md:p-8">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none">Skip to content</a>
+
+    <!-- Terminal Header Component -->
+    <header class="container mx-auto max-w-5xl mb-6">
+        <div class="terminal-window">
+             <div class="terminal-header">
+                <div class="terminal-buttons">
+                    <div class="terminal-button close-btn"></div>
+                    <div class="terminal-button min-btn"></div>
+                    <div class="terminal-button max-btn"></div>
+                </div>
+                <div class="terminal-title">jules@lafamille:~/system/interface</div>
+                <div class="ml-auto flex items-center gap-4">
+                     <img src="/assets/img/jules-logo.png" alt="Jules the Mascot" class="mascot-avatar" aria-hidden="true" focusable="false" />
+                     <nav aria-label="Terminal Navigation" class="flex gap-2">
+                        <a href="/" class="btn btn-outline btn-secondary btn-sm rounded-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none">>_ Home</a>
+                        <a href="/docs/index.html" class="btn btn-outline btn-accent btn-sm rounded-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">>_ Docs</a>
+                     </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="container mx-auto max-w-5xl flex-grow">
+        <div class="terminal-window h-full">
+            <div class="p-6 md:p-10">
+                <div class="mb-8 border-b border-dashed border-secondary pb-4">
+                    <h1 class="text-4xl md:text-5xl font-bold text-accent mb-2">>_ {{.Title}}</h1>
+                    <div class="flex gap-4 text-sm text-secondary/70">
+                         {{if .Author}}<span>user: {{.Author}}</span>{{end}}
+                         {{if .Date}}<span>timestamp: {{.Date}}</span>{{end}}
+                    </div>
+                </div>
+
+                <!-- Markdown Content Container -->
+                <article class="prose lg:prose-xl max-w-none text-neutral-content
+                    prose-headings:text-accent
+                    prose-strong:text-secondary
+                    prose-code:text-primary prose-code:bg-base-300 prose-code:p-1 prose-code:rounded
+                    prose-pre:bg-base-300 prose-pre:border prose-pre:border-secondary/30">
+                    {{.Content}}
+                    <span class="inline-block w-3 h-5 bg-secondary ml-1 align-middle blink"></span>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Component -->
+    <footer class="container mx-auto max-w-5xl mt-10">
+        <div class="terminal-window">
+             <div class="p-4 text-center text-xs text-secondary/60 uppercase tracking-widest flex flex-col md:flex-row justify-between items-center gap-4">
+                 <div>
+                     <span class="text-accent">>_ SYSTEM STATUS: ONLINE</span>
+                 </div>
+                 <div>
+                     Built in Go and Jules and DaisyUI by Google
+                 </div>
+             </div>
+        </div>
+    </footer>
+</body>
+</html>
