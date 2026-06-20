@@ -1,0 +1,1 @@
+Documenting key patterns: Routines in this repository now write self-contained log/report files to `content/jules/reports/` instead of appending sequentially to the 'Run Log' section in `content/jules/index.md`. This avoids git conflicts during automated execution runs.
