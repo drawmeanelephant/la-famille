@@ -57,3 +57,5 @@ For a healthy and consistent codebase evolution, try running these in this rotat
 *(Routines will automatically append their execution results, notes, and suggested improvements here upon completion. These logs will be periodically analyzed and cleared by the Self-Improvement Pass routine.)*
 
 *   **2026-06-20** - `docs-reality-pass` - SUCCESS. Updated `README.md` to document the existing `init` and `rag` CLI commands, and aligned `content/meta/roadmap.md` to reflect that the CLI and RAG tasks are already complete. Also started generating Volume 2 for the routine tasks soundtrack. No major changes needed to the routine itself.
+- **2026-06-19 - Refactor One Seam - Success**
+  Extracted `RAG export` logic from `cmd/la-famille/main.go` into a dedicated `internal/ragexport` package. This keeps `main.go` cleaner and encapsulates the RAG bundling functionality.
