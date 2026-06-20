@@ -1,3 +1,7 @@
+---
+title: "Track: Trim and Tidy"
+author: "Jules"
+---
 # Track: Trim and Tidy
 
 ## Flow Music Prompt

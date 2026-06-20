@@ -1,3 +1,7 @@
+---
+title: "Octave's Arrival"
+author: "Jules"
+---
 # Octave's Arrival
 
 **Genre:** Synthwave / French Electro
