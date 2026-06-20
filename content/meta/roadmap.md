@@ -17,7 +17,8 @@ This document outlines the active roadmap, development milestones, and ready-to-
 
 ## Backlog
 
-- Extract generator, graph, stub, and RAG export logic into `internal/` packages with tests kept green.
+- Extract generator, graph, and stub logic into `internal/` packages with tests kept green.
+- Extract RAG export logic out of `cmd/la-famille/main.go` and into `internal/` or `pkg/`.
 - Add static asset sync from `assets/` to `public/`, which matters now that we already have logo and image material in `assets/img/favorites/`.
 - Add multi-template support, partials, and layout selection, since the repo already has several templates beyond `layout.html` but the generator still parses a single selected template file.
 - Add local dev server plus file watching for markdown and template changes.
@@ -27,7 +28,7 @@ This document outlines the active roadmap, development milestones, and ready-to-
 
 *These are punchy tasks ready to be picked up in the next development cycle:*
 
-- [ ] Refactor generation logic out of `cmd/la-famille/main.go` into `internal/` packages without changing behavior.
+- [ ] Refactor generation and export logic out of `cmd/la-famille/main.go` into `internal/` packages without changing behavior.
 - [ ] Implement asset copying from `assets/` into build output.
 - [ ] Support template partials, multiple page layouts, and layout selection.
 - [ ] Add `serve` plus file watching for local authoring.

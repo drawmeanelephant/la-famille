@@ -30,3 +30,14 @@ You can specify custom directories using flags:
 ```bash
 go run ./cmd/la-famille/main.go build --contentDir ./docs --out ./dist --template ./templates/custom.html
 ```
+
+### Other Commands
+To initialize a default configuration file (`config.yaml`):
+```bash
+go run ./cmd/la-famille/main.go init
+```
+
+To export the codebase into RAG-friendly markdown bundles for LLM contexts:
+```bash
+go run ./cmd/la-famille/main.go rag
+```
