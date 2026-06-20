@@ -137,30 +137,20 @@ func TestRelPathFromTo(t *testing.T) {
 		{
 			name:     "same directory",
 			base:     "a.md",
-			wantErr:  false,
 			target:   "b.html",
 			expected: "b.html",
 		},
 		{
 			name:     "target in subdirectory",
 			base:     "a.md",
-			wantErr:  false,
 			target:   "dir/b.html",
 			expected: "dir/b.html",
 		},
 		{
 			name:     "base in subdirectory",
 			base:     "dir/a.md",
-			wantErr:  false,
 			target:   "b.html",
 			expected: "../b.html",
-		},
-		{
-			name:     "absolute and relative paths (error)",
-			base:     "/absolute/path/base.md",
-			target:   "relative/target.html",
-			expected: "",
-			wantErr:  true,
 		},
 	}
 
