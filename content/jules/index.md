@@ -58,3 +58,8 @@ For a healthy and consistent codebase evolution, try running these in this rotat
 
 - **2026-06-19 - Refactor One Seam - Success**
   Extracted `RAG export` logic from `cmd/la-famille/main.go` into a dedicated `internal/ragexport` package. This keeps `main.go` cleaner and encapsulates the RAG bundling functionality.
+
+- **Date:** 2024-06-20
+- **Routine:** Implement automated PR management ("clearing the litterbox")
+- **Success:** Yes
+- **Learnings:** Added a new background sync command using Cobra that relies purely on standard library Go constructs (net/http, os/exec) for GitHub API interaction to close stale PRs and merge passing ones.

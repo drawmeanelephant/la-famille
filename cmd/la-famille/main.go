@@ -115,6 +115,7 @@ func main() {
 	rootCmd.AddCommand(buildCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(ragCmd)
+	rootCmd.AddCommand(prCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
