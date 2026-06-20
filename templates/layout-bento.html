@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="business">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Site.SiteName}}</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+</head>
+<body class="min-h-screen bg-base-200 font-sans">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content focus-visible:outline-2 focus-visible:outline-primary">Skip to content</a>
+
+    <header class="bg-base-300 shadow-md">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <img src="/assets/img/mascot-electric-blue.jpeg" alt="Jules the Octopus Mascot" class="w-12 h-12 rounded-full border-2 border-primary object-cover">
+                <a href="/" class="text-2xl font-bold text-primary hover:text-primary-content transition-colors duration-200">{{.Site.SiteName}}</a>
+            </div>
+            <nav aria-label="Main Navigation">
+                <!-- Add navigation links here if needed in the future -->
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content" class="container mx-auto px-4 py-8">
+        <!-- Bento Box Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- Title & Meta Card (Bento Item 1) -->
+            <div class="col-span-1 md:col-span-3 lg:col-span-1 flex flex-col gap-6">
+                <div class="card bg-base-100 shadow-xl flex-grow border border-base-300">
+                    <div class="card-body justify-center items-center text-center">
+                        <h1 class="card-title text-3xl font-extrabold text-primary mb-4">{{.Title}}</h1>
+                        {{if or .Author .Date}}
+                        <div class="flex flex-col gap-2 text-sm text-base-content/80">
+                            {{if .Author}}
+                            <div class="badge badge-secondary badge-outline p-4 w-full justify-center">
+                                <span aria-hidden="true" class="mr-2">✍️</span> <strong>By:</strong> {{.Author}}
+                            </div>
+                            {{end}}
+                            {{if .Date}}
+                            <div class="badge badge-accent badge-outline p-4 w-full justify-center">
+                                <span aria-hidden="true" class="mr-2">📅</span> <strong>Date:</strong> {{.Date}}
+                            </div>
+                            {{end}}
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Card (Bento Item 2) -->
+            <div class="col-span-1 md:col-span-3 lg:col-span-2">
+                <div class="card bg-base-100 shadow-xl h-full border border-base-300">
+                    <div class="card-body">
+                        <article class="prose lg:prose-xl max-w-none prose-primary">
+                            {{.Content}}
+                        </article>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extra Bento Item (Could be used for sidebar content later) -->
+             <div class="col-span-1 md:col-span-3 lg:col-span-3">
+                 <div class="card bg-base-300 shadow-sm border border-base-100 p-6 text-center text-base-content/60 text-sm">
+                     *End of Content*
+                 </div>
+             </div>
+
+        </div>
+    </main>
+
+    <footer class="footer footer-center p-6 bg-neutral text-neutral-content mt-12">
+        <aside>
+            <div class="flex flex-col items-center gap-2">
+                 <img src="/assets/img/mascot-electric-blue.jpeg" alt="Jules the Octopus Mascot" class="w-8 h-8 rounded-full grayscale opacity-70">
+                 <p class="font-semibold">Built in Go and Jules and DaisyUI by Google</p>
+                 <p class="text-xs opacity-50">© 2026 {{.Site.SiteName}}</p>
+            </div>
+        </aside>
+    </footer>
+</body>
+</html>
