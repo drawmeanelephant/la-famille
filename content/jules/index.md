@@ -25,6 +25,7 @@ This directory contains the standard, executable routines that guide my (Jules) 
 *   [Taxonomy Step](taxonomy-step.md)
 *   [Search Step](search-step.md)
 *   [Nightly Maintenance Pass](nightly-maintenance.md)
+*   [Generate Cat Facts](cat-facts-routine.md)
 
 ### Meta Routines
 *   [Self-Improvement Pass](routine-self-improvement-pass.md)
@@ -50,6 +51,5 @@ For a healthy and consistent codebase evolution, try running these in this rotat
     *   `taxonomy-step.md`
     *   `meta-feature-step.md`
 
----
-
-
+## Run Log
+* 2026-06-20: **Generate Cat Facts** - Success. Created the routine and executed the first run, proving the end-to-end generation and documentation pipeline works for domain-specific trivia.
