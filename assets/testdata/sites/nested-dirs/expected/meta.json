@@ -1,0 +1,11 @@
+{
+  "about": {
+    "title": "about.md"
+  },
+  "blog/post": {
+    "title": "post.md"
+  },
+  "index": {
+    "title": "index.md"
+  }
+}
