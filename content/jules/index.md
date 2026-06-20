@@ -66,9 +66,11 @@ For a healthy and consistent codebase evolution, try running these in this rotat
 
 - **2026-06-20 - Generate New Layout Template - Success**
   Created a new grid-based Bento Box layout (`templates/layout-bento.html`) utilizing the `business` DaisyUI theme and incorporating a new mascot image. Successfully verified visual rendering using Playwright.
-
 - **2026-06-20 - Implement Micro-UX Improvement - Success**
   Identified and fixed missing `focus-visible` states in `templates/layout.html` for better keyboard accessibility. Routine ran smoothly with visual verification using Playwright.
+
+- **2026-06-20 - Test Fixture Expansion - Success**
+  Added a new `nested-dirs` test fixture to `assets/testdata/sites/` to verify generator edge cases related to relative linking across subdirectories and stub generation for missing files inside nested paths. Verified via `fixture_test.go`.
 
 - **2026-06-20 - Multimedia Devlog - Success**
   Created `multimedia-devlog` routine. Successfully implemented the `layout: devlog` frontmatter to dynamically change templates and render specific UI fields like `video_script`, `animation_cues` and `soundtrack_theme`.

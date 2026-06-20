@@ -1,0 +1,42 @@
+{
+  "nodes": {
+    "about": {
+      "type": "page",
+      "render": true
+    },
+    "blog/missing": {
+      "type": "stub",
+      "render": true,
+      "missing": true,
+      "referenced_by": [
+        "blog/post.md"
+      ]
+    },
+    "blog/post": {
+      "type": "page",
+      "render": true
+    },
+    "index": {
+      "type": "page",
+      "render": true
+    }
+  },
+  "edges": [
+    [
+      "blog/post",
+      "about"
+    ],
+    [
+      "blog/post",
+      "blog/missing"
+    ],
+    [
+      "index",
+      "about"
+    ],
+    [
+      "index",
+      "blog/post"
+    ]
+  ]
+}

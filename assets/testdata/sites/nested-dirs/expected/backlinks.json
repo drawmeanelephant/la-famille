@@ -1,0 +1,12 @@
+{
+  "about": [
+    "blog/post",
+    "index"
+  ],
+  "blog/missing": [
+    "blog/post"
+  ],
+  "blog/post": [
+    "index"
+  ]
+}
