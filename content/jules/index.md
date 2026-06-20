@@ -55,7 +55,9 @@ For a healthy and consistent codebase evolution, try running these in this rotat
 ## Run Log
 
 *(Routines will automatically append their execution results, notes, and suggested improvements here upon completion. These logs will be periodically analyzed and cleared by the Self-Improvement Pass routine.)*
-*   **Date:** 2024-05-24
-    *   **Routine:** Test Fixture Expansion (`test-fixture-expansion.md`)
-    *   **Status:** Success
-    *   **Learnings/Suggestions:** Added a test fixture `absolute-links` to ensure external/absolute links (http, https, mailto, hashes) are correctly ignored by the markdown link transformer and do not trigger "missing file" logic or get incorrectly converted to `.html` extensions. The existing `cmd/la-famille/fixture_test.go` seamlessly picked up the new fixture, confirming it is easy to extend the test data!
+
+- **2024-05-24 - Test Fixture Expansion (`test-fixture-expansion.md`) - Success**
+  Added a test fixture `absolute-links` to ensure external/absolute links (http, https, mailto, hashes) are correctly ignored by the markdown link transformer and do not trigger "missing file" logic or get incorrectly converted to `.html` extensions. The existing `cmd/la-famille/fixture_test.go` seamlessly picked up the new fixture, confirming it is easy to extend the test data!
+
+- **2026-06-19 - Refactor One Seam - Success**
+  Extracted `RAG export` logic from `cmd/la-famille/main.go` into a dedicated `internal/ragexport` package. This keeps `main.go` cleaner and encapsulates the RAG bundling functionality.
