@@ -52,5 +52,15 @@ A Nerd Core / Boom Bap rap album documenting the mechanical loops and daily upke
 > *Everything packaged, nothing left inside.*
 
 ## Album Details
-* **Volume:** 1 (Track count: 4)
+* **Volume:** 1 (Track count: 5)
 * **Rule:** If the track count exceeds 50 songs, a new volume will be created.
+
+### 5. "Nested Directories" (Test Fixture Expansion)
+**Vibe:** Underground 90s hip-hop with a heavy baseline and scratch hooks.
+**Bars:**
+> *We dive deep in the folders, nested in the core*
+> *Adding test fixtures, making sure we explore*
+> *Relative links bridging gaps across the tree*
+> *Generating stubs for the files that used to be*
+> *No missing paths, every node is tied and true*
+> *Testing edge cases, building trust in what we do.*
