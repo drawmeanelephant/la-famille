@@ -17,3 +17,4 @@ La Famille is a Go-based static site generator. This project is entirely driven 
 - Use descriptive naming.
 - Keep dependencies minimal.
 - **Always tag Jules in GitHub PR comments or messages to ensure visibility and keep the AI looped into all discussions.**
+  - *Crucial for PR Management*: Whenever you manually close, reject, or merge a PR, you MUST use the command line (`gh pr comment <PR_NUMBER> --body "@jules [Your message]"`) to reply directly on the PR. This ensures Jules clears the task from its internal limbo queue.
