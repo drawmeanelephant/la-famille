@@ -53,3 +53,4 @@ For a healthy and consistent codebase evolution, try running these in this rotat
 
 ## Run Log
 * 2026-06-20: **Generate Cat Facts** - Success. Created the routine and executed the first run, proving the end-to-end generation and documentation pipeline works for domain-specific trivia.
+* 2026-06-20: **Refactor One Seam** - Success. Extracted metadata gathering into internal/content package to improve modularity.

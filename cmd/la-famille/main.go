@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html"
 	"html/template"
-	"io/fs"
 	"log"
 	"net/url"
 	"os"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/adrg/frontmatter"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -25,6 +23,7 @@ import (
 	"github.com/yuin/goldmark/util"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/ragexport"
 )
 
@@ -38,20 +37,6 @@ type Page struct {
 	SoundtrackTheme string
 	Layout          string
 	Content         template.HTML
-}
-
-type FileMeta struct {
-	RelPath         string
-	Title           string
-	Author          string
-	Date            string
-	Render          *bool
-	VideoScript     string
-	AnimationCues   string
-	SoundtrackTheme string
-	Layout          string
-	Content         []byte
-	Rest            []byte // The content after frontmatter
 }
 
 type Node struct {
@@ -134,66 +119,9 @@ func run(cfg config.Config) error {
 	// 1. Parse templates
 
 	// 2. Pass 1: Walk content dir and gather metadata
-	fileMap := make(map[string]*FileMeta)
-	err := filepath.WalkDir(cfg.ContentDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if filepath.Ext(path) != ".md" {
-			return nil
-		}
-
-		relPath, err := filepath.Rel(cfg.ContentDir, path)
-		if err != nil {
-			return err
-		}
-		// Always use forward slashes for internal map keys to match web links
-		relPath = filepath.ToSlash(relPath)
-
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		var matter struct {
-			Title           string `yaml:"title"`
-			Author          string `yaml:"author"`
-			Date            string `yaml:"date"`
-			Render          *bool  `yaml:"render"`
-			VideoScript     string `yaml:"video_script"`
-			AnimationCues   string `yaml:"animation_cues"`
-			SoundtrackTheme string `yaml:"soundtrack_theme"`
-			Layout          string `yaml:"layout"`
-		}
-
-		rest, err := frontmatter.Parse(bytes.NewReader(content), &matter)
-		if err != nil {
-			// If frontmatter parsing fails, treat the whole file as content
-			rest = content
-		}
-
-		fileMap[relPath] = &FileMeta{
-			RelPath:         relPath,
-			Title:           matter.Title,
-			Author:          matter.Author,
-			Date:            matter.Date,
-			Render:          matter.Render,
-			VideoScript:     matter.VideoScript,
-			AnimationCues:   matter.AnimationCues,
-			SoundtrackTheme: matter.SoundtrackTheme,
-			Layout:          matter.Layout,
-			Content:         content,
-			Rest:            rest,
-		}
-
-		return nil
-	})
-
+	fileMap, err := content.GatherMetadata(cfg.ContentDir)
 	if err != nil {
-		return fmt.Errorf("failed to walk content directory: %w", err)
+		return fmt.Errorf("failed to gather metadata: %w", err)
 	}
 
 	// Track missing files that need stubs. map[missingPath][]parentFiles
@@ -304,7 +232,7 @@ func run(cfg config.Config) error {
 
 		templatePath := cfg.Template
 		if meta.Layout != "" {
-						layoutPath := filepath.Join("templates", meta.Layout+".html")
+			layoutPath := filepath.Join("templates", meta.Layout+".html")
 			// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille
 			if _, err := os.Stat(layoutPath); os.IsNotExist(err) {
 				layoutPathFallback := filepath.Join("..", "..", "templates", meta.Layout+".html")
@@ -428,7 +356,7 @@ func writeJSON(path string, data interface{}) error {
 
 type linkTransformer struct {
 	CurrentFile  string // The current file being processed (e.g., docs/index.md)
-	FileMap      map[string]*FileMeta
+	FileMap      map[string]*content.FileMeta
 	MissingFiles map[string][]string // map[targetFile]parents
 	Backlinks    map[string][]string
 	Graph        *Graph
