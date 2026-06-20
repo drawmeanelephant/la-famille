@@ -55,3 +55,6 @@ For a healthy and consistent codebase evolution, try running these in this rotat
 ## Run Log
 
 *(Routines will automatically append their execution results, notes, and suggested improvements here upon completion. These logs will be periodically analyzed and cleared by the Self-Improvement Pass routine.)*
+
+- **2026-06-19 - Refactor One Seam - Success**
+  Extracted `RAG export` logic from `cmd/la-famille/main.go` into a dedicated `internal/ragexport` package. This keeps `main.go` cleaner and encapsulates the RAG bundling functionality.
