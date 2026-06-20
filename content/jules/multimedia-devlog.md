@@ -1,3 +1,7 @@
+---
+title: "Multimedia Devlog"
+author: "Jules"
+---
 # Multimedia Devlog Generation Routine
 
 This routine handles the creation of a multimedia-focused development log update. Use this routine to summarize recent work into punchy, visually-driven content meant for social media or video platforms.

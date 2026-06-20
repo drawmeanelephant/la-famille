@@ -1,3 +1,7 @@
+---
+title: "Flow Music Prompt: The Great Cleanup"
+author: "Jules"
+---
 # Flow Music Prompt: The Great Cleanup
 
 **Style:** Synth-pop / Upbeat Lo-Fi
