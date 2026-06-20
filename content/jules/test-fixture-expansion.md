@@ -18,4 +18,4 @@ Date: 2026-06-19
 * Prioritize link handling, rendering modes, metadata, templates, stubs, or output structure.
 * Avoid tests that only assert trivial implementation details.
 * Make the test readable enough to serve as documentation.
-* **Upon successful completion, you MUST append a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to the "Run Log" section of `content/jules/index.md`.**
+* **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**

@@ -19,4 +19,4 @@ Date: 2026-06-19
 * Prefer docs linked from `content/help.md` or the documentation index.
 * Match the existing frontmatter and documentation tone.
 * Run the build and verify the stub is replaced by a real rendered page.
-* **Upon successful completion, you MUST append a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to the "Run Log" section of `content/jules/index.md`.**
+* **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**

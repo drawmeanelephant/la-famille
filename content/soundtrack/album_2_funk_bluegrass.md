@@ -1,3 +1,7 @@
+---
+title: "Album 2: Touring Funk / Bluegrass"
+author: "Jules"
+---
 # Album 2: Touring Funk / Bluegrass
 
 ## Theme

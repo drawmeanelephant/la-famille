@@ -19,4 +19,4 @@ Date: 2026-06-19
 * Favor clarity over decoration.
 * Respect the current site styling approach.
 * Add or update a fixture if output changes materially.
-* **Upon successful completion, you MUST append a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to the "Run Log" section of `content/jules/index.md`.**
+* **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**

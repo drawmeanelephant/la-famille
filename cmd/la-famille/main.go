@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html"
 	"html/template"
-	"io/fs"
 	"log"
 	"net/url"
 	"os"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/adrg/frontmatter"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -25,25 +23,20 @@ import (
 	"github.com/yuin/goldmark/util"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/ragexport"
 )
 
 type Page struct {
-	Site    config.Config
-	Title   string
-	Author  string
-	Date    string
-	Content template.HTML
-}
-
-type FileMeta struct {
-	RelPath string
-	Title   string
-	Author  string
-	Date    string
-	Render  *bool
-	Content []byte
-	Rest    []byte // The content after frontmatter
+	Site            config.Config
+	Title           string
+	Author          string
+	Date            string
+	VideoScript     string
+	AnimationCues   string
+	SoundtrackTheme string
+	Layout          string
+	Content         template.HTML
 }
 
 type Node struct {
@@ -124,64 +117,11 @@ func main() {
 
 func run(cfg config.Config) error {
 	// 1. Parse templates
-	tmpl, err := template.ParseFiles(cfg.Template)
-	if err != nil {
-		return fmt.Errorf("failed to parse template file: %w", err)
-	}
 
 	// 2. Pass 1: Walk content dir and gather metadata
-	fileMap := make(map[string]*FileMeta)
-	err = filepath.WalkDir(cfg.ContentDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if filepath.Ext(path) != ".md" {
-			return nil
-		}
-
-		relPath, err := filepath.Rel(cfg.ContentDir, path)
-		if err != nil {
-			return err
-		}
-		// Always use forward slashes for internal map keys to match web links
-		relPath = filepath.ToSlash(relPath)
-
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		var matter struct {
-			Title  string `yaml:"title"`
-			Author string `yaml:"author"`
-			Date   string `yaml:"date"`
-			Render *bool  `yaml:"render"`
-		}
-
-		rest, err := frontmatter.Parse(bytes.NewReader(content), &matter)
-		if err != nil {
-			// If frontmatter parsing fails, treat the whole file as content
-			rest = content
-		}
-
-		fileMap[relPath] = &FileMeta{
-			RelPath: relPath,
-			Title:   matter.Title,
-			Author:  matter.Author,
-			Date:    matter.Date,
-			Render:  matter.Render,
-			Content: content,
-			Rest:    rest,
-		}
-
-		return nil
-	})
-
+	fileMap, err := content.GatherMetadata(cfg.ContentDir)
 	if err != nil {
-		return fmt.Errorf("failed to walk content directory: %w", err)
+		return fmt.Errorf("failed to gather metadata: %w", err)
 	}
 
 	// Track missing files that need stubs. map[missingPath][]parentFiles
@@ -274,11 +214,15 @@ func run(cfg config.Config) error {
 		sanitizedHTML := p.SanitizeBytes(buf.Bytes())
 
 		page := Page{
-			Site:    cfg,
-			Title:   title,
-			Author:  meta.Author,
-			Date:    meta.Date,
-			Content: template.HTML(sanitizedHTML),
+			Site:            cfg,
+			Title:           title,
+			Author:          meta.Author,
+			Date:            meta.Date,
+			VideoScript:     meta.VideoScript,
+			AnimationCues:   meta.AnimationCues,
+			SoundtrackTheme: meta.SoundtrackTheme,
+			Layout:          meta.Layout,
+			Content:         template.HTML(sanitizedHTML),
 		}
 
 		outFile, err := os.Create(outPath)
@@ -286,13 +230,35 @@ func run(cfg config.Config) error {
 			return err
 		}
 
-		if err := tmpl.Execute(outFile, page); err != nil {
+		templatePath := cfg.Template
+		if meta.Layout != "" {
+			layoutPath := filepath.Join("templates", meta.Layout+".html")
+			// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille
+			if _, err := os.Stat(layoutPath); os.IsNotExist(err) {
+				layoutPathFallback := filepath.Join("..", "..", "templates", meta.Layout+".html")
+				if _, err2 := os.Stat(layoutPathFallback); err2 == nil {
+					layoutPath = layoutPathFallback
+				}
+			}
+			if _, err := os.Stat(layoutPath); err == nil {
+				templatePath = layoutPath
+			} else {
+				log.Printf("Warning: layout template %s not found, falling back to %s", layoutPath, cfg.Template)
+			}
+		}
+
+		pageTmpl, err := template.ParseFiles(templatePath)
+		if err != nil {
+			outFile.Close()
+			return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
+		}
+
+		if err := pageTmpl.Execute(outFile, page); err != nil {
 			outFile.Close()
 			return err
 		}
 		outFile.Close()
 	}
-
 	// 4. Generate stubs for missing files in deterministic order
 	var missingKeys []string
 	for k := range missingFiles {
@@ -346,7 +312,13 @@ func run(cfg config.Config) error {
 			return err
 		}
 
-		if err := tmpl.Execute(outFile, page); err != nil {
+		defaultTmpl, err := template.ParseFiles(cfg.Template)
+		if err != nil {
+			outFile.Close()
+			return fmt.Errorf("failed to parse default template file for stubs: %w", err)
+		}
+
+		if err := defaultTmpl.Execute(outFile, page); err != nil {
 			outFile.Close()
 			return err
 		}
@@ -384,7 +356,7 @@ func writeJSON(path string, data interface{}) error {
 
 type linkTransformer struct {
 	CurrentFile  string // The current file being processed (e.g., docs/index.md)
-	FileMap      map[string]*FileMeta
+	FileMap      map[string]*content.FileMeta
 	MissingFiles map[string][]string // map[targetFile]parents
 	Backlinks    map[string][]string
 	Graph        *Graph

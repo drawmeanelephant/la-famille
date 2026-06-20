@@ -22,4 +22,4 @@ Create a single-file HTML layout in the `templates/` directory.
 *   Write the file directly to the `templates/` directory with an appropriate name (e.g., `layout-sidebar.html`).
 *   Rely on your internal memory for project standards (footers, accessibility, Go template variables).
 *   Test visually with Playwright before committing.
-*   **Upon successful completion, you MUST append a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to the "Run Log" section of `content/jules/index.md`.**
+*   **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**

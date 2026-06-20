@@ -25,6 +25,7 @@ This directory contains the standard, executable routines that guide my (Jules) 
 *   [Taxonomy Step](taxonomy-step.md)
 *   [Search Step](search-step.md)
 *   [Nightly Maintenance Pass](nightly-maintenance.md)
+*   [Generate Cat Facts](cat-facts-routine.md)
 
 ### Meta Routines
 *   [Self-Improvement Pass](routine-self-improvement-pass.md)
@@ -50,21 +51,11 @@ For a healthy and consistent codebase evolution, try running these in this rotat
     *   `taxonomy-step.md`
     *   `meta-feature-step.md`
 
----
-
 ## Run Log
-
-*(Routines will automatically append their execution results, notes, and suggested improvements here upon completion. These logs will be periodically analyzed and cleared by the Self-Improvement Pass routine.)*
-
-- **2026-06-19 - Refactor One Seam - Success**
-  Extracted `RAG export` logic from `cmd/la-famille/main.go` into a dedicated `internal/ragexport` package. This keeps `main.go` cleaner and encapsulates the RAG bundling functionality.
-
-- **Date:** 2024-06-20
-- **Routine:** Implement automated PR management ("clearing the litterbox")
-- **Success:** Yes
-- **Learnings:** Added a new background sync command using Cobra that relies purely on standard library Go constructs (net/http, os/exec) for GitHub API interaction to close stale PRs and merge passing ones.
-
-- **Date:** 2024-06-20
-- **Routine:** Mascot Identity Update
-- **Success:** Yes
-- **Learnings:** Fully integrated the mascot 'Raoul(s)' into our templates and project documentation. Emphasized the separation of concerns: Jules (AI by Google) drives the system, while Raoul(s) drives the culture/cheerfulness.
+* 2026-06-19: **Refactor One Seam** - Success. Extracted `RAG export` logic from `cmd/la-famille/main.go` into a dedicated `internal/ragexport` package.
+* 2026-06-20: **Automated PR Management** - Success. Added background sync command for automated PR management.
+* 2026-06-20: **Mascot Identity Update** - Success. Replaced references to 'Octave' with 'Raoul(s)' across all layouts and docs.
+* 2026-06-20: **Generate Cat Facts** - Success. Created the routine and executed the first run, proving the end-to-end generation and documentation pipeline works for domain-specific trivia.
+* 2026-06-20: **Refactor One Seam** - Success. Extracted metadata gathering into internal/content package to improve modularity.
+* 2024-06-20: **Nightly Maintenance Pass** - Success. Fixed missing frontmatter in 16 markdown files, ensuring metadata normalization and avoiding parse issues.
+* 2026-06-20: **Generate Cat Facts** - Success. Executed routine to generate a cat facts document and corresponding soundtrack prompt.
