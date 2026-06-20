@@ -9,3 +9,7 @@
 ## 2026-06-19 - Add missing focus-visible states to template links
 **Learning:** Keyboard accessibility is compromised when custom `hover` states (like `hover:underline` or `hover:bg-primary/20`) are added without corresponding `focus-visible` states. Default browser focus rings might not provide sufficient contrast or might conflict with custom hover styling.
 **Action:** Always pair interactive `hover` state utilities with matching `focus-visible` equivalents (e.g., `focus-visible:outline-none focus-visible:bg-primary/20`) to ensure custom styling is visible and functional for keyboard users.
+
+## 2026-06-20 - Default Layout Focus Accessibility
+**Learning:** The default layout in `templates/layout.html` lacked keyboard focus visibility for main navigation, "skip to content" link, and article links, making the site difficult to navigate via keyboard despite having semantic HTML in place.
+**Action:** When creating or maintaining layout templates, always explicitly define `focus-visible` states using Tailwind utilities (e.g., `focus-visible:ring-2`, `focus-visible:outline`, `focus-visible:prose-a:outline`) for all interactive elements, including utility links like "Skip to content".

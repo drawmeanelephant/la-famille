@@ -1,0 +1,9 @@
+{
+  "nodes": {
+    "devlog/added-search-feature": {
+      "type": "page",
+      "render": true
+    }
+  },
+  "edges": []
+}
