@@ -33,4 +33,4 @@ Date: 2026-06-19
 *   **Boundaries:** Do not perform large architectural security refactors or add major new security dependencies without checking first. Do not expose vulnerability details if the repo is public.
 *   **Verification:** Run `go vet ./...` and `go test ./...` to ensure no functionality is broken and code formatting is correct. If applicable, write a quick unit test for the security fix.
 *   **Commit:** Use the title format `🛡️ Sentinel: [Severity] Fix [type]` (e.g., `🛡️ Sentinel: [HIGH] Fix XSS in template generation`) for your PR/commit. The description should include Severity, Vulnerability, Impact, Fix, and Verification steps.
-*   **Upon successful completion, you MUST append a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to the "Run Log" section of `content/jules/index.md`.**
+*   **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**

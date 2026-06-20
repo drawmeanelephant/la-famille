@@ -19,4 +19,4 @@ Date: 2026-06-19
 * Do not redesign the whole frontend in the same task.
 * Prefer reusable structure over one-off special cases.
 * Keep the feature obvious enough to document later.
-* **Upon successful completion, you MUST append a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to the "Run Log" section of `content/jules/index.md`.**
+* **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**

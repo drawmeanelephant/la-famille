@@ -19,4 +19,4 @@ Date: 2026-06-19
 * Prefer useful defaults.
 * Keep terminal output concise and informative.
 * Document any new command behavior if it becomes user-facing.
-* **Upon successful completion, you MUST append a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to the "Run Log" section of `content/jules/index.md`.**
+* **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**

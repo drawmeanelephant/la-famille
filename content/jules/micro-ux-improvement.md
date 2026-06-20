@@ -24,4 +24,4 @@ Date: 2026-06-19
 *   **Boundaries:** Do not perform large design overhauls, backend logic changes, or security fixes.
 *   **Verification:** Rely on your internal memory for project standards. Test visually with Playwright and run unit tests before committing.
 *   **Commit:** Use the title format `🎨 Palette: [UX improvement]` for your commit or PR. Include a description detailing the "What," "Why," and any accessibility improvements.
-*   **Upon successful completion, you MUST append a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to the "Run Log" section of `content/jules/index.md`.**
+*   **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**
