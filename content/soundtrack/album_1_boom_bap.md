@@ -1,3 +1,7 @@
+---
+title: "Album 1: Nerd Core Boom Bap"
+author: "Jules"
+---
 # Album 1: Nerd Core Boom Bap
 
 ## Theme

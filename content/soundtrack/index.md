@@ -1,3 +1,7 @@
+---
+title: "Soundtrack"
+author: "Jules"
+---
 # Soundtrack
 
 This folder contains the track listings and engineering details for the project's soundtrack albums.
