@@ -52,6 +52,9 @@ For a healthy and consistent codebase evolution, try running these in this rotat
     *   `meta-feature-step.md`
 
 ## Run Log
+* 2026-06-19: **Refactor One Seam** - Success. Extracted `RAG export` logic from `cmd/la-famille/main.go` into a dedicated `internal/ragexport` package.
+* 2026-06-20: **Automated PR Management** - Success. Added background sync command for automated PR management.
+* 2026-06-20: **Mascot Identity Update** - Success. Replaced references to 'Octave' with 'Raoul(s)' across all layouts and docs.
 * 2026-06-20: **Generate Cat Facts** - Success. Created the routine and executed the first run, proving the end-to-end generation and documentation pipeline works for domain-specific trivia.
 * 2026-06-20: **Refactor One Seam** - Success. Extracted metadata gathering into internal/content package to improve modularity.
 * 2024-06-20: **Nightly Maintenance Pass** - Success. Fixed missing frontmatter in 16 markdown files, ensuring metadata normalization and avoiding parse issues.
