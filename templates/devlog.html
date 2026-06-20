@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{.Site.Theme}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - Devlog - {{.Site.SiteName}}</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style>
+        .devlog-container {
+            max-width: 1000px !important;
+        }
+        .devlog-video {
+            width: 100% !important;
+            border-radius: 1rem !important;
+            background-color: black !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-base-300">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content">Skip to content</a>
+
+    <nav aria-label="Main Navigation" class="navbar bg-base-100 shadow-sm mb-8">
+        <div class="flex-1">
+            <a class="btn btn-ghost text-xl" href="/">{{.Site.SiteName}}</a>
+        </div>
+        <div class="flex-none">
+            <span class="badge badge-primary badge-outline">Devlog</span>
+        </div>
+    </nav>
+
+    <main id="main-content" class="container mx-auto px-4 devlog-container">
+
+        <div class="card bg-base-100 shadow-2xl mb-8">
+            <figure class="px-8 pt-8">
+                <video class="devlog-video shadow-lg" controls poster="/assets/img/Octopus_mascot_cleaning_litterbox_202606200817.jpeg">
+                    <source src="/assets/vid/video_202606200852.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </figure>
+            <div class="card-body">
+                <h1 class="card-title text-5xl mb-4 text-primary">{{.Title}}</h1>
+
+                {{if or .Author .Date}}
+                <div class="flex gap-4 text-sm text-base-content/60 mb-6">
+                    {{if .Author}}<span class="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4" aria-hidden="true" focusable="false"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" /></svg>{{.Author}}</span>{{end}}
+                    {{if .Date}}<span class="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" clip-rule="evenodd" /></svg>{{.Date}}</span>{{end}}
+                </div>
+                {{end}}
+
+                <div class="divider"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    {{if .VideoScript}}
+                    <div class="card bg-neutral text-neutral-content shadow-sm">
+                        <div class="card-body p-6">
+                            <h2 class="card-title text-xl mb-2 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-secondary" aria-hidden="true" focusable="false"><path d="M3.25 4A2.25 2.25 0 001 6.25v7.5A2.25 2.25 0 003.25 16h7.5A2.25 2.25 0 0013 13.75v-7.5A2.25 2.25 0 0010.75 4h-7.5zM19 4.75a.75.75 0 00-1.28-.53l-3 3a.75.75 0 00-.22.53v4.5c0 .199.079.39.22.53l3 3a.75.75 0 001.28-.53V4.75z" /></svg>
+                                Video Script
+                            </h2>
+                            <p class="font-medium italic">"{{.VideoScript}}"</p>
+                        </div>
+                    </div>
+                    {{end}}
+
+                    {{if .AnimationCues}}
+                    <div class="card bg-base-200 shadow-sm border border-base-300">
+                        <div class="card-body p-6">
+                            <h2 class="card-title text-xl mb-2 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-accent" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M1 5.25A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25v9.5A2.25 2.25 0 0116.75 17H3.25A2.25 2.25 0 011 14.75v-9.5zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 00.75-.75v-2.69l-2.22-2.219a2.25 2.25 0 00-3.182 0l-1.44 1.439a2.25 2.25 0 01-3.182 0l-4.225-4.224a2.25 2.25 0 00-3.182 0L2.5 11.06z" clip-rule="evenodd" /></svg>
+                                Animation Cues
+                            </h2>
+                            <p class="text-sm">{{.AnimationCues}}</p>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+
+                {{if .SoundtrackTheme}}
+                <div class="mockup-code bg-primary text-primary-content mb-8">
+                    <pre data-prefix="~"><code>Soundtrack / Lyrics</code></pre>
+                    <pre data-prefix=">" class="text-warning"><code>{{.SoundtrackTheme}}</code></pre>
+                </div>
+                {{end}}
+
+                <div class="divider">Release Notes</div>
+
+                <article class="prose prose-lg max-w-none">
+                    {{.Content}}
+                </article>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="footer footer-center p-10 bg-base-300 text-base-content mt-12">
+        <aside>
+            <div class="avatar mb-4">
+                <div class="w-16 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                    <img src="/assets/img/jules-logo.png" alt="Jules Logo" />
+                </div>
+            </div>
+            <p class="font-bold">
+                La Famille Devlog <br/>Built in Go and Jules and DaisyUI by Google
+            </p>
+            <p>Copyright © 2024 - All rights reserved</p>
+        </aside>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,4 @@
+site_name: "Test Devlog Site"
+theme: "synthwave"
+output_dir: "public"
+template: "../../../../templates/layout.html"
