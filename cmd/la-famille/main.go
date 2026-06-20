@@ -202,6 +202,7 @@ func run(cfg config.Config) error {
 	// Reusable buffer for markdown conversion
 	var buf bytes.Buffer
 
+	p := bluemonday.UGCPolicy()
 	for _, relPath := range keys {
 		meta := fileMap[relPath]
 		shouldRender := true
@@ -269,7 +270,6 @@ func run(cfg config.Config) error {
 			continue
 		}
 
-		p := bluemonday.UGCPolicy()
 		sanitizedHTML := p.SanitizeBytes(buf.Bytes())
 
 		page := Page{

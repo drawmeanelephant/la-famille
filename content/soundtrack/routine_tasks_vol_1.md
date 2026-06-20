@@ -1,37 +1,56 @@
 ---
-Title: Routine Tasks Vol 1
-Author: Flow Music
-Date: 2026-06-19
-Tags: rap, hip-hop, boom-bap, lo-fi, jules, ai
+title: "Album: Routine Tasks Vol 1"
+author: "Jules"
+date: "2026-06-19"
+render: true
 ---
 
-# Album: Routine Tasks Vol 1
+# Routine Tasks Vol 1
 
-**Genre:** Hip-Hop, Rap, Boom-Bap
-**Theme:** The daily grind of an AI assistant crushing refactors and sweeping directories.
+A Nerd Core / Boom Bap rap album documenting the mechanical loops and daily upkeep of the **La Famille** codebase.
 
-## Tracklist
+## Track Listing
 
-1. **"One Seam (The Refactor Anthem)"**
-   *Prompt:* 90s boom-bap rap beat with a heavy bassline. Lyrics about finding the perfect seam in the code, extracting logic cleanly without breaking the build. "Pull the thread but don't snap the line, moving packages on company time."
+### 1. "Reality Pass" (Docs Reality Pass)
+**Vibe:** Classic 90s boom bap, vinyl crackle, heavy bass.
+**Bars:**
+> *Yo, look at the code, then look at the guide*
+> *If the docs are lagging behind, there's nowhere to hide*
+> *We reconcile the specs with the actual lines*
+> *Catching the drift, rewriting the signs*
+> *Out of the backlog, we correct the record clear*
+> *Reality check, making sure the path is near.*
 
-2. **"Go Vet Check"**
-   *Prompt:* Fast-paced trap rap. Rapid-fire flow about running `go vet` and `go test`, catching nil pointers before they crash the prod server.
+### 2. "Refactor Seams" (Refactor One Seam)
+**Vibe:** Jazz-hop with a smooth saxophone loop.
+**Bars:**
+> *We find a seam, extract the core*
+> *Modular style, we don't code like before*
+> *Keep the behavior clean, keep the tests green*
+> *The finest architecture that you've ever seen*
+> *No side effects, we isolate the package flow*
+> *Watch the codebase expand and watch the structure grow.*
 
-3. **"AST Walking"**
-   *Prompt:* Lo-fi hip-hop rap with smooth jazz samples. Rapping about traversing the abstract syntax tree, transforming markdown links, and keeping the frontmatter clean.
+### 3. "Nightly Clean Up" (Nightly Maintenance Pass)
+**Vibe:** Lo-fi beats to code/relax to.
+**Bars:**
+> *Midnight strikes, run the hygiene check*
+> *Sweeping the debris, saving the project from a wreck*
+> *Frontmatter clean, trailing whitespace gone*
+> *Working in the shadows till the break of dawn*
+> *A clean repo is a happy place to build*
+> *Routine completed, all the warnings stilled.*
 
-4. **"Scrub the Litterbox"**
-   *Prompt:* Aggressive East Coast rap. A track about cleaning out the `test-results` folder. "Erase the artifacts, keep the commit history clean, I'm the neatest AI that you've ever seen."
+### 4. "The Bundle Ritual" (RAG Export)
+**Vibe:** Glitchy, futuristic electronica-infused hip hop.
+**Bars:**
+> *R-A-G, export the whole view*
+> *Three markdown files, custom built for you*
+> *System, config, content, XML style*
+> *Feed it to the prompt, make the other AIs smile*
+> *Token efficiency, context window wide*
+> *Everything packaged, nothing left inside.*
 
-5. **"Sentinel Shield"**
-   *Prompt:* Drill rap beat. Dark and intense. Lyrics about escaping HTML strings and blocking XSS attacks. "Sanitize the input, watch the payload drop, bluemonday policy, make the hackers stop."
-
-6. **"Palette Swap"**
-   *Prompt:* Mellow west-coast G-funk rap. A laid back song about swapping DaisyUI themes, fixing focus states, and ensuring ARIA compliance.
-
-7. **"Terminal Output"**
-   *Prompt:* Industrial hip-hop, noisy and distorted. Rapping over the sound of a bash session running `go build ./...` and outputting text.
-
-8. **"Commit to Main"**
-   *Prompt:* Upbeat, celebratory rap song. A victorious anthem about pushing a clean commit and waiting for the GitHub Actions to glow green.
+## Album Details
+* **Volume:** 1 (Track count: 4)
+* **Rule:** If the track count exceeds 50 songs, a new volume will be created.
