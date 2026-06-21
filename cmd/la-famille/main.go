@@ -6,6 +6,7 @@ import (
 	"html"
 	"html/template"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -105,11 +106,32 @@ func main() {
 		},
 	}
 
+	var servePort int
+	var serveCmd = &cobra.Command{
+		Use:   "serve",
+		Short: "Start a local web server to serve the generated site",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Serve OutputDir
+			dir := cfg.OutputDir
+			port := servePort
+			if port == 0 {
+				port = cfg.Port
+			}
+
+			fmt.Printf("Serving %s on http://localhost:%d\n", dir, port)
+			fmt.Printf("Press Ctrl+C to stop\n")
+
+			return http.ListenAndServe(fmt.Sprintf(":%d", port), http.FileServer(http.Dir(dir)))
+		},
+	}
+	serveCmd.Flags().IntVarP(&servePort, "port", "p", 0, "Port to run the server on (overrides config)")
+
 	rootCmd.AddCommand(buildCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(ragCmd)
 	rootCmd.AddCommand(prCmd)
 	rootCmd.AddCommand(tuiCmd)
+	rootCmd.AddCommand(serveCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)

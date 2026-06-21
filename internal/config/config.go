@@ -13,6 +13,7 @@ type Config struct {
 	ContentDir string `yaml:"content_dir"`
 	OutputDir  string `yaml:"output_dir"`
 	Theme      string `yaml:"theme"`
+	Port       int    `yaml:"port"`
 }
 
 // DefaultConfig returns a Config with sensible default values.
@@ -23,6 +24,7 @@ func DefaultConfig() Config {
 		ContentDir: "content",
 		OutputDir:  "public",
 		Theme:      "retro",
+		Port:       8080,
 	}
 }
 
@@ -69,6 +71,9 @@ output_dir: "public"
 
 # theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
 theme: "retro"
+
+# port: The port on which the local development server will run.
+port: 8080
 `
 	return os.WriteFile(filepath, []byte(defaultYaml), 0644)
 }
