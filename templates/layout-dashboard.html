@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="business">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} | La Famille Dashboard</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style>
+        .prose-a:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-base-200 text-base-content flex flex-col">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content">Skip to content</a>
+
+    <!-- Top Header -->
+    <header class="navbar bg-base-100 shadow-sm border-b border-base-300 sticky top-0 z-40">
+        <div class="flex-none lg:hidden">
+            <label for="my-drawer-2" class="btn btn-square btn-ghost drawer-button">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </label>
+        </div>
+        <div class="flex-1 px-2 mx-2">
+            <a href="/" class="flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary rounded">
+                <img src="/assets/img/jules-logo.png" alt="La Famille Logo" class="w-8 h-8 rounded" />
+                <span class="text-xl font-bold">La Famille</span>
+            </a>
+        </div>
+        <div class="flex-none hidden lg:block">
+            <ul class="menu menu-horizontal px-1 gap-2">
+                <li><a href="/" class="hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">Overview</a></li>
+                <li><a href="/docs/index.html" class="hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">Reports</a></li>
+                <li>
+                    <details>
+                        <summary class="hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">Settings</summary>
+                        <ul class="p-2 bg-base-100 border border-base-300 shadow-xl rounded-box w-52 z-[1]">
+                            <li><a href="/soundtrack/index.html" class="hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">Audio Settings</a></li>
+                            <li><a href="/docs/setup.html" class="hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">System Config</a></li>
+                        </ul>
+                    </details>
+                </li>
+            </ul>
+        </div>
+        <div class="flex-none gap-2">
+            <div class="dropdown dropdown-end">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+                    <div class="w-10 rounded-full border border-base-300">
+                        <img alt="User Avatar" src="/assets/img/mascot-default.jpeg" />
+                    </div>
+                </div>
+                <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52 border border-base-300">
+                    <li><a class="justify-between hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">Profile <span class="badge badge-primary badge-sm">New</span></a></li>
+                    <li><a class="hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <div class="drawer lg:drawer-open flex-grow">
+        <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
+
+        <!-- Main Content Area -->
+        <div class="drawer-content flex flex-col items-center justify-start p-4 lg:p-8">
+            <main id="main-content" class="w-full max-w-5xl bg-base-100 rounded-box shadow-sm border border-base-300 p-6 lg:p-10">
+                <header class="mb-8 pb-4 border-b border-base-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-3xl font-bold">{{.Title}}</h1>
+                        {{if or .Author .Date}}
+                        <div class="text-sm text-base-content/70 mt-2 flex gap-4">
+                            {{if .Author}}<span class="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4" aria-hidden="true" focusable="false"><path d="M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 0 .41 1.412A9.957 9.957 0 0 0 10 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 0 0-13.074.003Z" /></svg> {{.Author}}</span>{{end}}
+                            {{if .Date}}<span class="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clip-rule="evenodd" /></svg> {{.Date}}</span>{{end}}
+                        </div>
+                        {{end}}
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-outline btn-primary">Export</button>
+                        <button class="btn btn-sm btn-primary">Share</button>
+                    </div>
+                </header>
+
+                <article class="prose lg:prose-xl max-w-none prose-a:text-primary prose-a:hover:text-primary-focus prose-img:rounded-box prose-img:border prose-img:border-base-300">
+                    {{.Content}}
+                </article>
+            </main>
+
+            <!-- Standard Footer within Main Drawer Content -->
+            <footer class="footer items-center p-4 bg-transparent text-base-content/60 mt-auto w-full max-w-5xl pt-8">
+                <aside class="items-center grid-flow-col gap-2 w-full justify-between">
+                    <div class="flex items-center gap-2">
+                        <img src="/assets/img/jules-logo.png" alt="Jules" class="w-6 h-6 grayscale opacity-50" />
+                        <p>Generated by La Famille &copy; 2026</p>
+                    </div>
+                    <div class="text-xs uppercase tracking-wider">Dashboard View</div>
+                </aside>
+            </footer>
+        </div>
+
+        <!-- Side Navigation Drawer Sidebar -->
+        <div class="drawer-side z-30 lg:z-auto">
+            <label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="w-80 min-h-full bg-base-200 text-base-content border-r border-base-300 flex flex-col pt-16 lg:pt-0">
+                <div class="p-4 border-b border-base-300">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-base-content/50 mb-2">Workspace Modules</h2>
+                    <div class="form-control w-full">
+                        <input type="text" placeholder="Quick Search..." class="input input-sm input-bordered w-full" />
+                    </div>
+                </div>
+
+                <ul class="menu p-4 w-full text-base-content flex-grow gap-1">
+                    <li class="menu-title">Main</li>
+                    <li>
+                        <a href="/" class="hover:bg-base-300 focus-visible:bg-base-300 focus-visible:outline-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M9.293 2.293a1 1 0 0 1 1.414 0l7 7A1 1 0 0 1 17 11h-1v6a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-6H3a1 1 0 0 1-.707-1.707l7-7Z" clip-rule="evenodd" /></svg>
+                            Home Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/docs/index.html" class="hover:bg-base-300 focus-visible:bg-base-300 focus-visible:outline-none justify-between">
+                            <span class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm2.25 8.5a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 3a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z" clip-rule="evenodd" /></svg>
+                                Documentation
+                            </span>
+                            <span class="badge badge-sm">12</span>
+                        </a>
+                    </li>
+
+                    <li class="menu-title mt-4">Media</li>
+                    <li>
+                        <a href="/soundtrack/index.html" class="hover:bg-base-300 focus-visible:bg-base-300 focus-visible:outline-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5" aria-hidden="true" focusable="false"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" /><path d="M10 6.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Zm0 7a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z" /></svg>
+                            Soundtracks
+                        </a>
+                    </li>
+
+                    <li class="menu-title mt-4">System Tasks</li>
+                    <li>
+                        <a href="/content/jules/index.html" class="hover:bg-base-300 focus-visible:bg-base-300 focus-visible:outline-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd" /></svg>
+                            Jules Routines
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="p-4 mt-auto border-t border-base-300">
+                    <div class="flex items-center gap-3">
+                        <div class="avatar">
+                            <div class="w-10 rounded-full border border-primary">
+                                <img src="/assets/img/mascot-brown-bag.jpeg" alt="Jules" />
+                            </div>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm">System Status</p>
+                            <p class="text-xs text-success flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-success"></span> Online
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</body>
+</html>
