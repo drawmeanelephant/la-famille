@@ -10,7 +10,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
 </head>
 <body class="min-h-screen bg-base-100 flex flex-col">
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content">Skip to content</a>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Skip to content</a>
 
     <div class="flex-grow flex flex-col lg:flex-row">
         <!-- Left Sidebar / Branding (Mascot) -->
@@ -37,7 +37,7 @@
                     {{end}}
                 </header>
 
-                <article class="prose prose-lg md:prose-xl max-w-none text-base-content">
+                <article class="prose prose-lg md:prose-xl max-w-none text-base-content prose-a:text-primary prose-a:hover:text-secondary prose-a:focus-visible:outline prose-a:focus-visible:outline-2 prose-a:focus-visible:outline-primary">
                     {{.Content}}
                 </article>
             </div>
