@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"html"
 	"html/template"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/content"
+	"github.com/tbuddy/la-famille/internal/jsonutil"
 	"github.com/tbuddy/la-famille/internal/ragexport"
 )
 
@@ -329,29 +329,17 @@ func run(cfg config.Config) error {
 	for _, parents := range backlinks {
 		sort.Strings(parents)
 	}
-	if err := writeJSON(filepath.Join(cfg.OutputDir, "graph.json"), graph); err != nil {
+	if err := jsonutil.WriteJSON(filepath.Join(cfg.OutputDir, "graph.json"), graph); err != nil {
 		return err
 	}
-	if err := writeJSON(filepath.Join(cfg.OutputDir, "backlinks.json"), backlinks); err != nil {
+	if err := jsonutil.WriteJSON(filepath.Join(cfg.OutputDir, "backlinks.json"), backlinks); err != nil {
 		return err
 	}
-	if err := writeJSON(filepath.Join(cfg.OutputDir, "meta.json"), metaData); err != nil {
+	if err := jsonutil.WriteJSON(filepath.Join(cfg.OutputDir, "meta.json"), metaData); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func writeJSON(path string, data interface{}) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	return enc.Encode(data)
 }
 
 type linkTransformer struct {
