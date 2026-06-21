@@ -30,6 +30,7 @@ Date: 2026-06-19
         `**Prevention:** [How to avoid next time]`
 
 ## Execution Reminders
+* Remember the inadequacy of `html.EscapeString` for URLs. Ensure robust `bluemonday` sanitization is used in such contexts moving forward.
 *   **Boundaries:** Do not perform large architectural security refactors or add major new security dependencies without checking first. Do not expose vulnerability details if the repo is public.
 *   **Verification:** Run `go vet ./...` and `go test ./...` to ensure no functionality is broken and code formatting is correct. If applicable, write a quick unit test for the security fix.
 *   **Commit:** Use the title format `🛡️ Sentinel: [Severity] Fix [type]` (e.g., `🛡️ Sentinel: [HIGH] Fix XSS in template generation`) for your PR/commit. The description should include Severity, Vulnerability, Impact, Fix, and Verification steps.

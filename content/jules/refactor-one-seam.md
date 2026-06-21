@@ -17,6 +17,7 @@ Date: 2026-06-19
 5. **Record Learnings:** If the refactor reveals a structural pattern worth repeating, log it in `.jules/architecture.md`.
 
 ## Execution Reminders
+* Next logical seams to extract from `main.go` would be `linkTransformer` (AST traversal and link rewriting) and the HTML rendering phase.
 * Keep the change narrow and reversible.
 * Prefer descriptive package boundaries over clever abstractions.
 * Run `go test ./...` and `go vet ./...` before finishing.
