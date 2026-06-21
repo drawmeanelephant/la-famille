@@ -28,5 +28,5 @@ go run ./cmd/la-famille/main.go build
 
 You can specify custom directories using flags:
 ```bash
-go run ./cmd/la-famille/main.go build --contentDir ./docs --out ./dist --template ./templates/custom.html
+go run ./cmd/la-famille/main.go build --content ./docs --output ./dist --template ./templates/custom.html
 ```

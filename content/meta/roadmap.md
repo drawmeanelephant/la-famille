@@ -17,9 +17,9 @@ This document outlines the active roadmap, development milestones, and ready-to-
 
 ## Backlog
 
-- Extract generator, graph, stub, and RAG export logic into `internal/` packages with tests kept green.
+- Extract generator, graph, and stub logic into `internal/` packages with tests kept green.
 - Add static asset sync from `assets/` to `public/`, which matters now that we already have logo and image material in `assets/img/favorites/`.
-- Add multi-template support, partials, and layout selection, since the repo already has several templates beyond `layout.html` but the generator still parses a single selected template file.
+- Add template partials support, since the repo already has layout selection via frontmatter.
 - Add local dev server plus file watching for markdown and template changes.
 - Add GitHub Actions build/test/generate/deploy workflow and later layer on client-side search using `meta.json` plus frontmatter-based taxonomy pages.
 
@@ -29,6 +29,6 @@ This document outlines the active roadmap, development milestones, and ready-to-
 
 - [ ] Refactor generation logic out of `cmd/la-famille/main.go` into `internal/` packages without changing behavior.
 - [ ] Implement asset copying from `assets/` into build output.
-- [ ] Support template partials, multiple page layouts, and layout selection.
+- [ ] Support template partials.
 - [ ] Add `serve` plus file watching for local authoring.
 - [ ] Add CI/CD deploy workflow, then client-side search and taxonomy generation.
