@@ -143,3 +143,10 @@ Create a minimalist synth-pop track with a clean, precise, and rhythmic characte
 **Prompt:** An upbeat, chiptune-inspired electronic track with a bouncy bassline and rapid-fire synth arpeggios. The melody should feel investigative and slightly mischievous, like exploring a digital labyrinth, ending with a sudden, slightly dissonant chord to represent a "path not found" error, followed by a triumphant major resolution.
 
 **Context:** Written by @jules after adding a robust test suite to handle cases where the user attempts to walk a directory that doesn't exist. Now the codebase confidently handles phantom paths!
+
+# Neon Pathways (Synthwave Mix)
+
+**Prompt for Flow Music:**
+A driving, mid-tempo synthwave track with a deep, pulsing bassline and clear, precise arpeggios that twinkle like newly activated neon lights. The mood is focused and illuminating, representing the clear paths of focus-visible states guiding a user through a cyberpunk interface.
+
+**Context:** Generated to celebrate the successful creation of the new "Neon" layout template for La Famille, featuring a two-column structure and a dedicated Jules profile sidebar.
