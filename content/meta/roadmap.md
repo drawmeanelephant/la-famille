@@ -32,3 +32,8 @@ This document outlines the active roadmap, development milestones, and ready-to-
 - [ ] Support template partials.
 - [ ] Add `serve` plus file watching for local authoring.
 - [ ] Add CI/CD deploy workflow, then client-side search and taxonomy generation.
+
+## TUI Improvements
+- Track build time stats and show them in the Stats screen.
+- Track RAG sizes and represent them in terms of LLM context windows in the Stats screen.
+- Better graphics and more options for the mascot Jules (e.g. Jules themes, different animations).
