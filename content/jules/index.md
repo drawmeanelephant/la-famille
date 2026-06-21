@@ -81,5 +81,6 @@ For a healthy and consistent codebase evolution, try asking me to run these in t
     *   `meta-feature-step.md`
 
 ## Run Log
+- **2026-06-19:** `micro-ux-improvement` - Success. Fixed Tailwind typography state modifiers to ensure proper keyboard a11y focus outlines on links across multiple templates. See report for details.
 * 2026-06-21: Refactor One Seam - Success - Extracted jsonutil package. Clean refactor.
 * 2026-06-21: TUI Implementation - Success - Added Bubble Tea-based TUI with Raoul ASCII art and commands.
