@@ -85,3 +85,5 @@ For a healthy and consistent codebase evolution, try asking me to run these in t
 * 2026-06-21: Refactor One Seam - Success - Extracted jsonutil package. Clean refactor.
 * 2026-06-21: TUI Implementation - Success - Added Bubble Tea-based TUI with Raoul ASCII art and commands.
 * 2026-06-21: Test Fixture Expansion - Success - Added edge-cases fixture covering external/absolute links and html escaping.
+
+* **2026-06-21**: TUI and Server enhancements - Added `serve` CLI command, TUI full-terminal mode (`WithAltScreen`), and integrated local server with dancing mascot into the TUI.

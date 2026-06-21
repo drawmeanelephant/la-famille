@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -26,7 +28,7 @@ var tuiCmd = &cobra.Command{
 			}
 		}
 
-		p := tea.NewProgram(initialModel(cfg))
+		p := tea.NewProgram(initialModel(cfg), tea.WithAltScreen())
 		if _, err := p.Run(); err != nil {
 			return fmt.Errorf("tui error: %w", err)
 		}
@@ -41,6 +43,7 @@ const (
 	screenRaoul
 	screenStats
 	screenWorking
+	screenServe
 )
 
 type menuOption struct {
@@ -62,6 +65,7 @@ type model struct {
 	frame    int
 	workMsg  string
 	workErr  error
+	server   *http.Server
 }
 
 func initialModel(cfg config.Config) model {
@@ -71,6 +75,7 @@ func initialModel(cfg config.Config) model {
 		choices: []menuOption{
 			{"Build Site"},
 			{"RAG Export"},
+			{"Serve Site"},
 			{"Stats"},
 			{"Just Raoul"},
 			{"Quit"},
@@ -98,12 +103,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q":
 			if m.screen == screenMenu {
 				return m, tea.Quit
-			} else if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") {
+			} else if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.screen == screenServe {
+				if m.screen == screenServe && m.server != nil {
+					m.server.Shutdown(context.Background())
+					m.server = nil
+				}
 				m.screen = screenMenu
 				return m, nil
 			}
 		case "esc":
-			if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") {
+			if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.screen == screenServe {
+				if m.screen == screenServe && m.server != nil {
+					m.server.Shutdown(context.Background())
+					m.server = nil
+				}
 				m.screen = screenMenu
 				return m, nil
 			}
@@ -151,6 +164,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						err := ragexport.RunExport()
 						return workResultMsg{err: err, msg: "RAG Export complete"}
 					}
+				case "Serve Site":
+					m.screen = screenServe
+					m.frame = 0
+					port := m.cfg.Port
+					if port == 0 {
+						port = 8080
+					}
+					m.server = &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: http.FileServer(http.Dir(m.cfg.OutputDir))}
+					go func() {
+						_ = m.server.ListenAndServe()
+					}()
+					return m, tickCmd()
 				}
 			} else if m.screen == screenWorking {
 				if strings.Contains(m.workMsg, "complete") || m.workErr != nil {
@@ -160,7 +185,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tickMsg:
-		if m.screen == screenRaoul {
+		if m.screen == screenRaoul || m.screen == screenServe {
 			m.frame = (m.frame + 1) % 2
 			return m, tickCmd()
 		}
@@ -213,6 +238,17 @@ func (m model) View() string {
 			s += lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Render("Success!") + "\n"
 		}
 		s += "\nPress Enter or Esc to return to the menu."
+		return s
+
+	case screenServe:
+		port := m.cfg.Port
+		if port == 0 {
+			port = 8080
+		}
+		s := lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(animatedRaoul(m.frame))
+		s += "\n\n"
+		s += lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).Render(fmt.Sprintf("Serving site on http://localhost:%d", port))
+		s += "\n\nPress Esc or q to stop serving and go back."
 		return s
 	}
 
