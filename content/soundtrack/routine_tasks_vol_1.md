@@ -52,7 +52,7 @@ A Nerd Core / Boom Bap rap album documenting the mechanical loops and daily upke
 > *Everything packaged, nothing left inside.*
 
 ## Album Details
-* **Volume:** 1 (Track count: 5)
+* **Volume:** 1 (Track count: 8)
 * **Rule:** If the track count exceeds 50 songs, a new volume will be created.
 
 ### 5. "Nested Directories" (Test Fixture Expansion)
@@ -78,3 +78,13 @@ A Nerd Core / Boom Bap rap album documenting the mechanical loops and daily upke
 ## Track 6: Syntax in the State (Micro-UX Polish)
 **Prompt:** `A fast-paced synth-pop track, tight and responsive, snappy 808s, bright arpeggiators, lyrics about putting things in the right order and bringing things into focus.`
 **Context:** Added after completing a micro-UX improvement routine to correctly order Tailwind Typography state modifiers, ensuring proper accessibility outlines for keyboard navigation on links.
+
+### 8. "Testing the Edges" (Test Fixture Expansion)
+**Vibe:** Hard-hitting boom bap with precise scratching and string samples.
+**Bars:**
+> *External links? We throw a nofollow on the tag.*
+> *Absolute paths? We leave 'em out the bag.*
+> *Single quotes get escaped, ain't no script breakin' through.*
+> *Non-markdown files? We skip 'em, man, we know what to do.*
+> *Edge cases handled, Bluemonday on the check.*
+> *Testing out the limits so the site don't wreck.*
