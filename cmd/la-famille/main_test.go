@@ -216,7 +216,6 @@ func TestProcessFile_PathTraversalPrevented(t *testing.T) {
 	}
 }
 
-
 func TestRun_WalkError(t *testing.T) {
 	tempDir := t.TempDir()
 
