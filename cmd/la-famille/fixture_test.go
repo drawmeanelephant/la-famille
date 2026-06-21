@@ -71,7 +71,7 @@ func TestFixtures(t *testing.T) {
 				}
 
 				if string(actualContent) != string(expectedContent) {
-					t.Errorf("content mismatch in %s", relPath)
+					t.Errorf("content mismatch in %s:\nExpected:\n%s\nActual:\n%s\n", relPath, string(expectedContent), string(actualContent))
 				}
 
 				return nil

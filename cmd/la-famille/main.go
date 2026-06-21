@@ -304,7 +304,7 @@ func run(cfg config.Config) error {
 		page := Page{
 			Site:    cfg,
 			Title:   "Missing Page",
-			Content: template.HTML(htmlContent.String()),
+			Content: template.HTML(p.SanitizeBytes([]byte(htmlContent.String()))),
 		}
 
 		outFile, err := os.Create(outPath)
