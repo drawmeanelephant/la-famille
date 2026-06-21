@@ -84,9 +84,5 @@ For a healthy and consistent codebase evolution, try asking me to run these in t
 - **2026-06-19:** `micro-ux-improvement` - Success. Fixed Tailwind typography state modifiers to ensure proper keyboard a11y focus outlines on links across multiple templates. See report for details.
 * 2026-06-21: Refactor One Seam - Success - Extracted jsonutil package. Clean refactor.
 * 2026-06-21: TUI Implementation - Success - Added Bubble Tea-based TUI with Raoul ASCII art and commands.
-
-## 2026-06-21 - Self-Improvement Pass Routine
-
-**Routine:** `routine-self-improvement-pass.md`
-**Success:** Yes
-**Learnings:** Applied learnings to 4 routine files and successfully cleared the existing backlog by archiving 12 logs.
+* 2026-06-21: Test Fixture Expansion - Success - Added edge-cases fixture covering external/absolute links and html escaping.
+* 2026-06-21: Self-Improvement Pass - Success - Applied learnings to 4 routine files and successfully cleared the existing backlog by archiving 12 logs.
