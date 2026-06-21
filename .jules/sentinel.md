@@ -7,3 +7,8 @@
 **Vulnerability:** Cross-Site Scripting (XSS) in dynamically generated HTML for missing pages.
 **Learning:** When generating HTML stubs for missing Markdown files, the filenames of the "parent" pages that linked to the missing page were injected directly into the HTML without sanitization. A maliciously crafted parent filename (e.g., `<script>alert(1)</script>.md`) could execute arbitrary JavaScript. Even seemingly benign data like filenames can act as XSS vectors if they are reflected into HTML.
 **Prevention:** Always sanitize unsanitized or user-influenced strings, including filenames, using `html.EscapeString` before injecting them into HTML templates or string builders.
+
+## 2026-06-21 - [Prevent XSS in Dynamically Generated HTML containing URLs]
+**Vulnerability:** Potential Cross-Site Scripting (XSS) when generating HTML involving URLs dynamically.
+**Learning:** `html.EscapeString` alone is insufficient when injecting user-influenced strings into HTML attributes like `href`, as it does not prevent schemes like `javascript:`.
+**Prevention:** Always use a robust HTML sanitization library (like `bluemonday`'s `UGCPolicy()`) and apply `SanitizeBytes` to the entire generated HTML string before casting it to `template.HTML`, ensuring that both scripts and dangerous URL schemes are mitigated.
