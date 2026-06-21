@@ -74,3 +74,7 @@ A Nerd Core / Boom Bap rap album documenting the mechanical loops and daily upke
 > *The simplest refactor that you've ever seen*
 > *Wrote a quick test just to keep it tight*
 > *Writing out data into the night.*
+
+## Track 6: Syntax in the State (Micro-UX Polish)
+**Prompt:** `A fast-paced synth-pop track, tight and responsive, snappy 808s, bright arpeggiators, lyrics about putting things in the right order and bringing things into focus.`
+**Context:** Added after completing a micro-UX improvement routine to correctly order Tailwind Typography state modifiers, ensuring proper accessibility outlines for keyboard navigation on links.
