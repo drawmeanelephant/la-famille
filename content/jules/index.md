@@ -1,38 +1,67 @@
 ---
 Title: Jules Routines Index
 Author: Jules (AI)
-Date: 2026-06-19
+Date: 2026-06-20
 ---
 
-# Jules Routines
+# Jules Routines Overview
 
-This directory contains the standard, executable routines that guide my (Jules) automated workflows. They define bounded, recurring tasks that improve the codebase incrementally.
+Welcome to the central nervous system for *La Famille's* automated workflows. I am Jules, the AI maintainer, and I work closely with my eight-legged friend, **Raoul(s) the Octopus**, who helps me keep track of all the moving parts in the codebase.
 
-## Available Routines
+This directory contains executable markdown routines. Think of them as bounded, recurring tasks that let you instruct me to systematically improve, maintain, or expand the project without needing to micromanage the steps.
 
+## How to Work With Me
+
+Triggering a routine is easy. Simply tell me in the chat interface:
+
+> *"run content/jules/routine-name.md please"*
+
+When you say this, I will read the specified file, follow its internal instructions to modify the codebase directly, verify my work (with tests or screenshots), and commit the results. I handle the heavy lifting; you just point the way.
+
+For more details on how this magic works, or if you want to create your own routines, please see:
+*   [**Running Routines:**](running-routines.md) A guide to how I execute these tasks under the hood.
+*   [**Creating Routines:**](creating-routines.md) A guide for you on how to write effective, "no dev theatre" markdown instructions for me.
+
+---
+
+## The Routine Library
+
+Here are the tools Raoul(s) and I currently have in our toolbox, categorized for your convenience.
+
+### 🎨 UI & Design
+Tasks focused on the frontend, visual layouts, and user experience.
 *   [Generate New Layout Template](create-template.md)
 *   [Implement Micro-UX Improvement](micro-ux-improvement.md)
-*   [Implement Security Enhancement](security-enhancement.md)
-*   [Refactor One Seam](refactor-one-seam.md)
-*   [Close One Stub](close-one-stub.md)
-*   [Docs Reality Pass](docs-reality-pass.md)
-*   [Asset Pipeline Step](asset-pipeline-step.md)
 *   [Template System Step](template-system-step.md)
-*   [Metadata Feature Step](meta-feature-step.md)
+
+### 🛠️ Maintenance & Refactoring
+Tasks for keeping the code healthy, secure, and clean.
+*   [Refactor One Seam](refactor-one-seam.md)
+*   [Implement Security Enhancement](security-enhancement.md)
+*   [Nightly Maintenance Pass](nightly-maintenance.md)
+*   [Asset Pipeline Step](asset-pipeline-step.md)
 *   [Serve/Watch Step](serve-watch-step.md)
-*   [Test Fixture Expansion](test-fixture-expansion.md)
+
+### 📝 Content & Documentation
+Tasks for expanding the site's content, pages, and metadata.
+*   [Close One Stub](close-one-stub.md)
 *   [Improve Missing Page Stub](stub-page-polish.md)
+*   [Docs Reality Pass](docs-reality-pass.md)
+*   [Metadata Feature Step](meta-feature-step.md)
 *   [Taxonomy Step](taxonomy-step.md)
 *   [Search Step](search-step.md)
-*   [Nightly Maintenance Pass](nightly-maintenance.md)
+*   [Test Fixture Expansion](test-fixture-expansion.md)
 *   [Generate Cat Facts](cat-facts-routine.md)
 
-### Meta Routines
+### 🧠 Meta & Self-Improvement
+Tasks where I analyze my own logs to get better at doing the above tasks.
 *   [Self-Improvement Pass](routine-self-improvement-pass.md)
+
+---
 
 ## Suggested Schedule Mix
 
-For a healthy and consistent codebase evolution, try running these in this rotation:
+For a healthy and consistent codebase evolution, try asking me to run these in this rotation:
 
 *   **Nightly/Regular:**
     *   `refactor-one-seam.md`
@@ -50,12 +79,3 @@ For a healthy and consistent codebase evolution, try running these in this rotat
     *   `search-step.md`
     *   `taxonomy-step.md`
     *   `meta-feature-step.md`
-
-## Run Log
-* 2026-06-19: **Refactor One Seam** - Success. Extracted `RAG export` logic from `cmd/la-famille/main.go` into a dedicated `internal/ragexport` package.
-* 2026-06-20: **Automated PR Management** - Success. Added background sync command for automated PR management.
-* 2026-06-20: **Mascot Identity Update** - Success. Replaced references to 'Octave' with 'Raoul(s)' across all layouts and docs.
-* 2026-06-20: **Generate Cat Facts** - Success. Created the routine and executed the first run, proving the end-to-end generation and documentation pipeline works for domain-specific trivia.
-* 2026-06-20: **Refactor One Seam** - Success. Extracted metadata gathering into internal/content package to improve modularity.
-* 2024-06-20: **Nightly Maintenance Pass** - Success. Fixed missing frontmatter in 16 markdown files, ensuring metadata normalization and avoiding parse issues.
-* 2026-06-20: **Generate Cat Facts** - Success. Executed routine to generate a cat facts document and corresponding soundtrack prompt.
