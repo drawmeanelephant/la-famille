@@ -82,3 +82,4 @@ For a healthy and consistent codebase evolution, try asking me to run these in t
 
 ## Run Log
 * 2026-06-21: Refactor One Seam - Success - Extracted jsonutil package. Clean refactor.
+* 2026-06-21: TUI Implementation - Success - Added Bubble Tea-based TUI with Raoul ASCII art and commands.

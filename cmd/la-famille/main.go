@@ -109,6 +109,7 @@ func main() {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(ragCmd)
 	rootCmd.AddCommand(prCmd)
+	rootCmd.AddCommand(tuiCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
