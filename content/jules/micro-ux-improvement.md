@@ -21,6 +21,7 @@ Date: 2026-06-19
        `**Action:** [How to apply next time]`
 
 ## Execution Reminders
+* Tailwind Typography requires element modifiers to precede state variants (e.g., `prose-a:focus-visible:ring`).
 *   **Boundaries:** Do not perform large design overhauls, backend logic changes, or security fixes.
 *   **Verification:** Rely on your internal memory for project standards. Test visually with Playwright and run unit tests before committing.
 *   **Commit:** Use the title format `🎨 Palette: [UX improvement]` for your commit or PR. Include a description detailing the "What," "Why," and any accessibility improvements.
