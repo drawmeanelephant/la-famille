@@ -64,3 +64,13 @@ A Nerd Core / Boom Bap rap album documenting the mechanical loops and daily upke
 > *Generating stubs for the files that used to be*
 > *No missing paths, every node is tied and true*
 > *Testing edge cases, building trust in what we do.*
+
+### 6. "Extract the Seam" (JSON Utils Extract)
+**Vibe:** Lo-fi chillhop with a steady kick drum and a warm piano loop.
+**Bars:**
+> *We found the block, the output of JSON*
+> *Buried in main, now it's got a home of its own*
+> *jsonutil package, fresh and clean*
+> *The simplest refactor that you've ever seen*
+> *Wrote a quick test just to keep it tight*
+> *Writing out data into the night.*
