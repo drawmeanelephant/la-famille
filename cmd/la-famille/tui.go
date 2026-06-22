@@ -10,8 +10,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
-	"github.com/tbuddy/la-famille/internal/ragexport"
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/ragexport"
 )
 
 var tuiCmd = &cobra.Command{
@@ -58,14 +58,14 @@ type workResultMsg struct {
 }
 
 type model struct {
-	cfg      config.Config
-	screen   screen
-	choices  []menuOption
-	cursor   int
-	frame    int
-	workMsg  string
-	workErr  error
-	server   *http.Server
+	cfg     config.Config
+	screen  screen
+	choices []menuOption
+	cursor  int
+	frame   int
+	workMsg string
+	workErr error
+	server  *http.Server
 }
 
 func initialModel(cfg config.Config) model {
