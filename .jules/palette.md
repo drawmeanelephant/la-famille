@@ -16,3 +16,7 @@
 ## 2026-06-19 - Tailwind Typography State Modifier Ordering
 **Learning:** When using state modifiers (like `hover:` or `focus-visible:`) in combination with Tailwind Typography element modifiers (like `prose-a:`), the state modifier must come *after* the element modifier (e.g., `prose-a:focus-visible:outline`). If the state modifier is placed first (e.g., `focus-visible:prose-a:outline`), the state variant is applied to the parent element (`.prose`) instead of the child element (`<a>`). Additionally, DaisyUI 4 removed `-focus` color modifier classes, so base color modifiers or opacities must be used for focus states instead.
 **Action:** Always verify modifier order when applying interaction styles to typography children to ensure proper a11y focus states are visually rendering on the targeted element.
+
+## 2026-06-21 - Dashboard Action Button Context
+**Learning:** Action buttons in dense, utility-focused layouts like dashboards can lack context without labels or surrounding descriptions. Additionally, relying solely on custom CSS focus rings can result in inconsistent keyboard navigation experiences if not explicitly styled.
+**Action:** When adding utility or action buttons (like Export or Share) to dashboard headers, wrap them in DaisyUI tooltip components (`<div class="tooltip" data-tip="...">`) to provide clear, immediate context to users. Always ensure these buttons also explicitly define `focus-visible` states matching the design system.
