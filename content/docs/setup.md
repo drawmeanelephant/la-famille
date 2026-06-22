@@ -31,7 +31,7 @@ La Famille includes a helpful initialization command that sets up default config
 go run ./cmd/la-famille init
 ```
 
-This will create a `config.yaml` file in the root directory if one doesn't already exist.
+This will create a `config.yaml` file in the root directory if one doesn't already exist. You can read more about what settings are available in the [Configuration Guide](config.md).
 
 ## 4. Run the Static Site Generator
 
