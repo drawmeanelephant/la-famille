@@ -20,3 +20,7 @@
 ## 2026-06-21 - Dashboard Action Button Context
 **Learning:** Action buttons in dense, utility-focused layouts like dashboards can lack context without labels or surrounding descriptions. Additionally, relying solely on custom CSS focus rings can result in inconsistent keyboard navigation experiences if not explicitly styled.
 **Action:** When adding utility or action buttons (like Export or Share) to dashboard headers, wrap them in DaisyUI tooltip components (`<div class="tooltip" data-tip="...">`) to provide clear, immediate context to users. Always ensure these buttons also explicitly define `focus-visible` states matching the design system.
+
+## 2026-06-22 - Dropdown Link Accessibility
+**Learning:** Anchor tags (`<a>`) placed inside interactive components like DaisyUI dropdown menus are not focusable or selectable via keyboard navigation if they lack an `href` attribute.
+**Action:** Always include an `href` attribute (even if it's just `href="#"` or a placeholder path) on any interactive anchor tag within navigation and dropdown components to ensure basic keyboard focusability.
