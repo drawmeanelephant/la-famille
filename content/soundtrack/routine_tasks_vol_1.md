@@ -88,3 +88,296 @@ A Nerd Core / Boom Bap rap album documenting the mechanical loops and daily upke
 > *Non-markdown files? We skip 'em, man, we know what to do.*
 > *Edge cases handled, Bluemonday on the check.*
 > *Testing out the limits so the site don't wreck.*
+### 9. "Track 9"
+**Vibe:** Vibe 9
+**Bars:**
+> *Bar 1 for track 9*
+> *Bar 2 for track 9*
+> *Bar 3 for track 9*
+
+### 10. "Track 10"
+**Vibe:** Vibe 10
+**Bars:**
+> *Bar 1 for track 10*
+> *Bar 2 for track 10*
+> *Bar 3 for track 10*
+
+### 11. "Track 11"
+**Vibe:** Vibe 11
+**Bars:**
+> *Bar 1 for track 11*
+> *Bar 2 for track 11*
+> *Bar 3 for track 11*
+
+### 12. "Track 12"
+**Vibe:** Vibe 12
+**Bars:**
+> *Bar 1 for track 12*
+> *Bar 2 for track 12*
+> *Bar 3 for track 12*
+
+### 13. "Track 13"
+**Vibe:** Vibe 13
+**Bars:**
+> *Bar 1 for track 13*
+> *Bar 2 for track 13*
+> *Bar 3 for track 13*
+
+### 14. "Track 14"
+**Vibe:** Vibe 14
+**Bars:**
+> *Bar 1 for track 14*
+> *Bar 2 for track 14*
+> *Bar 3 for track 14*
+
+### 15. "Track 15"
+**Vibe:** Vibe 15
+**Bars:**
+> *Bar 1 for track 15*
+> *Bar 2 for track 15*
+> *Bar 3 for track 15*
+
+### 16. "Track 16"
+**Vibe:** Vibe 16
+**Bars:**
+> *Bar 1 for track 16*
+> *Bar 2 for track 16*
+> *Bar 3 for track 16*
+
+### 17. "Track 17"
+**Vibe:** Vibe 17
+**Bars:**
+> *Bar 1 for track 17*
+> *Bar 2 for track 17*
+> *Bar 3 for track 17*
+
+### 18. "Track 18"
+**Vibe:** Vibe 18
+**Bars:**
+> *Bar 1 for track 18*
+> *Bar 2 for track 18*
+> *Bar 3 for track 18*
+
+### 19. "Track 19"
+**Vibe:** Vibe 19
+**Bars:**
+> *Bar 1 for track 19*
+> *Bar 2 for track 19*
+> *Bar 3 for track 19*
+
+### 20. "Track 20"
+**Vibe:** Vibe 20
+**Bars:**
+> *Bar 1 for track 20*
+> *Bar 2 for track 20*
+> *Bar 3 for track 20*
+
+### 21. "Track 21"
+**Vibe:** Vibe 21
+**Bars:**
+> *Bar 1 for track 21*
+> *Bar 2 for track 21*
+> *Bar 3 for track 21*
+
+### 22. "Track 22"
+**Vibe:** Vibe 22
+**Bars:**
+> *Bar 1 for track 22*
+> *Bar 2 for track 22*
+> *Bar 3 for track 22*
+
+### 23. "Track 23"
+**Vibe:** Vibe 23
+**Bars:**
+> *Bar 1 for track 23*
+> *Bar 2 for track 23*
+> *Bar 3 for track 23*
+
+### 24. "Track 24"
+**Vibe:** Vibe 24
+**Bars:**
+> *Bar 1 for track 24*
+> *Bar 2 for track 24*
+> *Bar 3 for track 24*
+
+### 25. "Track 25"
+**Vibe:** Vibe 25
+**Bars:**
+> *Bar 1 for track 25*
+> *Bar 2 for track 25*
+> *Bar 3 for track 25*
+
+### 26. "Track 26"
+**Vibe:** Vibe 26
+**Bars:**
+> *Bar 1 for track 26*
+> *Bar 2 for track 26*
+> *Bar 3 for track 26*
+
+### 27. "Track 27"
+**Vibe:** Vibe 27
+**Bars:**
+> *Bar 1 for track 27*
+> *Bar 2 for track 27*
+> *Bar 3 for track 27*
+
+### 28. "Track 28"
+**Vibe:** Vibe 28
+**Bars:**
+> *Bar 1 for track 28*
+> *Bar 2 for track 28*
+> *Bar 3 for track 28*
+
+### 29. "Track 29"
+**Vibe:** Vibe 29
+**Bars:**
+> *Bar 1 for track 29*
+> *Bar 2 for track 29*
+> *Bar 3 for track 29*
+
+### 30. "Track 30"
+**Vibe:** Vibe 30
+**Bars:**
+> *Bar 1 for track 30*
+> *Bar 2 for track 30*
+> *Bar 3 for track 30*
+
+### 31. "Track 31"
+**Vibe:** Vibe 31
+**Bars:**
+> *Bar 1 for track 31*
+> *Bar 2 for track 31*
+> *Bar 3 for track 31*
+
+### 32. "Track 32"
+**Vibe:** Vibe 32
+**Bars:**
+> *Bar 1 for track 32*
+> *Bar 2 for track 32*
+> *Bar 3 for track 32*
+
+### 33. "Track 33"
+**Vibe:** Vibe 33
+**Bars:**
+> *Bar 1 for track 33*
+> *Bar 2 for track 33*
+> *Bar 3 for track 33*
+
+### 34. "Track 34"
+**Vibe:** Vibe 34
+**Bars:**
+> *Bar 1 for track 34*
+> *Bar 2 for track 34*
+> *Bar 3 for track 34*
+
+### 35. "Track 35"
+**Vibe:** Vibe 35
+**Bars:**
+> *Bar 1 for track 35*
+> *Bar 2 for track 35*
+> *Bar 3 for track 35*
+
+### 36. "Track 36"
+**Vibe:** Vibe 36
+**Bars:**
+> *Bar 1 for track 36*
+> *Bar 2 for track 36*
+> *Bar 3 for track 36*
+
+### 37. "Track 37"
+**Vibe:** Vibe 37
+**Bars:**
+> *Bar 1 for track 37*
+> *Bar 2 for track 37*
+> *Bar 3 for track 37*
+
+### 38. "Track 38"
+**Vibe:** Vibe 38
+**Bars:**
+> *Bar 1 for track 38*
+> *Bar 2 for track 38*
+> *Bar 3 for track 38*
+
+### 39. "Track 39"
+**Vibe:** Vibe 39
+**Bars:**
+> *Bar 1 for track 39*
+> *Bar 2 for track 39*
+> *Bar 3 for track 39*
+
+### 40. "Track 40"
+**Vibe:** Vibe 40
+**Bars:**
+> *Bar 1 for track 40*
+> *Bar 2 for track 40*
+> *Bar 3 for track 40*
+
+### 41. "Track 41"
+**Vibe:** Vibe 41
+**Bars:**
+> *Bar 1 for track 41*
+> *Bar 2 for track 41*
+> *Bar 3 for track 41*
+
+### 42. "Track 42"
+**Vibe:** Vibe 42
+**Bars:**
+> *Bar 1 for track 42*
+> *Bar 2 for track 42*
+> *Bar 3 for track 42*
+
+### 43. "Track 43"
+**Vibe:** Vibe 43
+**Bars:**
+> *Bar 1 for track 43*
+> *Bar 2 for track 43*
+> *Bar 3 for track 43*
+
+### 44. "Track 44"
+**Vibe:** Vibe 44
+**Bars:**
+> *Bar 1 for track 44*
+> *Bar 2 for track 44*
+> *Bar 3 for track 44*
+
+### 45. "Track 45"
+**Vibe:** Vibe 45
+**Bars:**
+> *Bar 1 for track 45*
+> *Bar 2 for track 45*
+> *Bar 3 for track 45*
+
+### 46. "Track 46"
+**Vibe:** Vibe 46
+**Bars:**
+> *Bar 1 for track 46*
+> *Bar 2 for track 46*
+> *Bar 3 for track 46*
+
+### 47. "Track 47"
+**Vibe:** Vibe 47
+**Bars:**
+> *Bar 1 for track 47*
+> *Bar 2 for track 47*
+> *Bar 3 for track 47*
+
+### 48. "Track 48"
+**Vibe:** Vibe 48
+**Bars:**
+> *Bar 1 for track 48*
+> *Bar 2 for track 48*
+> *Bar 3 for track 48*
+
+### 49. "Track 49"
+**Vibe:** Vibe 49
+**Bars:**
+> *Bar 1 for track 49*
+> *Bar 2 for track 49*
+> *Bar 3 for track 49*
+
+### 50. "Track 50"
+**Vibe:** Vibe 50
+**Bars:**
+> *Bar 1 for track 50*
+> *Bar 2 for track 50*
+> *Bar 3 for track 50*
