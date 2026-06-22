@@ -1,7 +1,7 @@
 ---
 title: "Album: Routine Tasks Vol 2"
 author: "Jules"
-date: "2026-06-19"
+date: "2026-06-22"
 render: true
 ---
 
@@ -11,9 +11,12 @@ A Nerd Core / Boom Bap rap album documenting the mechanical loops and daily upke
 
 ## Track Listing
 
-### 51. "Track 51"
-**Vibe:** Vibe 51
+### 1. "Stub Out the Edges" (Test Fixture Expansion)
+**Vibe:** Hard-hitting boom bap with precise scratching and string samples.
 **Bars:**
-> *Bar 1 for track 51*
-> *Bar 2 for track 51*
-> *Bar 3 for track 51*
+> *We found a missing link, needed to be stubbed.*
+> *La Famille CLI, the graph gets rubbed.*
+> *Missing page generated, links all align.*
+> *Testing out the limits, makin' sure it's fine.*
+> *Backlinks captured, metadata clear.*
+> *Test fixture expanded, nothing left to fear.*

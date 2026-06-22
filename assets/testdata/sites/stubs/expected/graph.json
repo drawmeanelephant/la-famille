@@ -1,0 +1,22 @@
+{
+  "nodes": {
+    "index": {
+      "type": "page",
+      "render": true
+    },
+    "missing": {
+      "type": "stub",
+      "render": true,
+      "missing": true,
+      "referenced_by": [
+        "index.md"
+      ]
+    }
+  },
+  "edges": [
+    [
+      "index",
+      "missing"
+    ]
+  ]
+}
