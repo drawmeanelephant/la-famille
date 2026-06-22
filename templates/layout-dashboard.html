@@ -78,12 +78,16 @@
                         {{end}}
                     </div>
                     <div class="flex gap-2">
-                        <button class="btn btn-sm btn-outline btn-primary">Export</button>
-                        <button class="btn btn-sm btn-primary">Share</button>
+                        <div class="tooltip tooltip-bottom" data-tip="Export to PDF/CSV">
+                            <button class="btn btn-sm btn-outline btn-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">Export</button>
+                        </div>
+                        <div class="tooltip tooltip-bottom" data-tip="Share this view">
+                            <button class="btn btn-sm btn-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">Share</button>
+                        </div>
                     </div>
                 </header>
 
-                <article class="prose lg:prose-xl max-w-none prose-a:text-primary prose-a:hover:text-primary-focus prose-img:rounded-box prose-img:border prose-img:border-base-300">
+                <article class="prose lg:prose-xl max-w-none prose-a:text-primary prose-a:hover:text-primary prose-a:hover:opacity-80 prose-a:focus-visible:outline prose-a:focus-visible:outline-2 prose-a:focus-visible:outline-primary prose-img:rounded-box prose-img:border prose-img:border-base-300">
                     {{.Content}}
                 </article>
             </main>
