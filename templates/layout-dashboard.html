@@ -21,7 +21,7 @@
     <!-- Top Header -->
     <header class="navbar bg-base-100 shadow-sm border-b border-base-300 sticky top-0 z-40">
         <div class="flex-none lg:hidden">
-            <label for="my-drawer-2" class="btn btn-square btn-ghost drawer-button">
+            <label for="my-drawer-2" aria-label="Open Sidebar" class="btn btn-square btn-ghost drawer-button">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </label>
         </div>
@@ -48,14 +48,14 @@
         </div>
         <div class="flex-none gap-2">
             <div class="dropdown dropdown-end">
-                <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+                <div tabindex="0" role="button" aria-label="User Menu" class="btn btn-ghost btn-circle avatar focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
                     <div class="w-10 rounded-full border border-base-300">
                         <img alt="User Avatar" src="/assets/img/mascot-default.jpeg" />
                     </div>
                 </div>
                 <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52 border border-base-300">
-                    <li><a class="justify-between hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">Profile <span class="badge badge-primary badge-sm">New</span></a></li>
-                    <li><a class="hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">Logout</a></li>
+                    <li><a href="#" class="justify-between hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">Profile <span class="badge badge-primary badge-sm">New</span></a></li>
+                    <li><a href="#" class="hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none">Logout</a></li>
                 </ul>
             </div>
         </div>
@@ -110,9 +110,10 @@
             <aside class="w-80 min-h-full bg-base-200 text-base-content border-r border-base-300 flex flex-col pt-16 lg:pt-0">
                 <div class="p-4 border-b border-base-300">
                     <h2 class="text-sm font-bold uppercase tracking-wider text-base-content/50 mb-2">Workspace Modules</h2>
-                    <div class="form-control w-full">
-                        <input type="text" placeholder="Quick Search..." class="input input-sm input-bordered w-full" />
-                    </div>
+                    <label class="input input-sm input-bordered flex items-center gap-2">
+                        <input type="text" aria-label="Search Workspace" placeholder="Quick Search..." class="grow" />
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 opacity-70" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
+                    </label>
                 </div>
 
                 <ul class="menu p-4 w-full text-base-content flex-grow gap-1">
