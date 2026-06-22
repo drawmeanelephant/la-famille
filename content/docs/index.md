@@ -10,6 +10,7 @@ Welcome to the documentation for La Famille! Below you'll find guides on how to 
 ## Core Guides
 
 *   [**Getting Started Guide**](setup.md) - Learn how to install prerequisites, initialize the project, build, and serve your site.
+*   [**Configuration Guide**](config.md) - Learn how to configure your site using config.yaml.
 *   [**CLI Reference**](cli.md) - A complete list of all command-line arguments and flags.
 *   [**Terminal UI Guide**](tui.md) - How to use the interactive Bubbletea TUI.
 *   [**Templating System**](templates.md) - Learn how HTML layouts work and how to configure them via frontmatter.
