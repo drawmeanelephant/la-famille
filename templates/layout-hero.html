@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="aqua">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Site.SiteName}}</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+</head>
+<body class="min-h-screen bg-base-100 flex flex-col">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Skip to content</a>
+
+    <header class="navbar bg-base-200/90 backdrop-blur sticky top-0 z-40 shadow-sm">
+        <div class="flex-1">
+            <a class="btn btn-ghost text-xl focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none" href="/">{{.Site.SiteName}}</a>
+        </div>
+        <div class="flex-none">
+            <ul class="menu menu-horizontal px-1">
+                <li><a href="/" class="focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Home</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <div class="hero min-h-[50vh] bg-base-200" style="background-image: url('https://img.daisyui.com/images/stock/photo-1507358522600-9f71e620c44e.webp');">
+        <div class="hero-overlay bg-opacity-60 bg-neutral"></div>
+        <div class="hero-content text-neutral-content text-center">
+            <div class="max-w-md">
+                <h1 class="mb-5 text-5xl font-bold">{{.Title}}</h1>
+                {{if or .Author .Date}}
+                <p class="mb-5 text-lg opacity-80">
+                    {{if .Author}}<span class="mr-4">By {{.Author}}</span>{{end}}
+                    {{if .Date}}<span>on {{.Date}}</span>{{end}}
+                </p>
+                {{end}}
+            </div>
+        </div>
+    </div>
+
+    <main id="main-content" class="flex-grow container mx-auto px-4 py-12 max-w-4xl">
+        <article class="prose lg:prose-xl max-w-none prose-a:text-primary prose-a:hover:text-secondary prose-a:focus-visible:outline prose-a:focus-visible:outline-2 prose-a:focus-visible:outline-primary mx-auto bg-base-100 shadow-xl rounded-box p-8 md:p-12 -mt-16 relative z-10">
+            {{.Content}}
+        </article>
+    </main>
+
+    <footer class="footer footer-center p-10 bg-base-300 text-base-content mt-12">
+        <aside>
+            <p>Built in Go and Jules by Google, with Raoul(s) and DaisyUI</p>
+            <p class="text-sm opacity-50 mt-2">Hero Layout - Aqua Theme</p>
+        </aside>
+    </footer>
+</body>
+</html>
