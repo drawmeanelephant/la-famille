@@ -231,18 +231,22 @@ func run(cfg config.Config) error {
 
 		templatePath := cfg.Template
 		if meta.Layout != "" {
-			layoutPath := filepath.Join("templates", meta.Layout+".html")
-			// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille
-			if _, err := os.Stat(layoutPath); os.IsNotExist(err) {
-				layoutPathFallback := filepath.Join("..", "..", "templates", meta.Layout+".html")
-				if _, err2 := os.Stat(layoutPathFallback); err2 == nil {
-					layoutPath = layoutPathFallback
-				}
-			}
-			if _, err := os.Stat(layoutPath); err == nil {
-				templatePath = layoutPath
+			if !filepath.IsLocal(meta.Layout + ".html") {
+				log.Printf("Warning: Potential path traversal in layout template loading detected: %s. Falling back to default %s", meta.Layout, cfg.Template)
 			} else {
-				log.Printf("Warning: layout template %s not found, falling back to %s", layoutPath, cfg.Template)
+				layoutPath := filepath.Join("templates", meta.Layout+".html")
+				// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille
+				if _, err := os.Stat(layoutPath); os.IsNotExist(err) {
+					layoutPathFallback := filepath.Join("..", "..", "templates", meta.Layout+".html")
+					if _, err2 := os.Stat(layoutPathFallback); err2 == nil {
+						layoutPath = layoutPathFallback
+					}
+				}
+				if _, err := os.Stat(layoutPath); err == nil {
+					templatePath = layoutPath
+				} else {
+					log.Printf("Warning: layout template %s not found, falling back to %s", layoutPath, cfg.Template)
+				}
 			}
 		}
 
