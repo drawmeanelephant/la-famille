@@ -68,8 +68,8 @@ title: Test Page
 	}
 
 	cmdRun := exec.Command(exePath, "build",
-		"--contentDir", contentDir,
-		"--out", filepath.Join(tmpDir, "cli_output"),
+		"--content", contentDir,
+		"--output", filepath.Join(tmpDir, "cli_output"),
 		"--template", filepath.Join(templateDir, "layout.html"))
 
 	// Run from tmpDir so it picks up config.yaml

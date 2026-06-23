@@ -15,6 +15,7 @@ Welcome to the documentation for La Famille! Below you'll find guides on how to 
 *   [**Terminal UI Guide**](tui.md) - How to use the interactive Bubbletea TUI.
 *   [**Templating System**](templates.md) - Learn how HTML layouts work and how to configure them via frontmatter.
 *   [**RAG Export Guide**](rag.md) - Understand how to generate AI-ready datasets from your site content.
+*   **[Pull Request Management](pr.md)** - Learn how to use the automated PR sync command.
 *   [**How the Generator Works**](generator.md) - A deep dive into the Go parsing and rendering pipeline.
 *   [**Using Frontmatter**](frontmatter.md) - Explains supported YAML keys and the `render: false` flag.
 
