@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="synthwave">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Site.SiteName}}</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+</head>
+<body class="min-h-screen bg-base-200 font-sans flex flex-col">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content focus-visible:outline-2 focus-visible:outline-primary">Skip to content</a>
+
+    <header class="bg-base-300 shadow-md">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <img src="/assets/img/mascot-electric-blue.jpeg" alt="Jules the Octopus Mascot" class="w-16 h-16 rounded-full border-4 border-primary object-cover">
+                <div>
+                    <a href="/" class="text-3xl font-extrabold text-primary hover:text-primary-content transition-colors duration-200">{{.Site.SiteName}}</a>
+                    <p class="text-sm text-secondary font-semibold">An Asymmetric Journey</p>
+                </div>
+            </div>
+            <nav aria-label="Main Navigation" class="flex gap-4">
+                <a href="/" class="btn btn-ghost text-secondary">Home</a>
+                <a href="/about" class="btn btn-ghost text-secondary">About</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content" class="container mx-auto px-4 py-8 flex-grow">
+        <!-- Asymmetric Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- Sidebar / Meta Info (Smaller Column) -->
+            <aside class="lg:col-span-4 flex flex-col gap-6">
+                <div class="card bg-base-100 shadow-xl border-t-4 border-primary">
+                    <div class="card-body">
+                        <h2 class="card-title text-2xl font-bold text-accent mb-2">Meta</h2>
+                        <div class="divider mt-0 mb-4"></div>
+                        <h1 class="text-xl font-bold text-base-content mb-4 leading-tight">{{.Title}}</h1>
+
+                        {{if or .Author .Date}}
+                        <div class="flex flex-col gap-3 text-sm text-base-content/80">
+                            {{if .Author}}
+                            <div class="flex items-center gap-2">
+                                <span aria-hidden="true" class="text-xl text-primary">👤</span>
+                                <span><strong>By:</strong> {{.Author}}</span>
+                            </div>
+                            {{end}}
+                            {{if .Date}}
+                            <div class="flex items-center gap-2">
+                                <span aria-hidden="true" class="text-xl text-secondary">📅</span>
+                                <span><strong>Date:</strong> {{.Date}}</span>
+                            </div>
+                            {{end}}
+                        </div>
+                        {{end}}
+
+                        <div class="mt-8">
+                             <h3 class="font-bold text-lg text-primary mb-2">Quick Actions</h3>
+                             <div class="flex flex-col gap-2">
+                                 <div class="tooltip tooltip-right" data-tip="Share this article">
+                                     <button class="btn btn-outline btn-secondary btn-sm w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary focus-visible:outline-offset-2">Share Article</button>
+                                 </div>
+                                 <div class="tooltip tooltip-right" data-tip="Save article for later">
+                                     <button class="btn btn-outline btn-accent btn-sm w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">Save for Later</button>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-neutral text-neutral-content shadow-lg">
+                     <div class="card-body p-6">
+                         <h3 class="card-title text-lg text-secondary">Newsletter</h3>
+                         <p class="text-sm opacity-80">Subscribe for the latest synthwave updates.</p>
+                         <form class="join mt-2" action="#" method="get">
+                             <input type="email" placeholder="Email" aria-label="Email address for newsletter" autocomplete="email" required class="input input-bordered input-sm join-item w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
+                             <button type="submit" class="btn btn-primary btn-sm join-item focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2">Join</button>
+                         </form>
+                     </div>
+                </div>
+            </aside>
+
+            <!-- Main Content (Larger Column) -->
+            <article class="lg:col-span-8">
+                <div class="card bg-base-100 shadow-2xl h-full border-l-4 border-secondary rounded-l-none">
+                    <div class="card-body">
+                        <div class="prose lg:prose-xl max-w-none prose-primary prose-a:text-secondary prose-a:hover:text-accent prose-headings:text-primary prose-strong:text-accent">
+                            {{.Content}}
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+        </div>
+    </main>
+
+    <footer class="footer footer-center p-10 bg-base-300 text-base-content mt-12 border-t-2 border-primary">
+        <aside>
+            <div class="flex flex-col items-center gap-4">
+                 <img src="/assets/img/mascot-electric-blue.jpeg" alt="Jules the Octopus Mascot" class="w-12 h-12 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                 <p class="font-bold text-lg text-primary">
+                    La Famille Asymmetric
+                 </p>
+                 <p>Built in Go, powered by Jules, themed with Synthwave.</p>
+                 <p class="text-sm opacity-60">© 2026 {{.Site.SiteName}} - All right reserved</p>
+            </div>
+        </aside>
+    </footer>
+</body>
+</html>

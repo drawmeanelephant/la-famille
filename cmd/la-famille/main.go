@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"html"
 	"html/template"
 	"log"
 	"net/http"
@@ -23,21 +22,11 @@ import (
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/graph"
 	"github.com/tbuddy/la-famille/internal/jsonutil"
+	"github.com/tbuddy/la-famille/internal/page"
 	"github.com/tbuddy/la-famille/internal/ragexport"
+	"github.com/tbuddy/la-famille/internal/stub"
 	"github.com/tbuddy/la-famille/internal/transform"
 )
-
-type Page struct {
-	Site            config.Config
-	Title           string
-	Author          string
-	Date            string
-	VideoScript     string
-	AnimationCues   string
-	SoundtrackTheme string
-	Layout          string
-	Content         template.HTML
-}
 
 var (
 	contentDir   string
@@ -69,8 +58,8 @@ func main() {
 		},
 	}
 
-	buildCmd.Flags().StringVarP(&contentDir, "contentDir", "c", cfg.ContentDir, "Directory containing markdown files")
-	buildCmd.Flags().StringVarP(&outputDir, "out", "o", cfg.OutputDir, "Directory for generated static site")
+	buildCmd.Flags().StringVarP(&contentDir, "content", "c", cfg.ContentDir, "Directory containing markdown files")
+	buildCmd.Flags().StringVarP(&outputDir, "output", "o", cfg.OutputDir, "Directory for generated static site")
 	buildCmd.Flags().StringVarP(&templateFile, "template", "t", cfg.Template, "Path to HTML layout template")
 
 	var initCmd = &cobra.Command{
@@ -223,7 +212,7 @@ func run(cfg config.Config) error {
 
 		sanitizedHTML := p.SanitizeBytes(buf.Bytes())
 
-		page := Page{
+		page := page.Page{
 			Site:            cfg,
 			Title:           title,
 			Author:          meta.Author,
@@ -242,18 +231,22 @@ func run(cfg config.Config) error {
 
 		templatePath := cfg.Template
 		if meta.Layout != "" {
-			layoutPath := filepath.Join("templates", meta.Layout+".html")
-			// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille
-			if _, err := os.Stat(layoutPath); os.IsNotExist(err) {
-				layoutPathFallback := filepath.Join("..", "..", "templates", meta.Layout+".html")
-				if _, err2 := os.Stat(layoutPathFallback); err2 == nil {
-					layoutPath = layoutPathFallback
-				}
-			}
-			if _, err := os.Stat(layoutPath); err == nil {
-				templatePath = layoutPath
+			if !filepath.IsLocal(meta.Layout + ".html") {
+				log.Printf("Warning: Potential path traversal in layout template loading detected: %s. Falling back to default %s", meta.Layout, cfg.Template)
 			} else {
-				log.Printf("Warning: layout template %s not found, falling back to %s", layoutPath, cfg.Template)
+				layoutPath := filepath.Join("templates", meta.Layout+".html")
+				// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille
+				if _, err := os.Stat(layoutPath); os.IsNotExist(err) {
+					layoutPathFallback := filepath.Join("..", "..", "templates", meta.Layout+".html")
+					if _, err2 := os.Stat(layoutPathFallback); err2 == nil {
+						layoutPath = layoutPathFallback
+					}
+				}
+				if _, err := os.Stat(layoutPath); err == nil {
+					templatePath = layoutPath
+				} else {
+					log.Printf("Warning: layout template %s not found, falling back to %s", layoutPath, cfg.Template)
+				}
 			}
 		}
 
@@ -270,69 +263,8 @@ func run(cfg config.Config) error {
 		outFile.Close()
 	}
 	// 4. Generate stubs for missing files in deterministic order
-	var missingKeys []string
-	for k := range missingFiles {
-		missingKeys = append(missingKeys, k)
-	}
-	sort.Strings(missingKeys)
-
-	for _, missingRelPath := range missingKeys {
-		parents := missingFiles[missingRelPath]
-		sort.Strings(parents)
-		id := strings.TrimSuffix(missingRelPath, ".md")
-		g.Nodes[id] = graph.Node{
-			Type:         "stub",
-			Render:       true,
-			Missing:      true,
-			ReferencedBy: parents,
-		}
-
-		outPath := filepath.Join(cfg.OutputDir, filepath.FromSlash(missingRelPath))
-		// ensure the missing relative path has .html
-		outPath = strings.TrimSuffix(outPath, ".md") + ".html"
-
-		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-			return err
-		}
-
-		// build simple HTML stub
-		var htmlContent strings.Builder
-		htmlContent.WriteString("<h2>This page doesn't exist yet</h2>\n")
-		htmlContent.WriteString("<p>It was linked from:</p>\n<ul>\n")
-		for _, parent := range parents {
-			parentHtml := strings.TrimSuffix(parent, ".md") + ".html"
-			// determine relative path from missing file to parent file for linking
-			relParent, err := relPathFromTo(missingRelPath, parentHtml)
-			if err == nil {
-				htmlContent.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", html.EscapeString(relParent), html.EscapeString(parent)))
-			} else {
-				htmlContent.WriteString(fmt.Sprintf("<li>%s</li>\n", html.EscapeString(parent)))
-			}
-		}
-		htmlContent.WriteString("</ul>\n")
-
-		page := Page{
-			Site:    cfg,
-			Title:   "Missing Page",
-			Content: template.HTML(p.SanitizeBytes([]byte(htmlContent.String()))),
-		}
-
-		outFile, err := os.Create(outPath)
-		if err != nil {
-			return err
-		}
-
-		defaultTmpl, err := template.ParseFiles(cfg.Template)
-		if err != nil {
-			outFile.Close()
-			return fmt.Errorf("failed to parse default template file for stubs: %w", err)
-		}
-
-		if err := defaultTmpl.Execute(outFile, page); err != nil {
-			outFile.Close()
-			return err
-		}
-		outFile.Close()
+	if err := stub.GenerateStubs(cfg, missingFiles, &g, p); err != nil {
+		return err
 	}
 
 	// 5. Write JSON outputs
@@ -350,14 +282,4 @@ func run(cfg config.Config) error {
 	}
 
 	return nil
-}
-
-// relPathFromTo computes the relative URL path from base (e.g. dir1/missing.md) to target (e.g. index.html)
-func relPathFromTo(base, target string) (string, error) {
-	baseDir := filepath.Dir(base)
-	rel, err := filepath.Rel(baseDir, target)
-	if err != nil {
-		return "", err
-	}
-	return filepath.ToSlash(rel), nil
 }

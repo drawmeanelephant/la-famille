@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="business">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Site.SiteName}}</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+</head>
+<body class="min-h-screen bg-base-200 flex flex-col font-serif">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Skip to content</a>
+
+    <header class="bg-neutral text-neutral-content border-b-8 border-primary">
+        <div class="container mx-auto px-4 py-8 max-w-7xl flex flex-col md:flex-row justify-between items-center">
+            <a class="text-5xl font-black uppercase tracking-tighter hover:text-primary transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none" href="/">{{.Site.SiteName}}</a>
+            <div class="text-sm mt-4 md:mt-0 font-sans uppercase tracking-widest opacity-80">
+                The Daily Chronicle
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" class="flex-1 container mx-auto px-4 py-12 max-w-7xl">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- Left Metadata Column -->
+            <aside class="lg:col-span-3 space-y-8">
+                <div class="bg-base-100 p-6 shadow-md border-t-4 border-secondary">
+                    <h2 class="text-2xl font-bold mb-4 uppercase tracking-wider">Metadata</h2>
+                    <ul class="text-sm space-y-3 font-sans">
+                        {{if .Author}}
+                        <li>
+                            <span class="block text-base-content/60 uppercase text-xs font-bold">Author</span>
+                            <span class="text-lg">{{.Author}}</span>
+                        </li>
+                        {{end}}
+                        {{if .Date}}
+                        <li>
+                            <span class="block text-base-content/60 uppercase text-xs font-bold">Published</span>
+                            <span class="text-lg">{{.Date}}</span>
+                        </li>
+                        {{end}}
+                    </ul>
+                </div>
+
+                <div class="bg-base-300 p-6 text-center text-sm font-sans">
+                    <p class="uppercase font-bold mb-2">Advertisement</p>
+                    <div class="bg-base-200 h-32 flex items-center justify-center border border-base-content/20">
+                        <span class="text-base-content/50">Space Available</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Article Content -->
+            <article class="lg:col-span-9 bg-base-100 p-8 md:p-12 shadow-lg border-t-4 border-primary">
+                <header class="mb-10 border-b-2 border-base-300 pb-8">
+                    <h1 class="text-5xl md:text-7xl font-black leading-tight mb-4">{{.Title}}</h1>
+                </header>
+
+                <div class="prose lg:prose-xl max-w-none prose-headings:font-bold prose-a:text-primary prose-a:hover:text-secondary prose-a:focus-visible:outline prose-a:focus-visible:outline-2 prose-a:focus-visible:outline-primary font-sans">
+                    {{.Content}}
+                </div>
+            </article>
+
+        </div>
+    </main>
+
+    <footer class="bg-neutral text-neutral-content py-12 border-t-8 border-secondary mt-12">
+        <div class="container mx-auto px-4 max-w-7xl text-center md:text-left grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+                <h3 class="text-2xl font-black uppercase mb-4">{{.Site.SiteName}}</h3>
+                <p class="text-sm opacity-80 font-sans">Delivering the latest news and insights with unparalleled style and substance.</p>
+            </div>
+            <div class="font-sans">
+                <h4 class="text-lg font-bold uppercase mb-4">Sections</h4>
+                <ul class="space-y-2 opacity-80">
+                    <li><a href="/" class="hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Front Page</a></li>
+                    <li><a href="#" class="hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">World</a></li>
+                    <li><a href="#" class="hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Politics</a></li>
+                    <li><a href="#" class="hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Business</a></li>
+                </ul>
+            </div>
+            <div class="font-sans">
+                <p class="text-sm opacity-80 mt-8 md:mt-0">Built in Go and Jules by Google, with Raoul(s) and DaisyUI.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
