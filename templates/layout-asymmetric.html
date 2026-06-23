@@ -60,8 +60,12 @@
                         <div class="mt-8">
                              <h3 class="font-bold text-lg text-primary mb-2">Quick Actions</h3>
                              <div class="flex flex-col gap-2">
-                                 <button class="btn btn-outline btn-secondary btn-sm">Share Article</button>
-                                 <button class="btn btn-outline btn-accent btn-sm">Save for Later</button>
+                                 <div class="tooltip tooltip-right" data-tip="Share this article">
+                                     <button class="btn btn-outline btn-secondary btn-sm w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary focus-visible:outline-offset-2">Share Article</button>
+                                 </div>
+                                 <div class="tooltip tooltip-right" data-tip="Save article for later">
+                                     <button class="btn btn-outline btn-accent btn-sm w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">Save for Later</button>
+                                 </div>
                              </div>
                         </div>
                     </div>
@@ -71,10 +75,10 @@
                      <div class="card-body p-6">
                          <h3 class="card-title text-lg text-secondary">Newsletter</h3>
                          <p class="text-sm opacity-80">Subscribe for the latest synthwave updates.</p>
-                         <div class="join mt-2">
-                             <input type="text" placeholder="Email" class="input input-bordered input-sm join-item w-full" />
-                             <button class="btn btn-primary btn-sm join-item">Join</button>
-                         </div>
+                         <form class="join mt-2" action="#" method="get">
+                             <input type="email" placeholder="Email" aria-label="Email address for newsletter" autocomplete="email" required class="input input-bordered input-sm join-item w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
+                             <button type="submit" class="btn btn-primary btn-sm join-item focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2">Join</button>
+                         </form>
                      </div>
                 </div>
             </aside>
