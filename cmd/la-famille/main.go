@@ -69,8 +69,8 @@ func main() {
 		},
 	}
 
-	buildCmd.Flags().StringVarP(&contentDir, "contentDir", "c", cfg.ContentDir, "Directory containing markdown files")
-	buildCmd.Flags().StringVarP(&outputDir, "out", "o", cfg.OutputDir, "Directory for generated static site")
+	buildCmd.Flags().StringVarP(&contentDir, "content", "c", cfg.ContentDir, "Directory containing markdown files")
+	buildCmd.Flags().StringVarP(&outputDir, "output", "o", cfg.OutputDir, "Directory for generated static site")
 	buildCmd.Flags().StringVarP(&templateFile, "template", "t", cfg.Template, "Path to HTML layout template")
 
 	var initCmd = &cobra.Command{

@@ -52,11 +52,14 @@ go run ./cmd/la-famille build [flags]
 Starts a local HTTP server to preview your generated site.
 
 ```bash
-go run ./cmd/la-famille serve
+go run ./cmd/la-famille serve [flags]
 ```
 
 *   **Description:** Launches a local web server (using Go's `http.FileServer`) pointing to the configured output directory (usually `public/`). This allows you to instantly preview your generated site in your web browser.
-*   **Port:** By default, the server runs on port `8080`.
+*   **Flags:**
+    *   `--port`, `-p` (int): The port to run the server on. Overrides the value set in `config.yaml`. Defaults to `8080` if not set in config.
+
+*Example:* `go run ./cmd/la-famille serve -p 3000`
 
 ### `rag`
 
@@ -67,3 +70,14 @@ go run ./cmd/la-famille rag
 ```
 
 *   **Description:** Scans the generated output and metadata to construct an optimized dataset designed for Large Language Models (LLMs). This exports files like `rag-system.md`, `rag-config.md`, and `rag-content.md` into the `internal/rag-archive/` directory. See the [RAG Export Guide](rag.md) for more details.
+
+### `pr`
+
+Manages GitHub Pull Requests.
+
+```bash
+go run ./cmd/la-famille pr [command]
+```
+
+*   **Description:** A suite of tools for managing PRs, particularly useful for clearing out stale PRs created by automation agents via the `sync` subcommand.
+*   **See Also:** [Pull Request Management Guide](pr.md) for full details and configuration requirements.
