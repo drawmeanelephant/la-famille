@@ -27,3 +27,13 @@ A Nerd Core / Boom Bap rap album documenting the mechanical loops and daily upke
 > *Page now in its own lane, playing the refactor game*
 > *RelPathFromTo tested, missing pages found*
 > *Graph nodes updated, everything is sound.*
+
+### 53. "XSS Sanitizer" (Test Fixture Expansion)
+**Vibe:** Industrial beat with a heavy low-end bass synth and crisp high-hats.
+**Bars:**
+> *We caught the script tag tryin' to slip in the text,*
+> *Bluemonday blocked it, asked 'em what's comin' next.*
+> *No javascript link gonna mess with the flow,*
+> *Sanitizin' the markup before the users even know.*
+> *Edge-cases covered, keep the payload tight,*
+> *Another fixture down, we codin' through the night.*
