@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/stub"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -126,7 +127,7 @@ func TestInitCommand(t *testing.T) {
 	}
 }
 
-func TestRelPathFromTo(t *testing.T) {
+func TestStubRelPathFromToFallback(t *testing.T) {
 	tests := []struct {
 		name     string
 		base     string
@@ -166,13 +167,13 @@ func TestRelPathFromTo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := relPathFromTo(tt.base, tt.target)
+			got, err := stub.RelPathFromTo(tt.base, tt.target)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("relPathFromTo() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("stub.RelPathFromTo() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.expected {
-				t.Errorf("relPathFromTo() = %v, want %v", got, tt.expected)
+				t.Errorf("stub.RelPathFromTo() = %v, want %v", got, tt.expected)
 			}
 		})
 	}
