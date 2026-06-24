@@ -59,6 +59,6 @@ By default, the server will start on port `8080`. Open your web browser and navi
 
 Now that you have the site running, here are a few things you can do next:
 
-*   **Explore the TUI:** Try running `go run ./cmd/la-famille` without any arguments to see the interactive Terminal UI. See the [TUI Guide](tui.md) for more details.
+*   **Explore the TUI:** Try running `go run ./cmd/la-famille tui` to see the interactive Terminal UI. See the [TUI Guide](tui.md) for more details.
 *   **Learn the CLI:** Read the [CLI Reference](cli.md) to discover all available flags and options.
 *   **Design with Templates:** Find out how to change the look of your site using different layouts in the [Templating Guide](templates.md).
