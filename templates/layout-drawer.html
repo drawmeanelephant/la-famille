@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="synthwave">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Site.SiteName}}</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+</head>
+<body class="min-h-screen bg-base-200">
+    <!-- Accessibility: Skip to main content link for keyboard navigation -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Skip to content</a>
+
+    <!-- DaisyUI Drawer Layout: lg:drawer-open keeps the sidebar open on large screens -->
+    <div class="drawer lg:drawer-open">
+      <!-- Hidden checkbox used to toggle the drawer on mobile -->
+      <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
+      <div class="drawer-content flex flex-col items-center justify-center">
+        <!-- Page content here -->
+        <!-- Mobile toggle button: visible only on small screens (lg:hidden) -->
+        <label for="my-drawer-2" class="btn btn-primary drawer-button lg:hidden mb-4 mt-4">Open Navigation</label>
+
+        <main id="main-content" class="container mx-auto px-4 max-w-4xl flex-grow w-full">
+          <div class="card bg-base-100 shadow-xl mt-8">
+              <div class="card-body">
+                  <!-- Page Title rendered from markdown frontmatter -->
+                  <h1 class="card-title text-4xl mb-2 text-primary">{{.Title}}</h1>
+
+                  <!-- Conditional rendering of Author and Date metadata -->
+                  {{if or .Author .Date}}
+                  <div class="text-sm text-base-content/70 mb-8 border-b pb-4">
+                      {{if .Author}}<span class="mr-4"><strong>By:</strong> {{.Author}}</span>{{end}}
+                      {{if .Date}}<span><strong>Date:</strong> {{.Date}}</span>{{end}}
+                  </div>
+                  {{end}}
+
+                  <!-- Main Content Area: Utilizing Tailwind Typography prose classes, with specific theme color overrides for readability -->
+                  <article class="prose prose-lg max-w-none prose-headings:text-primary prose-strong:text-secondary prose-a:text-accent prose-a:hover:text-accent-focus prose-a:focus-visible:outline prose-a:focus-visible:outline-2 prose-a:focus-visible:outline-accent">
+                      {{.Content}}
+                  </article>
+              </div>
+          </div>
+        </main>
+
+        <!-- Standard sticky footer for the main content area -->
+        <footer class="footer footer-center p-4 bg-base-300 text-base-content mt-12 w-full">
+            <aside>
+                <p>Built in Go and Jules the Octopus, with DaisyUI</p>
+            </aside>
+        </footer>
+      </div>
+      <!-- Sidebar / Drawer Side -->
+      <div class="drawer-side">
+        <!-- Overlay for closing the drawer on mobile when clicking outside -->
+        <label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label>
+        <ul class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
+          <!-- Sidebar Navigation Items -->
+          <li class="menu-title"><span>Menu</span></li>
+          <li><a href="/">Home</a></li>
+          <!-- Note: Add dynamically generated category links or internal site links here -->
+        </ul>
+      </div>
+    </div>
+</body>
+</html>
