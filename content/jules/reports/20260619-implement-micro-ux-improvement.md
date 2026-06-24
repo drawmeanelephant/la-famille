@@ -1,22 +1,22 @@
 ---
-title: "Routine Report: Implement Micro-UX Improvement"
-author: "Jules"
-date: "2026-06-19"
+title: Routine Report - Implement Micro-UX Improvement
+date: 2026-06-19
+author: Jules
 ---
 
-# 2026-06-19 - Implement Micro-UX Improvement
+# Routine: Implement Micro-UX Improvement (2026-06-19)
 
 **Status:** Success
 
-**Description of changes:**
-- **Asymmetric Layout (`templates/layout-asymmetric.html`):**
-  - Updated the newsletter form input to use `type="email"` instead of `text`.
-  - Added accessibility attributes (`aria-label`, `autocomplete="email"`, `required`).
-  - Wrapped the input and join button in a proper `<form>` element to enable "Enter" key submission.
-  - Added consistent `focus-visible` ring styling to the input and button to enhance keyboard navigation visibility.
-- **Dashboard Layout (`templates/layout-dashboard.html`):**
-  - Updated the search input to use `type="search"` instead of `text` for better native keyboard handling on mobile devices.
-  - Enhanced the search input's accessibility by transferring the focus indicator styling to the parent `<label>` container using Tailwind's `focus-within` variant. This ensures the entire search bar container is visually highlighted when the input inside receives focus.
+## Details
+- **Routine:** Implement Micro-UX Improvement
+- **Date:** 2026-06-19
+- **Target:** `templates/layout-dashboard.html`
+- **Improvement:** Wrapped the loose `<input type="search">` in the sidebar in a `<form role="search">` to support native 'Enter' key submission. Also converted the decorative SVG search icon into an accessible `<button type="submit">` with a proper `aria-label`.
 
-**Learnings/Suggestions:**
-- The process was straightforward, but the repository currently lacks content leveraging these specific layouts by default. In the future, providing test fixtures for each layout would streamline verification.
+## Learnings & Insights
+- Ensure single-input features like search bars or newsletter signups are wrapped in a `<form>` to natively support keyboard submissions, rather than relying solely on loose inputs.
+- When transforming decorative icons into functional submission triggers, ensure they are wrapped in an interactive element like `<button>` and provided with clear `aria-labels` for screen reader accessibility.
+
+## Suggestions for Routine Improvement
+- Consider adding a checklist of common micro-UX anti-patterns (like missing form wrappers, missing focus states, or missing aria labels on interactive SVGs) to the routine definition to make identification faster in the future.
