@@ -1,7 +1,10 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v2" // Using v2 to match the indirect dependency from frontmatter
 )
@@ -12,6 +15,8 @@ type Config struct {
 	Template   string `yaml:"template"`
 	ContentDir string `yaml:"content_dir"`
 	OutputDir  string `yaml:"output_dir"`
+	AssetDir   string `yaml:"asset_dir"`
+	RagDir     string `yaml:"rag_dir"`
 	Theme      string `yaml:"theme"`
 	Port       int    `yaml:"port"`
 }
@@ -23,6 +28,8 @@ func DefaultConfig() Config {
 		Template:   "templates/layout.html",
 		ContentDir: "content",
 		OutputDir:  "public",
+		AssetDir:   "assets",
+		RagDir:     "rag-archive",
 		Theme:      "retro",
 		Port:       8080,
 	}
@@ -47,6 +54,10 @@ func Load(filepath string) (Config, error) {
 		return config, err
 	}
 
+	if err := config.Validate(); err != nil {
+		return config, fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	return config, nil
 }
 
@@ -69,6 +80,12 @@ content_dir: "content"
 # output_dir: The directory where the generated HTML site will be placed.
 output_dir: "public"
 
+# asset_dir: The directory containing static assets.
+asset_dir: "assets"
+
+# rag_dir: The directory where RAG markdown bundles will be exported.
+rag_dir: "rag-archive"
+
 # theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
 theme: "retro"
 
@@ -76,4 +93,46 @@ theme: "retro"
 port: 8080
 `
 	return os.WriteFile(filepath, []byte(defaultYaml), 0644)
+}
+
+// Validate checks that the configuration values are safe and correct.
+func (c Config) Validate() error {
+	if c.ContentDir == "" {
+		return errors.New("ContentDir cannot be empty")
+	}
+	if c.OutputDir == "" {
+		return errors.New("OutputDir cannot be empty")
+	}
+	if c.Template == "" {
+		return errors.New("Template cannot be empty")
+	}
+	if c.AssetDir == "" {
+		return errors.New("AssetDir cannot be empty")
+	}
+	if c.RagDir == "" {
+		return errors.New("RagDir cannot be empty")
+	}
+
+	if c.Port < 1 || c.Port > 65535 {
+		return fmt.Errorf("Port must be between 1 and 65535, got %d", c.Port)
+	}
+
+	// Validate path locality (prevent directory traversal)
+	if !filepath.IsLocal(c.ContentDir) {
+		return fmt.Errorf("ContentDir must be a local path, got %s", c.ContentDir)
+	}
+	if !filepath.IsLocal(c.OutputDir) {
+		return fmt.Errorf("OutputDir must be a local path, got %s", c.OutputDir)
+	}
+	if !filepath.IsLocal(c.Template) {
+		return fmt.Errorf("Template must be a local path, got %s", c.Template)
+	}
+	if !filepath.IsLocal(c.AssetDir) {
+		return fmt.Errorf("AssetDir must be a local path, got %s", c.AssetDir)
+	}
+	if !filepath.IsLocal(c.RagDir) {
+		return fmt.Errorf("RagDir must be a local path, got %s", c.RagDir)
+	}
+
+	return nil
 }

@@ -101,4 +101,38 @@ title: "Nested File"
 	if _, ok := fileMap["ignore.txt"]; ok {
 		t.Errorf("ignore.txt should not be in map")
 	}
+
+	t.Run("Mixed case frontmatter", func(t *testing.T) {
+		content := `---
+Title: "Uppercase Title"
+author: "lowercase author"
+Render: false
+---
+Some body text.`
+		fileName := "mixed.md"
+		if err := os.WriteFile(filepath.Join(tmpDir, fileName), []byte(content), 0644); err != nil {
+			t.Fatalf("Failed to write test file: %v", err)
+		}
+
+		fileMap, err := GatherMetadata(tmpDir)
+		if err != nil {
+			t.Fatalf("GatherMetadata failed: %v", err)
+		}
+
+		meta, ok := fileMap["mixed.md"]
+		if !ok {
+			t.Fatalf("Expected 'mixed.md' in fileMap, got none")
+		}
+
+		if meta.Title != "Uppercase Title" {
+			t.Errorf("Expected Title to be 'Uppercase Title', got '%s'", meta.Title)
+		}
+		if meta.Author != "lowercase author" {
+			t.Errorf("Expected Author to be 'lowercase author', got '%s'", meta.Author)
+		}
+		if meta.Render == nil || *meta.Render != false {
+			t.Errorf("Expected Render to be false, got %v", meta.Render)
+		}
+	})
+
 }

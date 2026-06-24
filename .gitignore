@@ -15,3 +15,4 @@ screenshot.png
 videos/
 # Add rag-archive to gitignore since it contains generated files
 internal/rag-archive/
+rag-archive/

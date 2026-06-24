@@ -11,7 +11,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/generator"
 	"github.com/tbuddy/la-famille/internal/ragexport"
+	"github.com/tbuddy/la-famille/internal/watcher"
 )
 
 var tuiCmd = &cobra.Command{
@@ -76,6 +78,7 @@ func initialModel(cfg config.Config) model {
 			{"Build Site"},
 			{"RAG Export"},
 			{"Serve Site"},
+			{"Serve Site with Watch"},
 			{"Stats"},
 			{"Just Raoul"},
 			{"Quit"},
@@ -153,7 +156,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Re-assigning to avoid capturing loop variable problem, though we don't have a loop here
 					cfg := m.cfg
 					return m, func() tea.Msg {
-						err := run(cfg) // run() is defined in main.go
+						err := generator.Build(cfg)
 						return workResultMsg{err: err, msg: "Build complete"}
 					}
 				case "RAG Export":
@@ -161,16 +164,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.workMsg = "Exporting RAG data..."
 					m.workErr = nil
 					return m, func() tea.Msg {
-						err := ragexport.RunExport()
+						err := ragexport.RunExport(m.cfg)
 						return workResultMsg{err: err, msg: "RAG Export complete"}
 					}
-				case "Serve Site":
+				case "Serve Site", "Serve Site with Watch":
 					m.screen = screenServe
 					m.frame = 0
 					port := m.cfg.Port
 					if port == 0 {
 						port = 8080
 					}
+
+					if choice == "Serve Site with Watch" {
+						go watcher.Watch(m.cfg)
+					}
+
 					m.server = &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: http.FileServer(http.Dir(m.cfg.OutputDir))}
 					go func() {
 						_ = m.server.ListenAndServe()

@@ -7,11 +7,16 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/tbuddy/la-famille/internal/config"
 )
 
 // RunExport exports project files into RAG-friendly markdown bundles
-func RunExport() error {
-	outDir := filepath.Join("internal", "rag-archive")
+func RunExport(cfg config.Config) error {
+	outDir := cfg.RagDir
+	if outDir == "" {
+		outDir = "rag-archive"
+	}
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}

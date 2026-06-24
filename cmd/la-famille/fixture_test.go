@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/generator"
 )
 
 func TestFixtures(t *testing.T) {
@@ -35,7 +36,7 @@ func TestFixtures(t *testing.T) {
 			cfg.OutputDir = outputDir
 			cfg.Template = templateFile
 
-			if err := run(cfg); err != nil {
+			if err := generator.Build(cfg); err != nil {
 				t.Fatalf("run failed: %v", err)
 			}
 
