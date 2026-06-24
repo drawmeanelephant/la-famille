@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/adrg/frontmatter"
 )
@@ -51,6 +52,14 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			return err
 		}
 
+		// Parse into a generic map to normalize casing first
+		var rawMatter map[string]interface{}
+		rest, err := frontmatter.Parse(bytes.NewReader(contentBytes), &rawMatter)
+		if err != nil {
+			// If frontmatter parsing fails, treat the whole file as content
+			rest = contentBytes
+		}
+
 		var matter struct {
 			Title           string `yaml:"title"`
 			Author          string `yaml:"author"`
@@ -62,10 +71,39 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			Layout          string `yaml:"layout"`
 		}
 
-		rest, err := frontmatter.Parse(bytes.NewReader(contentBytes), &matter)
-		if err != nil {
-			// If frontmatter parsing fails, treat the whole file as content
-			rest = contentBytes
+		if rawMatter != nil {
+			// Lowercase keys
+			normalizedMatter := make(map[string]interface{})
+			for k, v := range rawMatter {
+				// Convert to lower case, but preserve underscores for things like video_script
+				normalizedMatter[strings.ToLower(k)] = v
+			}
+
+			// Safe extraction
+			if v, ok := normalizedMatter["title"].(string); ok {
+				matter.Title = v
+			}
+			if v, ok := normalizedMatter["author"].(string); ok {
+				matter.Author = v
+			}
+			if v, ok := normalizedMatter["date"].(string); ok {
+				matter.Date = v
+			}
+			if v, ok := normalizedMatter["render"].(bool); ok {
+				matter.Render = &v
+			}
+			if v, ok := normalizedMatter["video_script"].(string); ok {
+				matter.VideoScript = v
+			}
+			if v, ok := normalizedMatter["animation_cues"].(string); ok {
+				matter.AnimationCues = v
+			}
+			if v, ok := normalizedMatter["soundtrack_theme"].(string); ok {
+				matter.SoundtrackTheme = v
+			}
+			if v, ok := normalizedMatter["layout"].(string); ok {
+				matter.Layout = v
+			}
 		}
 
 		fileMap[relPath] = &FileMeta{
