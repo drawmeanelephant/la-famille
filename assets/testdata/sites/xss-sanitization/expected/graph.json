@@ -1,9 +1,0 @@
-{
-  "nodes": {
-    "index": {
-      "type": "page",
-      "render": true
-    }
-  },
-  "edges": []
-}

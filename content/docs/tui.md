@@ -9,10 +9,10 @@ La Famille features an interactive, full-screen Terminal UI built with the `Bubb
 
 ## Launching the TUI
 
-To launch the TUI, simply run the base command with the `tui` subcommand:
+To launch the TUI, simply run the base command without any subcommands:
 
 ```bash
-go run ./cmd/la-famille tui
+go run ./cmd/la-famille
 ```
 
 The application will take over your terminal screen (using `tea.WithAltScreen()`) and present you with the main menu.

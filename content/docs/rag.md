@@ -23,7 +23,7 @@ go run ./cmd/la-famille rag
 ```
 
 **Using the TUI:**
-1. Run `go run ./cmd/la-famille tui`
+1. Run `go run ./cmd/la-famille`
 2. Select **Generate RAG Archive** from the main menu.
 
 ## Output Files
