@@ -19,3 +19,6 @@ Date: 2026-06-21
 *   Focus on making the documentation useful for end-users, ensuring it covers things like CLI usage (`go run`), flags, and configuration.
 *   Keep edits explicit and ensure they are written in Markdown.
 *   **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**
+
+* **Configuration Audits:** Ensure core files like `config.yaml` are well-documented and easily discoverable for users.
+* **CLI Flag Audits:** Periodically audit `cmd/la-famille/main.go` flag declarations against the documentation in `cli.md`. Consider using an automated grep test to prevent drift.

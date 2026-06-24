@@ -23,3 +23,6 @@ Date: 2026-06-20
 ## Execution Reminders
 * Ensure the target directory `content/catfacts/` exists before attempting to write files to it.
 * Commit the generated files as part of the routine execution.
+
+* **Thematic Facts:** To add variety, consider requiring thematic cat facts (e.g., historical cats, biological quirks, famous internet cats) instead of just general facts.
+* **Expansion Opportunity:** Consider expanding this routine to also generate an accompanying `assets/img` prompt for a feline illustration to complement the text.

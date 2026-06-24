@@ -24,3 +24,6 @@ Create a single-file HTML layout in the `templates/` directory.
 *   Rely on your internal memory for project standards (footers, accessibility, Go template variables).
 *   Test visually with Playwright before committing.
 *   **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**
+
+* **Layout Patterns:** Consider explicitly using specific DaisyUI layout patterns (like `drawer` or `hero`) or CSS Grids (like `grid-cols-12`) to speed up scaffolding and handle responsive splits effectively.
+* **Theme Contrast with Prose:** When combining Tailwind Typography's `prose` classes with dark themes (like `dracula`), standard headings and strong text might blend into the background. Use DaisyUI theme color classes within prose modifiers (e.g., `prose-headings:text-primary`, `prose-strong:text-base-content`) to maintain readability and theme consistency.

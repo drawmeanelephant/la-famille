@@ -26,3 +26,7 @@ Date: 2026-06-19
 *   **Verification:** Rely on your internal memory for project standards. Test visually with Playwright and run unit tests before committing.
 *   **Commit:** Use the title format `🎨 Palette: [UX improvement]` for your commit or PR. Include a description detailing the "What," "Why," and any accessibility improvements.
 *   **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**
+
+* **Action Buttons & Context:** When adding or reviewing action buttons in dense layouts (like dashboards), always ensure they are wrapped in tooltips to provide immediate context, and that they explicitly define `focus-visible` states.
+* **Dropdown Anchors:** Anchor tags (`<a>`) within dropdown menus (`<ul>`) must always have an `href` attribute (e.g., `href="#"`) to preserve keyboard focusability. Consider running a quick grep for missing `href` tags inside `<ul>` lists as a standardized first check.
+* **Legacy Template Accessibility:** Be aware that standardized `focus-visible` styling may be missing across legacy `layout-*.html` templates. Consider standardizing these across all templates.
