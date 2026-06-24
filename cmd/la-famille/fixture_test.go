@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -69,6 +70,10 @@ func TestFixtures(t *testing.T) {
 				if err != nil {
 					t.Fatalf("failed to read expected file %s: %v", relPath, err)
 				}
+
+				// Normalize line endings for reliable cross-platform comparison
+				actualContent = bytes.ReplaceAll(actualContent, []byte("\r\n"), []byte("\n"))
+				expectedContent = bytes.ReplaceAll(expectedContent, []byte("\r\n"), []byte("\n"))
 
 				if string(actualContent) != string(expectedContent) {
 					t.Errorf("content mismatch in %s:\nExpected:\n%s\nActual:\n%s\n", relPath, string(expectedContent), string(actualContent))
