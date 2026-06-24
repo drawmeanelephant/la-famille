@@ -15,11 +15,21 @@ To execute the CLI, run the compiled binary or use `go run` targeting the packag
 go run ./cmd/la-famille [command] [flags]
 ```
 
-*Tip: Running the CLI without any commands will launch the interactive [Terminal UI (TUI)](tui.md).*
+*Tip: Running the CLI with the `tui` command will launch the interactive [Terminal UI (TUI)](tui.md).*
 
 ---
 
 ## Commands
+
+### `tui`
+
+Launches the interactive semi-graphical user interface.
+
+```bash
+go run ./cmd/la-famille tui
+```
+
+*   **Description:** Launches the full-screen Bubbletea interface, providing a visual, menu-driven alternative to standard CLI commands.
 
 ### `init`
 
