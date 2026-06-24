@@ -12,7 +12,7 @@ Date: 2026-06-19
 1. **Read the Logs:** Read all markdown files in the `content/jules/reports/` directory.
 2. **Analyze Feedback:** Identify any notes, learnings, or suggestions left by previous runs of routines.
 3. **Improve Routines:** Open the `.md` file for each routine that left constructive feedback. Update the `Task Details` or `Execution Reminders` section of that routine to incorporate the learnings and make the routine more effective or less error-prone for future runs.
-4. **Archive Logs:** Once a log entry has been processed (either its feedback was incorporated, or it contained no actionable feedback), delete the file from `content/jules/reports/` to keep the folder clean.
+4. **Archive Logs:** Once a log entry has been processed (either its feedback was incorporated, or it contained no actionable feedback), move the file from `content/jules/reports/` to the `content/jules/reports/filed/` directory to keep the main folder clean while retaining historical data.
 
 ## Execution Reminders
 * Do not change the fundamental goal of the routines you are modifying. Only refine their instructions based on empirical evidence from the logs.

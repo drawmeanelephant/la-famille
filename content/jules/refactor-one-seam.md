@@ -22,3 +22,5 @@ Date: 2026-06-19
 * Prefer descriptive package boundaries over clever abstractions.
 * Run `go test ./...` and `go vet ./...` before finishing.
 * **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**
+
+* **Package Abstraction:** When extracting logic from `main.go`, look for coupled structures (like `Graph` or `Page`). Extracting these structures into their own agnostic packages (e.g., `internal/page`) enables safer sharing of data and clears up the core generation pipeline. Post-processing modules (like stub generation) or entire phases (like graph building or HTML rendering) are excellent candidates for extraction.
