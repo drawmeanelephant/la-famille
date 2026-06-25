@@ -20,6 +20,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/graph"
 	"github.com/tbuddy/la-famille/internal/jsonutil"
 	"github.com/tbuddy/la-famille/internal/page"
+	"github.com/tbuddy/la-famille/internal/render"
 	"github.com/tbuddy/la-famille/internal/stub"
 	"github.com/tbuddy/la-famille/internal/transform"
 )
@@ -133,43 +134,9 @@ func Build(cfg config.Config) error {
 			Content:         template.HTML(sanitizedHTML),
 		}
 
-		outFile, err := os.Create(outPath)
-		if err != nil {
+		if err := render.HTML(cfg, page, meta.Layout, outPath); err != nil {
 			return err
 		}
-
-		templatePath := cfg.Template
-		if meta.Layout != "" {
-			if !filepath.IsLocal(meta.Layout + ".html") {
-				log.Printf("Warning: Potential path traversal in layout template loading detected: %s. Falling back to default %s", meta.Layout, cfg.Template)
-			} else {
-				layoutPath := filepath.Join("templates", meta.Layout+".html")
-				// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille
-				if _, err := os.Stat(layoutPath); os.IsNotExist(err) {
-					layoutPathFallback := filepath.Join("..", "..", "templates", meta.Layout+".html")
-					if _, err2 := os.Stat(layoutPathFallback); err2 == nil {
-						layoutPath = layoutPathFallback
-					}
-				}
-				if _, err := os.Stat(layoutPath); err == nil {
-					templatePath = layoutPath
-				} else {
-					log.Printf("Warning: layout template %s not found, falling back to %s", layoutPath, cfg.Template)
-				}
-			}
-		}
-
-		pageTmpl, err := template.ParseFiles(templatePath)
-		if err != nil {
-			outFile.Close()
-			return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
-		}
-
-		if err := pageTmpl.Execute(outFile, page); err != nil {
-			outFile.Close()
-			return err
-		}
-		outFile.Close()
 	}
 	// 3. Generate stubs for missing files in deterministic order
 	if err := stub.GenerateStubs(cfg, missingFiles, &g, p); err != nil {
