@@ -80,6 +80,10 @@ func Build(cfg config.Config) error {
 		}
 		metaData[id] = m
 
+		if !filepath.IsLocal(filepath.FromSlash(relPath)) {
+			log.Printf("Warning: Potential path traversal in page loading detected: %s. Skipping.", relPath)
+			continue
+		}
 		outPath := filepath.Join(cfg.OutputDir, filepath.FromSlash(relPath))
 		if shouldRender {
 			outPath = strings.TrimSuffix(outPath, filepath.Ext(outPath)) + ".html"
@@ -165,6 +169,10 @@ func Build(cfg config.Config) error {
 					return err
 				}
 
+				if !filepath.IsLocal(filepath.FromSlash(relPath)) {
+					log.Printf("Warning: Potential path traversal in asset copying detected: %s. Skipping.", relPath)
+					return nil
+				}
 				destPath := filepath.Join(cfg.OutputDir, "assets", relPath)
 				if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 					return err
