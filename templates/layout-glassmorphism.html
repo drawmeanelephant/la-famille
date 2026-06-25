@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="synthwave">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Site.SiteName}}</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-base-content font-sans bg-fixed">
+    <!-- Accessibility Skip Link -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">Skip to content</a>
+
+    <!-- Header Navigation -->
+    <header class="glass-panel sticky top-0 z-40 shadow-lg mb-8">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="/" class="text-2xl font-bold text-primary hover:text-primary-content transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{{.Site.SiteName}}</a>
+            <nav aria-label="Main Navigation">
+                <!-- Navigation items would go here -->
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main id="main-content" class="container mx-auto px-4 py-8 max-w-5xl">
+        <div class="glass-panel rounded-2xl shadow-2xl p-8 md:p-12">
+            <!-- Page Meta Information -->
+            <header class="mb-10 text-center">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary mb-4">{{.Title}}</h1>
+                {{if or .Author .Date}}
+                <div class="flex flex-wrap justify-center gap-4 text-sm text-base-content/80 mt-6">
+                    {{if .Author}}
+                    <span class="glass-panel px-4 py-2 rounded-full"><strong class="text-secondary">By:</strong> {{.Author}}</span>
+                    {{end}}
+                    {{if .Date}}
+                    <span class="glass-panel px-4 py-2 rounded-full"><strong class="text-accent">Date:</strong> {{.Date}}</span>
+                    {{end}}
+                </div>
+                {{end}}
+            </header>
+
+            <!-- Prose Content -->
+            <article class="prose prose-lg md:prose-xl max-w-none prose-headings:text-primary prose-a:text-secondary prose-a:hover:text-accent prose-a:focus-visible:outline prose-a:focus-visible:outline-2 prose-a:focus-visible:outline-secondary prose-strong:text-accent">
+                {{.Content}}
+            </article>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-panel mt-16 p-8 text-center text-base-content/70">
+        <p class="font-semibold mb-2">Built in Go and Jules by Google</p>
+        <p class="text-sm">Powered by DaisyUI and Tailwind CSS</p>
+    </footer>
+</body>
+</html>
