@@ -58,8 +58,9 @@ go run ./cmd/la-famille serve [flags]
 *   **Description:** Launches a local web server (using Go's `http.FileServer`) pointing to the configured output directory (usually `public/`). This allows you to instantly preview your generated site in your web browser.
 *   **Flags:**
     *   `--port`, `-p` (int): The port to run the server on. Overrides the value set in `config.yaml`. Defaults to `8080` if not set in config.
+    *   `--watch`, `-w` (bool): Watch for file changes and auto-rebuild.
 
-*Example:* `go run ./cmd/la-famille serve -p 3000`
+*Example:* `go run ./cmd/la-famille serve -p 3000 -w`
 
 ### `rag`
 

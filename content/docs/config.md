@@ -47,6 +47,8 @@ Here is a breakdown of each available field:
 *   **`template`** (string): The default HTML layout used for rendering pages. You can override this on a per-page basis using [frontmatter](templates.md). *Default: "templates/layout.html"*
 *   **`content_dir`** (string): The source directory containing your Markdown `.md` files. *Default: "content"*
 *   **`output_dir`** (string): The destination directory where the fully generated static site (HTML, JSON graphs, etc.) will be placed. *Default: "public"*
+*   **`asset_dir`** (string): The directory containing static assets. *Default: "assets"*
+*   **`rag_dir`** (string): The directory where RAG markdown bundles will be exported. *Default: "rag-archive"*
 *   **`theme`** (string): The DaisyUI theme you want to apply globally to your site. This allows you to easily switch between "light", "dark", "retro", "synthwave", and many more! *Default: "retro"*
 *   **`port`** (integer): The local network port used by the built-in HTTP server (`go run ./cmd/la-famille serve`). *Default: 8080*
 

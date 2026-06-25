@@ -32,11 +32,22 @@ Starts the built-in local development server.
 *   While the server is running, the TUI displays a screen featuring an ASCII animation of Jules, the project mascot!
 *   Press `q` or `Esc` to stop the server and return to the main menu.
 
-### 3. Generate RAG Archive
+### 3. Serve Site with Watch
+Starts the built-in local development server and watches for file changes.
+*   This will run an HTTP server pointing to your `public/` directory and automatically rebuild the site when content or templates change.
+*   While the server is running, the TUI displays a screen featuring an ASCII animation of Jules, the project mascot.
+*   Press `q` or `Esc` to stop the server and return to the main menu.
+
+### 4. Generate RAG Archive
 Triggers the Retrieval-Augmented Generation (RAG) export logic. This extracts the content and structure of your site into specialized LLM-friendly formats located in the `internal/rag-archive/` directory.
 
-### 4. Stats
+### 5. Stats
 Opens a statistics dashboard displaying insights about your generated site. The stats screen provides information on the total number of files processed, the build times, and the size of your RAG exports relative to standard LLM context windows.
+
+### 6. Just Raoul
+Displays an animation of the project mascot.
+*   This option simply shows a screen featuring an ASCII animation of Jules, the project mascot.
+*   Press `q` or `Esc` to return to the main menu.
 
 ## Mascot Integration
 Keep an eye out for Jules! The TUI integrates ASCII graphics of the project's mascot to make long-running tasks (like serving the site locally) more enjoyable.
