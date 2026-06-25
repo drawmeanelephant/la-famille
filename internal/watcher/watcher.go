@@ -32,16 +32,25 @@ func Watch(cfg config.Config) error {
 				}
 				// Only rebuild on creation, modification, or deletion
 				if event.Has(fsnotify.Write) || event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) {
+					// If a new directory is created, add it to the watcher.
+					if event.Has(fsnotify.Create) {
+						stat, err := os.Stat(event.Name)
+						if err == nil && stat.IsDir() {
+							log.Printf("New directory detected, adding to watcher: %s", event.Name)
+							watcher.Add(event.Name)
+						}
+					}
 					log.Printf("Detected change in %s, queuing rebuild...", event.Name)
 					if buildTimer != nil {
 						buildTimer.Stop()
 					}
 					buildTimer = time.AfterFunc(500*time.Millisecond, func() {
 						log.Println("Rebuilding site...")
+						start := time.Now()
 						if err := generator.Build(cfg); err != nil {
 							log.Printf("Error rebuilding site: %v", err)
 						} else {
-							log.Println("Rebuild complete.")
+							log.Printf("Rebuild complete in %v.", time.Since(start))
 						}
 					})
 				}
@@ -72,6 +81,20 @@ func Watch(cfg config.Config) error {
 	templateDir := filepath.Dir(cfg.Template)
 	if _, err := os.Stat(templateDir); err == nil {
 		watcher.Add(templateDir)
+	}
+
+	// Watch assets directory if it exists
+	assetsDir := "assets"
+	if _, err := os.Stat(assetsDir); err == nil {
+		filepath.WalkDir(assetsDir, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return watcher.Add(path)
+			}
+			return nil
+		})
 	}
 
 	// Block forever
