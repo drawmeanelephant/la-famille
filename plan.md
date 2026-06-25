@@ -9,3 +9,11 @@
 7. Formalized the RAG export path by migrating output from `internal/rag-archive` to `cfg.RagDir`, accepting `cfg` via `ragexport.RunExport(cfg)`, and updating `.gitignore`.
 8. Created `internal/watcher` to monitor `content/` and `templates/` changes via `fsnotify`. Added `--watch` to the CLI and a `Serve Site with Watch` mode to the TUI.
 9. Passed test suite (`go test ./...`) and vetted code (`go vet ./...`).
+
+## Update: Serve/Watch Step Improvements
+
+1. Updated `internal/watcher/watcher.go` to support dynamic directory watching.
+2. Updated `internal/watcher/watcher.go` to watch the `assets/` directory.
+3. Updated `internal/watcher/watcher.go` to improve rebuild logging (displaying rebuild duration).
+4. Created a Jules routine report in `content/jules/reports/20260625-serve-watch-step.md`.
+5. Passed test suite (`go test ./...`) and vetted code (`go vet ./...`).
