@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="retro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Site.SiteName}}</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style>
+        .prose-a:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-base-200 text-base-content flex flex-col">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">Skip to content</a>
+
+    <header class="navbar bg-base-100 shadow-sm border-b border-base-300">
+        <div class="flex-1">
+            <a href="/" class="btn btn-ghost text-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{{.Site.SiteName}}</a>
+        </div>
+        <div class="flex-none">
+            <ul class="menu menu-horizontal px-1">
+                <li><a href="/" class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">Home</a></li>
+                <!-- TODO: Add dynamic navigation links here -->
+            </ul>
+        </div>
+    </header>
+
+    <div class="hero bg-base-200 py-12 border-b border-base-300 shadow-inner">
+        <div class="hero-content text-center">
+            <div class="max-w-2xl">
+                <h1 class="text-5xl font-bold text-primary">{{.Title}}</h1>
+                {{if or .Author .Date}}
+                <div class="py-6 flex justify-center gap-4 text-sm font-medium text-base-content/80">
+                    {{if .Author}}<span class="badge badge-outline badge-primary">By: {{.Author}}</span>{{end}}
+                    {{if .Date}}<span class="badge badge-outline badge-secondary">Date: {{.Date}}</span>{{end}}
+                </div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+
+    <main id="main-content" class="flex-grow container mx-auto px-4 py-8 max-w-4xl">
+        <div class="card bg-base-100 shadow-xl border border-base-300">
+            <div class="card-body">
+                <article class="prose lg:prose-xl max-w-none prose-headings:text-primary prose-strong:text-secondary prose-a:text-accent prose-a:hover:text-accent-focus">
+                    {{.Content}}
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer footer-center p-10 bg-base-300 text-base-content mt-12 border-t border-base-300">
+        <aside>
+            <img src="/assets/img/jules-logo.png" alt="Jules" class="w-10 h-10 mb-4 opacity-70 grayscale" aria-hidden="true" focusable="false" />
+            <p class="font-bold">
+                {{.Site.SiteName}} <br/>
+                Built in Go and Jules by Google, with Raoul(s) and DaisyUI
+            </p>
+            <p>Copyright © 2026 - All right reserved</p>
+        </aside>
+    </footer>
+</body>
+</html>
