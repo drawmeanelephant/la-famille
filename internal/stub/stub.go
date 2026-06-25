@@ -44,8 +44,10 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 
 		// build simple HTML stub
 		var htmlContent strings.Builder
-		htmlContent.WriteString("<h2>This page doesn't exist yet</h2>\n")
-		htmlContent.WriteString("<p>It was linked from:</p>\n<ul>\n")
+		htmlContent.WriteString("<h2>🌱 This page is a stub</h2>\n")
+		htmlContent.WriteString("<p>The content for this page hasn't been written yet.</p>\n<hr>\n")
+		htmlContent.WriteString("<h3>Return paths</h3>\n")
+		htmlContent.WriteString("<p>This missing page was referenced by the following pages:</p>\n<ul>\n")
 		for _, parent := range parents {
 			parentHtml := strings.TrimSuffix(parent, ".md") + ".html"
 			// determine relative path from missing file to parent file for linking

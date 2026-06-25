@@ -117,12 +117,12 @@ func TestGenerateStubs(t *testing.T) {
 	}
 
 	checkFile("missing.html", []string{
-		"This page doesn&#39;t exist yet",
+		"🌱 This page is a stub",
 		`<a href="parent1.html" rel="nofollow">parent1.md</a>`,
 	})
 
 	checkFile("dir/missing2.html", []string{
-		"This page doesn&#39;t exist yet",
+		"🌱 This page is a stub",
 		`<a href="../parent2.html" rel="nofollow">parent2.md</a>`,
 		`<a href="parent3.html" rel="nofollow">dir/parent3.md</a>`,
 	})
