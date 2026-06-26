@@ -75,7 +75,28 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 			return err
 		}
 
-		defaultTmpl, err := template.ParseFiles(cfg.Template)
+		files := []string{cfg.Template}
+		matches, _ := filepath.Glob(filepath.Join(filepath.Dir(cfg.Template), "partials", "*.html"))
+		if len(matches) > 0 {
+			files = append(files, matches...)
+		} else {
+			dir, _ := os.Getwd()
+			for {
+				globPath := filepath.Join(dir, "templates", "partials", "*.html")
+				matches, _ = filepath.Glob(globPath)
+				if len(matches) > 0 {
+					files = append(files, matches...)
+					break
+				}
+				parent := filepath.Dir(dir)
+				if parent == dir {
+					break
+				}
+				dir = parent
+			}
+		}
+
+		defaultTmpl, err := template.ParseFiles(files...)
 		if err != nil {
 			outFile.Close()
 			return fmt.Errorf("failed to parse default template file for stubs: %w", err)

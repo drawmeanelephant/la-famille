@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyberpunk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Site.SiteName}}</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+</head>
+<body class="min-h-screen bg-base-100 flex flex-col font-mono text-base-content selection:bg-primary selection:text-primary-content">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-black">Skip to content</a>
+
+    <header class="border-b-4 border-base-content bg-accent text-accent-content">
+        <nav aria-label="Main Navigation" class="navbar container mx-auto px-4 lg:px-8 py-4">
+            <div class="flex-1">
+                <a class="text-3xl font-black uppercase tracking-tighter hover:text-primary transition-colors focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-black" href="/">{{.Site.SiteName}}</a>
+            </div>
+            <div class="flex-none hidden sm:block">
+                 <ul class="menu menu-horizontal px-1 gap-4 font-bold text-lg uppercase">
+                    <!-- Placeholder: Navigation links (e.g., Home, About) -->
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main id="main-content" class="flex-grow">
+        <!-- Hero Section -->
+        <div class="bg-primary text-primary-content border-b-8 border-base-content">
+            <div class="container mx-auto px-4 lg:px-8 py-16 md:py-32">
+                <h1 class="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-none mb-6 border-l-8 border-base-content pl-6">{{.Title}}</h1>
+                {{if or .Author .Date}}
+                <div class="flex flex-wrap gap-6 text-xl font-bold uppercase mt-8 bg-base-100 text-base-content inline-block p-4 border-4 border-base-content shadow-[8px_8px_0_0_#000]">
+                    {{if .Author}}
+                    <div class="flex items-center gap-2">
+                         <span class="text-secondary">AUTHOR:</span>
+                        <span>{{.Author}}</span>
+                    </div>
+                    {{end}}
+                    {{if .Date}}
+                    <div class="flex items-center gap-2">
+                        <span class="text-secondary">DATE:</span>
+                        <span>{{.Date}}</span>
+                    </div>
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+        </div>
+
+        <!-- Content Container -->
+        <div class="container mx-auto px-4 lg:px-8 py-16">
+             <div class="bg-base-200 border-4 border-base-content p-8 md:p-12 shadow-[12px_12px_0_0_#000]">
+                <article class="prose prose-xl max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight prose-h1:text-5xl prose-h2:text-4xl prose-h3:text-3xl prose-a:font-bold prose-a:text-primary prose-a:underline prose-a:decoration-4 prose-a:underline-offset-4 hover:prose-a:bg-primary hover:prose-a:text-primary-content prose-a:transition-all prose-strong:font-black prose-blockquote:border-l-8 prose-blockquote:border-primary prose-blockquote:bg-base-100 prose-blockquote:p-6 prose-blockquote:font-bold prose-code:bg-base-content prose-code:text-base-100 prose-code:p-1 prose-code:font-bold prose-img:border-4 prose-img:border-base-content prose-img:shadow-[8px_8px_0_0_#000]">
+                    {{.Content}}
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <footer class="border-t-8 border-base-content bg-base-300 text-base-content p-10 font-bold uppercase">
+        <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+            <aside>
+                <div class="text-4xl font-black mb-4 tracking-tighter">{{.Site.SiteName}}</div>
+                <p class="text-lg">
+                    STATIC SITE GENERATOR<br/>
+                    EST. 2024
+                </p>
+            </aside>
+            <nav class="flex flex-col gap-2">
+                <h6 class="text-xl font-black text-primary mb-2">SYSTEM_LINKS</h6>
+                <!-- Placeholder: System/Footer links -->
+            </nav>
+        </div>
+        <div class="container mx-auto mt-12 pt-4 border-t-4 border-base-content text-center">
+             <p>BUILT IN GO & JULES BY GOOGLE, WITH RAOUL(S) & DAISYUI</p>
+        </div>
+    </footer>
+</body>
+</html>

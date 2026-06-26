@@ -40,7 +40,42 @@ func HTML(cfg config.Config, p page.Page, layout, outPath string) error {
 		}
 	}
 
-	pageTmpl, err := template.ParseFiles(templatePath)
+	// Gather main template and any partials
+	files := []string{templatePath}
+	partialsGlob := filepath.Join(filepath.Dir(templatePath), "partials", "*.html")
+
+	matches, _ := filepath.Glob(partialsGlob)
+	if len(matches) > 0 {
+		files = append(files, matches...)
+	} else {
+		// Search upwards for the 'templates/partials' directory
+		dir, _ := os.Getwd()
+		for {
+			globPath := filepath.Join(dir, "templates", "partials", "*.html")
+			matches, _ = filepath.Glob(globPath)
+			if len(matches) > 0 {
+				files = append(files, matches...)
+				break
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir { // Reached root
+				break
+			}
+			dir = parent
+		}
+	}
+
+	// Deduplicate files
+	seen := make(map[string]bool)
+	var finalFiles []string
+	for _, f := range files {
+		if !seen[f] {
+			seen[f] = true
+			finalFiles = append(finalFiles, f)
+		}
+	}
+
+	pageTmpl, err := template.ParseFiles(finalFiles...)
 	if err != nil {
 		return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
 	}
