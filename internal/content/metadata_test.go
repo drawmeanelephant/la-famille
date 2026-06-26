@@ -135,4 +135,45 @@ Some body text.`
 		}
 	})
 
+	t.Run("All uppercase frontmatter", func(t *testing.T) {
+		content := `---
+TITLE: "All Uppercase Title"
+AUTHOR: "UPPERCASE AUTHOR"
+DATE: "2024-01-01"
+RENDER: false
+LAYOUT: "blog"
+---
+Uppercase body.`
+		fileName := "uppercase.md"
+		if err := os.WriteFile(filepath.Join(tmpDir, fileName), []byte(content), 0644); err != nil {
+			t.Fatalf("Failed to write test file: %v", err)
+		}
+
+		fileMap, err := GatherMetadata(tmpDir)
+		if err != nil {
+			t.Fatalf("GatherMetadata failed: %v", err)
+		}
+
+		meta, ok := fileMap["uppercase.md"]
+		if !ok {
+			t.Fatalf("Expected 'uppercase.md' in fileMap, got none")
+		}
+
+		if meta.Title != "All Uppercase Title" {
+			t.Errorf("Expected Title to be 'All Uppercase Title', got '%s'", meta.Title)
+		}
+		if meta.Author != "UPPERCASE AUTHOR" {
+			t.Errorf("Expected Author to be 'UPPERCASE AUTHOR', got '%s'", meta.Author)
+		}
+		if meta.Date != "2024-01-01" {
+			t.Errorf("Expected Date to be '2024-01-01', got '%s'", meta.Date)
+		}
+		if meta.Render == nil || *meta.Render != false {
+			t.Errorf("Expected Render to be false, got %v", meta.Render)
+		}
+		if meta.Layout != "blog" {
+			t.Errorf("Expected Layout to be 'blog', got '%s'", meta.Layout)
+		}
+	})
+
 }

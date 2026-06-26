@@ -40,6 +40,7 @@ func RunExport(cfg config.Config) error {
 		},
 		[]string{"internal/config"},
 		nil,
+		outDir,
 	); err != nil {
 		return fmt.Errorf("failed to write system bundle: %w", err)
 	}
@@ -54,6 +55,7 @@ func RunExport(cfg config.Config) error {
 		},
 		nil,
 		nil,
+		outDir,
 	); err != nil {
 		return fmt.Errorf("failed to write config bundle: %w", err)
 	}
@@ -110,14 +112,16 @@ func RunExport(cfg config.Config) error {
 	fmt.Println("Created rag-config.md")
 
 	// 3. Content Bundle
-	if err := writeBundle(
-		filepath.Join(outDir, "rag-content.md"),
-		[]string{
-			"content/**/*.md",
-		},
-		nil,
-		nil, // Default formatting is verbatim with XML tags, which preserves the YAML frontmatter
-	); err != nil {
+	if err :=
+		writeBundle(
+			filepath.Join(outDir, "rag-content.md"),
+			[]string{
+				"content/**/*.md",
+			},
+			nil,
+			nil, // Default formatting is verbatim with XML tags, which preserves the YAML frontmatter
+			outDir,
+		); err != nil {
 		return fmt.Errorf("failed to write content bundle: %w", err)
 	}
 	fmt.Println("Created rag-content.md")
@@ -125,7 +129,7 @@ func RunExport(cfg config.Config) error {
 	return nil
 }
 
-func writeBundle(outPath string, patterns []string, excludes []string, formatFunc func(path string, content []byte) string) error {
+func writeBundle(outPath string, patterns []string, excludes []string, formatFunc func(path string, content []byte) string, outDir string) error {
 	f, err := os.Create(outPath)
 	if err != nil {
 		return err
@@ -151,7 +155,7 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 			}
 
 			if (match && !strings.Contains(pattern, "/")) || pathMatch(pattern, path) {
-				if strings.Contains(path, "rag-archive") {
+				if strings.Contains(filepath.ToSlash(path), filepath.ToSlash(outDir)) {
 					return nil
 				}
 				// Check excludes

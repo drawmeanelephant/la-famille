@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/adrg/frontmatter"
 )
 
@@ -79,30 +81,9 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 				normalizedMatter[strings.ToLower(k)] = v
 			}
 
-			// Safe extraction
-			if v, ok := normalizedMatter["title"].(string); ok {
-				matter.Title = v
-			}
-			if v, ok := normalizedMatter["author"].(string); ok {
-				matter.Author = v
-			}
-			if v, ok := normalizedMatter["date"].(string); ok {
-				matter.Date = v
-			}
-			if v, ok := normalizedMatter["render"].(bool); ok {
-				matter.Render = &v
-			}
-			if v, ok := normalizedMatter["video_script"].(string); ok {
-				matter.VideoScript = v
-			}
-			if v, ok := normalizedMatter["animation_cues"].(string); ok {
-				matter.AnimationCues = v
-			}
-			if v, ok := normalizedMatter["soundtrack_theme"].(string); ok {
-				matter.SoundtrackTheme = v
-			}
-			if v, ok := normalizedMatter["layout"].(string); ok {
-				matter.Layout = v
+			yamlBytes, err := yaml.Marshal(normalizedMatter)
+			if err == nil {
+				_ = yaml.Unmarshal(yamlBytes, &matter)
 			}
 		}
 

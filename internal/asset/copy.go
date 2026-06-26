@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/tbuddy/la-famille/internal/config"
 )
@@ -13,6 +14,24 @@ import (
 // skipping testdata directories and checking for path traversal.
 func CopyAssets(cfg config.Config) error {
 	if cfg.AssetDir != "" {
+		ignorePatterns := []string{}
+		if gitignore, err := os.ReadFile(".gitignore"); err == nil {
+			lines := strings.Split(string(gitignore), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line != "" && !strings.HasPrefix(line, "#") {
+					// Normalize pattern for filepath.Match
+					if strings.HasSuffix(line, "/") {
+						line = strings.TrimSuffix(line, "/")
+					}
+					if strings.HasPrefix(line, "/") {
+						line = strings.TrimPrefix(line, "/")
+					}
+					ignorePatterns = append(ignorePatterns, line)
+				}
+			}
+		}
+
 		if _, err := os.Stat(cfg.AssetDir); err == nil {
 			err = filepath.WalkDir(cfg.AssetDir, func(path string, d os.DirEntry, err error) error {
 				if err != nil {
@@ -22,6 +41,33 @@ func CopyAssets(cfg config.Config) error {
 				// Skip testdata subdirectories
 				if d.IsDir() && d.Name() == "testdata" {
 					return filepath.SkipDir
+				}
+
+				if filepath.Ext(path) == ".go" {
+					if d.IsDir() {
+						return filepath.SkipDir
+					}
+					return nil
+				}
+
+				// Check gitignore patterns
+				for _, pattern := range ignorePatterns {
+					matched, _ := filepath.Match(pattern, d.Name())
+					if matched || d.Name() == pattern {
+						if d.IsDir() {
+							return filepath.SkipDir
+						}
+						return nil
+					}
+					// Also check if relative path matches
+					rel, _ := filepath.Rel(".", path)
+					matchedRel, _ := filepath.Match(pattern, rel)
+					if matchedRel || rel == pattern || strings.HasPrefix(rel, pattern+"/") {
+						if d.IsDir() {
+							return filepath.SkipDir
+						}
+						return nil
+					}
 				}
 
 				if d.IsDir() {

@@ -56,3 +56,33 @@ func TestCopyAssets_EmptyAssetDir(t *testing.T) {
 		t.Errorf("Expected nil error for empty AssetDir, got: %v", err)
 	}
 }
+func TestCopyAssets_SkipGoAndGitignore(t *testing.T) {
+	tempDir := t.TempDir()
+
+	assetDir := filepath.Join(tempDir, "assets")
+	outputDir := filepath.Join(tempDir, "public")
+
+	// Create asset dir and some files
+	os.MkdirAll(assetDir, 0755)
+
+	os.WriteFile(filepath.Join(assetDir, "main.go"), []byte("package main"), 0644)
+	os.WriteFile(filepath.Join(assetDir, "main.css"), []byte("body { color: red; }"), 0644)
+
+	cfg := config.Config{
+		AssetDir:  assetDir,
+		OutputDir: outputDir,
+	}
+
+	err := CopyAssets(cfg)
+	if err != nil {
+		t.Fatalf("CopyAssets failed: %v", err)
+	}
+
+	// Verify copied files
+	if _, err := os.Stat(filepath.Join(outputDir, "assets", "main.css")); os.IsNotExist(err) {
+		t.Errorf("main.css was not copied")
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "assets", "main.go")); !os.IsNotExist(err) {
+		t.Errorf("main.go was copied, but should have been skipped")
+	}
+}

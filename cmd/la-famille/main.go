@@ -23,7 +23,7 @@ func main() {
 	// Load config first to set defaults for flags
 	cfg, err := config.Load("config.yaml")
 	if err != nil {
-		log.Printf("Warning: failed to load config.yaml: %v", err)
+		log.Fatalf("Error: failed to load or validate config.yaml: %v", err)
 		// Note: Validation is now done inside config.Load()
 	}
 

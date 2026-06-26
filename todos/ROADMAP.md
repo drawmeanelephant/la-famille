@@ -27,10 +27,11 @@ This document tracks active refactoring tickets, pipeline enhancements, and deve
   - [ ] Copy non-Go-source files (logos, mascot images) verbatim to `public/assets/` during execution.
   - [ ] Reference the existing `render: false` copy mechanism as a pattern.
   - [ ] Verify templates can reference `/assets/img/jules-logo.png` without broken paths.
-- [ ] **Formalize `rag-archive/` Output Path**
-  - [ ] Move `ragexport.RunExport()` output from the hard-coded `internal/rag-archive/` source directory to a configurable top-level directory (e.g., `rag-archive/` or defined via `config.yaml` as `rag_dir`).
-  - [ ] Add the default or configured RAG export output path to `.gitignore`.
-  - [ ] Clean up the source tree to ensure RAG exports do not generate git diffs inside `internal/`.
+- [x] **Formalize `rag-archive/` Output Path**
+  - [x] Move `ragexport.RunExport()` output from the hard-coded source directory to a configurable top-level directory (e.g., `rag-archive/` or defined via `config.yaml` as `rag_dir`).
+  - [ ] Add further output formats (e.g. JSON RAG output).
+  - [x] Add the default or configured RAG export output path to `.gitignore`.
+  - [x] Clean up the source tree to ensure RAG exports do not generate git diffs inside `internal/`.
 
 ### Phase 3: Developer Experience & Authoring Loop (Long-Term)
 - [ ] **Implement `--watch` Flag for Local Rebuilds**

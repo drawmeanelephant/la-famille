@@ -80,7 +80,7 @@ Generates a Retrieval-Augmented Generation (RAG) archive.
 go run ./cmd/la-famille rag
 ```
 
-*   **Description:** Scans the generated output and metadata to construct an optimized dataset designed for Large Language Models (LLMs). This exports files like `rag-system.md`, `rag-config.md`, and `rag-content.md` into the `internal/rag-archive/` directory. See the [RAG Export Guide](rag.md) for more details.
+*   **Description:** Scans the generated output and metadata to construct an optimized dataset designed for Large Language Models (LLMs). This exports files like `rag-system.md`, `rag-config.md`, and `rag-content.md` into the `rag-archive/` directory. See the [RAG Export Guide](rag.md) for more details.
 
 ### `pr`
 
