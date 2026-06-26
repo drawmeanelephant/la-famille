@@ -27,7 +27,12 @@ var tuiCmd = &cobra.Command{
 				ContentDir: "content",
 				OutputDir:  "public",
 				Template:   "templates/layout.html",
+				AssetDir:   "assets",
+				RagDir:     "rag-archive",
 			}
+		}
+		if err := cfg.Validate(); err != nil {
+			return fmt.Errorf("configuration validation failed: %w", err)
 		}
 
 		p := tea.NewProgram(initialModel(cfg), tea.WithAltScreen())

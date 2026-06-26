@@ -23,8 +23,10 @@ func main() {
 	// Load config first to set defaults for flags
 	cfg, err := config.Load("config.yaml")
 	if err != nil {
-		log.Fatalf("Error: failed to load or validate config.yaml: %v", err)
-		// Note: Validation is now done inside config.Load()
+		log.Printf("Warning: failed to load config.yaml: %v", err)
+	}
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Configuration validation failed: %v", err)
 	}
 
 	var rootCmd = &cobra.Command{

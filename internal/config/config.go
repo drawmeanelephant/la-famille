@@ -54,10 +54,6 @@ func Load(filepath string) (Config, error) {
 		return config, err
 	}
 
-	if err := config.Validate(); err != nil {
-		return config, fmt.Errorf("invalid configuration: %w", err)
-	}
-
 	return config, nil
 }
 
