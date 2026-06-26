@@ -20,7 +20,7 @@
       <div class="drawer-content flex flex-col items-center justify-center">
         <!-- Page content here -->
         <!-- Mobile toggle button: visible only on small screens (lg:hidden) -->
-        <label for="my-drawer-2" class="btn btn-primary drawer-button lg:hidden mb-4 mt-4">Open Navigation</label>
+        <label for="my-drawer-2" tabindex="0" class="btn btn-primary drawer-button lg:hidden mb-4 mt-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); document.getElementById('my-drawer-2').click(); }">Open Navigation</label>
 
         <main id="main-content" class="container mx-auto px-4 max-w-4xl flex-grow w-full">
           <div class="card bg-base-100 shadow-xl mt-8">
