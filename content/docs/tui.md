@@ -9,10 +9,10 @@ La Famille features an interactive, full-screen Terminal UI built with the `Bubb
 
 ## Launching the TUI
 
-To launch the TUI, simply run the base command without any subcommands:
+To launch the TUI, use the `tui` subcommand:
 
 ```bash
-go run ./cmd/la-famille
+go run ./cmd/la-famille tui
 ```
 
 The application will take over your terminal screen (using `tea.WithAltScreen()`) and present you with the main menu.
@@ -26,23 +26,26 @@ The main menu allows you to navigate through the core features of the applicatio
 ### 1. Build Site
 Executes the standard site generation pipeline. This is visually equivalent to running `go run ./cmd/la-famille build`. It processes your markdown files, creates the HTML output in the `public/` folder, and generates the necessary metadata graphs.
 
-### 2. Serve Site
+### 2. RAG Export
+Triggers the Retrieval-Augmented Generation (RAG) export logic. This extracts the content and structure of your site into specialized LLM-friendly formats located in the `internal/rag-archive/` directory.
+
+### 3. Serve Site
 Starts the built-in local development server.
 *   This will run an HTTP server pointing to your `public/` directory in the background.
 *   While the server is running, the TUI displays a screen featuring an ASCII animation of Jules, the project mascot!
 *   Press `q` or `Esc` to stop the server and return to the main menu.
 
-### 3. Serve Site with Watch
+### 4. Serve Site with Watch
 Starts the built-in local development server and watches for file changes.
 *   This will run an HTTP server pointing to your `public/` directory and automatically rebuild the site when content or templates change.
 *   While the server is running, the TUI displays a screen featuring an ASCII animation of Jules, the project mascot.
 *   Press `q` or `Esc` to stop the server and return to the main menu.
 
-### 4. Generate RAG Archive
-Triggers the Retrieval-Augmented Generation (RAG) export logic. This extracts the content and structure of your site into specialized LLM-friendly formats located in the `internal/rag-archive/` directory.
-
 ### 5. Stats
-Opens a statistics dashboard displaying insights about your generated site. The stats screen provides information on the total number of files processed, the build times, and the size of your RAG exports relative to standard LLM context windows.
+**Roadmap Item:** Displays a statistics dashboard displaying insights about your generated site. We ultimately plan to have stats like:
+*   Build time
+*   RAG sizes
+*   LLM context window representations
 
 ### 6. Just Raoul
 Displays an animation of the project mascot.
