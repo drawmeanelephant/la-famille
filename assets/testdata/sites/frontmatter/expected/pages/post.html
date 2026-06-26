@@ -109,7 +109,7 @@
                     const title = meta.title || id;
                     const li = document.createElement("li");
                     const a = document.createElement("a");
-                    a.href = `/${id}.html`;
+                    a.href = encodeURI(`/${id}.html`);
                     a.className = "block p-4 hover:bg-base-200 text-sm focus-visible:bg-base-200 focus-visible:outline-none";
                     a.textContent = title;
                     li.appendChild(a);
