@@ -80,6 +80,32 @@ func TestLinkTransformer(t *testing.T) {
 			expectedHTML: "<p><a href=\"../page.html\">Link</a></p>\n",
 			expectedMiss: map[string][]string{},
 		},
+		{
+			name:         "path traversal link ignored",
+			currentFile:  "index.md",
+			markdown:     "[Link](../../../etc/passwd.md)",
+			fileMap:      map[string]*content.FileMeta{},
+			expectedHTML: "<p><a href=\"../../../etc/passwd.md\">Link</a></p>\n",
+			expectedMiss: map[string][]string{},
+		},
+		{
+			name:         "multiple identical missing links deduplicate parent",
+			currentFile:  "index.md",
+			markdown:     "[Link](missing.md) and [Link2](missing.md)",
+			fileMap:      map[string]*content.FileMeta{},
+			expectedHTML: "<p><a href=\"missing.html\">Link</a> and <a href=\"missing.html\">Link2</a></p>\n",
+			expectedMiss: map[string][]string{
+				"missing.md": {"index.md"},
+			},
+		},
+		{
+			name:         "empty target path ignored",
+			currentFile:  "index.md",
+			markdown:     "[Link](#test)",
+			fileMap:      map[string]*content.FileMeta{},
+			expectedHTML: "<p><a href=\"#test\">Link</a></p>\n",
+			expectedMiss: map[string][]string{},
+		},
 	}
 
 	for _, tc := range tests {
