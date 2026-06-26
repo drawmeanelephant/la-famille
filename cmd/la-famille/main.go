@@ -24,7 +24,9 @@ func main() {
 	cfg, err := config.Load("config.yaml")
 	if err != nil {
 		log.Printf("Warning: failed to load config.yaml: %v", err)
-		// Note: Validation is now done inside config.Load()
+	}
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Configuration validation failed: %v", err)
 	}
 
 	var rootCmd = &cobra.Command{

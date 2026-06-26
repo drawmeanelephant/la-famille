@@ -147,6 +147,24 @@ func TestConfigValidation(t *testing.T) {
 			}(),
 			wantErr: true,
 		},
+		{
+			name: "empty output_dir",
+			cfg: func() Config {
+				c := DefaultConfig()
+				c.OutputDir = ""
+				return c
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "empty template",
+			cfg: func() Config {
+				c := DefaultConfig()
+				c.Template = ""
+				return c
+			}(),
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
