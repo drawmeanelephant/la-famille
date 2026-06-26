@@ -24,6 +24,10 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 	sort.Strings(missingKeys)
 
 	for _, missingRelPath := range missingKeys {
+		if !filepath.IsLocal(filepath.FromSlash(missingRelPath)) {
+			continue
+		}
+
 		parents := missingFiles[missingRelPath]
 		sort.Strings(parents)
 		id := strings.TrimSuffix(missingRelPath, ".md")
