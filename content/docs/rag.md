@@ -28,7 +28,7 @@ go run ./cmd/la-famille rag
 
 ## Output Files
 
-When the export process completes, it places the resulting datasets into the `internal/rag-archive/` directory. The primary outputs include:
+When the export process completes, it places the resulting datasets into the `rag-archive/` directory. The primary outputs include:
 
 *   **`rag-system.md`**: Contains the overarching system prompt and metadata structures, providing the LLM with instructions on how to interpret the site data.
 *   **`rag-config.md`**: Captures configuration parameters and global state details relevant to the site's generation.

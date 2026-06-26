@@ -27,7 +27,7 @@ The main menu allows you to navigate through the core features of the applicatio
 Executes the standard site generation pipeline. This is visually equivalent to running `go run ./cmd/la-famille build`. It processes your markdown files, creates the HTML output in the `public/` folder, and generates the necessary metadata graphs.
 
 ### 2. RAG Export
-Triggers the Retrieval-Augmented Generation (RAG) export logic. This extracts the content and structure of your site into specialized LLM-friendly formats located in the `internal/rag-archive/` directory.
+Triggers the Retrieval-Augmented Generation (RAG) export logic. This extracts the content and structure of your site into specialized LLM-friendly formats located in the `rag-archive/` directory.
 
 ### 3. Serve Site
 Starts the built-in local development server.

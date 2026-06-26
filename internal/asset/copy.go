@@ -16,6 +16,24 @@ import (
 // skipping testdata directories and checking for path traversal.
 func CopyAssets(cfg config.Config) error {
 	if cfg.AssetDir != "" {
+		ignorePatterns := []string{}
+		if gitignore, err := os.ReadFile(".gitignore"); err == nil {
+			lines := strings.Split(string(gitignore), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line != "" && !strings.HasPrefix(line, "#") {
+					// Normalize pattern for filepath.Match
+					if strings.HasSuffix(line, "/") {
+						line = strings.TrimSuffix(line, "/")
+					}
+					if strings.HasPrefix(line, "/") {
+						line = strings.TrimPrefix(line, "/")
+					}
+					ignorePatterns = append(ignorePatterns, line)
+				}
+			}
+		}
+
 		if _, err := os.Stat(cfg.AssetDir); err == nil {
 			targetDir := filepath.Join(cfg.OutputDir, "assets")
 			if err := os.MkdirAll(targetDir, 0755); err != nil {
