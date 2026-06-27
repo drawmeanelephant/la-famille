@@ -19,9 +19,9 @@ import (
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/graph"
-	"github.com/tbuddy/la-famille/internal/jsonutil"
 	"github.com/tbuddy/la-famille/internal/page"
 	"github.com/tbuddy/la-famille/internal/render"
+	"github.com/tbuddy/la-famille/internal/sitedata"
 	"github.com/tbuddy/la-famille/internal/stub"
 	"github.com/tbuddy/la-famille/internal/transform"
 )
@@ -156,16 +156,7 @@ func Build(cfg config.Config) error {
 	}
 
 	// 5. Write JSON outputs
-	for _, parents := range backlinks {
-		sort.Strings(parents)
-	}
-	if err := jsonutil.WriteJSON(filepath.Join(cfg.OutputDir, "graph.json"), g); err != nil {
-		return err
-	}
-	if err := jsonutil.WriteJSON(filepath.Join(cfg.OutputDir, "backlinks.json"), backlinks); err != nil {
-		return err
-	}
-	if err := jsonutil.WriteJSON(filepath.Join(cfg.OutputDir, "meta.json"), metaData); err != nil {
+	if err := sitedata.Write(cfg.OutputDir, g, backlinks, metaData); err != nil {
 		return err
 	}
 
