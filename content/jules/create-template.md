@@ -19,6 +19,7 @@ Create a single-file HTML layout in the `templates/` directory.
     *   Wrap the `{{.Content}}` output in a container utilizing Tailwind Typography's `prose` classes (e.g., `class="prose lg:prose-xl max-w-none"`).
 
 ## Execution Reminders
+* **DO NOT** attempt to modify `.go` files or the core application logic (the system) when generating layout templates. This task is strictly for creating static HTML templates.
 * Ensure that assets are manually copied over (`cp -R assets public/`) before launching the test server to allow absolute paths (e.g. `/assets/img/...`) to resolve correctly during visual verification.
 *   Write the file directly to the `templates/` directory with an appropriate name (e.g., `layout-sidebar.html`).
 *   Rely on your internal memory for project standards (footers, accessibility, Go template variables).
