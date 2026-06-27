@@ -56,7 +56,9 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 	sort.Strings(missingKeys)
 
 	for _, missingRelPath := range missingKeys {
-		if !filepath.IsLocal(filepath.FromSlash(missingRelPath)) {
+		outDirClean := filepath.Clean(cfg.OutputDir)
+		outPath := filepath.Join(outDirClean, filepath.FromSlash(missingRelPath))
+		if !strings.HasPrefix(outPath, outDirClean+string(filepath.Separator)) && outPath != outDirClean {
 			continue
 		}
 
@@ -70,7 +72,6 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 			ReferencedBy: parents,
 		}
 
-		outPath := filepath.Join(cfg.OutputDir, filepath.FromSlash(missingRelPath))
 		// ensure the missing relative path has .html
 		outPath = strings.TrimSuffix(outPath, ".md") + ".html"
 

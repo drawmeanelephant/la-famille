@@ -83,11 +83,12 @@ func Build(cfg config.Config) error {
 		}
 		metaData[id] = m
 
-		if !filepath.IsLocal(filepath.FromSlash(relPath)) {
+		outDirClean := filepath.Clean(cfg.OutputDir)
+		outPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
+		if !strings.HasPrefix(outPath, outDirClean+string(filepath.Separator)) && outPath != outDirClean {
 			log.Printf("Warning: Potential path traversal in page loading detected: %s. Skipping.", relPath)
 			continue
 		}
-		outPath := filepath.Join(cfg.OutputDir, filepath.FromSlash(relPath))
 		if shouldRender {
 			outPath = strings.TrimSuffix(outPath, filepath.Ext(outPath)) + ".html"
 		}

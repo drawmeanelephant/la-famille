@@ -90,11 +90,12 @@ func CopyAssets(cfg config.Config) error {
 					return err
 				}
 
-				if !filepath.IsLocal(filepath.FromSlash(relPath)) {
+				outDirClean := filepath.Clean(filepath.Join(cfg.OutputDir, "assets"))
+				destPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
+				if !strings.HasPrefix(destPath, outDirClean+string(filepath.Separator)) && destPath != outDirClean {
 					log.Printf("Warning: Potential path traversal in asset copying detected: %s. Skipping.", relPath)
 					continue
 				}
-				destPath := filepath.Join(cfg.OutputDir, "assets", relPath)
 				if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 					return err
 				}
