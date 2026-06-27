@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html class="dark" lang="en" data-theme="cyberpunk"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{{.Title}} - {{.Site.SiteName}}</title>
+<!-- DaisyUI CSS -->
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400;700&amp;family=Public+Sans:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-primary": "#006b62",
+                    "secondary-dim": "#34b5fa",
+                    "on-secondary": "#004564",
+                    "tertiary-fixed": "#69f6b8",
+                    "tertiary": "#9bffce",
+                    "on-surface": "#dee5ff",
+                    "surface": "#060e20",
+                    "secondary-fixed": "#c9e6ff",
+                    "on-tertiary-fixed": "#00452d",
+                    "secondary-container": "#00405d",
+                    "primary-fixed": "#89f5e7",
+                    "on-error": "#490006",
+                    "on-surface-variant": "#99aad9",
+                    "outline-variant": "#364770",
+                    "surface-container": "#0a1836",
+                    "primary": "#6bd8cb",
+                    "surface-container-lowest": "#000000",
+                    "on-primary-container": "#000000",
+                    "on-secondary-fixed-variant": "#00628c",
+                    "outline": "#6475a1",
+                    "tertiary-container": "#69f6b8",
+                    "error-dim": "#c54d4a",
+                    "surface-dim": "#060e20",
+                    "background": "#060e20",
+                    "surface-tint": "#6bd8cb",
+                    "inverse-surface": "#faf8ff",
+                    "primary-container": "#0c9488",
+                    "primary-fixed-dim": "#7ae7d8",
+                    "on-primary-fixed": "#004841",
+                    "surface-container-high": "#0f1e3f",
+                    "on-secondary-fixed": "#004463",
+                    "inverse-on-surface": "#4d556b",
+                    "on-tertiary-fixed-variant": "#006544",
+                    "on-tertiary": "#006443",
+                    "secondary-fixed-dim": "#aadaff",
+                    "secondary": "#89ceff",
+                    "surface-variant": "#11244c",
+                    "on-error-container": "#ff9993",
+                    "primary-dim": "#5ccabd",
+                    "on-background": "#dee5ff",
+                    "on-tertiary-container": "#005a3c",
+                    "on-primary-fixed-variant": "#00675e",
+                    "error-container": "#871f21",
+                    "surface-bright": "#182b52",
+                    "surface-container-highest": "#11244c",
+                    "error": "#fa746f",
+                    "tertiary-dim": "#58e7ab",
+                    "tertiary-fixed-dim": "#58e7ab",
+                    "surface-container-low": "#06122c",
+                    "on-primary": "#004942",
+                    "on-secondary-container": "#75c8ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Space Grotesk"],
+                    "display": ["Space Grotesk"],
+                    "body": ["Inter"],
+                    "mono": ["JetBrains Mono"],
+                    "label": ["Public Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #060e20;
+            color: #dee5ff;
+        }
+        .brutalist-card {
+            box-shadow: 8px 8px 0px 0px rgba(0,0,0,1);
+        }
+        .brutalist-card-teal {
+            box-shadow: 8px 8px 0px 0px rgba(107,216,203,0.5);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .grain-overlay {
+            background-image: url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
+            opacity: 0.05;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col selection:bg-primary selection:text-on-primary">
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">Skip to content</a>
+
+<div class="fixed inset-0 grain-overlay z-50"></div>
+<!-- TopNavBar -->
+<header class="sticky top-0 z-40 bg-surface dark:bg-surface flex justify-between items-center w-full px-6 py-4 max-w-none border-b-4 border-on-surface shadow-[8px_8px_0px_0px_rgba(107,216,203,0.5)]">
+<div class="flex items-center gap-8">
+<a href="/" class="font-headline text-2xl font-black italic text-on-surface dark:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{{.Site.SiteName}}</a>
+<!-- Placeholder Navigation -->
+<nav class="hidden md:flex gap-6">
+<a class="font-headline uppercase tracking-tighter text-label-lg text-primary underline decoration-4 underline-offset-8 hover:bg-primary hover:text-on-primary transition-colors active:translate-x-1 active:translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" href="#">PROJECTS</a>
+<a class="font-headline uppercase tracking-tighter text-label-lg text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary transition-colors active:translate-x-1 active:translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" href="#">WRITING</a>
+</nav>
+</div>
+</header>
+<main id="main-content" class="flex-grow container mx-auto px-4 py-12 md:py-24 max-w-5xl">
+<!-- Hero Section -->
+<section class="mb-20 relative">
+<h1 class="text-6xl md:text-8xl font-black font-headline uppercase leading-none tracking-tighter mb-8 break-words text-primary drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+                {{.Title}}
+            </h1>
+<!-- Metadata Card (Sticker Style) -->
+{{if or .Author .Date}}
+<div class="inline-block bg-white text-black border-[4px] border-black rounded-lg p-6 brutalist-card rotate-1 hover:rotate-0 transition-transform cursor-crosshair">
+<div class="flex flex-col gap-2 font-mono text-sm font-bold uppercase tracking-widest">
+{{if .Author}}
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" aria-hidden="true" focusable="false">person</span>
+<span>AUTHOR: {{.Author}}</span>
+</div>
+{{end}}
+{{if .Date}}
+<div class="flex items-center gap-3 border-t-2 border-black pt-2 mt-2">
+<span class="material-symbols-outlined" aria-hidden="true" focusable="false">calendar_today</span>
+<span>DATE: {{.Date}}</span>
+</div>
+{{end}}
+<div class="mt-4 bg-black text-white text-[10px] px-2 py-1 text-center">
+                        VERIFIED_CORE_SYSTEM
+                    </div>
+</div>
+</div>
+{{end}}
+</section>
+<!-- Main Content Container -->
+<article class="bg-surface-container border-[4px] border-on-surface p-8 md:p-12 brutalist-card-teal relative overflow-hidden">
+<div class="prose prose-invert max-w-none space-y-8 prose-h1:font-headline prose-h2:font-headline prose-h3:font-headline prose-h4:font-headline prose-a:text-primary prose-a:font-bold prose-a:underline prose-a:decoration-4 prose-a:underline-offset-4 prose-a:hover:bg-primary prose-a:hover:text-on-primary prose-a:transition-all prose-blockquote:border-l-[8px] prose-blockquote:border-primary prose-blockquote:bg-primary/10 prose-blockquote:p-6 prose-blockquote:italic prose-blockquote:font-body prose-blockquote:text-2xl prose-pre:bg-surface-container-lowest prose-pre:border-2 prose-pre:border-outline-variant prose-pre:font-mono prose-code:font-mono">
+{{.Content}}
+</div>
+</article>
+</main>
+{{template "footer.html" .}}
+</body></html>
