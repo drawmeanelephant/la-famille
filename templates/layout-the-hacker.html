@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html class="dark" lang="en" data-theme="synthwave">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{{.Site.SiteName}} // {{.Title}}</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#00dddd",
+                      "on-surface-variant": "#e5bcc5",
+                      "surface-container-low": "#231043",
+                      "on-background": "#ebddff",
+                      "on-error-container": "#ffdad6",
+                      "on-primary-fixed-variant": "#8f0044",
+                      "outline": "#ac878f",
+                      "primary-container": "#ff4a8d",
+                      "secondary-container": "#b8f600",
+                      "on-secondary": "#263500",
+                      "surface-container-highest": "#3d2b5e",
+                      "tertiary-container": "#00a1a1",
+                      "on-primary-container": "#590028",
+                      "on-tertiary-container": "#002f2f",
+                      "primary": "#ffb1c4",
+                      "secondary-fixed": "#b8f600",
+                      "on-primary-fixed": "#3f001a",
+                      "on-tertiary-fixed": "#002020",
+                      "tertiary-fixed": "#00fbfb",
+                      "background": "#1a063b",
+                      "inverse-surface": "#ebddff",
+                      "on-surface": "#ebddff",
+                      "surface-tint": "#ffb1c4",
+                      "secondary-fixed-dim": "#a1d800",
+                      "surface": "#1a063b",
+                      "surface-container": "#271448",
+                      "error": "#ffb4ab",
+                      "primary-fixed-dim": "#ffb1c4",
+                      "surface-dim": "#1a063b",
+                      "on-error": "#690005",
+                      "on-tertiary": "#003737",
+                      "on-tertiary-fixed-variant": "#004f4f",
+                      "surface-bright": "#412f63",
+                      "surface-container-high": "#322053",
+                      "inverse-primary": "#ba005b",
+                      "secondary": "#ffffff",
+                      "surface-container-lowest": "#150136",
+                      "error-container": "#93000a",
+                      "on-secondary-container": "#506e00",
+                      "primary-fixed": "#ffd9e1",
+                      "inverse-on-surface": "#38265a",
+                      "on-primary": "#65002e",
+                      "on-secondary-fixed": "#141f00",
+                      "on-secondary-fixed-variant": "#384e00",
+                      "outline-variant": "#5c3f46",
+                      "tertiary": "#00dddd"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "margin": "24px",
+                      "stack-lg": "48px",
+                      "stack-md": "24px",
+                      "stack-sm": "8px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "body-lg": "JetBrains Mono",
+                      "body-md": "JetBrains Mono",
+                      "display-lg": "Space Grotesk",
+                      "headline-lg": "Space Grotesk",
+                      "headline-lg-mobile": "Space Grotesk",
+                      "headline-md": "Space Grotesk",
+                      "label-md": "JetBrains Mono",
+                      "label-sm": "JetBrains Mono"
+              },
+              "fontSize": {
+                      "body-lg": "18px",
+                      "body-md": "16px",
+                      "display-lg": "84px",
+                      "headline-lg": "48px",
+                      "headline-lg-mobile": "36px",
+                      "headline-md": "32px",
+                      "label-md": "14px",
+                      "label-sm": "12px"
+              },
+              "fontWeight": {
+                      "body-lg": "400",
+                      "body-md": "400",
+                      "display-lg": "700",
+                      "headline-lg": "700",
+                      "headline-lg-mobile": "700",
+                      "headline-md": "600",
+                      "label-md": "500",
+                      "label-sm": "700"
+              },
+              "lineHeight": {
+                      "body-lg": "28px",
+                      "body-md": "24px",
+                      "display-lg": "80px",
+                      "headline-lg": "48px",
+                      "headline-lg-mobile": "36px",
+                      "headline-md": "32px",
+                      "label-md": "20px",
+                      "label-sm": "16px"
+              },
+              "letterSpacing": {
+                      "display-lg": "-0.05em",
+                      "headline-lg": "-0.02em"
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        /* CSS Scanlines */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        /* Glitch Title Effect */
+        .glitch-title {
+            position: relative;
+            text-shadow:
+                0.05em 0 0 rgba(255,0,0,0.75),
+                -0.025em -0.05em 0 rgba(0,255,0,0.75),
+                0.025em 0.05em 0 rgba(0,0,255,0.75);
+            animation: glitch 500ms infinite;
+        }
+
+        .glitch-title span {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .glitch-title span:first-child {
+            animation: glitch 650ms infinite;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            transform: translate(-0.025em, -0.0125em);
+            opacity: 0.8;
+        }
+
+        .glitch-title span:last-child {
+            animation: glitch 375ms infinite;
+            clip-path: polygon(0 80%, 100% 20%, 100% 100%, 0 100%);
+            transform: translate(0.0125em, 0.025em);
+            opacity: 0.8;
+        }
+
+        @keyframes glitch {
+            0% {
+                text-shadow:
+                    0.05em 0 0 rgba(255,0,0,0.75),
+                    -0.05em -0.025em 0 rgba(0,255,0,0.75),
+                    -0.025em 0.05em 0 rgba(0,0,255,0.75);
+            }
+            14% {
+                text-shadow:
+                    0.05em 0 0 rgba(255,0,0,0.75),
+                    -0.05em -0.025em 0 rgba(0,255,0,0.75),
+                    -0.025em 0.05em 0 rgba(0,0,255,0.75);
+            }
+            15% {
+                text-shadow:
+                    -0.05em -0.025em 0 rgba(255,0,0,0.75),
+                    0.025em 0.025em 0 rgba(0,255,0,0.75),
+                    -0.05em -0.05em 0 rgba(0,0,255,0.75);
+            }
+            49% {
+                text-shadow:
+                    -0.05em -0.025em 0 rgba(255,0,0,0.75),
+                    0.025em 0.025em 0 rgba(0,255,0,0.75),
+                    -0.05em -0.05em 0 rgba(0,0,255,0.75);
+            }
+            50% {
+                text-shadow:
+                    0.025em 0.05em 0 rgba(255,0,0,0.75),
+                    0.05em 0 0 rgba(0,255,0,0.75),
+                    0 -0.05em 0 rgba(0,0,255,0.75);
+            }
+            99% {
+                text-shadow:
+                    0.025em 0.05em 0 rgba(255,0,0,0.75),
+                    0.05em 0 0 rgba(0,255,0,0.75),
+                    0 -0.05em 0 rgba(0,0,255,0.75);
+            }
+            100% {
+                text-shadow:
+                    -0.025em 0 0 rgba(255,0,0,0.75),
+                    -0.025em -0.025em 0 rgba(0,255,0,0.75),
+                    -0.025em -0.05em 0 rgba(0,0,255,0.75);
+            }
+        }
+
+        .cut-corner {
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+        }
+
+        /* Prose overrides for glitch aesthetic */
+        .prose a {
+            background-color: var(--color-secondary-fixed-dim, #a1d800);
+            color: black !important;
+            padding: 0 4px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .prose a:hover {
+            background-color: var(--color-primary, #ffb1c4);
+        }
+        .prose pre {
+            background-color: black !important;
+            border-left: 4px solid var(--color-tertiary-fixed-dim, #00dddd) !important;
+            box-shadow: 4px 4px 0px 0px rgba(255,177,196,0.5);
+        }
+        .prose pre code {
+            color: var(--color-secondary-fixed-dim, #a1d800) !important;
+        }
+        .prose code {
+             color: var(--color-secondary-fixed-dim, #a1d800) !important;
+        }
+    </style>
+</head>
+<body class="bg-[#2d1b4e] text-on-surface min-h-screen relative overflow-x-hidden selection:bg-secondary-fixed-dim selection:text-black">
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">Skip to content</a>
+<div class="fixed inset-0 w-full h-full z-[-1] opacity-30 scanlines"></div>
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-margin py-4 bg-surface/80 backdrop-blur-sm docked full-width border-b-4 border-r-4 border-primary dark:border-primary border-b-4 border-primary dark:border-primary skew-x-1 shadow-[8px_8px_0px_0px_rgba(184,246,0,1)] bg-surface dark:bg-surface text-primary dark:text-primary">
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-primary dark:text-primary drop-shadow-[4px_4px_0px_rgba(184,246,0,1)] italic">{{.Site.SiteName}}</div>
+<nav class="flex gap-gutter">
+<!-- Placeholder for header links -->
+</nav>
+<div class="flex gap-stack-sm">
+<span class="material-symbols-outlined hover:skew-y-1 hover:text-tertiary dark:hover:text-tertiary transition-transform cursor-pointer">terminal</span>
+<span class="material-symbols-outlined hover:skew-y-1 hover:text-tertiary dark:hover:text-tertiary transition-transform cursor-pointer">settings_ethernet</span>
+</div>
+</header>
+<main id="main-content" class="pt-[140px] px-margin pb-stack-lg max-w-[1200px] mx-auto relative z-10 grid grid-cols-1 md:grid-cols-12 gap-margin">
+<div class="col-span-1 md:col-span-12 mb-stack-lg relative">
+<h1 class="font-display-lg text-display-lg uppercase text-secondary-fixed-dim glitch-title inline-block" data-text="{{.Title}}">{{.Title}}</h1>
+<div class="font-body-md text-body-md text-primary-container mt-stack-sm bg-black/50 p-2 inline-block border-l-4 border-primary-container">
+                &gt; root@jules:~$ AUTHOR: {{.Author}} // DATE: {{.Date}}
+                <span class="animate-pulse bg-primary-container w-2 h-[1em] inline-block align-middle ml-1"></span>
+</div>
+</div>
+<div class="col-span-1 md:col-span-8 bg-surface-container-highest/90 border-t-[6px] border-l-[2px] border-r-[8px] border-b-[4px] border-primary shadow-[12px_12px_0px_0px_rgba(0,221,221,1)] p-stack-md backdrop-blur-md relative transform -rotate-1 hover:rotate-0 transition-transform duration-300">
+<div class="absolute -top-6 -left-4 bg-tertiary-fixed-dim text-black font-label-md text-label-md px-2 py-1 transform -skew-x-12 border-2 border-black z-20">
+                [SYS_ALERT: CORRUPTION DETECTED]
+            </div>
+<article class="font-body-lg text-body-lg text-on-surface space-y-stack-md pt-stack-sm prose prose-invert max-w-none">
+{{.Content}}
+</article>
+</div>
+<aside class="col-span-1 md:col-span-4 flex flex-col gap-margin">
+<div class="bg-surface-container-low border-2 border-secondary-fixed-dim shadow-[8px_8px_0px_0px_rgba(255,177,196,1)] p-4 transform rotate-2">
+<h3 class="font-headline-md text-headline-md text-primary mb-stack-sm border-b-2 border-primary pb-2 uppercase tracking-tighter">SIGNAL_NOISE</h3>
+<div class="bg-cover bg-center w-full h-48 mb-4 border border-outline" data-alt="A heavily glitched, synthwave inspired abstract digital collage. Neon pinks, cyan, and toxic greens clash against deep dark purples. Broken geometry, scanlines, and pixelated artifacts overlay a brutalist, dystopian structure. The mood is chaotic, high-energy, and rebellious." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB0vNqhgFWhN0_poZcN79tlowv4KyGUCELWd1QyQ18YH1R23G_3wkgwl2UzhERfnjQO4rsRxcQOr3m0wyJ_MyuSncD8NVuBds0JE91hDHhlabfXsEie2a5aB7AtJ8EytdsVvMd-m4hpTejdLNoYZycU-9-LQUaY150KIXHs_IT4HjtaFuFNbCvnRNnF-niYhlgoqimykj3ZV_1QhYhwVs_Flt13U6f_XG3gXjdAJefksd1pITbV_f7ljkoYQOBfbVxEOWPNR7xkOUs')"></div>
+<ul class="font-label-sm text-label-sm space-y-2 text-on-surface-variant">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-tertiary text-sm">skull</span> SECTOR 4 BREACHED</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-secondary-fixed-dim text-sm">electric_bolt</span> POWER SURGE DETECTED</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-sm">vpn_key</span> ENCRYPTION FAILED</li>
+</ul>
+</div>
+<div class="bg-surface-container-highest border-l-[8px] border-tertiary p-4 shadow-[4px_4px_0px_0px_rgba(184,246,0,1)] hover:-translate-y-1 hover:-translate-x-1 transition-transform cursor-pointer">
+<div class="font-label-md text-label-md text-tertiary uppercase mb-2">&gt; QUICK_LINKS</div>
+<div class="flex flex-wrap gap-2">
+<span class="border border-tertiary-fixed-dim px-2 py-1 font-body-md text-body-md text-on-surface hover:bg-tertiary-fixed-dim hover:text-black transition-colors cut-corner">#CYBERPUNK</span>
+<span class="border border-tertiary-fixed-dim px-2 py-1 font-body-md text-body-md text-on-surface hover:bg-tertiary-fixed-dim hover:text-black transition-colors cut-corner">#RAW_HTML</span>
+<span class="border border-tertiary-fixed-dim px-2 py-1 font-body-md text-body-md text-on-surface hover:bg-tertiary-fixed-dim hover:text-black transition-colors cut-corner">#DIY</span>
+</div>
+</div>
+</aside>
+</main>
+{{template "footer-hacker" .}}
+</body></html>

@@ -16,6 +16,39 @@ import (
 	"github.com/tbuddy/la-famille/internal/page"
 )
 
+
+func findPartials() ([]string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	var partialsDir string
+	for {
+		potential := filepath.Join(wd, "templates", "partials")
+		if stat, err := os.Stat(potential); err == nil && stat.IsDir() {
+			partialsDir = potential
+			break
+		}
+		parent := filepath.Dir(wd)
+		if parent == wd {
+			return nil, nil
+		}
+		wd = parent
+	}
+
+	var partials []string
+	entries, err := os.ReadDir(partialsDir)
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range entries {
+		if !e.IsDir() && filepath.Ext(e.Name()) == ".html" {
+			partials = append(partials, filepath.Join(partialsDir, e.Name()))
+		}
+	}
+	return partials, nil
+}
+
 func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph.Graph, p *bluemonday.Policy) error {
 	var missingKeys []string
 	for k := range missingFiles {
@@ -75,7 +108,9 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 			return err
 		}
 
-		defaultTmpl, err := template.ParseFiles(cfg.Template)
+				partials, _ := findPartials()
+		allTmpls := append([]string{cfg.Template}, partials...)
+		defaultTmpl, err := template.ParseFiles(allTmpls...)
 		if err != nil {
 			outFile.Close()
 			return fmt.Errorf("failed to parse default template file for stubs: %w", err)
