@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="luxury">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Site.SiteName}}</title>
+    <!-- DaisyUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Tailwind CSS with Typography plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+                    "surface-container-highest": "#343535",
+                    "on-secondary-container": "#5c0000",
+                    "inverse-surface": "#e3e2e2",
+                    "secondary-fixed-dim": "#ffb4a8",
+                    "on-tertiary-fixed": "#1c1b1b",
+                    "background": "#121414",
+                    "on-surface": "#e3e2e2",
+                    "tertiary-fixed": "#e5e2e1",
+                    "error": "#ffb4ab",
+                    "primary-fixed": "#e2e2e2",
+                    "on-primary-fixed": "#1a1c1c",
+                    "on-tertiary": "#313030",
+                    "on-secondary-fixed-variant": "#930100",
+                    "surface-container-low": "#1b1c1c",
+                    "primary": "#ffffff"
+            },
+            spacing: {
+                    "void-md": "32px",
+                    "void-lg": "64px",
+                    "void-xs": "4px",
+                    "void-sm": "16px",
+                    "margin-desktop": "80px",
+                    "void-xl": "128px",
+                    "gutter": "24px",
+                    "void-huge": "256px",
+                    "margin-mobile": "24px"
+            },
+            fontFamily: {
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "meta-sm": ["Space Mono"],
+                    "link": ["Inter"],
+                    "display-lg": ["Playfair Display"],
+                    "headline-lg": ["Playfair Display"],
+                    "headline-md": ["Playfair Display"]
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-border {
+            border: 1px solid #ffffff;
+        }
+        .custom-underline {
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            transition: border-color 0.3s ease, color 0.3s ease;
+        }
+        .custom-underline:hover {
+            color: #ff5540;
+            border-bottom-color: #ff5540;
+        }
+        ::selection {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .prose-void {
+            --tw-prose-body: #ffffff;
+            --tw-prose-headings: #ffffff;
+            --tw-prose-links: #ffffff;
+        }
+
+        .prose-void a {
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            transition: border-color 0.3s ease, color 0.3s ease;
+        }
+        .prose-void a:hover {
+            color: #ff5540;
+            border-bottom-color: #ff5540;
+        }
+
+        .prose-void img {
+            border: 1px solid #ffffff;
+            filter: grayscale(100%);
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface selection:bg-primary selection:text-surface">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">Skip to content</a>
+
+<!-- Top Navigation / Header -->
+<header class="fixed top-0 left-0 w-full z-50 bg-black">
+<div class="flex items-center h-16 px-margin-desktop">
+<div class="w-1/4">
+<a href="/" class="font-meta-sm text-meta-sm text-primary lowercase tracking-tighter focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{{.Site.SiteName}}</a>
+</div>
+<div class="flex-grow h-px bg-primary opacity-20"></div>
+<div class="w-1/4 flex justify-end">
+<!-- Minimal nav placeholder for future functionality -->
+</div>
+</div>
+</header>
+<main id="main-content" class="relative pt-void-huge">
+<!-- Hero Section -->
+<section class="px-margin-desktop mb-void-xl">
+<h1 class="font-display-lg text-display-lg lowercase leading-none mb-void-md max-w-4xl italic">
+                {{.Title}}
+            </h1>
+{{if or .Author .Date}}
+<div class="font-meta-sm text-meta-sm text-outline flex gap-4 uppercase">
+{{if .Date}}<span>recorded at: {{.Date}}</span>{{end}}
+{{if and .Date .Author}}<span class="opacity-30">|</span>{{end}}
+{{if .Author}}<span>author: {{.Author}}</span>{{end}}
+</div>
+{{end}}
+</section>
+<!-- Content Grid -->
+<section class="px-margin-desktop grid grid-cols-12 gap-gutter pb-void-huge">
+<!-- Left Side: Empty Space / Brutalist Tension -->
+<div class="col-span-4 hidden md:block">
+<div class="sticky top-void-xl space-y-void-sm">
+<p class="font-meta-sm text-meta-sm text-outline border-l border-primary pl-4 py-2">
+                        fragment 001 // the void
+                    </p>
+<div class="h-64 w-full custom-border relative overflow-hidden group">
+<img class="w-full h-full object-cover grayscale transition-transform duration-700 group-hover:scale-105" data-alt="A high-contrast, black and white fine art photograph of a single, withered tree standing alone in a vast, empty salt flat under a dark, brooding sky." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeLggHbwM63Ho4Y87XQ4wZRX0t441wwrQwwT4sYaz2z8oGtAOT_PywQbs6AMfJc5AlfQ90PqpT9sD6x08D2OYYWEu86DkHm2R5ojSrdkPIdjG7CkfISKPLJ5XxRLWUuZgvILSgAY4Qrms6853_U7MKtGlwoebJ5igB3thCE4LNbEPCyUfnYDJbO6VCMEZxXd0j8p9DHaGFeQeEaW63a1uSfCgh1SHGXL5ry-hSdbpVu6PX5XyUqQWzCHzeELiXWK0uNIXFY_aHpFM"/>
+</div>
+</div>
+</div>
+<!-- Central Content Container -->
+<div class="col-span-12 md:col-span-8 lg:col-span-6 lg:col-start-6">
+<div class="custom-border p-void-lg space-y-void-md">
+
+<article class="prose prose-void prose-lg max-w-none prose-headings:font-headline-md prose-headings:italic">
+{{.Content}}
+</article>
+
+</div>
+</div>
+</section>
+</main>
+
+{{template "footer-void" .}}
+
+<script>
+        // Subtle micro-interaction: slow flicker of the title or borders
+        document.addEventListener('DOMContentLoaded', () => {
+            const h1 = document.querySelector('h1');
+            setInterval(() => {
+                if (Math.random() > 0.98 && h1) {
+                    h1.style.opacity = '0.7';
+                    setTimeout(() => h1.style.opacity = '1', 50);
+                }
+            }, 100);
+        });
+</script>
+</body></html>

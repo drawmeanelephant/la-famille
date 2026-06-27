@@ -40,9 +40,31 @@ func HTML(cfg config.Config, p page.Page, layout, outPath string) error {
 		}
 	}
 
-	pageTmpl, err := template.ParseFiles(templatePath)
+	// Find partials directory (relative to CWD, which might be deep during tests)
+	partialsDir := filepath.Join("templates", "partials")
+	if _, err := os.Stat(partialsDir); os.IsNotExist(err) {
+		// Fallback for tests running in subdirectories (like cmd/la-famille)
+		cwd, _ := os.Getwd()
+		for i := 0; i < 3; i++ {
+			cwd = filepath.Dir(cwd)
+			testDir := filepath.Join(cwd, "templates", "partials")
+			if _, err := os.Stat(testDir); err == nil {
+				partialsDir = testDir
+				break
+			}
+		}
+	}
+
+	// Collect all partials
+	partialsGlob := filepath.Join(partialsDir, "*.html")
+	partialFiles, _ := filepath.Glob(partialsGlob)
+
+	// Combine main template and partials for single parsing call
+	templateFiles := append([]string{templatePath}, partialFiles...)
+
+	pageTmpl, err := template.ParseFiles(templateFiles...)
 	if err != nil {
-		return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
+		return fmt.Errorf("failed to parse templates %v: %w", templateFiles, err)
 	}
 
 	if err := pageTmpl.Execute(outFile, p); err != nil {
