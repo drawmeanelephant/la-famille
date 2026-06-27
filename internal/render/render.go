@@ -40,7 +40,15 @@ func HTML(cfg config.Config, p page.Page, layout, outPath string) error {
 		}
 	}
 
-	pageTmpl, err := template.ParseFiles(templatePath)
+// Find all partials
+	partialsGlob := filepath.Join(filepath.Dir(templatePath), "partials", "*.html")
+	partials, err := filepath.Glob(partialsGlob)
+	if err != nil {
+		return fmt.Errorf("failed to glob partials: %w", err)
+	}
+
+	parseList := append([]string{templatePath}, partials...)
+	pageTmpl, err := template.ParseFiles(parseList...)
 	if err != nil {
 		return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
 	}

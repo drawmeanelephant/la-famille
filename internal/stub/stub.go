@@ -75,7 +75,16 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 			return err
 		}
 
-		defaultTmpl, err := template.ParseFiles(cfg.Template)
+// Find all partials
+		partialsGlob := filepath.Join(filepath.Dir(cfg.Template), "partials", "*.html")
+		partials, err := filepath.Glob(partialsGlob)
+		if err != nil {
+			outFile.Close()
+			return fmt.Errorf("failed to glob partials for stubs: %w", err)
+		}
+
+		parseList := append([]string{cfg.Template}, partials...)
+		defaultTmpl, err := template.ParseFiles(parseList...)
 		if err != nil {
 			outFile.Close()
 			return fmt.Errorf("failed to parse default template file for stubs: %w", err)

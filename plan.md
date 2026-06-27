@@ -1,9 +1,12 @@
-# Task Plan
-1. Verify environment and target directories.
-2. Generate the Cat Facts markdown file.
-3. Generate the Soundtrack Prompt file.
-4. Generate the Routine Report file.
-5. Verify the created files.
-6. Run local validation (test and vet).
+# Plan for Audit Template
 
-No breaking changes to the static asset generation pipeline.
+1. **Extract footer partial:**
+   Extract the `<footer>` section from the provided layout to `templates/partials/footer-audit.html`.
+2. **Create main layout:**
+   Replace the hardcoded footer with `{{template "footer-audit.html" .}}` in the layout, parameterize the content using Go variables, and save to `templates/layout-the-audit.html`.
+3. **Update parser logic:**
+   Update `internal/render/render.go` and `internal/stub/stub.go` to discover and parse files in `templates/partials/*.html` via `filepath.Glob`.
+4. **Test the changes:**
+   Run `go test ./...` and `go vet ./...` to verify functionality.
+
+*Note: There are no breaking changes to the static asset generation pipeline.*

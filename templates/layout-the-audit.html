@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html data-theme="corporate" class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{{.Title}} - {{.Site.SiteName}}</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&amp;family=Inter:wght@400;700&amp;family=Public+Sans:wght@400;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "inverse-primary": "#006b62",
+              "on-tertiary-fixed-variant": "#006544",
+              "on-primary-container": "#000000",
+              "primary-dim": "#5ccabd",
+              "on-secondary-container": "#75c8ff",
+              "surface-container-high": "#0f1e3f",
+              "on-primary": "#004942",
+              "on-error": "#490006",
+              "error-dim": "#c54d4a",
+              "tertiary-dim": "#58e7ab",
+              "surface-variant": "#11244c",
+              "on-primary-fixed": "#004841",
+              "surface-container-lowest": "#000000",
+              "primary-container": "#0c9488",
+              "tertiary": "#9bffce",
+              "tertiary-fixed-dim": "#58e7ab",
+              "primary-fixed": "#89f5e7",
+              "on-tertiary-fixed": "#00452d",
+              "on-tertiary-container": "#005a3c",
+              "on-error-container": "#ff9993",
+              "secondary-fixed": "#c9e6ff",
+              "outline-variant": "#364770",
+              "on-tertiary": "#006443",
+              "error-container": "#871f21",
+              "secondary-container": "#00405d",
+              "surface-container": "#0a1836",
+              "inverse-on-surface": "#4d556b",
+              "surface-dim": "#060e20",
+              "on-secondary": "#004564",
+              "on-secondary-fixed-variant": "#00628c",
+              "inverse-surface": "#faf8ff",
+              "secondary": "#89ceff",
+              "background": "#060e20",
+              "on-background": "#dee5ff",
+              "tertiary-fixed": "#69f6b8",
+              "secondary-fixed-dim": "#aadaff",
+              "surface": "#060e20",
+              "primary-fixed-dim": "#7ae7d8",
+              "surface-bright": "#182b52",
+              "primary": "#6bd8cb",
+              "surface-container-low": "#06122c",
+              "surface-tint": "#6bd8cb",
+              "secondary-dim": "#34b5fa",
+              "on-surface": "#dee5ff",
+              "on-surface-variant": "#99aad9",
+              "on-secondary-fixed": "#004463",
+              "tertiary-container": "#69f6b8",
+              "on-primary-fixed-variant": "#00675e",
+              "outline": "#6475a1",
+              "surface-container-highest": "#11244c",
+              "error": "#fa746f"
+            },
+            fontFamily: {
+              headline: ["Space Grotesk"],
+              display: ["Space Grotesk"],
+              body: ["Inter"],
+              label: ["Public Sans"],
+              mono: ["JetBrains Mono"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-headline { font-family: 'Space Grotesk', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .win95-shadow {
+            box-shadow: inset 1.5px 1.5px 0px rgba(255,255,255,0.1),
+                        inset -1.5px -1.5px 0px rgba(0,0,0,0.5);
+        }
+        .win95-shadow-deep {
+            box-shadow: inset 2px 2px 0px #000,
+                        inset -2px -2px 0px rgba(255,255,255,0.2);
+        }
+        .crt-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+        }
+        .stamp {
+            transform: rotate(-12deg);
+            border: 4px double currentColor;
+        }
+        .redacted {
+            background: #000;
+            color: #000;
+            user-select: none;
+        }
+        .redacted:hover {
+            color: #ff9993;
+            background: transparent;
+            cursor: help;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .cursor-blink { animation: blink 1s step-end infinite; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen selection:bg-primary selection:text-on-primary overflow-x-hidden">
+<div class="crt-overlay fixed inset-0 z-[100]"></div>
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-surface-container-high border-b-4 border-double border-outline px-6 py-2 flex justify-between items-center h-14">
+<div class="flex items-center gap-4">
+<div class="bg-error text-on-error px-3 py-1 text-xs font-black tracking-widest win95-shadow animate-pulse">
+                OFFICIAL USE ONLY
+            </div>
+<span class="font-headline text-xl font-bold text-on-surface-variant dark:text-on-surface uppercase tracking-tighter">
+                DEPARTMENT OF CONTINUOUS ASSURANCE
+            </span>
+</div>
+<div class="hidden md:flex items-center gap-6 font-mono text-xs font-bold">
+<div class="flex items-center gap-2 text-primary underline decoration-2">
+<span class="material-symbols-outlined text-[14px]">sensors</span>
+                MONITORING ACTIVE
+            </div>
+<div class="text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                14:42:01 ZULU
+            </div>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-64 pt-16 flex flex-col bg-surface-container dark:bg-surface-container-low border-r-4 border-double border-outline z-40">
+<div class="p-6 mb-4 border-b border-outline-variant bg-surface-container-low/50">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-10 h-10 bg-primary-container flex items-center justify-center win95-shadow">
+<span class="material-symbols-outlined text-on-primary-container">account_balance</span>
+</div>
+<div>
+<div class="font-headline text-lg text-on-surface font-bold leading-tight">OFFICIAL PORTAL</div>
+<div class="font-body text-[10px] font-bold tracking-widest text-primary uppercase">Access Level: Alpha</div>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<!-- COMPLIANCE (Active) -->
+<a class="flex items-center gap-3 bg-primary text-on-primary p-3 border-inset border-2 border-primary-container font-body text-sm font-bold tracking-widest transition-none active:translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">gavel</span>
+<span>COMPLIANCE</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant p-3 hover:bg-surface-container-highest font-body text-sm font-bold tracking-widest transition-none active:translate-x-1" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>ARCHIVE</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant p-3 hover:bg-surface-container-highest font-body text-sm font-bold tracking-widest transition-none active:translate-x-1" href="#">
+<span class="material-symbols-outlined">description</span>
+<span>DIRECTIVES</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant p-3 hover:bg-surface-container-highest font-body text-sm font-bold tracking-widest transition-none active:translate-x-1" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span>LOGS</span>
+</a>
+</nav>
+<div class="p-4 bg-surface-container-lowest border-t border-outline-variant">
+<div class="font-mono text-[10px] text-on-surface-variant leading-relaxed">
+                SYS_UPTIME: 1248:32:01<br/>
+                KERNEL_STABLE: [YES]<br/>
+                INTEGRITY_CHECK: PASS
+            </div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 pt-14 pb-16 min-h-screen p-8 bg-surface-dim">
+<div class="max-w-5xl mx-auto space-y-8">
+<!-- Case File Header -->
+<header class="relative flex flex-col md:flex-row md:items-end justify-between gap-6 p-6 bg-surface-container win95-shadow border-2 border-outline-variant">
+<div class="space-y-2">
+<div class="font-mono text-primary text-xs font-bold tracking-widest opacity-70 uppercase">Departmental Dossier // Archive-ID: 992-X</div>
+<h1 class="font-mono text-4xl font-extrabold text-on-surface tracking-tighter">CASE FILE: {{.Title}}</h1>
+</div>
+<div class="stamp px-6 py-2 border-4 border-tertiary-container text-tertiary-container font-black text-xl uppercase tracking-widest bg-tertiary-container/5 select-none">
+                    STATUS: AUDITED &amp; APPROVED
+                </div>
+</header>
+<!-- Bento Metadata Block -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
+<div class="bg-surface-container-low p-4 border-2 border-outline-variant win95-shadow-deep">
+<div class="text-on-surface-variant mb-1 uppercase font-bold">Compliance Officer</div>
+<div class="text-on-surface text-lg font-bold">{{if .Author}}{{.Author}}{{else}}[ADMIN_RAOUL]{{end}}</div>
+</div>
+<div class="bg-surface-container-low p-4 border-2 border-outline-variant win95-shadow-deep">
+<div class="text-on-surface-variant mb-1 uppercase font-bold">Date Filed</div>
+<div class="text-on-surface text-lg font-bold">{{if .Date}}{{.Date}}{{else}}1999.12.31{{end}}</div>
+</div>
+<div class="bg-surface-container-low p-4 border-2 border-outline-variant win95-shadow-deep">
+<div class="text-on-surface-variant mb-1 uppercase font-bold">Clearance Level</div>
+<div class="text-primary text-lg font-black tracking-tighter">LEVEL: ALPHA</div>
+</div>
+</section>
+<!-- Document Body (Manila Folder Aesthetic) -->
+<article class="bg-[#2c2e3a] text-on-surface border-[12px] border-outline-variant p-8 md:p-16 relative overflow-hidden win95-shadow-deep min-h-[800px]">
+<!-- Folder Tab -->
+<div class="absolute top-0 right-0 w-48 h-12 bg-outline-variant flex items-center justify-center font-mono font-bold text-xs uppercase tracking-widest transform translate-x-10 translate-y-2 rotate-45 border-b border-surface-dim">
+                    SECURE_DOC_77
+                </div>
+<div class="space-y-12">
+<div class="prose max-w-none text-on-surface">
+{{.Content}}
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- Footer -->
+{{template "footer-audit.html" .}}
+<script>
+        // Micro-interaction: Randomly "glitch" the CRT overlay or stamps
+        document.addEventListener('keydown', (e) => {
+            if(e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                const main = document.querySelector('main');
+                main.style.filter = 'invert(1)';
+                setTimeout(() => main.style.filter = 'none', 150);
+                console.log("DCA_PROTOCOL: Manual refresh intercepted and logged.");
+            }
+        });
+
+        // Interactive "System Clock"
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toISOString().split('T')[1].split('.')[0] + " ZULU";
+            const clockEl = document.querySelector('.text-on-surface-variant.flex.items-center.gap-2');
+            if (clockEl) {
+                clockEl.innerHTML = `<span class="material-symbols-outlined text-[14px]">schedule</span> ${timeStr}`;
+            }
+        }
+        setInterval(updateClock, 1000);
+    </script>
+</body></html>
