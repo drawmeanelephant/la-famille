@@ -16,7 +16,6 @@ import (
 	"github.com/tbuddy/la-famille/internal/page"
 )
 
-
 func findPartials() ([]string, error) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -108,7 +107,7 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 			return err
 		}
 
-				partials, _ := findPartials()
+		partials, _ := findPartials()
 		allTmpls := append([]string{cfg.Template}, partials...)
 		defaultTmpl, err := template.ParseFiles(allTmpls...)
 		if err != nil {

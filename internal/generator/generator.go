@@ -51,6 +51,8 @@ func Build(cfg config.Config) error {
 	sort.Strings(keys)
 
 	// Reusable buffer for markdown conversion
+	renderer := render.New()
+
 	var buf bytes.Buffer
 
 	p := bluemonday.UGCPolicy()
@@ -139,7 +141,7 @@ func Build(cfg config.Config) error {
 			Content:         template.HTML(sanitizedHTML),
 		}
 
-		if err := render.HTML(cfg, page, meta.Layout, outPath); err != nil {
+		if err := renderer.HTML(cfg, page, meta.Layout, outPath); err != nil {
 			return err
 		}
 	}

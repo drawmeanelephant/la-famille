@@ -2,12 +2,12 @@ package asset
 
 import (
 	"fmt"
-	"log"
 	"io"
+	"log"
 	"os"
 	"os/exec"
-	"strings"
 	"path/filepath"
+	"strings"
 
 	"github.com/tbuddy/la-famille/internal/config"
 )
