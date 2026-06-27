@@ -6,10 +6,22 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/page"
 )
+
+type Renderer struct {
+	cache map[string]*template.Template
+	mu    sync.Mutex
+}
+
+func New() *Renderer {
+	return &Renderer{
+		cache: make(map[string]*template.Template),
+	}
+}
 
 func findPartials() ([]string, error) {
 	wd, err := os.Getwd()
@@ -45,7 +57,7 @@ func findPartials() ([]string, error) {
 }
 
 // HTML renders a page struct using the specified layout template.
-func HTML(cfg config.Config, p page.Page, layout, outPath string) error {
+func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) error {
 	outFile, err := os.Create(outPath)
 	if err != nil {
 		return err
@@ -73,14 +85,30 @@ func HTML(cfg config.Config, p page.Page, layout, outPath string) error {
 		}
 	}
 
+	r.mu.Lock()
+	cachedTmpl, exists := r.cache[templatePath]
+	if !exists {
 		partials, _ := findPartials()
-	allTmpls := append([]string{templatePath}, partials...)
-	pageTmpl, err := template.ParseFiles(allTmpls...)
+		allTmpls := append([]string{templatePath}, partials...)
+
+		parsedTmpl, err := template.ParseFiles(allTmpls...)
+		if err != nil {
+			r.mu.Unlock()
+			return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
+		}
+		r.cache[templatePath] = parsedTmpl
+		cachedTmpl = parsedTmpl
+	}
+	r.mu.Unlock()
+
+	clonedTmpl, err := cachedTmpl.Clone()
 	if err != nil {
-		return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
+		return fmt.Errorf("failed to clone template %s: %w", templatePath, err)
 	}
 
-	if err := pageTmpl.Execute(outFile, p); err != nil {
+	// Use ExecuteTemplate with the base name to avoid the ParseFiles name trap
+	templateName := filepath.Base(templatePath)
+	if err := clonedTmpl.ExecuteTemplate(outFile, templateName, p); err != nil {
 		return err
 	}
 	return nil
