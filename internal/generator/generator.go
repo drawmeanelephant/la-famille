@@ -90,7 +90,15 @@ func Build(cfg config.Config) error {
 			continue
 		}
 		if shouldRender {
-			outPath = strings.TrimSuffix(outPath, filepath.Ext(outPath)) + ".html"
+			slug := meta.Slug
+			if slug != "" {
+				if !filepath.IsLocal(slug) || strings.Contains(slug, ".") || strings.Contains(slug, string(filepath.Separator)) || strings.Contains(slug, "/") {
+					log.Printf("Warning: Invalid slug %q for %s. Ignoring.", slug, relPath)
+					slug = ""
+				}
+			}
+			relOut := transform.GetOutputURL(relPath, slug)
+			outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
 		}
 
 		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
@@ -147,7 +155,7 @@ func Build(cfg config.Config) error {
 		}
 	}
 	// 3. Generate stubs for missing files in deterministic order
-	if err := stub.GenerateStubs(cfg, missingFiles, &g, p); err != nil {
+	if err := stub.GenerateStubs(cfg, missingFiles, &g, p, fileMap); err != nil {
 		return err
 	}
 

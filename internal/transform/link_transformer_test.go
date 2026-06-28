@@ -31,7 +31,7 @@ func TestLinkTransformer(t *testing.T) {
 			fileMap: map[string]*content.FileMeta{
 				"page.md": {Render: &renderTrue},
 			},
-			expectedHTML: "<p><a href=\"page.html\">Link</a></p>\n",
+			expectedHTML: "<p><a href=\"page/\">Link</a></p>\n",
 			expectedMiss: map[string][]string{},
 		},
 		{
@@ -65,7 +65,7 @@ func TestLinkTransformer(t *testing.T) {
 			currentFile:  "index.md",
 			markdown:     "[Link](missing.md)",
 			fileMap:      map[string]*content.FileMeta{},
-			expectedHTML: "<p><a href=\"missing.html\">Link</a></p>\n",
+			expectedHTML: "<p><a href=\"missing/\">Link</a></p>\n",
 			expectedMiss: map[string][]string{
 				"missing.md": {"index.md"},
 			},
@@ -77,7 +77,7 @@ func TestLinkTransformer(t *testing.T) {
 			fileMap: map[string]*content.FileMeta{
 				"page.md": {Render: &renderTrue},
 			},
-			expectedHTML: "<p><a href=\"../page.html\">Link</a></p>\n",
+			expectedHTML: "<p><a href=\"../page/\">Link</a></p>\n",
 			expectedMiss: map[string][]string{},
 		},
 		{
@@ -93,7 +93,7 @@ func TestLinkTransformer(t *testing.T) {
 			currentFile:  "index.md",
 			markdown:     "[Link](missing.md) and [Link2](missing.md)",
 			fileMap:      map[string]*content.FileMeta{},
-			expectedHTML: "<p><a href=\"missing.html\">Link</a> and <a href=\"missing.html\">Link2</a></p>\n",
+			expectedHTML: "<p><a href=\"missing/\">Link</a> and <a href=\"missing/\">Link2</a></p>\n",
 			expectedMiss: map[string][]string{
 				"missing.md": {"index.md"},
 			},

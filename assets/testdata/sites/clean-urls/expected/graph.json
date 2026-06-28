@@ -1,0 +1,34 @@
+{
+  "nodes": {
+    "bio": {
+      "type": "page",
+      "render": true
+    },
+    "blog/post": {
+      "type": "page",
+      "render": true
+    },
+    "index": {
+      "type": "page",
+      "render": true
+    }
+  },
+  "edges": [
+    [
+      "bio",
+      "index"
+    ],
+    [
+      "blog/post",
+      "bio"
+    ],
+    [
+      "index",
+      "bio"
+    ],
+    [
+      "index",
+      "blog/post"
+    ]
+  ]
+}

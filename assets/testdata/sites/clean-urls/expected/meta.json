@@ -1,0 +1,11 @@
+{
+  "bio": {
+    "title": "About Me"
+  },
+  "blog/post": {
+    "title": "My Blog Post"
+  },
+  "index": {
+    "title": "Home"
+  }
+}
