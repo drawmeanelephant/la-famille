@@ -57,20 +57,45 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, pc p
 
 			// Check file map
 			meta, exists := t.FileMap[targetRelPath]
-			if exists {
-				// if render is explicitly false, it will be a raw .md file, so we leave the link as .md
-				if meta.Render != nil && !*meta.Render {
-					// keep it as .md, no change needed
-				} else {
-					// otherwise, it will be rendered to .html
-					u.Path = strings.TrimSuffix(u.Path, ".md") + ".html"
+
+			// If target exists and render is explicitly false, keep as .md
+			if exists && meta.Render != nil && !*meta.Render {
+				// keep it as .md, no change needed
+			} else {
+				slug := ""
+				if exists && meta != nil {
+					slug = meta.Slug
+					if slug != "" {
+						if !filepath.IsLocal(slug) || strings.Contains(slug, ".") || strings.Contains(slug, string(filepath.Separator)) || strings.Contains(slug, "/") {
+							slug = ""
+						}
+					}
+				}
+
+				currOut := GetOutputURL(t.CurrentFile, "")
+				targetOut := GetOutputURL(targetRelPath, slug)
+
+				currDir := filepath.Dir(currOut)
+				if currDir == "." {
+					currDir = ""
+				}
+
+				relOut, err := filepath.Rel(currDir, targetOut)
+				if err == nil {
+					relOutSlash := filepath.ToSlash(relOut)
+					if strings.HasSuffix(relOutSlash, "index.html") {
+						if relOutSlash == "index.html" {
+							relOutSlash = "./"
+						} else {
+							relOutSlash = strings.TrimSuffix(relOutSlash, "index.html")
+						}
+					}
+					u.Path = relOutSlash
 					link.Destination = []byte(u.String())
 				}
-			} else {
-				// missing file! rewrite to .html, and record missing file
-				u.Path = strings.TrimSuffix(u.Path, ".md") + ".html"
-				link.Destination = []byte(u.String())
+			}
 
+			if !exists {
 				// record target as missing so we can generate stub
 				parents := t.MissingFiles[targetRelPath]
 				found := false

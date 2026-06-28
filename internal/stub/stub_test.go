@@ -8,6 +8,7 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/graph"
 )
 
@@ -89,7 +90,9 @@ func TestGenerateStubs(t *testing.T) {
 	p := bluemonday.UGCPolicy()
 
 	// Execute GenerateStubs
-	if err := GenerateStubs(cfg, missingFiles, g, p); err != nil {
+
+	fileMap := make(map[string]*content.FileMeta)
+	if err := GenerateStubs(cfg, missingFiles, g, p, fileMap); err != nil {
 		t.Fatalf("unexpected error from GenerateStubs: %v", err)
 	}
 
@@ -116,14 +119,14 @@ func TestGenerateStubs(t *testing.T) {
 		}
 	}
 
-	checkFile("missing.html", []string{
+	checkFile("missing/index.html", []string{
 		"🌱 This page is a stub",
-		`<a href="parent1.html" rel="nofollow">parent1.md</a>`,
+		`<a href="../parent1/" rel="nofollow">parent1.md</a>`,
 	})
 
-	checkFile("dir/missing2.html", []string{
+	checkFile("dir/missing2/index.html", []string{
 		"🌱 This page is a stub",
-		`<a href="../parent2.html" rel="nofollow">parent2.md</a>`,
-		`<a href="parent3.html" rel="nofollow">dir/parent3.md</a>`,
+		`<a href="../../parent2/" rel="nofollow">parent2.md</a>`,
+		`<a href="../parent3/" rel="nofollow">dir/parent3.md</a>`,
 	})
 }

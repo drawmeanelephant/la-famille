@@ -1,0 +1,12 @@
+{
+  "bio": [
+    "blog/post",
+    "index"
+  ],
+  "blog/post": [
+    "index"
+  ],
+  "index": [
+    "bio"
+  ]
+}

@@ -12,8 +12,10 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/graph"
 	"github.com/tbuddy/la-famille/internal/page"
+	"github.com/tbuddy/la-famille/internal/transform"
 )
 
 func findPartials() ([]string, error) {
@@ -48,7 +50,7 @@ func findPartials() ([]string, error) {
 	return partials, nil
 }
 
-func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph.Graph, p *bluemonday.Policy) error {
+func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta) error {
 	var missingKeys []string
 	for k := range missingFiles {
 		missingKeys = append(missingKeys, k)
@@ -72,8 +74,9 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 			ReferencedBy: parents,
 		}
 
-		// ensure the missing relative path has .html
-		outPath = strings.TrimSuffix(outPath, ".md") + ".html"
+		// derive outPath using clean URL logic
+		relOut := transform.GetOutputURL(missingRelPath, "")
+		outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
 
 		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
 			return err
@@ -86,11 +89,35 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 		htmlContent.WriteString("<h3>Return paths</h3>\n")
 		htmlContent.WriteString("<p>This missing page was referenced by the following pages:</p>\n<ul>\n")
 		for _, parent := range parents {
-			parentHtml := strings.TrimSuffix(parent, ".md") + ".html"
-			// determine relative path from missing file to parent file for linking
-			relParent, err := RelPathFromTo(missingRelPath, parentHtml)
+			parentSlug := ""
+			if meta, ok := fileMap[parent]; ok && meta != nil {
+				parentSlug = meta.Slug
+				if parentSlug != "" {
+					if !filepath.IsLocal(parentSlug) || strings.Contains(parentSlug, ".") || strings.Contains(parentSlug, string(filepath.Separator)) || strings.Contains(parentSlug, "/") {
+						parentSlug = ""
+					}
+				}
+			}
+
+			currOut := transform.GetOutputURL(missingRelPath, "")
+			parentOut := transform.GetOutputURL(parent, parentSlug)
+
+			currDir := filepath.Dir(currOut)
+			if currDir == "." {
+				currDir = ""
+			}
+
+			relParent, err := filepath.Rel(currDir, parentOut)
 			if err == nil {
-				htmlContent.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", html.EscapeString(relParent), html.EscapeString(parent)))
+				relParentSlash := filepath.ToSlash(relParent)
+				if strings.HasSuffix(relParentSlash, "index.html") {
+					if relParentSlash == "index.html" {
+						relParentSlash = "./"
+					} else {
+						relParentSlash = strings.TrimSuffix(relParentSlash, "index.html")
+					}
+				}
+				htmlContent.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", html.EscapeString(relParentSlash), html.EscapeString(parent)))
 			} else {
 				htmlContent.WriteString(fmt.Sprintf("<li>%s</li>\n", html.EscapeString(parent)))
 			}

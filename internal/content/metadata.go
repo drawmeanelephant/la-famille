@@ -23,6 +23,7 @@ type FileMeta struct {
 	AnimationCues   string
 	SoundtrackTheme string
 	Layout          string
+	Slug            string
 	Content         []byte
 	Rest            []byte // The content after frontmatter
 }
@@ -71,6 +72,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			AnimationCues   string `yaml:"animation_cues"`
 			SoundtrackTheme string `yaml:"soundtrack_theme"`
 			Layout          string `yaml:"layout"`
+			Slug            string `yaml:"slug"`
 		}
 
 		if rawMatter != nil {
@@ -97,6 +99,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			AnimationCues:   matter.AnimationCues,
 			SoundtrackTheme: matter.SoundtrackTheme,
 			Layout:          matter.Layout,
+			Slug:            matter.Slug,
 			Content:         contentBytes,
 			Rest:            rest,
 		}
