@@ -17,7 +17,6 @@ import (
 	"github.com/tbuddy/la-famille/internal/watcher"
 )
 
-
 var p *tea.Program
 
 var tuiCmd = &cobra.Command{
@@ -61,7 +60,6 @@ type menuOption struct {
 	label string
 }
 
-
 type tickMsg time.Time
 
 type statsUpdateMsg struct {
@@ -73,9 +71,6 @@ type workResultMsg struct {
 	msg string
 	res *generator.BuildResult
 }
-
-
-
 
 type model struct {
 	cfg     config.Config
@@ -194,7 +189,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						port = 8080
 					}
 
-
 					if choice == "Serve Site with Watch" {
 						go watcher.Watch(m.cfg, func(res generator.BuildResult) {
 							if p != nil {
@@ -203,8 +197,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						})
 					}
 
-
-					m.server = &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: http.FileServer(http.Dir(m.cfg.OutputDir))}
+					m.server = &http.Server{
+						Addr:              fmt.Sprintf("127.0.0.1:%d", port),
+						Handler:           http.FileServer(http.Dir(m.cfg.OutputDir)),
+						ReadHeaderTimeout: 5 * time.Second,
+					}
 					go func() {
 						_ = m.server.ListenAndServe()
 					}()
@@ -222,7 +219,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.frame = (m.frame + 1) % 2
 			return m, tickCmd()
 		}
-
 
 	case statsUpdateMsg:
 		newRes := msg.res
