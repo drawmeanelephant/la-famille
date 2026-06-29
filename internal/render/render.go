@@ -45,16 +45,16 @@ func DiscoverLayouts(templateDir string) (map[string]bool, error) {
 	return allowlist, nil
 }
 
-func findPartials() ([]string, error) {
+func findPartials() (map[string]string, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
-	var partialsDir string
+	var templatesDir string
 	for {
-		potential := filepath.Join(wd, "templates", "partials")
+		potential := filepath.Join(wd, "templates")
 		if stat, err := os.Stat(potential); err == nil && stat.IsDir() {
-			partialsDir = potential
+			templatesDir = potential
 			break
 		}
 		parent := filepath.Dir(wd)
@@ -65,15 +65,27 @@ func findPartials() ([]string, error) {
 		wd = parent
 	}
 
-	var partials []string
-	entries, err := os.ReadDir(partialsDir)
+	partialsDir := filepath.Join(templatesDir, "partials")
+	if _, err := os.Stat(partialsDir); os.IsNotExist(err) {
+		return nil, nil
+	}
+
+	partials := make(map[string]string)
+	err = filepath.WalkDir(partialsDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && filepath.Ext(d.Name()) == ".html" {
+			rel, err := filepath.Rel(templatesDir, path)
+			if err != nil {
+				return err
+			}
+			partials[filepath.ToSlash(rel)] = path
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	for _, e := range entries {
-		if !e.IsDir() && filepath.Ext(e.Name()) == ".html" {
-			partials = append(partials, filepath.Join(partialsDir, e.Name()))
-		}
 	}
 	return partials, nil
 }
@@ -112,12 +124,31 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 	cachedTmpl, exists := r.cache[templatePath]
 	if !exists {
 		partials, _ := findPartials()
-		allTmpls := append([]string{templatePath}, partials...)
 
-		parsedTmpl, err := template.ParseFiles(allTmpls...)
+		b, err := os.ReadFile(templatePath)
+		if err != nil {
+			r.mu.Unlock()
+			return fmt.Errorf("failed to read template %s: %w", templatePath, err)
+		}
+
+		parsedTmpl := template.New(filepath.Base(templatePath))
+		parsedTmpl, err = parsedTmpl.Parse(string(b))
 		if err != nil {
 			r.mu.Unlock()
 			return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
+		}
+
+		for name, path := range partials {
+			pb, err := os.ReadFile(path)
+			if err != nil {
+				r.mu.Unlock()
+				return fmt.Errorf("failed to read partial %s: %w", path, err)
+			}
+			_, err = parsedTmpl.New(name).Parse(string(pb))
+			if err != nil {
+				r.mu.Unlock()
+				return fmt.Errorf("failed to parse partial %s: %w", path, err)
+			}
 		}
 		r.cache[templatePath] = parsedTmpl
 		cachedTmpl = parsedTmpl

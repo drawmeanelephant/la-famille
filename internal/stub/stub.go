@@ -18,34 +18,47 @@ import (
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
-func findPartials() ([]string, error) {
+func findPartials() (map[string]string, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
-	var partialsDir string
+	var templatesDir string
 	for {
-		potential := filepath.Join(wd, "templates", "partials")
+		potential := filepath.Join(wd, "templates")
 		if stat, err := os.Stat(potential); err == nil && stat.IsDir() {
-			partialsDir = potential
+			templatesDir = potential
 			break
 		}
 		parent := filepath.Dir(wd)
 		if parent == wd {
+			// Reached root without finding it, just return empty to not break existing flow
 			return nil, nil
 		}
 		wd = parent
 	}
 
-	var partials []string
-	entries, err := os.ReadDir(partialsDir)
+	partialsDir := filepath.Join(templatesDir, "partials")
+	if _, err := os.Stat(partialsDir); os.IsNotExist(err) {
+		return nil, nil
+	}
+
+	partials := make(map[string]string)
+	err = filepath.WalkDir(partialsDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && filepath.Ext(d.Name()) == ".html" {
+			rel, err := filepath.Rel(templatesDir, path)
+			if err != nil {
+				return err
+			}
+			partials[filepath.ToSlash(rel)] = path
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	for _, e := range entries {
-		if !e.IsDir() && filepath.Ext(e.Name()) == ".html" {
-			partials = append(partials, filepath.Join(partialsDir, e.Name()))
-		}
 	}
 	return partials, nil
 }
@@ -136,14 +149,33 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 		}
 
 		partials, _ := findPartials()
-		allTmpls := append([]string{cfg.Template}, partials...)
-		defaultTmpl, err := template.ParseFiles(allTmpls...)
+		b, err := os.ReadFile(cfg.Template)
+		if err != nil {
+			outFile.Close()
+			return fmt.Errorf("failed to read default template file for stubs: %w", err)
+		}
+
+		defaultTmpl := template.New(filepath.Base(cfg.Template))
+		defaultTmpl, err = defaultTmpl.Parse(string(b))
 		if err != nil {
 			outFile.Close()
 			return fmt.Errorf("failed to parse default template file for stubs: %w", err)
 		}
 
-		if err := defaultTmpl.Execute(outFile, pageStruct); err != nil {
+		for name, path := range partials {
+			pb, err := os.ReadFile(path)
+			if err != nil {
+				outFile.Close()
+				return fmt.Errorf("failed to read partial %s for stubs: %w", path, err)
+			}
+			_, err = defaultTmpl.New(name).Parse(string(pb))
+			if err != nil {
+				outFile.Close()
+				return fmt.Errorf("failed to parse partial %s for stubs: %w", path, err)
+			}
+		}
+
+		if err := defaultTmpl.ExecuteTemplate(outFile, filepath.Base(cfg.Template), pageStruct); err != nil {
 			outFile.Close()
 			return err
 		}

@@ -180,3 +180,58 @@ func TestDiscoverLayouts(t *testing.T) {
 		t.Errorf("Expected layout1 to be in allowlist")
 	}
 }
+
+func TestHTMLWithPartial(t *testing.T) {
+	tmpDir := t.TempDir()
+	outPath := filepath.Join(tmpDir, "out.html")
+
+	// Setup fake templates directory structure
+	tmplDir := filepath.Join(tmpDir, "templates")
+	os.MkdirAll(tmplDir, 0755)
+
+	// Layout using a partial
+	tmplPath := filepath.Join(tmplDir, "layout.html")
+	err := os.WriteFile(tmplPath, []byte("Layout: {{template \"partials/footer.html\" .}}"), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Partial file
+	partialsDir := filepath.Join(tmplDir, "partials")
+	os.MkdirAll(partialsDir, 0755)
+	partialPath := filepath.Join(partialsDir, "footer.html")
+	err = os.WriteFile(partialPath, []byte("Footer - {{.Title}}"), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// We need to change the working directory so findPartials can locate "templates"
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+	err = os.Chdir(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.Config{Template: tmplPath}
+	p := page.Page{Title: "World", Content: template.HTML("")}
+
+	renderer := New(filepath.Dir(cfg.Template))
+	err = renderer.HTML(cfg, p, "", outPath)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	content, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := "Layout: Footer - World"
+	if string(content) != expected {
+		t.Errorf("expected %q, got %q", expected, string(content))
+	}
+}
