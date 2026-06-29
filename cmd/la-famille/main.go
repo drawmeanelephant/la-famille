@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -92,7 +93,12 @@ func main() {
 			fmt.Printf("Serving %s on http://localhost:%d\n", dir, port)
 			fmt.Printf("Press Ctrl+C to stop\n")
 
-			return http.ListenAndServe(fmt.Sprintf(":%d", port), http.FileServer(http.Dir(dir)))
+			server := &http.Server{
+				Addr:              fmt.Sprintf("127.0.0.1:%d", port),
+				Handler:           http.FileServer(http.Dir(dir)),
+				ReadHeaderTimeout: 5 * time.Second,
+			}
+			return server.ListenAndServe()
 		},
 	}
 	serveCmd.Flags().IntVarP(&servePort, "port", "p", 0, "Port to run the server on (overrides config)")
