@@ -15,3 +15,16 @@ Implement SEO and OpenGraph metadata tags across the static site generator's con
 
 ## Potential Breaking Changes
 - `assets/testdata/sites/*/expected` output HTML files have changed structure. Tests will fail if the fixtures are not correctly updated.
+
+---
+
+# CI/CD Pipeline Upgrade Plan
+
+## Goal
+Level up the repository CI/CD pipeline by removing third-party dependencies for PR auto-merge, adding a continuous deployment workflow for GitHub Pages, and implementing a nightly job for autonomous PR synchronization.
+
+## Steps
+1. Replaced the `pascalgn/automerge-action` with native GitHub CLI in `.github/workflows/jules-ci.yml`.
+2. Created `.github/workflows/deploy.yml` for compiling and deploying the `public/` directory via GitHub Pages.
+3. Created `.github/workflows/cron-sync.yml` to automatically run `la-famille pr sync` each night.
+4. Verified that the syntax of the workflows aligns with the required tool versions.
