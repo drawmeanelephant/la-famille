@@ -20,6 +20,8 @@ type Config struct {
 	Theme      string `yaml:"theme"`
 	Port        int    `yaml:"port"`
 	ProjectRoot string `yaml:"project_root"`
+	DefaultDescription string `yaml:"default_description"`
+	DefaultOGImage     string `yaml:"default_og_image"`
 }
 
 // DefaultConfig returns a Config with sensible default values.
@@ -86,6 +88,12 @@ rag_dir: "rag-archive"
 
 # theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
 theme: "retro"
+
+# default_description: A default description for SEO meta tags.
+# default_description: "A wonderful site built with La Famille"
+
+# default_og_image: A default OpenGraph image URL.
+# default_og_image: "/assets/default-og.png"
 
 # port: The port on which the local development server will run.
 port: 8080

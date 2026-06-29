@@ -29,6 +29,8 @@ type FileMeta struct {
 	Tags            []string
 	Content         []byte
 	Rest            []byte // The content after frontmatter
+	Description     string
+	Image           string
 }
 
 // GatherMetadata walks the content directory and parses the frontmatter for each markdown file.
@@ -77,6 +79,8 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			Layout          string   `yaml:"layout"`
 			Slug            string   `yaml:"slug"`
 			Tags            []string `yaml:"tags"`
+		Description     string   `yaml:"description"`
+		Image           string   `yaml:"image"`
 		}
 
 		if rawMatter != nil {
@@ -134,6 +138,8 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			Tags:            normalizedTags,
 			Content:         contentBytes,
 			Rest:            rest,
+			Description:     matter.Description,
+			Image:           matter.Image,
 		}
 
 		return nil

@@ -156,6 +156,16 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 		sanitizedHTML := p.SanitizeBytes(buf.Bytes())
 
+
+		desc := meta.Description
+		if desc == "" {
+			desc = cfg.DefaultDescription
+		}
+		img := meta.Image
+		if img == "" {
+			img = cfg.DefaultOGImage
+		}
+
 		page := page.Page{
 			Site:            cfg,
 			Title:           title,
@@ -166,6 +176,8 @@ func Build(cfg config.Config) (BuildResult, error) {
 			SoundtrackTheme: meta.SoundtrackTheme,
 			Layout:          meta.Layout,
 			Content:         template.HTML(sanitizedHTML),
+			Description:     desc,
+			Image:           img,
 		}
 
 		if err := renderer.HTML(cfg, page, meta.Layout, outPath); err != nil {
