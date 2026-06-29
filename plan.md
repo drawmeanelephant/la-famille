@@ -10,3 +10,6 @@
 
 ## Potential Breaking Changes
 None. The asset generation pipeline will now correctly drop any malicious `.md` or asset paths attempting to escape the output directory, whereas previously it might have created directories or written files outside the scope of the generator.
+
+## Completed Tasks
+* Added content schema validation (tags, dates) and layout allowlist to prevent arbitrary template loading.

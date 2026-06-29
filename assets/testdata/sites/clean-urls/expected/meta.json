@@ -1,11 +1,14 @@
 {
   "bio": {
-    "title": "About Me"
+    "title": "About Me",
+    "word_count": 6
   },
   "blog/post": {
-    "title": "My Blog Post"
+    "title": "My Blog Post",
+    "word_count": 4
   },
   "index": {
-    "title": "Home"
+    "title": "Home",
+    "word_count": 12
   }
 }

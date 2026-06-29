@@ -1,8 +1,10 @@
 {
   "about": {
-    "title": "About"
+    "title": "About",
+    "word_count": 3
   },
   "index": {
-    "title": "Home"
+    "title": "Home",
+    "word_count": 3
   }
 }

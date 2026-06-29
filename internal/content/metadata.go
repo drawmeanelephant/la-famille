@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -24,6 +26,7 @@ type FileMeta struct {
 	SoundtrackTheme string
 	Layout          string
 	Slug            string
+	Tags            []string
 	Content         []byte
 	Rest            []byte // The content after frontmatter
 }
@@ -64,15 +67,16 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 		}
 
 		var matter struct {
-			Title           string `yaml:"title"`
-			Author          string `yaml:"author"`
-			Date            string `yaml:"date"`
-			Render          *bool  `yaml:"render"`
-			VideoScript     string `yaml:"video_script"`
-			AnimationCues   string `yaml:"animation_cues"`
-			SoundtrackTheme string `yaml:"soundtrack_theme"`
-			Layout          string `yaml:"layout"`
-			Slug            string `yaml:"slug"`
+			Title           string   `yaml:"title"`
+			Author          string   `yaml:"author"`
+			Date            string   `yaml:"date"`
+			Render          *bool    `yaml:"render"`
+			VideoScript     string   `yaml:"video_script"`
+			AnimationCues   string   `yaml:"animation_cues"`
+			SoundtrackTheme string   `yaml:"soundtrack_theme"`
+			Layout          string   `yaml:"layout"`
+			Slug            string   `yaml:"slug"`
+			Tags            []string `yaml:"tags"`
 		}
 
 		if rawMatter != nil {
@@ -89,6 +93,33 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			}
 		}
 
+		// Date validation
+		if matter.Date != "" {
+			if _, err := time.Parse(time.DateOnly, matter.Date); err != nil {
+				log.Printf("Warning: Invalid date format in %s: %s", relPath, matter.Date)
+				matter.Date = ""
+			}
+		}
+
+		// Tag validation and normalization
+		var normalizedTags []string
+		for _, tag := range matter.Tags {
+			lower := strings.ToLower(tag)
+			var sb strings.Builder
+			for _, r := range lower {
+				if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+					sb.WriteRune(r)
+				}
+			}
+			normalized := sb.String()
+			if normalized != tag {
+				log.Printf("Warning: Normalized tag '%s' to '%s' in %s", tag, normalized, relPath)
+			}
+			if normalized != "" {
+				normalizedTags = append(normalizedTags, normalized)
+			}
+		}
+
 		fileMap[relPath] = &FileMeta{
 			RelPath:         relPath,
 			Title:           matter.Title,
@@ -100,6 +131,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			SoundtrackTheme: matter.SoundtrackTheme,
 			Layout:          matter.Layout,
 			Slug:            matter.Slug,
+			Tags:            normalizedTags,
 			Content:         contentBytes,
 			Rest:            rest,
 		}

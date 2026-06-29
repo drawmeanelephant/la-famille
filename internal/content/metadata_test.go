@@ -177,3 +177,42 @@ Uppercase body.`
 	})
 
 }
+
+func TestGatherMetadataValidation(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	mdContent := `---
+title: "Test Title"
+tags: ["Valid-Tag", "Inv@lid_Tag"]
+date: "invalid-date"
+---
+Content
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "test.md"), []byte(mdContent), 0644); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+
+	fileMap, err := GatherMetadata(tmpDir)
+	if err != nil {
+		t.Fatalf("GatherMetadata failed: %v", err)
+	}
+
+	meta, ok := fileMap["test.md"]
+	if !ok {
+		t.Fatalf("Expected test.md in fileMap")
+	}
+
+	if meta.Date != "" {
+		t.Errorf("Expected date to be cleared due to invalid format, got: %s", meta.Date)
+	}
+
+	if len(meta.Tags) != 2 {
+		t.Fatalf("Expected 2 tags, got %d", len(meta.Tags))
+	}
+	if meta.Tags[0] != "valid-tag" {
+		t.Errorf("Expected tag 0 to be 'valid-tag', got: %s", meta.Tags[0])
+	}
+	if meta.Tags[1] != "invlidtag" {
+		t.Errorf("Expected tag 1 to be 'invlidtag', got: %s", meta.Tags[1])
+	}
+}
