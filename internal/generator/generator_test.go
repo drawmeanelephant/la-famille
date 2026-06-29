@@ -5,8 +5,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
-    "strings"
 
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/yuin/goldmark"
@@ -76,5 +76,73 @@ func TestBuild_Success(t *testing.T) {
 	_, err := Build(cfg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGeneratorSEO(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outDir := filepath.Join(tempDir, "public")
+	assetDir := filepath.Join(tempDir, "assets")
+	ragDir := filepath.Join(tempDir, "rag-archive")
+	tmplDir := filepath.Join(tempDir, "templates")
+
+	os.MkdirAll(contentDir, 0755)
+	os.MkdirAll(outDir, 0755)
+	os.MkdirAll(assetDir, 0755)
+	os.MkdirAll(ragDir, 0755)
+	os.MkdirAll(tmplDir, 0755)
+
+	tmplPath := filepath.Join(tmplDir, "layout.html")
+	tmplContent := `<!DOCTYPE html><html><head><title>{{.Title}}</title><meta name="description" content="{{.Description}}"><meta property="og:image" content="{{.Image}}"></head><body>{{.Content}}</body></html>`
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0644); err != nil {
+		t.Fatalf("failed to write template: %v", err)
+	}
+
+	mdContent := `---
+title: Test SEO
+description: "Test SEO Description"
+image: "/images/test-seo.png"
+---
+# Hello SEO`
+	mdPath := filepath.Join(contentDir, "test.md")
+	if err := os.WriteFile(mdPath, []byte(mdContent), 0644); err != nil {
+		t.Fatalf("failed to write markdown file: %v", err)
+	}
+
+	cfg := config.Config{
+		SiteName:           "Test Site",
+		Template:           tmplPath,
+		ContentDir:         contentDir,
+		OutputDir:          outDir,
+		AssetDir:           assetDir,
+		RagDir:             ragDir,
+		Theme:              "retro",
+		Port:               8080,
+		DefaultDescription: "Default Desc",
+		DefaultOGImage:     "/default.png",
+	}
+
+	_, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	outHTMLPath := filepath.Join(outDir, "test", "index.html")
+	outBytes, err := os.ReadFile(outHTMLPath)
+	if err != nil {
+		t.Fatalf("failed to read output HTML: %v", err)
+	}
+
+	outHTML := string(outBytes)
+
+	expectedDesc := `<meta name="description" content="Test SEO Description">`
+	if !strings.Contains(outHTML, expectedDesc) {
+		t.Errorf("output HTML missing expected description meta tag.\nGot: %s", outHTML)
+	}
+
+	expectedImage := `<meta property="og:image" content="/images/test-seo.png">`
+	if !strings.Contains(outHTML, expectedImage) {
+		t.Errorf("output HTML missing expected image meta tag.\nGot: %s", outHTML)
 	}
 }

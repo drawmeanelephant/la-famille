@@ -33,6 +33,7 @@ var convertMarkdown = func(md goldmark.Markdown, source []byte, w *bytes.Buffer)
 	return md.Convert(source, w)
 }
 
+
 // BuildResult contains statistics about the build process.
 type BuildResult struct {
 	Duration   time.Duration
@@ -163,6 +164,16 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 		sanitizedHTML := p.SanitizeBytes(buf.Bytes())
 
+
+		desc := meta.Description
+		if desc == "" {
+			desc = cfg.DefaultDescription
+		}
+		img := meta.Image
+		if img == "" {
+			img = cfg.DefaultOGImage
+		}
+
 		page := page.Page{
 			Site:            cfg,
 			Title:           title,
@@ -173,6 +184,8 @@ func Build(cfg config.Config) (BuildResult, error) {
 			SoundtrackTheme: meta.SoundtrackTheme,
 			Layout:          meta.Layout,
 			Content:         template.HTML(sanitizedHTML),
+			Description:     desc,
+			Image:           img,
 		}
 
 		if err := renderer.HTML(cfg, page, meta.Layout, outPath); err != nil {
@@ -183,7 +196,6 @@ func Build(cfg config.Config) (BuildResult, error) {
 	if len(errs) > 0 {
 		return result, errors.Join(errs...)
 	}
-
 	// 3. Generate stubs for missing files in deterministic order
 	if err := stub.GenerateStubs(cfg, missingFiles, &g, p, fileMap); err != nil {
 		return result, err

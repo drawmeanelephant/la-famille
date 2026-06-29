@@ -16,4 +16,6 @@ type Page struct {
 	SoundtrackTheme string
 	Layout          string
 	Content         template.HTML
+	Description     string
+	Image           string
 }

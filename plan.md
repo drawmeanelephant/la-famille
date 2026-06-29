@@ -1,21 +1,17 @@
-# Security Fix: Prevent Path Traversal in Output Directory Creation
+# SEO & OpenGraph Implementation Plan
 
-## Intended Steps
-1. **Analyze Vulnerability**: Review `filepath.Join(cfg.OutputDir, filepath.FromSlash(relPath))` usage in `internal/generator/generator.go`, `internal/stub/stub.go`, and `internal/asset/copy.go`.
-2. **Implement Fix**:
-   - Clean `cfg.OutputDir`.
-   - Validate that the resulting `outPath` starts with the cleaned output directory and separator, preventing any traversal payload from writing outside `public/`.
-3. **Verify locally**: Run `go fmt`, `go test`, and `go vet` to ensure no errors were introduced.
-4. **Submit PR**: Open a PR detailing the security fix.
+## Goal
+Implement SEO and OpenGraph metadata tags across the static site generator's configuration, metadata parser, and templates.
+
+## Steps Taken
+1. Updated `internal/config/config.go` with `DefaultDescription` and `DefaultOGImage` in the `Config` struct and the `WriteDefault` setup.
+2. Updated `internal/content/metadata.go` to add `Description` and `Image` to `FileMeta` and parsed them from frontmatter YAML fields.
+3. Updated `internal/page/page.go` to expose `Description` and `Image` in the `Page` object accessible by templates.
+4. Updated `internal/generator/generator.go` to correctly map file metadata to the `Page` struct, using the config defaults as fallbacks.
+5. Injected `<meta>` tags into `templates/layout.html` and `templates/layout-documentation.html`.
+6. Created `internal/generator/generator_test.go` to explicitly test that metadata tags are correctly injected when parsing frontmatter.
+7. Regenerated test fixtures inside `assets/testdata/sites/` so their `expected/` HTML files reflect the new template layout with the SEO tags.
+8. Successfully ran `go test ./...` and `go vet ./...`.
 
 ## Potential Breaking Changes
-None. The asset generation pipeline will now correctly drop any malicious `.md` or asset paths attempting to escape the output directory, whereas previously it might have created directories or written files outside the scope of the generator.
-
-## Completed Tasks
-* Added content schema validation (tags, dates) and layout allowlist to prevent arbitrary template loading.
-
-## PR: Update Github Bot Email
-1. Replace `jules-bot@example.com` with `jules-bot@users.noreply.github.com` in `internal/github/sync.go`.
-2. Ensure `go test ./...` and `go vet ./...` pass.
-
-Potential breaking changes to the static asset generation pipeline: None, this is a local github sync script modification.
+- `assets/testdata/sites/*/expected` output HTML files have changed structure. Tests will fail if the fixtures are not correctly updated.
