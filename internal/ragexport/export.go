@@ -41,6 +41,7 @@ func RunExport(cfg config.Config) error {
 		[]string{"internal/config"},
 		nil,
 		outDir,
+		cfg.ProjectRoot,
 	); err != nil {
 		return fmt.Errorf("failed to write system bundle: %w", err)
 	}
@@ -56,6 +57,7 @@ func RunExport(cfg config.Config) error {
 		nil,
 		nil,
 		outDir,
+		cfg.ProjectRoot,
 	); err != nil {
 		return fmt.Errorf("failed to write config bundle: %w", err)
 	}
@@ -68,13 +70,13 @@ func RunExport(cfg config.Config) error {
 	defer cfgFile.Close()
 
 	cfgFile.WriteString("<file path=\"assets/\">\n<content>\n")
-	filepath.WalkDir("assets", func(path string, d fs.DirEntry, err error) error {
+	filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "assets"), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // ignore missing assets dir
 		}
 		// if it's a directory, just print the path with a trailing slash
 		if d.IsDir() {
-			cfgFile.WriteString(filepath.ToSlash(path) + "/\n")
+			cfgFile.WriteString(filepath.ToSlash(getRel(cfg.ProjectRoot, path)) + "/\n")
 		} else {
 			// for files, print size and name
 			info, err := d.Info()
@@ -82,20 +84,20 @@ func RunExport(cfg config.Config) error {
 			if err == nil {
 				size = info.Size()
 			}
-			cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(path), size))
+			cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(getRel(cfg.ProjectRoot, path)), size))
 		}
 		return nil
 	})
 	cfgFile.WriteString("</content>\n</file>\n\n")
 
 	cfgFile.WriteString("<file path=\"templates/\">\n<content>\n")
-	filepath.WalkDir("templates", func(path string, d fs.DirEntry, err error) error {
+	filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "templates"), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // ignore missing templates dir
 		}
 		// if it's a directory, just print the path with a trailing slash
 		if d.IsDir() {
-			cfgFile.WriteString(filepath.ToSlash(path) + "/\n")
+			cfgFile.WriteString(filepath.ToSlash(getRel(cfg.ProjectRoot, path)) + "/\n")
 		} else {
 			// for files, print size and name
 			info, err := d.Info()
@@ -103,7 +105,7 @@ func RunExport(cfg config.Config) error {
 			if err == nil {
 				size = info.Size()
 			}
-			cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(path), size))
+			cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(getRel(cfg.ProjectRoot, path)), size))
 		}
 		return nil
 	})
@@ -121,6 +123,7 @@ func RunExport(cfg config.Config) error {
 			nil,
 			nil, // Default formatting is verbatim with XML tags, which preserves the YAML frontmatter
 			outDir,
+			cfg.ProjectRoot,
 		); err != nil {
 		return fmt.Errorf("failed to write content bundle: %w", err)
 	}
@@ -129,7 +132,7 @@ func RunExport(cfg config.Config) error {
 	return nil
 }
 
-func writeBundle(outPath string, patterns []string, excludes []string, formatFunc func(path string, content []byte) string, outDir string) error {
+func writeBundle(outPath string, patterns []string, excludes []string, formatFunc func(path string, content []byte) string, outDir string, projectRoot string) error {
 	f, err := os.Create(outPath)
 	if err != nil {
 		return err
@@ -138,7 +141,7 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 
 	var matchedFiles []string
 	for _, pattern := range patterns {
-		err := filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+		err := filepath.WalkDir(projectRoot, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
@@ -149,19 +152,20 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 				return nil
 			}
 
-			match, err := filepath.Match(filepath.Base(pattern), filepath.Base(path))
+			relPath := getRel(projectRoot, path)
+			match, err := filepath.Match(filepath.Base(pattern), filepath.Base(relPath))
 			if err != nil {
 				return nil
 			}
 
-			if (match && !strings.Contains(pattern, "/")) || pathMatch(pattern, path) {
-				if strings.Contains(filepath.ToSlash(path), filepath.ToSlash(outDir)) {
+			if (match && !strings.Contains(pattern, "/")) || pathMatch(pattern, relPath) {
+				if strings.Contains(filepath.ToSlash(relPath), filepath.ToSlash(outDir)) {
 					return nil
 				}
 				// Check excludes
 				isExcluded := false
 				for _, exclude := range excludes {
-					if strings.HasPrefix(filepath.ToSlash(path), filepath.ToSlash(exclude)) {
+					if strings.HasPrefix(filepath.ToSlash(relPath), filepath.ToSlash(exclude)) {
 						isExcluded = true
 						break
 					}
@@ -171,7 +175,7 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 				}
 				found := false
 				for _, mf := range matchedFiles {
-					if mf == path {
+					if mf == path { // keep path for reading file later
 						found = true
 						break
 					}
@@ -199,7 +203,7 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 		if formatFunc != nil {
 			output = formatFunc(path, content)
 		} else {
-			output = fmt.Sprintf("<file path=\"%s\">\n<content>\n%s\n</content>\n</file>\n\n", filepath.ToSlash(path), string(content))
+			output = fmt.Sprintf("<file path=\"%s\">\n<content>\n%s\n</content>\n</file>\n\n", filepath.ToSlash(getRel(projectRoot, path)), string(content))
 		}
 		if _, err := f.WriteString(output); err != nil {
 			return err
@@ -221,4 +225,12 @@ func pathMatch(pattern, path string) bool {
 	}
 	match, _ := filepath.Match(pattern, path)
 	return match
+}
+
+func getRel(base, target string) string {
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return target
+	}
+	return rel
 }
