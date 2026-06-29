@@ -26,7 +26,8 @@ jobs:
 
       - name: Auto-Merge Green PRs
         if: success()
-        uses: pascalgn/automerge-action@v0.16.4
         env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          MERGE_METHOD: "squash" # Keeps your main history beautiful and clean
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr merge --auto --squash "$PR_URL"
