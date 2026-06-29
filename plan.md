@@ -13,3 +13,9 @@ None. The asset generation pipeline will now correctly drop any malicious `.md` 
 
 ## Completed Tasks
 * Added content schema validation (tags, dates) and layout allowlist to prevent arbitrary template loading.
+
+## PR: Update Github Bot Email
+1. Replace `jules-bot@example.com` with `jules-bot@users.noreply.github.com` in `internal/github/sync.go`.
+2. Ensure `go test ./...` and `go vet ./...` pass.
+
+Potential breaking changes to the static asset generation pipeline: None, this is a local github sync script modification.
