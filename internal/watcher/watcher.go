@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	"context"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,86 +12,36 @@ import (
 	"github.com/tbuddy/la-famille/internal/generator"
 )
 
-
-// Watch starts an fsnotify watcher on the given config's ContentDir and Templates dir.
-// It will rebuild the site via generator.Build(cfg) whenever a file change is detected.
-func Watch(cfg config.Config, onBuild func(generator.BuildResult)) error {
+// Watch starts an fsnotify watcher on the given config's ContentDir, Templates, and Assets dir.
+// It explicitly unbinds and tears down resources once the passed context registers Done.
+func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildResult)) error {
 	watcher, err := fsnotify.NewWatcher()
-
 	if err != nil {
 		return err
 	}
 	defer watcher.Close()
 
-	// Rate-limit rebuilds (debounce)
+	// Debounce timer management
 	var buildTimer *time.Timer
-
-	go func() {
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				// Only rebuild on creation, modification, or deletion
-				if event.Has(fsnotify.Write) || event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) {
-					// If a new directory is created, add it to the watcher.
-					if event.Has(fsnotify.Create) {
-						stat, err := os.Stat(event.Name)
-						if err == nil && stat.IsDir() {
-							log.Printf("New directory detected, adding to watcher: %s", event.Name)
-							watcher.Add(event.Name)
-						}
-					}
-					log.Printf("Detected change in %s, queuing rebuild...", event.Name)
-					if buildTimer != nil {
-						buildTimer.Stop()
-					}
-					buildTimer = time.AfterFunc(500*time.Millisecond, func() {
-						log.Println("Rebuilding site...")
-						start := time.Now()
-						if res, err := generator.Build(cfg); err != nil {
-							if onBuild != nil { onBuild(res) }
-							log.Printf("Error rebuilding site: %v", err)
-						} else {
-							log.Printf("Rebuild complete in %v.", time.Since(start))
-							if onBuild != nil { onBuild(res) }
-						}
-					})
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				log.Printf("Watcher error: %v", err)
-			}
+	defer func() {
+		if buildTimer != nil {
+			buildTimer.Stop()
 		}
 	}()
 
-	// Watch content directory
-	err = filepath.WalkDir(cfg.ContentDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return watcher.Add(path)
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
+	// Orchestrate directories to monitor
+	dirsToWatch := []string{cfg.ContentDir}
 
-	// Watch templates directory if it exists
 	templateDir := filepath.Dir(cfg.Template)
 	if _, err := os.Stat(templateDir); err == nil {
-		watcher.Add(templateDir)
+		dirsToWatch = append(dirsToWatch, templateDir)
+	}
+	if _, err := os.Stat("assets"); err == nil {
+		dirsToWatch = append(dirsToWatch, "assets")
 	}
 
-	// Watch assets directory if it exists
-	assetsDir := "assets"
-	if _, err := os.Stat(assetsDir); err == nil {
-		filepath.WalkDir(assetsDir, func(path string, d os.DirEntry, err error) error {
+	for _, dir := range dirsToWatch {
+		err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
@@ -99,9 +50,60 @@ func Watch(cfg config.Config, onBuild func(generator.BuildResult)) error {
 			}
 			return nil
 		})
+		if err != nil {
+			return err
+		}
 	}
 
-	// Block forever
-	<-make(chan struct{})
-	return nil
+	log.Println("Context-aware file watcher initialized successfully.")
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Halting file watcher: Context canceled.")
+			return ctx.Err()
+
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return nil
+			}
+
+			if event.Has(fsnotify.Write) || event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) {
+				if event.Has(fsnotify.Create) {
+					stat, err := os.Stat(event.Name)
+					if err == nil && stat.IsDir() {
+						log.Printf("Dynamic directory tracking added: %s", event.Name)
+						_ = watcher.Add(event.Name)
+					}
+				}
+
+				log.Printf("Change caught in %s, scheduling build pass...", event.Name)
+				if buildTimer != nil {
+					buildTimer.Stop()
+				}
+
+				buildTimer = time.AfterFunc(500*time.Millisecond, func() {
+					log.Println("Executing pipeline rebuild...")
+					start := time.Now()
+					if res, err := generator.Build(cfg); err != nil {
+						if onBuild != nil {
+							onBuild(res)
+						}
+						log.Printf("Pipeline compilation failed: %v", err)
+					} else {
+						log.Printf("Rebuild complete in %v.", time.Since(start))
+						if onBuild != nil {
+							onBuild(res)
+						}
+					}
+				})
+			}
+
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
+			}
+			log.Printf("Watcher filesystem interruption error: %v", err)
+		}
+	}
 }

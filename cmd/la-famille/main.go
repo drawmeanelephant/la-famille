@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -87,7 +88,7 @@ func main() {
 
 			if watchMode {
 				fmt.Println("Starting watch mode...")
-				go watcher.Watch(cfg, nil)
+				go watcher.Watch(context.Background(), cfg, nil)
 			}
 
 			fmt.Printf("Serving %s on http://localhost:%d\n", dir, port)

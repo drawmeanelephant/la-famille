@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -73,15 +74,16 @@ type workResultMsg struct {
 }
 
 type model struct {
-	cfg     config.Config
-	screen  screen
-	choices []menuOption
-	cursor  int
-	frame   int
-	workMsg string
-	workErr error
-	server  *http.Server
-	stats   *generator.BuildResult
+	cfg           config.Config
+	screen        screen
+	choices       []menuOption
+	cursor        int
+	frame         int
+	workMsg       string
+	workErr       error
+	server        *http.Server
+	watcherCancel context.CancelFunc
+	stats         *generator.BuildResult
 }
 
 func initialModel(cfg config.Config) model {
@@ -121,6 +123,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.screen == screenMenu {
 				return m, tea.Quit
 			} else if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.screen == screenServe {
+				if m.watcherCancel != nil {
+					m.watcherCancel()
+					m.watcherCancel = nil
+				}
 				if m.screen == screenServe && m.server != nil {
 					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 					defer cancel()
@@ -132,6 +138,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "esc":
 			if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.screen == screenServe {
+				if m.watcherCancel != nil {
+					m.watcherCancel()
+					m.watcherCancel = nil
+				}
 				if m.screen == screenServe && m.server != nil {
 					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 					defer cancel()
@@ -194,11 +204,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 
 					if choice == "Serve Site with Watch" {
-						go watcher.Watch(m.cfg, func(res generator.BuildResult) {
-							if p != nil {
-								p.Send(statsUpdateMsg{res: res})
+						watchCtx, cancelWatch := context.WithCancel(context.Background())
+						m.watcherCancel = cancelWatch
+
+						go func(ctx context.Context, c config.Config) {
+							if err := watcher.Watch(ctx, c, func(res generator.BuildResult) {
+								if p != nil {
+									p.Send(statsUpdateMsg{res: res})
+								}
+							}); err != nil {
+								log.Printf("Watcher thread exited with: %v", err)
 							}
-						})
+						}(watchCtx, m.cfg)
 					}
 
 					m.server = &http.Server{
