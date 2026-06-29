@@ -108,14 +108,15 @@
         <div class="drawer-side z-30 lg:z-auto">
             <label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label>
             <aside class="w-80 min-h-full bg-base-200 text-base-content border-r border-base-300 flex flex-col pt-16 lg:pt-0">
-                <div class="p-4 border-b border-base-300">
+                <div class="p-4 border-b border-base-300 relative">
                     <h2 class="text-sm font-bold uppercase tracking-wider text-base-content/50 mb-2">Workspace Modules</h2>
-                    <form action="#" method="get">
+                    <form action="#" method="get" onsubmit="return false;">
                         <label class="input input-sm input-bordered flex items-center gap-2 focus-within:outline focus-within:outline-2 focus-within:outline-primary">
-                            <input type="search" name="q" aria-label="Search Workspace" placeholder="Quick Search..." class="grow focus:outline-none" />
+                            <input type="search" id="site-search" name="q" aria-label="Search Workspace" autocomplete="off" placeholder="Quick Search..." class="grow focus:outline-none" />
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 opacity-70" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
                         </label>
                     </form>
+                        <ul id="search-results-list" class="absolute top-full left-0 mt-2 w-full bg-base-100 shadow-lg rounded-box z-50 hidden max-h-96 overflow-y-auto border border-base-200"></ul>
                 </div>
 
                 <ul class="menu p-4 w-full text-base-content flex-grow gap-1">
@@ -171,5 +172,6 @@
             </aside>
         </div>
     </div>
+<script src="/assets/js/search.js"></script>
 </body>
 </html>
