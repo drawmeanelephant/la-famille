@@ -29,8 +29,14 @@ go run ./cmd/la-famille build
 
 To launch the interactive TUI:
 ```bash
-go run ./cmd/la-famille
+go run ./cmd/la-famille tui
 ```
+
+### TUI Navigation & Controls
+The TUI uses standard, frictionless keybindings for easy navigation:
+*   **Navigation:** Use `up`/`down` arrows or Unix-centric `j`/`k` primitives to move through the menus.
+*   **Selection & Exit:** Press `Enter` or `Space` to execute a command. Press `q` or `Esc` to safely drop back to the main menu screen buffer.
+*   **Active Server Views:** When you select "Serve Site" (or "Serve Site with Watch"), the TUI locks into an alternate screen buffer, displaying the dancing mascot animation (Raoul!). To gracefully tear down the network handle and exit back to the main menu, press `q` or `Esc`.
 
 To serve the generated site locally (defaults to port 8080):
 ```bash
