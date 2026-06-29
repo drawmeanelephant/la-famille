@@ -42,7 +42,8 @@ func main() {
 			cfg.ContentDir = contentDir
 			cfg.OutputDir = outputDir
 			cfg.Template = templateFile
-			return generator.Build(cfg)
+			_, err := generator.Build(cfg)
+			return err
 		},
 	}
 
@@ -85,7 +86,7 @@ func main() {
 
 			if watchMode {
 				fmt.Println("Starting watch mode...")
-				go watcher.Watch(cfg)
+				go watcher.Watch(cfg, nil)
 			}
 
 			fmt.Printf("Serving %s on http://localhost:%d\n", dir, port)

@@ -11,10 +11,12 @@ import (
 	"github.com/tbuddy/la-famille/internal/generator"
 )
 
+
 // Watch starts an fsnotify watcher on the given config's ContentDir and Templates dir.
 // It will rebuild the site via generator.Build(cfg) whenever a file change is detected.
-func Watch(cfg config.Config) error {
+func Watch(cfg config.Config, onBuild func(generator.BuildResult)) error {
 	watcher, err := fsnotify.NewWatcher()
+
 	if err != nil {
 		return err
 	}
@@ -47,10 +49,12 @@ func Watch(cfg config.Config) error {
 					buildTimer = time.AfterFunc(500*time.Millisecond, func() {
 						log.Println("Rebuilding site...")
 						start := time.Now()
-						if err := generator.Build(cfg); err != nil {
+						if res, err := generator.Build(cfg); err != nil {
+							if onBuild != nil { onBuild(res) }
 							log.Printf("Error rebuilding site: %v", err)
 						} else {
 							log.Printf("Rebuild complete in %v.", time.Since(start))
+							if onBuild != nil { onBuild(res) }
 						}
 					})
 				}

@@ -199,7 +199,7 @@ func TestProcessFile_PathTraversalPrevented(t *testing.T) {
 	content := []byte("# Home\n[Malicious](../../../../../tmp/hack.md)")
 	os.WriteFile(filepath.Join(cfg.ContentDir, fileName), content, 0644)
 
-	err := generator.Build(cfg)
+	_, err := generator.Build(cfg)
 	if err != nil {
 		t.Errorf("run failed: %v", err)
 	}
@@ -232,7 +232,7 @@ func TestRun_WalkError(t *testing.T) {
 	os.MkdirAll(cfg.OutputDir, 0755)
 	os.WriteFile(cfg.Template, []byte("<html><body>{{.Content}}</body></html>"), 0644)
 
-	err := generator.Build(cfg)
+	_, err := generator.Build(cfg)
 	if err == nil {
 		t.Fatalf("expected an error when walking a non-existent directory, but got nil")
 	}

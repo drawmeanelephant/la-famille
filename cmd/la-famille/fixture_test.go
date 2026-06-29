@@ -36,7 +36,7 @@ func TestFixtures(t *testing.T) {
 			cfg.OutputDir = outputDir
 			cfg.Template = templateFile
 
-			if err := generator.Build(cfg); err != nil {
+			if _, err := generator.Build(cfg); err != nil {
 				t.Fatalf("run failed: %v", err)
 			}
 

@@ -42,10 +42,13 @@ Starts the built-in local development server and watches for file changes.
 *   Press `q` or `Esc` to stop the server and return to the main menu.
 
 ### 5. Stats
-**Roadmap Item:** Displays a statistics dashboard displaying insights about your generated site. We ultimately plan to have stats like:
-*   Build time
-*   RAG sizes
-*   LLM context window representations
+Displays a statistics dashboard with insights about your generated site, including:
+*   Last build time (in milliseconds)
+*   Total pages generated
+*   Error count
+*   RAG token estimations (approximated from exported RAG markdown bundle sizes)
+
+This screen updates live automatically when using watch mode.
 
 ### 6. Just Raoul
 Displays an animation of the project mascot.
