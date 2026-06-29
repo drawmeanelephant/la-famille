@@ -18,7 +18,8 @@ type Config struct {
 	AssetDir   string `yaml:"asset_dir"`
 	RagDir     string `yaml:"rag_dir"`
 	Theme      string `yaml:"theme"`
-	Port       int    `yaml:"port"`
+	Port        int    `yaml:"port"`
+	ProjectRoot string `yaml:"project_root"`
 }
 
 // DefaultConfig returns a Config with sensible default values.
@@ -32,6 +33,7 @@ func DefaultConfig() Config {
 		RagDir:     "rag-archive",
 		Theme:      "retro",
 		Port:       8080,
+		ProjectRoot: ".",
 	}
 }
 
