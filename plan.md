@@ -1,12 +1,8 @@
-1. **Refactor `findPartials` to recursively find files and return paths relative to the templates directory:**
-    - Replace the `findPartials` function with an implementation that returns a `map[string]string` mapping partial names (relative paths) to absolute paths.
-2. **Update parsing logic to inject templates with their relative path names:**
-    - Modified `Renderer.HTML` and `GenerateStubs` to use `.New(name).Parse(...)` on the template root object, injecting partials with paths matching their directory structure so standard tags like `{{template "partials/..." .}}` function correctly without clashing.
-3. **Verify code edits:**
-    - Run `read_file` on `internal/render/render.go` and `internal/stub/stub.go` to confirm the edits were applied successfully.
-4. **Add a test for partial inclusion:**
-    - Added `TestHTMLWithPartial` in `internal/render/render_test.go` to verify standard include syntax correctly renders partials into the base layout.
-5. **Write execution log:**
-    - Wrote a report to `content/jules/reports/native-template-partials.md`.
-6. **Verify tests:**
-    - Run `go test ./...` to ensure all existing and new tests pass.
+1. **Add WatchMode to Config:** Update `internal/config/config.go` to include a `WatchMode` boolean field so that other packages know when to inject livereload scripts.
+2. **Implement Livereload SSE Server:** Create `internal/watcher/livereload.go` using only the standard library (`net/http`, `sync`) with a `LiveReloadHandler` and `BroadcastReload()` function.
+3. **Trigger Reload on Build:** Modify `internal/watcher/watcher.go` to call `BroadcastReload()` right after a successful `generator.Build()`.
+4. **Inject JS Payload:** Modify `internal/render/render.go` so that if `cfg.WatchMode` is true, it writes the template output into a buffer, replacing `</body>` with an SSE event listener script + `</body>`.
+5. **Update Server Setup:** Modify `cmd/la-famille/main.go` and `cmd/la-famille/tui.go` to use an `http.ServeMux` to handle both `/` and `/livereload`, trigger an initial build so files contain the injected JS payload, and set `cfg.WatchMode = true`.
+6. **Testing and Verification:** Run `go test ./...` and `go vet ./...` to verify everything works correctly. Also, make sure no asset pipelines are broken.
+7. **Complete pre-commit steps:** Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
+8. **Execution Log:** Write a standard execution log to `content/jules/reports/livereload-setup.md` as requested.

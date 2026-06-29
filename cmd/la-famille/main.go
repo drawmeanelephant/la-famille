@@ -88,15 +88,26 @@ func main() {
 
 			if watchMode {
 				fmt.Println("Starting watch mode...")
+				cfg.WatchMode = true
+				if _, err := generator.Build(cfg); err != nil {
+					log.Printf("Initial build failed: %v", err)
+				}
 				go watcher.Watch(context.Background(), cfg, nil)
 			}
 
 			fmt.Printf("Serving %s on http://localhost:%d\n", dir, port)
 			fmt.Printf("Press Ctrl+C to stop\n")
 
+			mux := http.NewServeMux()
+			mux.Handle("/", http.FileServer(http.Dir(dir)))
+
+			if watchMode {
+				mux.HandleFunc("/livereload", watcher.LiveReloadHandler)
+			}
+
 			server := &http.Server{
 				Addr:              fmt.Sprintf("127.0.0.1:%d", port),
-				Handler:           http.FileServer(http.Dir(dir)),
+				Handler:           mux,
 				ReadHeaderTimeout: 5 * time.Second,
 			}
 			return server.ListenAndServe()
