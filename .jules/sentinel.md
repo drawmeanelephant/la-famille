@@ -12,3 +12,4 @@
 **Vulnerability:** Potential Cross-Site Scripting (XSS) when generating HTML involving URLs dynamically.
 **Learning:** `html.EscapeString` alone is insufficient when injecting user-influenced strings into HTML attributes like `href`, as it does not prevent schemes like `javascript:`.
 **Prevention:** Always use a robust HTML sanitization library (like `bluemonday`'s `UGCPolicy()`) and apply `SanitizeBytes` to the entire generated HTML string before casting it to `template.HTML`, ensuring that both scripts and dangerous URL schemes are mitigated.
+* **Layout Allowlist**: Added layout allowlist in render.go to validate frontmatter layout against templates/ directory.

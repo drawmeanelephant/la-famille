@@ -25,7 +25,7 @@ func TestWrite(t *testing.T) {
 		"about": {"index", "home", "a_test"}, // Intentionally unordered
 	}
 
-	metaData := map[string]map[string]string{
+	metaData := map[string]map[string]interface{}{
 		"index": {
 			"title": "Home Page",
 		},
@@ -72,7 +72,7 @@ func TestWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read meta.json: %v", err)
 	}
-	var readMeta map[string]map[string]string
+	var readMeta map[string]map[string]interface{}
 	if err := json.Unmarshal(metaContent, &readMeta); err != nil {
 		t.Fatalf("Failed to parse meta.json: %v", err)
 	}

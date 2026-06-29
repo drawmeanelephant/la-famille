@@ -41,7 +41,7 @@ func Build(cfg config.Config) error {
 		Nodes: make(map[string]graph.Node),
 		Edges: [][2]string{},
 	}
-	metaData := make(map[string]map[string]string)
+	metaData := make(map[string]map[string]interface{})
 
 	// 2. Pass 2: Process files in deterministic order
 	var keys []string
@@ -51,7 +51,7 @@ func Build(cfg config.Config) error {
 	sort.Strings(keys)
 
 	// Reusable buffer for markdown conversion
-	renderer := render.New()
+	renderer := render.New(filepath.Dir(cfg.Template))
 
 	var buf bytes.Buffer
 
@@ -69,7 +69,7 @@ func Build(cfg config.Config) error {
 			Render: shouldRender,
 		}
 
-		m := make(map[string]string)
+		m := make(map[string]interface{})
 		title := meta.Title
 		if title == "" {
 			title = filepath.Base(relPath)
@@ -81,6 +81,10 @@ func Build(cfg config.Config) error {
 		if meta.Date != "" {
 			m["date"] = meta.Date
 		}
+		if meta.Tags != nil {
+			m["tags"] = meta.Tags
+		}
+		m["word_count"] = len(strings.Fields(string(meta.Rest)))
 		metaData[id] = m
 
 		outDirClean := filepath.Clean(cfg.OutputDir)

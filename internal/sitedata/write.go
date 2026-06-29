@@ -9,7 +9,7 @@ import (
 )
 
 // Write writes the site data (graph, backlinks, meta) to the output directory.
-func Write(outputDir string, g graph.Graph, backlinks map[string][]string, metaData map[string]map[string]string) error {
+func Write(outputDir string, g graph.Graph, backlinks map[string][]string, metaData map[string]map[string]interface{}) error {
 	// Sort backlinks for deterministic output
 	for _, parents := range backlinks {
 		sort.Strings(parents)

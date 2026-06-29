@@ -1,11 +1,14 @@
 {
   "about": {
-    "title": "about.md"
+    "title": "about.md",
+    "word_count": 11
   },
   "blog/post": {
-    "title": "post.md"
+    "title": "post.md",
+    "word_count": 7
   },
   "index": {
-    "title": "index.md"
+    "title": "index.md",
+    "word_count": 4
   }
 }

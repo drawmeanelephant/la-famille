@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/tbuddy/la-famille/internal/config"
@@ -13,14 +14,35 @@ import (
 )
 
 type Renderer struct {
-	cache map[string]*template.Template
-	mu    sync.Mutex
+	cache     map[string]*template.Template
+	allowlist map[string]bool
+	mu        sync.Mutex
 }
 
-func New() *Renderer {
-	return &Renderer{
-		cache: make(map[string]*template.Template),
+func New(templateDir string) *Renderer {
+	allowlist, err := DiscoverLayouts(templateDir)
+	if err != nil {
+		allowlist = make(map[string]bool)
 	}
+	return &Renderer{
+		cache:     make(map[string]*template.Template),
+		allowlist: allowlist,
+	}
+}
+
+// DiscoverLayouts walks the templates directory to find available layouts.
+func DiscoverLayouts(templateDir string) (map[string]bool, error) {
+	allowlist := make(map[string]bool)
+	entries, err := os.ReadDir(templateDir)
+	if err != nil {
+		return allowlist, err
+	}
+	for _, e := range entries {
+		if !e.IsDir() && filepath.Ext(e.Name()) == ".html" {
+			allowlist[strings.TrimSuffix(e.Name(), ".html")] = true
+		}
+	}
+	return allowlist, nil
 }
 
 func findPartials() ([]string, error) {
@@ -66,8 +88,9 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 
 	templatePath := cfg.Template
 	if layout != "" {
-		if !filepath.IsLocal(layout + ".html") {
-			log.Printf("Warning: Potential path traversal in layout template loading detected: %s. Falling back to default %s", layout, cfg.Template)
+		if !r.allowlist[layout] {
+			log.Printf("Warning: Layout %q not found in allowlist. Falling back to default %s", layout, cfg.Template)
+			layout = ""
 		} else {
 			layoutPath := filepath.Join("templates", layout+".html")
 			// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille

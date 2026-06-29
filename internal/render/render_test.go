@@ -26,7 +26,7 @@ func TestHTML(t *testing.T) {
 	cfg := config.Config{Template: tmplPath}
 	p := page.Page{Title: "World", Content: template.HTML("")}
 
-	renderer := New()
+	renderer := New(filepath.Dir(cfg.Template))
 	err = renderer.HTML(cfg, p, "", outPath)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -79,7 +79,7 @@ func TestHTMLLayoutSelection(t *testing.T) {
 		outPath := filepath.Join(tmpDir, "out_default.html")
 		p := page.Page{Title: "Page One"}
 
-		renderer := New()
+		renderer := New(filepath.Dir(cfg.Template))
 		err = renderer.HTML(cfg, p, "", outPath)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -99,7 +99,7 @@ func TestHTMLLayoutSelection(t *testing.T) {
 		outPath := filepath.Join(tmpDir, "out_custom.html")
 		p := page.Page{Title: "Page Two"}
 
-		renderer := New()
+		renderer := New(filepath.Dir(cfg.Template))
 		err = renderer.HTML(cfg, p, "custom", outPath)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -116,7 +116,7 @@ func TestHTMLLayoutSelection(t *testing.T) {
 	})
 
 	t.Run("back-to-back renders using different layouts", func(t *testing.T) {
-		renderer := New()
+		renderer := New(filepath.Dir(cfg.Template))
 
 		// First render
 		outPath1 := filepath.Join(tmpDir, "out_bb_1.html")
@@ -150,4 +150,33 @@ func TestHTMLLayoutSelection(t *testing.T) {
 			t.Errorf("expected 'Custom: Second', got '%s'", string(content2))
 		}
 	})
+}
+
+func TestDiscoverLayouts(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(tmpDir, "layout1.html"), []byte("<html></html>"), 0644); err != nil {
+		t.Fatalf("Failed to write layout1.html: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "not-a-layout.txt"), []byte("text"), 0644); err != nil {
+		t.Fatalf("Failed to write not-a-layout.txt: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(tmpDir, "partials"), 0755); err != nil {
+		t.Fatalf("Failed to create partials dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "partials", "partial.html"), []byte("<div></div>"), 0644); err != nil {
+		t.Fatalf("Failed to write partial.html: %v", err)
+	}
+
+	allowlist, err := DiscoverLayouts(tmpDir)
+	if err != nil {
+		t.Fatalf("DiscoverLayouts failed: %v", err)
+	}
+
+	if len(allowlist) != 1 {
+		t.Fatalf("Expected 1 layout, got %d", len(allowlist))
+	}
+	if !allowlist["layout1"] {
+		t.Errorf("Expected layout1 to be in allowlist")
+	}
 }

@@ -1,11 +1,14 @@
 {
   "hidden": {
-    "title": "hidden.md"
+    "title": "hidden.md",
+    "word_count": 5
   },
   "index": {
-    "title": "Home"
+    "title": "Home",
+    "word_count": 1
   },
   "raw": {
-    "title": "raw.md"
+    "title": "raw.md",
+    "word_count": 4
   }
 }

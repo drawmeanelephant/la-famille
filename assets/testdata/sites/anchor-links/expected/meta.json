@@ -1,8 +1,10 @@
 {
   "index": {
-    "title": "index.md"
+    "title": "index.md",
+    "word_count": 15
   },
   "other": {
-    "title": "other.md"
+    "title": "other.md",
+    "word_count": 11
   }
 }
