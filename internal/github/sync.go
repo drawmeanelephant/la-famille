@@ -111,7 +111,7 @@ func RunSync(cfg SyncConfig) error {
 	}
 
 	commitMsg := "chore: automated routine execution"
-	if err := git.Commit(commitMsg, "google-labs-jules", "jules-bot@example.com"); err != nil {
+	if err := git.Commit(commitMsg, "google-labs-jules", "jules-bot@users.noreply.github.com"); err != nil {
 		return fmt.Errorf("failed to commit: %w", err)
 	}
 
