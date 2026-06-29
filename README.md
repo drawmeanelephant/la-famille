@@ -56,3 +56,14 @@ The commands above will get you started, but La Famille has a lot more to offer.
 
 ---
 *Generated with ❤️ by Jules*
+
+## GitHub Action 🤖
+
+You can easily build your La Famille site in CI using our GitHub Action:
+
+```yaml
+steps:
+  - uses: actions/checkout@v4
+  - name: Build with La Famille
+    uses: drawmeanelephant/la-famille@main
+```
