@@ -25,6 +25,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/render"
 	"github.com/tbuddy/la-famille/internal/sitedata"
 	"github.com/tbuddy/la-famille/internal/stub"
+	"github.com/tbuddy/la-famille/internal/taxonomy"
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
@@ -76,6 +77,11 @@ func Build(cfg config.Config) (BuildResult, error) {
 	var buf bytes.Buffer
 
 	p := bluemonday.UGCPolicy()
+
+	if err := taxonomy.GenerateTags(cfg, fileMap, renderer, p); err != nil {
+		return result, err
+	}
+
 	for _, relPath := range keys {
 		meta := fileMap[relPath]
 		shouldRender := true
