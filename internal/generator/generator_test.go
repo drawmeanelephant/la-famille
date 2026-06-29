@@ -1,46 +1,97 @@
-package generator_test
+package generator
 
 import (
+	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/tbuddy/la-famille/internal/config"
-	"github.com/tbuddy/la-famille/internal/generator"
+	"github.com/yuin/goldmark"
 )
 
-func TestGeneratorSEO(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "generator_seo_test_*")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
+func TestBuild_MarkdownConversionError(t *testing.T) {
+	tempDir := t.TempDir()
 	contentDir := filepath.Join(tempDir, "content")
-	if err := os.Mkdir(contentDir, 0755); err != nil {
-		t.Fatalf("failed to create content dir: %v", err)
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+
+	os.MkdirAll(contentDir, 0755)
+	os.MkdirAll(templateDir, 0755)
+
+	templatePath := filepath.Join(templateDir, "layout.html")
+	os.WriteFile(templatePath, []byte("{{.Content}}"), 0644)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = templatePath
+
+	os.WriteFile(filepath.Join(contentDir, "test1.md"), []byte("# Hello 1"), 0644)
+	os.WriteFile(filepath.Join(contentDir, "test2.md"), []byte("# Hello 2"), 0644)
+
+	// Mock convertMarkdown to always fail
+	originalConvert := convertMarkdown
+	defer func() { convertMarkdown = originalConvert }()
+
+	convertMarkdown = func(md goldmark.Markdown, source []byte, w *bytes.Buffer) error {
+		return errors.New("simulated conversion error")
 	}
 
+	res, err := Build(cfg)
+	if err == nil {
+		t.Fatalf("expected error from Build, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "simulated conversion error") {
+		t.Errorf("expected error string to contain 'simulated conversion error', got: %v", err)
+	}
+
+	if res.ErrorCount != 2 {
+		t.Errorf("expected 2 errors, got %d", res.ErrorCount)
+	}
+}
+
+func TestBuild_Success(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+
+	os.MkdirAll(contentDir, 0755)
+	os.MkdirAll(templateDir, 0755)
+
+	templatePath := filepath.Join(templateDir, "layout.html")
+	os.WriteFile(templatePath, []byte("{{.Content}}"), 0644)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = templatePath
+
+	os.WriteFile(filepath.Join(contentDir, "test.md"), []byte("# Hello"), 0644)
+
+	_, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGeneratorSEO(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
 	outDir := filepath.Join(tempDir, "public")
-	if err := os.Mkdir(outDir, 0755); err != nil {
-		t.Fatalf("failed to create public dir: %v", err)
-	}
-
 	assetDir := filepath.Join(tempDir, "assets")
-	if err := os.Mkdir(assetDir, 0755); err != nil {
-		t.Fatalf("failed to create asset dir: %v", err)
-	}
-
 	ragDir := filepath.Join(tempDir, "rag-archive")
-	if err := os.Mkdir(ragDir, 0755); err != nil {
-		t.Fatalf("failed to create rag dir: %v", err)
-	}
-
 	tmplDir := filepath.Join(tempDir, "templates")
-	if err := os.Mkdir(tmplDir, 0755); err != nil {
-		t.Fatalf("failed to create templates dir: %v", err)
-	}
+
+	os.MkdirAll(contentDir, 0755)
+	os.MkdirAll(outDir, 0755)
+	os.MkdirAll(assetDir, 0755)
+	os.MkdirAll(ragDir, 0755)
+	os.MkdirAll(tmplDir, 0755)
 
 	tmplPath := filepath.Join(tmplDir, "layout.html")
 	tmplContent := `<!DOCTYPE html><html><head><title>{{.Title}}</title><meta name="description" content="{{.Description}}"><meta property="og:image" content="{{.Image}}"></head><body>{{.Content}}</body></html>`
@@ -72,7 +123,7 @@ image: "/images/test-seo.png"
 		DefaultOGImage:     "/default.png",
 	}
 
-	_, err = generator.Build(cfg)
+	_, err := Build(cfg)
 	if err != nil {
 		t.Fatalf("Build failed: %v", err)
 	}
