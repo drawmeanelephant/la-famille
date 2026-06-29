@@ -2,6 +2,7 @@ package generator
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -27,6 +28,10 @@ import (
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
+// convertMarkdown is a variable to allow mocking in tests.
+var convertMarkdown = func(md goldmark.Markdown, source []byte, w *bytes.Buffer) error {
+	return md.Convert(source, w)
+}
 
 // BuildResult contains statistics about the build process.
 type BuildResult struct {
@@ -64,6 +69,8 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 	// Reusable buffer for markdown conversion
 	renderer := render.New(filepath.Dir(cfg.Template))
+
+	var errs []error
 
 	var buf bytes.Buffer
 
@@ -148,9 +155,9 @@ func Build(cfg config.Config) (BuildResult, error) {
 		)
 
 		buf.Reset()
-		if err := md.Convert(meta.Rest, &buf); err != nil {
+		if err := convertMarkdown(md, meta.Rest, &buf); err != nil {
 			result.ErrorCount++
-			log.Printf("Error converting %s: %v", relPath, err)
+			errs = append(errs, fmt.Errorf("error converting %s: %w", relPath, err))
 			continue
 		}
 
@@ -173,6 +180,10 @@ func Build(cfg config.Config) (BuildResult, error) {
 		}
 		result.PageCount++
 	}
+	if len(errs) > 0 {
+		return result, errors.Join(errs...)
+	}
+
 	// 3. Generate stubs for missing files in deterministic order
 	if err := stub.GenerateStubs(cfg, missingFiles, &g, p, fileMap); err != nil {
 		return result, err
