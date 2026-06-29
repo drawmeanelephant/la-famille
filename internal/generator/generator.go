@@ -23,6 +23,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/graph"
 	"github.com/tbuddy/la-famille/internal/page"
 	"github.com/tbuddy/la-famille/internal/render"
+	"github.com/tbuddy/la-famille/internal/search"
 	"github.com/tbuddy/la-famille/internal/sitedata"
 	"github.com/tbuddy/la-famille/internal/stub"
 	"github.com/tbuddy/la-famille/internal/taxonomy"
@@ -33,7 +34,6 @@ import (
 var convertMarkdown = func(md goldmark.Markdown, source []byte, w *bytes.Buffer) error {
 	return md.Convert(source, w)
 }
-
 
 // BuildResult contains statistics about the build process.
 type BuildResult struct {
@@ -61,6 +61,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 		Edges: [][2]string{},
 	}
 	metaData := make(map[string]map[string]interface{})
+	var searchIndex []search.SearchItem
 
 	// 2. Pass 2: Process files in deterministic order
 	var keys []string
@@ -112,6 +113,17 @@ func Build(cfg config.Config) (BuildResult, error) {
 		}
 		m["word_count"] = len(strings.Fields(string(meta.Rest)))
 		metaData[id] = m
+
+		if shouldRender {
+			urlOut := transform.GetOutputURL(relPath, meta.Slug)
+			urlPath := "/" + filepath.ToSlash(urlOut)
+			searchIndex = append(searchIndex, search.SearchItem{
+				Title:   title,
+				URL:     urlPath,
+				Tags:    meta.Tags,
+				Snippet: search.ExtractSnippet(meta.Rest),
+			})
+		}
 
 		outDirClean := filepath.Clean(cfg.OutputDir)
 		outPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
@@ -170,7 +182,6 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 		sanitizedHTML := p.SanitizeBytes(buf.Bytes())
 
-
 		desc := meta.Description
 		if desc == "" {
 			desc = cfg.DefaultDescription
@@ -214,6 +225,10 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 	// 5. Write JSON outputs
 	if err := sitedata.Write(cfg.OutputDir, g, backlinks, metaData); err != nil {
+		return result, err
+	}
+
+	if err := search.WriteMinifiedJSON(filepath.Join(cfg.OutputDir, "search.json"), searchIndex); err != nil {
 		return result, err
 	}
 
