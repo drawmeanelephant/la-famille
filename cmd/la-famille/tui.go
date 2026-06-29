@@ -122,7 +122,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			} else if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.screen == screenServe {
 				if m.screen == screenServe && m.server != nil {
-					m.server.Shutdown(context.Background())
+					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					defer cancel()
+					m.server.Shutdown(ctx)
 					m.server = nil
 				}
 				m.screen = screenMenu
@@ -131,7 +133,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.screen == screenServe {
 				if m.screen == screenServe && m.server != nil {
-					m.server.Shutdown(context.Background())
+					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					defer cancel()
+					m.server.Shutdown(ctx)
 					m.server = nil
 				}
 				m.screen = screenMenu
