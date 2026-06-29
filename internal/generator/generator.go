@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
@@ -26,12 +27,23 @@ import (
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
+
+// BuildResult contains statistics about the build process.
+type BuildResult struct {
+	Duration   time.Duration
+	PageCount  int
+	ErrorCount int
+}
+
 // Build generates the static site based on the given configuration.
-func Build(cfg config.Config) error {
+func Build(cfg config.Config) (BuildResult, error) {
+	start := time.Now()
+	var result BuildResult
+
 	// 1. Pass 1: Walk content dir and gather metadata
 	fileMap, err := content.GatherMetadata(cfg.ContentDir)
 	if err != nil {
-		return fmt.Errorf("failed to gather metadata: %w", err)
+		return result, fmt.Errorf("failed to gather metadata: %w", err)
 	}
 
 	// Track missing files that need stubs. map[missingPath][]parentFiles
@@ -90,6 +102,7 @@ func Build(cfg config.Config) error {
 		outDirClean := filepath.Clean(cfg.OutputDir)
 		outPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
 		if !strings.HasPrefix(outPath, outDirClean+string(filepath.Separator)) && outPath != outDirClean {
+			result.ErrorCount++
 			log.Printf("Warning: Potential path traversal in page loading detected: %s. Skipping.", relPath)
 			continue
 		}
@@ -106,13 +119,13 @@ func Build(cfg config.Config) error {
 		}
 
 		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-			return err
+			return result, err
 		}
 
 		if !shouldRender {
 			// Just copy the file
 			if err := os.WriteFile(outPath, meta.Content, 0644); err != nil {
-				return err
+				return result, err
 			}
 			continue
 		}
@@ -136,6 +149,7 @@ func Build(cfg config.Config) error {
 
 		buf.Reset()
 		if err := md.Convert(meta.Rest, &buf); err != nil {
+			result.ErrorCount++
 			log.Printf("Error converting %s: %v", relPath, err)
 			continue
 		}
@@ -155,23 +169,25 @@ func Build(cfg config.Config) error {
 		}
 
 		if err := renderer.HTML(cfg, page, meta.Layout, outPath); err != nil {
-			return err
+			return result, err
 		}
+		result.PageCount++
 	}
 	// 3. Generate stubs for missing files in deterministic order
 	if err := stub.GenerateStubs(cfg, missingFiles, &g, p, fileMap); err != nil {
-		return err
+		return result, err
 	}
 
 	// 4. Verbatim Asset Copy Step
 	if err := asset.CopyAssets(cfg); err != nil {
-		return err
+		return result, err
 	}
 
 	// 5. Write JSON outputs
 	if err := sitedata.Write(cfg.OutputDir, g, backlinks, metaData); err != nil {
-		return err
+		return result, err
 	}
 
-	return nil
+	result.Duration = time.Since(start)
+	return result, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -15,6 +16,9 @@ import (
 	"github.com/tbuddy/la-famille/internal/ragexport"
 	"github.com/tbuddy/la-famille/internal/watcher"
 )
+
+
+var p *tea.Program
 
 var tuiCmd = &cobra.Command{
 	Use:   "tui",
@@ -35,7 +39,7 @@ var tuiCmd = &cobra.Command{
 			return fmt.Errorf("configuration validation failed: %w", err)
 		}
 
-		p := tea.NewProgram(initialModel(cfg), tea.WithAltScreen())
+		p = tea.NewProgram(initialModel(cfg), tea.WithAltScreen())
 		if _, err := p.Run(); err != nil {
 			return fmt.Errorf("tui error: %w", err)
 		}
@@ -57,12 +61,21 @@ type menuOption struct {
 	label string
 }
 
+
 type tickMsg time.Time
+
+type statsUpdateMsg struct {
+	res generator.BuildResult
+}
 
 type workResultMsg struct {
 	err error
 	msg string
+	res *generator.BuildResult
 }
+
+
+
 
 type model struct {
 	cfg     config.Config
@@ -73,6 +86,7 @@ type model struct {
 	workMsg string
 	workErr error
 	server  *http.Server
+	stats   *generator.BuildResult
 }
 
 func initialModel(cfg config.Config) model {
@@ -161,8 +175,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Re-assigning to avoid capturing loop variable problem, though we don't have a loop here
 					cfg := m.cfg
 					return m, func() tea.Msg {
-						err := generator.Build(cfg)
-						return workResultMsg{err: err, msg: "Build complete"}
+						res, err := generator.Build(cfg)
+						return workResultMsg{err: err, msg: "Build complete", res: &res}
 					}
 				case "RAG Export":
 					m.screen = screenWorking
@@ -180,9 +194,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						port = 8080
 					}
 
+
 					if choice == "Serve Site with Watch" {
-						go watcher.Watch(m.cfg)
+						go watcher.Watch(m.cfg, func(res generator.BuildResult) {
+							if p != nil {
+								p.Send(statsUpdateMsg{res: res})
+							}
+						})
 					}
+
 
 					m.server = &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: http.FileServer(http.Dir(m.cfg.OutputDir))}
 					go func() {
@@ -203,9 +223,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tickCmd()
 		}
 
+
+	case statsUpdateMsg:
+		newRes := msg.res
+		m.stats = &newRes
+		return m, nil
+
 	case workResultMsg:
 		m.workMsg = msg.msg
 		m.workErr = msg.err
+		if msg.res != nil {
+			m.stats = msg.res
+		}
+
 	}
 
 	return m, nil
@@ -235,11 +265,37 @@ func (m model) View() string {
 		return s
 
 	case screenStats:
-		s := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("Stats (Coming Soon)") + "\n\n"
-		s += "We don't have stats yet, but we ultimately should have shit like:\n"
-		s += "- Build time\n"
-		s += "- RAG sizes\n"
-		s += "- LLM context window representations\n"
+		s := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("Stats Dashboard") + "\n\n"
+		if m.stats == nil {
+			s += "No build has been run yet in this session.\n"
+		} else {
+			s += fmt.Sprintf("Last Build Time: %d ms\n", m.stats.Duration.Milliseconds())
+			s += fmt.Sprintf("Total Pages Generated: %d\n", m.stats.PageCount)
+			s += fmt.Sprintf("Error Count: %d\n", m.stats.ErrorCount)
+		}
+		s += "\nRAG Token Estimations:\n"
+		ragDir := m.cfg.RagDir
+		if ragDir == "" {
+			ragDir = "rag-archive"
+		}
+		totalTokens := 0
+		files, err := os.ReadDir(ragDir)
+		if err == nil {
+			for _, file := range files {
+				if !file.IsDir() && strings.HasSuffix(file.Name(), ".md") {
+					info, err := file.Info()
+					if err == nil {
+						size := info.Size()
+						tokens := size / 4
+						totalTokens += int(tokens)
+						s += fmt.Sprintf("- %s: ~%d tokens\n", file.Name(), tokens)
+					}
+				}
+			}
+			s += fmt.Sprintf("\nTotal Estimated Tokens: ~%d (Note: 1 token ≈ 4 bytes)\n", totalTokens)
+		} else {
+			s += "RAG archive not found. Run 'RAG Export' to generate bundles.\n"
+		}
 		s += "\nPress Esc or q to go back."
 		return s
 
