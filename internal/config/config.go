@@ -22,6 +22,7 @@ type Config struct {
 	ProjectRoot string `yaml:"project_root"`
 	DefaultDescription string `yaml:"default_description"`
 	DefaultOGImage     string `yaml:"default_og_image"`
+	WatchMode          bool   `yaml:"-"`
 }
 
 // DefaultConfig returns a Config with sensible default values.

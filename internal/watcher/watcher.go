@@ -89,12 +89,14 @@ func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 						if onBuild != nil {
 							onBuild(res)
 						}
+						BroadcastReload()
 						log.Printf("Pipeline compilation failed: %v", err)
 					} else {
 						log.Printf("Rebuild complete in %v.", time.Since(start))
 						if onBuild != nil {
 							onBuild(res)
 						}
+						BroadcastReload()
 					}
 				})
 			}

@@ -1,6 +1,7 @@
 package render
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"log"
@@ -162,6 +163,31 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 
 	// Use ExecuteTemplate with the base name to avoid the ParseFiles name trap
 	templateName := filepath.Base(templatePath)
+	if cfg.WatchMode {
+		var buf bytes.Buffer
+		if err := clonedTmpl.ExecuteTemplate(&buf, templateName, p); err != nil {
+			return err
+		}
+
+		script := `<script>
+		if (window.EventSource) {
+			var source = new EventSource('/livereload');
+			source.onmessage = function(e) {
+				if (e.data === 'reload') {
+					window.location.reload();
+				}
+			};
+		}
+		</script>
+</body>`
+
+		htmlStr := buf.String()
+		htmlStr = strings.Replace(htmlStr, "</body>", script, 1)
+
+		_, err = outFile.WriteString(htmlStr)
+		return err
+	}
+
 	if err := clonedTmpl.ExecuteTemplate(outFile, templateName, p); err != nil {
 		return err
 	}

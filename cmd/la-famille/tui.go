@@ -204,6 +204,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 
 					if choice == "Serve Site with Watch" {
+						m.cfg.WatchMode = true
+						if _, err := generator.Build(m.cfg); err != nil {
+							log.Printf("Initial build failed: %v", err)
+						}
+
 						watchCtx, cancelWatch := context.WithCancel(context.Background())
 						m.watcherCancel = cancelWatch
 
@@ -218,9 +223,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}(watchCtx, m.cfg)
 					}
 
+					mux := http.NewServeMux()
+					mux.Handle("/", http.FileServer(http.Dir(m.cfg.OutputDir)))
+					if m.cfg.WatchMode {
+						mux.HandleFunc("/livereload", watcher.LiveReloadHandler)
+					}
+
 					m.server = &http.Server{
 						Addr:              fmt.Sprintf("127.0.0.1:%d", port),
-						Handler:           http.FileServer(http.Dir(m.cfg.OutputDir)),
+						Handler:           mux,
 						ReadHeaderTimeout: 5 * time.Second,
 					}
 					go func() {
