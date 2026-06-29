@@ -1,0 +1,27 @@
+name: 'Build with La Famille'
+description: 'Builds a static site using the La Famille generator'
+author: 'Jules'
+branding:
+  icon: 'layout'
+  color: 'blue'
+inputs:
+  content-dir:
+    description: 'Directory containing markdown files'
+    required: false
+    default: 'content'
+  output-dir:
+    description: 'Directory for generated static site'
+    required: false
+    default: 'public'
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 'stable'
+
+    - name: Build static site
+      shell: bash
+      run: |
+        go run github.com/drawmeanelephant/la-famille/cmd/la-famille@latest build -c ${{ inputs.content-dir }} -o ${{ inputs.output-dir }}
