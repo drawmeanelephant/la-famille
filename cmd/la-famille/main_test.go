@@ -243,6 +243,7 @@ func TestRun_WalkError(t *testing.T) {
 }
 
 func TestCommandFlags(t *testing.T) {
+	// This prevents flag names from silently drifting from documentation again.
 	cfg := config.Config{}
 	rootCmd := setupRootCmd(cfg)
 
