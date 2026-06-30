@@ -224,7 +224,11 @@ func Build(cfg config.Config) (BuildResult, error) {
 	}
 
 	// 5. Write JSON outputs
-	if err := sitedata.Write(cfg.OutputDir, g, backlinks, metaData); err != nil {
+	if err := graph.WriteGraphFiles(cfg.OutputDir, g, backlinks); err != nil {
+		return result, err
+	}
+
+	if err := sitedata.Write(cfg.OutputDir, metaData); err != nil {
 		return result, err
 	}
 
