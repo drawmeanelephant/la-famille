@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -59,7 +60,24 @@ func CopyAssets(cfg config.Config) error {
 			if len(paths) > 0 {
 				cmd := exec.Command("git", "check-ignore", "--stdin")
 				cmd.Stdin = strings.NewReader(strings.Join(paths, "\n"))
-				if out, err := cmd.Output(); err == nil || len(out) > 0 {
+				out, err := cmd.Output()
+				if err != nil {
+					if _, lookErr := exec.LookPath("git"); lookErr != nil {
+						log.Printf("Warning: git not found in environment, skipping check-ignore")
+					} else {
+						var exitErr *exec.ExitError
+						if errors.As(err, &exitErr) {
+							// exit code 1 means none of the paths are ignored, which is a normal case
+							if exitErr.ExitCode() != 1 {
+								log.Printf("Error running git check-ignore: %v (stderr: %q)", err, string(exitErr.Stderr))
+							}
+						} else {
+							log.Printf("Error running git check-ignore: %v", err)
+						}
+					}
+				}
+
+				if len(out) > 0 {
 					lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 					for _, line := range lines {
 						if line != "" {
