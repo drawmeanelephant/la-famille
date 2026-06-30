@@ -15,6 +15,7 @@ type Page struct {
 	AnimationCues   string
 	SoundtrackTheme string
 	Layout          string
+	ComplianceModal string
 	Content         template.HTML
 	Description     string
 	Image           string

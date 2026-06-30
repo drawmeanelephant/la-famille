@@ -59,5 +59,18 @@
     </footer>
 
     <script src="/assets/js/search.js"></script>
+
+    {{if .ComplianceModal}}
+    <input type="checkbox" id="compliance-modal" class="modal-toggle" checked />
+    <div class="modal" role="dialog">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg">Compliance Required</h3>
+            <p class="py-4">{{.ComplianceModal}}</p>
+            <div class="modal-action">
+                <label for="compliance-modal" class="btn btn-primary">I Reluctantly Agree</label>
+            </div>
+        </div>
+    </div>
+    {{end}}
 </body>
 </html>

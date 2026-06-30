@@ -205,6 +205,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 			AnimationCues:   meta.AnimationCues,
 			SoundtrackTheme: meta.SoundtrackTheme,
 			Layout:          meta.Layout,
+			ComplianceModal: meta.ComplianceModal,
 			Content:         template.HTML(sanitizedHTML),
 			Description:     desc,
 			Image:           img,

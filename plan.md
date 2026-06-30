@@ -1,74 +1,35 @@
-# Plan: Generate template gallery at `content/showcase/`
+1.  **Replace Mobile Drawer SVG with 🍔 Emoji**
+    *   Target templates: `layout-dashboard.html`, `layout-sidebar.html`, `layout-drawer.html`, `layout-documentation.html`, `layout-floating-cards.html` (any that use the `d="M4 6h16M4 12h16M4 18h16"` or similar drawer icon SVG).
+    *   Find the SVG block wrapping `<path d="M4 6h16..."></path></svg>`.
+    *   Replace it with `<span aria-hidden="true" class="text-2xl">🍔</span>`. Ensure the parent button retains `aria-label="Open Sidebar"` (or similar).
 
-1. Generate template gallery using bash script via `run_in_bash_session`:
-   ```bash
-   mkdir -p content/showcase
-   rm -f content/showcase/*.md
+2.  **Add Compliance Modal Support**
+    *   **Backend:** Add `ComplianceModal string` to `internal/page/Page`, `FileMeta` in `internal/content/metadata.go`, and the anonymous struct in `GatherMetadata`. Also, update `internal/generator/generator.go` to assign `ComplianceModal: meta.ComplianceModal`.
+    *   **Frontend (`templates/layout.html`):** Add the DaisyUI modal structure at the end of the `<body>`:
+        ```html
+        {{if .ComplianceModal}}
+        <input type="checkbox" id="compliance-modal" class="modal-toggle" checked />
+        <div class="modal" role="dialog">
+            <div class="modal-box">
+                <h3 class="font-bold text-lg">Compliance Required</h3>
+                <p class="py-4">{{.ComplianceModal}}</p>
+                <div class="modal-action">
+                    <label for="compliance-modal" class="btn btn-primary">I Reluctantly Agree</label>
+                </div>
+            </div>
+        </div>
+        {{end}}
+        ```
 
-   cat << 'INNER_EOF' > content/showcase/index.md
-   ---
-   title: "Template Gallery"
-   description: "A visual index of every layout available."
-   ---
+3.  **Update Test Data/Frontmatter**
+    *   Update `content/showcase/layout.md` frontmatter to include `compliance_modal: "By reading this demo, you agree to the cookie treaty of 1842."`.
 
-   # Template Gallery
+4.  **Testing and Verification**
+    *   Run `go test ./...` and `go vet ./...`.
+    *   Run the site generation `go run ./cmd/la-famille build`.
 
-   Welcome to the template gallery. Here is a visual index of every layout available:
+5.  **Write Routine Log**
+    *   Create a markdown file in `content/jules/reports/` describing the completion of the routine.
 
-   <div class="not-prose grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-   INNER_EOF
-
-   for tpl in templates/*.html; do
-     base=$(basename "$tpl" .html)
-
-     title=$(echo "$base" | sed -e 's/-/ /g' -e 's/_/ /g' | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1')
-
-     cat << INNER_EOF2 > "content/showcase/${base}.md"
-   ---
-   title: "${title} Demo"
-   layout: "${base}"
-   ---
-
-   ## ${title} Demo
-
-   This page demonstrates the \`${base}\` layout with realistic content.
-
-   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-   Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-   ### Features
-   - Responsive design
-   - Clean typography
-   - Elegant layout
-
-   > "Design is not just what it looks like and feels like. Design is how it works."
-   INNER_EOF2
-
-     cat << INNER_EOF3 >> content/showcase/index.md
-     <div class="card bg-base-100 shadow-xl border border-base-300">
-       <div class="card-body">
-         <h2 class="card-title text-xl font-bold m-0">${title}</h2>
-         <p class="text-base-content/80 m-0">Demo page using the <code>${base}</code> layout.</p>
-         <div class="card-actions justify-end mt-4">
-           <a href="/showcase/${base}/" class="btn btn-primary btn-sm">View Demo</a>
-         </div>
-       </div>
-     </div>
-   INNER_EOF3
-
-   done
-
-   echo "</div>" >> content/showcase/index.md
-   ```
-2. Check that the script worked correctly by verifying generated files via `run_in_bash_session`:
-   `ls -la content/showcase/` and `cat content/showcase/index.md`.
-3. Run tests using `run_in_bash_session`:
-   `go test ./...` and `go vet ./...` to ensure there are no regressions.
-4. Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
-5. Submit the changes using the `submit` tool.
-1. Write out this plan.md.
-2. Update content/docs/generator.md to include the multi-pass pipeline, internal packages, and JSON outputs.
-3. Build the static site using `go run ./cmd/la-famille build`.
-4. Create a report of the work in content/jules/reports/generator-stub.md.
-5. Run tests to ensure regressions have not been introduced.
+6.  **Pre-commit checks**
+    *   Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
