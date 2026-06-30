@@ -40,10 +40,10 @@
                 <h1 class="card-title text-4xl mb-2">{{.Title}}</h1>
                 {{if or .Author .Date}}
                 <div class="text-sm text-base-content/70 mb-8 border-b pb-4">
-                    {{if .Author}}<span class="mr-4"><strong>By:</strong> {{.Author}}</span>{{end}}
-                    {{if .Date}}<span><strong>Date:</strong> {{.Date}}</span>{{end}}
+                    {{if .Author}}<span class="mr-4"><strong>By:</strong> {{.Author}}</span>{{- end -}}
+                    {{if .Date}}<span><strong>Date:</strong> {{.Date}}</span>{{- end -}}
                 </div>
-                {{end}}
+                {{- end -}}
 
                 <article class="prose prose-lg max-w-none prose-a:text-primary prose-a:hover:text-secondary prose-a:focus-visible:outline prose-a:focus-visible:outline-2 prose-a:focus-visible:outline-primary">
                     {{.Content}}
@@ -59,8 +59,7 @@
     </footer>
 
     <script src="/assets/js/search.js"></script>
-
-    {{if .ComplianceModal}}
+{{if .ComplianceModal}}
     <input type="checkbox" id="compliance-modal" class="modal-toggle" checked />
     <div class="modal" role="dialog">
         <div class="modal-box">
@@ -71,6 +70,6 @@
             </div>
         </div>
     </div>
-    {{end}}
+{{end}}
 </body>
 </html>
