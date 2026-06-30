@@ -17,3 +17,8 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 - Elegant layout
 
 > "Design is not just what it looks like and feels like. Design is how it works."
+
+### Emoji Kitchen
+
+Look at this cute mutant:
+!ek[🐢+🔥]

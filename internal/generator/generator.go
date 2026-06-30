@@ -172,6 +172,9 @@ func Build(cfg config.Config) (BuildResult, error) {
 				parser.WithASTTransformers(
 					util.Prioritized(transformer, 100),
 				),
+				parser.WithInlineParsers(
+					util.Prioritized(&transform.EmojiKitchenParser{}, 100),
+				),
 			),
 			goldmark.WithRendererOptions(
 				html.WithUnsafe(),
