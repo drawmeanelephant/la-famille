@@ -241,3 +241,34 @@ func TestRun_WalkError(t *testing.T) {
 		t.Errorf("expected error message to contain 'failed to walk content directory', got: %v", err)
 	}
 }
+
+func TestCommandFlags(t *testing.T) {
+	cfg := config.Config{}
+	rootCmd := setupRootCmd(cfg)
+
+	// Test build command flags
+	buildCmd, _, err := rootCmd.Find([]string{"build"})
+	if err != nil {
+		t.Fatalf("Failed to find build command: %v", err)
+	}
+
+	buildFlags := []string{"content", "output", "template"}
+	for _, flag := range buildFlags {
+		if buildCmd.Flags().Lookup(flag) == nil {
+			t.Errorf("buildCmd is missing expected flag: %s", flag)
+		}
+	}
+
+	// Test serve command flags
+	serveCmd, _, err := rootCmd.Find([]string{"serve"})
+	if err != nil {
+		t.Fatalf("Failed to find serve command: %v", err)
+	}
+
+	serveFlags := []string{"port", "watch"}
+	for _, flag := range serveFlags {
+		if serveCmd.Flags().Lookup(flag) == nil {
+			t.Errorf("serveCmd is missing expected flag: %s", flag)
+		}
+	}
+}
