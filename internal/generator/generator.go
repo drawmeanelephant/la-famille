@@ -53,19 +53,6 @@ func Build(cfg config.Config) (BuildResult, error) {
 		return result, fmt.Errorf("failed to gather metadata: %w", err)
 	}
 
-	// Populate Nav
-	entries, _ := os.ReadDir(cfg.ContentDir)
-	for _, e := range entries {
-		if e.IsDir() {
-			name := e.Name()
-			title := strings.ToUpper(name[:1]) + name[1:]
-			cfg.Nav = append(cfg.Nav, config.NavItem{
-				Title: title,
-				URL:   "/" + name + "/",
-			})
-		}
-	}
-
 	// Track missing files that need stubs. map[missingPath][]parentFiles
 	missingFiles := make(map[string][]string)
 	backlinks := make(map[string][]string)
@@ -204,17 +191,6 @@ func Build(cfg config.Config) (BuildResult, error) {
 			img = cfg.DefaultOGImage
 		}
 
-		var breadcrumbs []page.Breadcrumb
-		dir := filepath.Dir(relPath)
-		if dir != "." && dir != "" {
-			sectionTitle := strings.ToUpper(dir[:1]) + dir[1:]
-			breadcrumbs = []page.Breadcrumb{
-				{Title: "Home", URL: "/"},
-				{Title: sectionTitle, URL: "/" + filepath.ToSlash(dir) + "/"},
-				{Title: title, URL: ""},
-			}
-		}
-
 		page := page.Page{
 			Site:            cfg,
 			Title:           title,
@@ -227,7 +203,6 @@ func Build(cfg config.Config) (BuildResult, error) {
 			Content:         template.HTML(sanitizedHTML),
 			Description:     desc,
 			Image:           img,
-			Breadcrumbs:     breadcrumbs,
 		}
 
 		if err := renderer.HTML(cfg, page, meta.Layout, outPath); err != nil {

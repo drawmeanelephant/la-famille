@@ -59,6 +59,8 @@ func CopyAssets(cfg config.Config) error {
 			ignoredPaths := make(map[string]bool)
 			if len(paths) > 0 {
 				cmd := exec.Command("git", "check-ignore", "--stdin")
+					projectRoot, _ := filepath.Abs(".")
+					cmd.Dir = projectRoot
 				cmd.Stdin = strings.NewReader(strings.Join(paths, "\n"))
 				out, err := cmd.Output()
 				if err != nil {
@@ -68,7 +70,8 @@ func CopyAssets(cfg config.Config) error {
 						var exitErr *exec.ExitError
 						if errors.As(err, &exitErr) {
 							// exit code 1 means none of the paths are ignored, which is a normal case
-							if exitErr.ExitCode() != 1 {
+							// exit code 128 means outside repository, which happens in tests
+								if exitErr.ExitCode() != 1 && exitErr.ExitCode() != 128 {
 								log.Printf("Error running git check-ignore: %v (stderr: %q)", err, string(exitErr.Stderr))
 							}
 						} else {

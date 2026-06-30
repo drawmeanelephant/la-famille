@@ -9,11 +9,6 @@ import (
 	"gopkg.in/yaml.v2" // Using v2 to match the indirect dependency from frontmatter
 )
 
-type NavItem struct {
-	Title string
-	URL   string
-}
-
 // Config represents the site configuration.
 type Config struct {
 	SiteName   string `yaml:"site_name"`
@@ -28,7 +23,6 @@ type Config struct {
 	DefaultDescription string `yaml:"default_description"`
 	DefaultOGImage     string `yaml:"default_og_image"`
 	WatchMode          bool   `yaml:"-"`
-	Nav                []NavItem `yaml:"-"`
 }
 
 // DefaultConfig returns a Config with sensible default values.
