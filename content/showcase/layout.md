@@ -1,11 +1,11 @@
 ---
-title: "Cyberpunk Demo"
-layout: "cyberpunk"
+title: "Layout Demo"
+layout: "layout"
 ---
 
-## Cyberpunk Demo
+## Layout Demo
 
-This page demonstrates the `cyberpunk` layout with realistic content.
+This page demonstrates the `layout` layout with realistic content.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
