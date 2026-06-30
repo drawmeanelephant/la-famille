@@ -37,6 +37,7 @@ func RunExport(cfg config.Config) error {
 			"AGENTS.md",
 			"GEMINI.md",
 			"playwright_test.js",
+			".github/workflows/*.yml",
 		},
 		[]string{"internal/config"},
 		nil,
@@ -146,7 +147,7 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 				return err
 			}
 			if d.IsDir() {
-				if d.Name() == ".git" || d.Name() == ".github" || d.Name() == "test-results" || d.Name() == "public" || d.Name() == "vendor" || d.Name() == "node_modules" {
+				if d.Name() == ".git" || d.Name() == "test-results" || d.Name() == "public" || d.Name() == "vendor" || d.Name() == "node_modules" {
 					return filepath.SkipDir
 				}
 				return nil
