@@ -1,11 +1,11 @@
 ---
-title: "Cyberpunk Demo"
-layout: "cyberpunk"
+title: "Layout Centered Minimalist Demo"
+layout: "layout-centered-minimalist"
 ---
 
-## Cyberpunk Demo
+## Layout Centered Minimalist Demo
 
-This page demonstrates the `cyberpunk` layout with realistic content.
+This page demonstrates the `layout-centered-minimalist` layout with realistic content.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
