@@ -59,10 +59,11 @@
             0% { transform: translateX(100%); }
             100% { transform: translateX(-100%); }
         }
+    .brutalist-btn:focus-visible { box-shadow: none !important; transform: translate(2px, 2px) !important; outline: 2px solid black !important; outline-offset: 2px; }
     </style>
 </head>
 <body class="min-h-screen bg-base-100 text-base-content antialiased">
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-yellow-400 focus:text-black border-4 border-black">SKIP TO CONTENT</a>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-yellow-400 focus:text-black border-4 border-black focus-visible:ring-2 focus-visible:ring-primary">SKIP TO CONTENT</a>
 
     <!-- Top Bar -->
     <div class="marquee border-b-4 border-black">
@@ -86,9 +87,9 @@
             </div>
             <nav aria-label="Main Navigation">
                 <ul class="flex flex-wrap gap-4">
-                    <li><a href="/" class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary brutalist-btn btn-ghost">HOME</a></li>
-                    <li><a href="/docs/index.html" class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary brutalist-btn btn-primary">ARCHIVES</a></li>
-                    <li><a href="/soundtrack/index.html" class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary brutalist-btn btn-secondary">AUDIO</a></li>
+                    <li><a href="/" class="focus-visible:outline-none brutalist-btn btn-ghost">HOME</a></li>
+                    <li><a href="/docs/index.html" class="focus-visible:outline-none brutalist-btn btn-primary">ARCHIVES</a></li>
+                    <li><a href="/soundtrack/index.html" class="focus-visible:outline-none brutalist-btn btn-secondary">AUDIO</a></li>
                 </ul>
             </nav>
         </div>
