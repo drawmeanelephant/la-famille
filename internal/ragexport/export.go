@@ -146,19 +146,14 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 				return err
 			}
 			if d.IsDir() {
-				if d.Name() == ".git" || d.Name() == ".github" || d.Name() == "test-results" || d.Name() == "public" {
+				if d.Name() == ".git" || d.Name() == ".github" || d.Name() == "test-results" || d.Name() == "public" || d.Name() == "vendor" || d.Name() == "node_modules" {
 					return filepath.SkipDir
 				}
 				return nil
 			}
 
 			relPath := getRel(projectRoot, path)
-			match, err := filepath.Match(filepath.Base(pattern), filepath.Base(relPath))
-			if err != nil {
-				return nil
-			}
-
-			if (match && !strings.Contains(pattern, "/")) || pathMatch(pattern, relPath) {
+			if pathMatch(pattern, filepath.ToSlash(relPath)) {
 				if strings.Contains(filepath.ToSlash(relPath), filepath.ToSlash(outDir)) {
 					return nil
 				}

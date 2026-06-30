@@ -35,6 +35,11 @@ jobs:
           # Executes the La Famille compiler
           go run ./cmd/la-famille build
 
+      - name: Generate RAG Export
+        run: |
+          go run ./cmd/la-famille rag
+          cp -r rag-archive public/rag-archive
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
