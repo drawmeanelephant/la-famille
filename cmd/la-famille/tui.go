@@ -203,7 +203,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.frame = 0
 					port := m.cfg.Port
 					if port == 0 {
-						port = 8080
+						port = config.DefaultConfig().Port
 					}
 
 					if choice == "Serve Site with Watch" {
@@ -343,7 +343,7 @@ func (m model) View() string {
 	case screenServe:
 		port := m.cfg.Port
 		if port == 0 {
-			port = 8080
+			port = config.DefaultConfig().Port
 		}
 		s := lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(animatedRaoul(m.frame))
 		s += "\n\n"

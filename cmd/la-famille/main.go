@@ -75,6 +75,9 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			port := servePort
 			if port == 0 {
 				port = cfg.Port
+				if port == 0 {
+					port = config.DefaultConfig().Port
+				}
 			}
 
 			if watchMode {
