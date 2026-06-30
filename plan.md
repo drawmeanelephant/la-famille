@@ -1,6 +1,5 @@
-# Plan: Add CLI flags unit test
-
-1. Refactor `cmd/la-famille/main.go` to extract the `setupRootCmd(cfg config.Config) *cobra.Command` function to allow testing command flags.
-2. Add `TestCommandFlags` in `cmd/la-famille/main_test.go` to verify the presence of `--content`, `--output`, `--template` flags on `buildCmd` and `--port`, `--watch` flags on `serveCmd`.
-3. Verify changes through unit tests (`go test ./...`).
-4. Ensure no breaking changes to static asset generation pipeline (none expected as this is mostly a refactoring to make the CLI testable).
+1. Write out this plan.md.
+2. Update content/docs/generator.md to include the multi-pass pipeline, internal packages, and JSON outputs.
+3. Build the static site using `go run ./cmd/la-famille build`.
+4. Create a report of the work in content/jules/reports/generator-stub.md.
+5. Run tests to ensure regressions have not been introduced.
