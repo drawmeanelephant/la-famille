@@ -21,16 +21,7 @@ var (
 	templateFile string
 )
 
-func main() {
-	// Load config first to set defaults for flags
-	cfg, err := config.Load("config.yaml")
-	if err != nil {
-		log.Printf("Warning: failed to load config.yaml: %v", err)
-	}
-	if err := cfg.Validate(); err != nil {
-		log.Fatalf("Configuration validation failed: %v", err)
-	}
-
+func setupRootCmd(cfg config.Config) *cobra.Command {
 	var rootCmd = &cobra.Command{
 		Use:   "la-famille",
 		Short: "La Famille is a static site generator",
@@ -122,6 +113,21 @@ func main() {
 	rootCmd.AddCommand(prCmd)
 	rootCmd.AddCommand(tuiCmd)
 	rootCmd.AddCommand(serveCmd)
+
+	return rootCmd
+}
+
+func main() {
+	// Load config first to set defaults for flags
+	cfg, err := config.Load("config.yaml")
+	if err != nil {
+		log.Printf("Warning: failed to load config.yaml: %v", err)
+	}
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Configuration validation failed: %v", err)
+	}
+
+	rootCmd := setupRootCmd(cfg)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
