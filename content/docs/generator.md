@@ -36,3 +36,5 @@ As part of the JSON Output step, the generator produces a few specialized files 
 
 *   **`graph.json`**: Describes the entire site structure as a directed graph. It lists every page (node) and the links between them (edges), which is very useful for visualizing the structure or feeding into a knowledge graph system.
 *   **`backlinks.json`**: A mapping of pages to the list of pages that link *to* them. This makes it easy to build "Mentioned In" features at the bottom of articles.
+*   **`meta.json`**: Provides global site metadata mapped to page IDs, such as page titles, word counts, and tags.
+*   **`search.json`**: Contains a minified array of `SearchItem` structs, providing a compressed plaintext snippet of each page's content for client-side search discovery.
