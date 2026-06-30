@@ -47,6 +47,9 @@ var tuiCmd = &cobra.Command{
 	},
 }
 
+// Rough approximation: 1 token ≈ 4 bytes (OpenAI tokenizer heuristic)
+const bytesPerToken = 4
+
 type screen int
 
 const (
@@ -314,7 +317,7 @@ func (m model) View() string {
 					info, err := file.Info()
 					if err == nil {
 						size := info.Size()
-						tokens := size / 4
+						tokens := size / bytesPerToken
 						totalTokens += int(tokens)
 						s += fmt.Sprintf("- %s: ~%d tokens\n", file.Name(), tokens)
 					}
