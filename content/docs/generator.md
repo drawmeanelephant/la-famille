@@ -1,25 +1,38 @@
 ---
-title: "How La Famille Works"
+title: "How the Generator Works"
 author: "Jules"
-date: "2026-06-18"
 ---
 
-# Inside La Famille
+# How the Generator Works
 
-La Famille is a static site generator written in Go. Let's kick the tires and review how it converts Markdown into HTML.
+La Famille is a static site generator written in Go that transforms Markdown content into fully-fledged HTML pages with associated metadata. Below is an overview of the internal pipeline and the packages that drive it.
 
-## The Pipeline
+## The Multi-Pass Pipeline
 
-The process lives in `cmd/la-famille/main.go` and works in several passes:
+The build process is executed in several distinct passes to ensure accurate linking, rendering, and output generation:
 
-1. **Template Parsing:** Loads `templates/layout.html` to establish the outer skeleton of every generated page.
-2. **Metadata Gathering (Pass 1):** Walks the `content/` directory. For every `.md` file, it parses the YAML frontmatter. If parsing fails, it gracefully falls back to treating the entire file as content.
-3. **Rendering (Pass 2):** Uses the `goldmark` library to parse Markdown into an AST (Abstract Syntax Tree).
-   * **Link Transformation:** A custom `linkTransformer` traverses the AST. It converts relative `.md` links into `.html` links. It also discovers references to non-existent files to create a graph of "missing files" and backlinks. It also rewrites URLs and output paths to use a clean directory structure (e.g., converting 'about.md' to 'about/index.html' so it can be accessed as '/about/'), which can be overridden on a per-page basis using the 'slug' field in the frontmatter.
-   * **Sanitization:** HTML output is run through `bluemonday` to prevent XSS and ensure the markup is safe.
-4. **Stub Generation:** Any file linked to, but not present in `content/`, gets a simple HTML stub generated in `public/`. This guarantees there are no dead internal links!
-5. **Metadata Output:** Finally, it writes out `graph.json`, `backlinks.json`, and `meta.json` into `public/`.
+1.  **Content Walk:** The `content/` directory is recursively scanned for all `.md` files.
+2.  **Frontmatter Parse:** The frontmatter of each file is parsed to extract metadata such as title, layout, render flag, and description.
+3.  **AST Transform:** The Markdown content is parsed into an Abstract Syntax Tree (AST). A custom transformer walks the AST, converting relative `.md` links into their `.html` output equivalents, and tracking missing internal links to build the site's graph.
+4.  **HTML Render:** The processed Markdown is converted to safe, sanitized HTML and injected into the appropriate layout templates.
+5.  **Stub Generation:** For any internal links pointing to non-existent pages, simple HTML "stubs" are automatically generated. This ensures there are no broken links on the site and provides clear entry points for future content.
+6.  **Asset Copy:** Static assets like images and CSS are copied verbatim into the output directory, respecting any ignore patterns.
+7.  **JSON Output:** Finally, site metadata and graph structures are exported as JSON for advanced client-side functionality.
 
-## The Result
+## Key Internal Packages
 
-The generator runs quickly and outputs a fully static site to `public/`, complete with deterministic metadata generation!
+The generator's functionality is cleanly separated into several internal packages:
+
+*   **`internal/content`**: Responsible for walking the file system and parsing the YAML frontmatter from Markdown files into structured `FileMeta` objects. It also handles basic validation (e.g., date formats, tag normalization).
+*   **`internal/transform`**: Houses the `LinkTransformer`, which visits AST nodes during Markdown parsing to rewrite links, enforce clean URLs (using the `url.go` utilities), and record missing files for stub generation.
+*   **`internal/render`**: Manages the loading, parsing, and execution of HTML templates and partials. It caches templates for performance and injects the live-reload script when running in watch mode.
+*   **`internal/stub`**: Handles the creation of stub pages for missing files detected during the transform phase. It lists the parent pages that linked to the missing content.
+*   **`internal/asset`**: Safely copies static files from the asset directory to the output folder while skipping Go files, `testdata`, and paths matched by `.gitignore`.
+*   **`internal/jsonutil`**: A simple utility package providing `WriteJSON` to easily write Go structures out as nicely indented JSON files.
+
+## Metadata and Graphs
+
+As part of the JSON Output step, the generator produces a few specialized files that provide deep insights into the structure of your site:
+
+*   **`graph.json`**: Describes the entire site structure as a directed graph. It lists every page (node) and the links between them (edges), which is very useful for visualizing the structure or feeding into a knowledge graph system.
+*   **`backlinks.json`**: A mapping of pages to the list of pages that link *to* them. This makes it easy to build "Mentioned In" features at the bottom of articles.

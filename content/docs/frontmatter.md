@@ -34,3 +34,4 @@ This ensures we have maximum flexibility with how our content is processed.
 * `tags`: An array of strings representing tags for the post (e.g., `tags: [go, test]`).
 * `date`: A date string formatted as `YYYY-MM-DD` (e.g., `date: "2023-10-27"`).
 * `slug`: A custom URL path for the page.
+* `layout`: To specify a custom layout, provide the filename *without* the `.html` extension (e.g., `layout: "brutalist"`).
