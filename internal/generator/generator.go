@@ -15,6 +15,7 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
 
 	"github.com/tbuddy/la-famille/internal/asset"
@@ -78,6 +79,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 	var buf bytes.Buffer
 
 	p := bluemonday.UGCPolicy()
+	p.AllowAttrs("class").Globally()
 
 	if err := taxonomy.GenerateTags(cfg, fileMap, renderer, p); err != nil {
 		return result, err
@@ -170,6 +172,9 @@ func Build(cfg config.Config) (BuildResult, error) {
 				parser.WithASTTransformers(
 					util.Prioritized(transformer, 100),
 				),
+			),
+			goldmark.WithRendererOptions(
+				html.WithUnsafe(),
 			),
 		)
 
