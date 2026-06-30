@@ -6,6 +6,11 @@ import (
 	"github.com/tbuddy/la-famille/internal/config"
 )
 
+type Breadcrumb struct {
+	Title string
+	URL   string
+}
+
 type Page struct {
 	Site            config.Config
 	Title           string
@@ -18,4 +23,5 @@ type Page struct {
 	Content         template.HTML
 	Description     string
 	Image           string
+	Breadcrumbs     []Breadcrumb
 }
