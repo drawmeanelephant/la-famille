@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCLIOverrides(t *testing.T) {
@@ -104,7 +105,47 @@ title: Test Page
 	if strings.Contains(htmlStr, "<script>") {
 		t.Errorf("XSS payload was not sanitized: %s", htmlStr)
 	}
+
+	// Test serve command defaults to 8080 when no port flag is provided
+	cmdServe := exec.Command(exePath, "serve")
+	cmdServe.Dir = tmpDir
+
+	stdoutPipe, err := cmdServe.StdoutPipe()
+	if err != nil {
+		t.Fatalf("failed to create stdout pipe: %v", err)
+	}
+
+	if err := cmdServe.Start(); err != nil {
+		t.Fatalf("failed to start serve command: %v", err)
+	}
+
+	outputChan := make(chan string)
+	go func() {
+		buf := new(bytes.Buffer)
+		// Read just enough to verify the port
+		b := make([]byte, 1024)
+		n, _ := stdoutPipe.Read(b)
+		buf.Write(b[:n])
+		outputChan <- buf.String()
+	}()
+
+	select {
+	case serveOut := <-outputChan:
+		if !strings.Contains(serveOut, "http://localhost:8080") {
+			t.Errorf("Expected serve command to default to port 8080, got output: %s", serveOut)
+		}
+	case <-time.After(2 * time.Second):
+		t.Errorf("Timed out waiting for serve command output")
+	}
+
+	if err := cmdServe.Process.Kill(); err != nil {
+		t.Fatalf("failed to kill serve command: %v", err)
+	}
+
+	// Wait for process to clean up
+	_ = cmdServe.Wait()
 }
+
 
 func TestInitCommand(t *testing.T) {
 	tmpDir := t.TempDir()
