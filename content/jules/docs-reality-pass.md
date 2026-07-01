@@ -15,6 +15,7 @@ Date: 2026-06-21
 4. **Preserve Forward Motion:** If you find a roadmap item or to-do list in the docs that is partially complete, rewrite it as a next-step item instead of deleting it entirely.
 
 ## Execution Reminders
+* The `config.yaml` is widely applicable and its documentation should be easily discoverable.
 *   **Do NOT rewrite `README.md` during this routine.** The `README.md` is strictly the GitHub landing page overview. This routine is explicitly for expanding and polishing the actual user guides inside `content/docs/`.
 *   Focus on making the documentation useful for end-users, ensuring it covers things like CLI usage (`go run`), flags, and configuration.
 *   Keep edits explicit and ensure they are written in Markdown.

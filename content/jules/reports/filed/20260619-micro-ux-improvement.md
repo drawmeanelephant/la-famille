@@ -1,22 +1,25 @@
 ---
-title: Routine Report - Micro-UX Improvement
-date: 2026-06-19
-author: Jules
+Title: Routine - Implement Micro-UX Improvement
+Date: 2026-06-19
 ---
 
-# Routine Report: Micro-UX Improvement
+# Micro-UX Improvement Report
 
 **Date:** 2026-06-19
-**Routine Name:** Implement Micro-UX Improvement
-**Success Status:** Success
+**Routine:** Implement Micro-UX Improvement
+**Status:** Success
 
 ## Details
-Identified and implemented a micro-UX and accessibility enhancement in the `templates/layout-floating-cards.html` frontend layout template.
+I standardardized keyboard focus visibility for anchor tags within markdown content across multiple layout templates by adding explicit `focus-visible` styling directly to the Tailwind Typography plugin configuration (`prose` classes).
 
-### What was done:
-- Added `aria-label` and `aria-haspopup` attributes to the mobile navigation menu dropdown button to improve screen reader context.
-- Added `aria-hidden="true"` and `focusable="false"` to the SVG icon within the dropdown button to hide the decorative element from screen readers.
-- Added `focus-visible` outline states to the primary desktop navigation links, mobile dropdown navigation items, and all footer navigation links. This ensures keyboard-only and alternative input users receive clear visual feedback when interacting with these elements.
+**Templates updated:**
+- `templates/layout-asymmetric.html`
+- `templates/layout-bento.html`
+- `templates/luxury_magazine.html`
+- `templates/brutalist.html`
+- `templates/layout-sidebar.html`
 
-### Learnings / Suggestions
-- Standardized `focus-visible` styling is missing across several other legacy layout templates. I suggest continuing this routine across the other `layout-*.html` templates to unify the accessibility baseline.
+## Learnings
+**Learning:** Legacy templates often miss standardized `focus-visible` states, particularly within the generic `.prose` containers. Furthermore, Tailwind Typography requires the state variant (e.g. `focus-visible:`) to follow the element modifier (e.g. `prose-a:`). Some templates were missing the base `outline` utility, possessing only `outline-2` or `outline-[color]`, causing the focus ring to not render.
+
+**Action:** When creating new templates or auditing old ones, always explicitly add `prose-a:focus-visible:outline` along with specific thickness and color modifiers. Regular visual verification of keyboard navigation states is essential to maintain accessibility standards.
