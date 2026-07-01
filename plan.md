@@ -1,5 +1,4 @@
-# Plan: Verify Extract Graph Files Writing Logic
-
-1. **Verify pre-existing extraction:** Confirmed that `graph.json` and `backlinks.json` writing logic was already correctly extracted to `internal/graph/write.go` utilizing `jsonutil.WriteJSON`, as requested in the task.
-2. **Update `.julesarchitecture.md`:** Added a verification note to confirm the `refactor-one-seam` routine implementation is present and valid.
-3. **Run tests:** Ran `go test ./...` and `go vet ./...` to verify code integrity.
+1. Address the code review by linking the documentation page in `content/docs/index.md`. The generator.md file was already present and only required a small modification which was made correctly.
+2. Ensure the link in `content/docs/index.md` is correctly formatted and references `generator.md`. I will use `run_in_bash_session` to do this.
+3. Review changes with `git diff`.
+4. Run tests and pre-commit checks.
