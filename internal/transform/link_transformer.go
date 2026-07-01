@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
@@ -19,6 +20,7 @@ type LinkTransformer struct {
 	MissingFiles map[string][]string // map[targetFile]parents
 	Backlinks    map[string][]string
 	Graph        *graph.Graph
+	Mu           *sync.Mutex
 }
 
 func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
@@ -52,8 +54,14 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, pc p
 			}
 
 			targetId := strings.TrimSuffix(targetRelPath, ".md")
+			if t.Mu != nil {
+				t.Mu.Lock()
+			}
 			t.Graph.Edges = append(t.Graph.Edges, [2]string{sourceId, targetId})
 			t.Backlinks[targetId] = append(t.Backlinks[targetId], sourceId)
+			if t.Mu != nil {
+				t.Mu.Unlock()
+			}
 
 			// Check file map
 			meta, exists := t.FileMap[targetRelPath]
@@ -97,6 +105,9 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, pc p
 
 			if !exists {
 				// record target as missing so we can generate stub
+				if t.Mu != nil {
+					t.Mu.Lock()
+				}
 				parents := t.MissingFiles[targetRelPath]
 				found := false
 				for _, p := range parents {
@@ -107,6 +118,9 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, pc p
 				}
 				if !found {
 					t.MissingFiles[targetRelPath] = append(parents, t.CurrentFile)
+				}
+				if t.Mu != nil {
+					t.Mu.Unlock()
 				}
 			}
 		}
