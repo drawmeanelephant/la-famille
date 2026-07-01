@@ -16,6 +16,7 @@ Date: 2026-06-19
 4. **Verify Output:** Ensure generated stub pages still work for multiple parent references.
 
 ## Execution Reminders
+* Future improvements could involve bringing in a DaisyUI structural alert box directly if we can guarantee that all base layouts load DaisyUI in the same manner.
 * Favor clarity over decoration.
 * Respect the current site styling approach.
 * Add or update a fixture if output changes materially.

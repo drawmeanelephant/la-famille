@@ -15,6 +15,8 @@ Date: 2026-06-19
 4. **Verify Practical Use:** Confirm the step improves discoverability, not just internal structure.
 
 ## Execution Reminders
+* Reusing the existing `meta.json` proved to be highly efficient.
+* For future routines, consider extending the metadata structure in `meta.json` to include short summaries or tags for even richer search context.
 * Avoid large dependencies unless clearly justified.
 * Keep the feature optional and noninvasive.
 * Write the simplest thing that could later grow into search.

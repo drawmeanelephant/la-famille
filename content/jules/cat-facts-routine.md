@@ -21,6 +21,8 @@ Date: 2026-06-20
 5. **Create a Report:** Write a short markdown report in `content/jules/reports/` (e.g., `[date]-cat-facts-routine.md`) summarizing the run.
 
 ## Execution Reminders
+* Generating thematic facts (e.g., historical cats) adds great variety compared to standard biological trivia.
+* Expanding the pipeline to include both an audio soundtrack prompt and a visual image prompt provides a more well-rounded multimedia documentation package.
 * Ensure the target directory `content/catfacts/` exists before attempting to write files to it.
 * Commit the generated files as part of the routine execution.
 
