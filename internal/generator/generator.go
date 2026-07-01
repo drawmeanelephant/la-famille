@@ -231,6 +231,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 		return result, err
 	}
 
+	// Write graph structures via internal/graph
 	// 5. Write JSON outputs
 	if err := graph.WriteGraphFiles(cfg.OutputDir, g, backlinks); err != nil {
 		return result, err
