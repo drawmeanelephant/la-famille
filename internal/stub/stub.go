@@ -97,10 +97,18 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 
 		// build simple HTML stub
 		var htmlContent strings.Builder
-		htmlContent.WriteString("<h2>🌱 This page is a stub</h2>\n")
-		htmlContent.WriteString("<p>The content for this page hasn't been written yet.</p>\n<hr>\n")
+		htmlContent.WriteString("<div class=\"alert alert-warning shadow-lg mb-8\">\n")
+		htmlContent.WriteString("  <div>\n")
+		htmlContent.WriteString("    <svg xmlns=\"http://www.w3.org/2000/svg\" class=\"stroke-current flex-shrink-0 h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z\" /></svg>\n")
+		htmlContent.WriteString("    <div>\n")
+		htmlContent.WriteString("      <h3 class=\"font-bold\">🌱 This page is a stub</h3>\n")
+		htmlContent.WriteString("      <div class=\"text-xs\">The content for this page hasn't been written yet.</div>\n")
+		htmlContent.WriteString("    </div>\n")
+		htmlContent.WriteString("  </div>\n")
+		htmlContent.WriteString("</div>\n")
 		htmlContent.WriteString("<h3>Return paths</h3>\n")
-		htmlContent.WriteString("<p>This missing page was referenced by the following pages:</p>\n<ul>\n")
+		htmlContent.WriteString("<p>This missing page was referenced by the following pages:</p>\n")
+		htmlContent.WriteString("<ul class=\"menu bg-base-100 border border-base-300 rounded-box w-full\">\n")
 		for _, parent := range parents {
 			parentSlug := ""
 			if meta, ok := fileMap[parent]; ok && meta != nil {
