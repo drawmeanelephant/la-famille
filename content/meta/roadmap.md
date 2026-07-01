@@ -27,11 +27,11 @@ This document outlines the active roadmap, development milestones, and ready-to-
 
 *These are punchy tasks ready to be picked up in the next development cycle:*
 
-- [ ] Refactor generation logic out of `cmd/la-famille/main.go` into `internal/` packages without changing behavior.
-- [ ] Implement asset copying from `assets/` into build output.
-- [ ] Support template partials.
-- [ ] Add `serve` plus file watching for local authoring.
-- [ ] Add CI/CD deploy workflow, then client-side search and taxonomy generation.
+- [x] Refactor generation logic out of `cmd/la-famille/main.go` into `internal/` packages without changing behavior.
+- [x] Implement asset copying from `assets/` into build output.
+- [x] Support template partials.
+- [x] Add `serve` plus file watching for local authoring.
+- [x] Add CI/CD deploy workflow, then client-side search and taxonomy generation.
 
 ## TUI Improvements
 - Track build time stats and show them in the Stats screen.
