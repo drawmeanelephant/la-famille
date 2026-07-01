@@ -34,8 +34,6 @@ func RunExport(cfg config.Config) error {
 			"go.sum",
 			"README.md",
 			"TODO.md",
-			"AGENTS.md",
-			"GEMINI.md",
 			"playwright_test.js",
 			".github/workflows/*.yml",
 		},
@@ -121,7 +119,7 @@ func RunExport(cfg config.Config) error {
 			[]string{
 				"content/**/*.md",
 			},
-			nil,
+			[]string{"content/jules"},
 			nil, // Default formatting is verbatim with XML tags, which preserves the YAML frontmatter
 			outDir,
 			cfg.ProjectRoot,
