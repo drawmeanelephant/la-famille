@@ -24,7 +24,7 @@ The build process is executed in several distinct passes to ensure accurate link
 The generator's functionality is cleanly separated into several internal packages:
 
 *   **`internal/content`**: Responsible for walking the file system and parsing the YAML frontmatter from Markdown files into structured `FileMeta` objects. It also handles basic validation (e.g., date formats, tag normalization).
-*   **`internal/transform`**: Houses the `LinkTransformer`, which visits AST nodes during Markdown parsing to rewrite links, enforce clean URLs (using the `url.go` utilities), and record missing files for stub generation.
+*   **`internal/transform`**: Houses the `LinkTransformer`, which visits AST nodes during Markdown parsing to rewrite links, enforce clean URLs (using the `url.go` utilities), and record missing files for stub generation. It also implements custom inline Goldmark parser structures, specifically the `EmojiKitchenParser` for mutating inline CDN emoji stickers.
 *   **`internal/render`**: Manages the loading, parsing, and execution of HTML templates and partials. It caches templates for performance and injects the live-reload script when running in watch mode.
 *   **`internal/stub`**: Handles the creation of stub pages for missing files detected during the transform phase. It lists the parent pages that linked to the missing content.
 *   **`internal/asset`**: Safely copies static files from the asset directory to the output folder while skipping Go files, `testdata`, and paths matched by `.gitignore`.

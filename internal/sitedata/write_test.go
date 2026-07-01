@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -13,6 +14,10 @@ func TestWrite(t *testing.T) {
 	metaData := map[string]map[string]interface{}{
 		"index": {
 			"title": "Home Page",
+		},
+		"about/me": {
+			"title": "About Me",
+			"slug": "jules",
 		},
 	}
 
@@ -33,5 +38,24 @@ func TestWrite(t *testing.T) {
 
 	if readMeta["index"]["title"] != "Home Page" {
 		t.Errorf("Unexpected meta content: %+v", readMeta)
+	}
+
+	// 2. Check sitemap.xml
+	sitemapContentBytes, err := os.ReadFile(filepath.Join(tempDir, "sitemap.xml"))
+	if err != nil {
+		t.Fatalf("Failed to read sitemap.xml: %v", err)
+	}
+	sitemapContent := string(sitemapContentBytes)
+
+	if !strings.Contains(sitemapContent, "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">") {
+		t.Errorf("sitemap.xml missing root urlset tag")
+	}
+
+	if !strings.Contains(sitemapContent, "<loc>/index.html</loc>") {
+		t.Errorf("sitemap.xml missing loc for index.html")
+	}
+
+	if !strings.Contains(sitemapContent, "<loc>/about/jules/index.html</loc>") {
+		t.Errorf("sitemap.xml missing loc for about/jules/index.html")
 	}
 }
