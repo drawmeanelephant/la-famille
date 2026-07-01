@@ -88,6 +88,7 @@ func TestGenerateStubs(t *testing.T) {
 	}
 
 	p := bluemonday.UGCPolicy()
+	p.AllowAttrs("class").Globally()
 
 	// Execute GenerateStubs
 
@@ -121,11 +122,15 @@ func TestGenerateStubs(t *testing.T) {
 
 	checkFile("missing/index.html", []string{
 		"🌱 This page is a stub",
+		"alert alert-warning",
+		"menu bg-base-100",
 		`<a href="../parent1/" rel="nofollow">parent1.md</a>`,
 	})
 
 	checkFile("dir/missing2/index.html", []string{
 		"🌱 This page is a stub",
+		"alert alert-warning",
+		"menu bg-base-100",
 		`<a href="../../parent2/" rel="nofollow">parent2.md</a>`,
 		`<a href="../parent3/" rel="nofollow">dir/parent3.md</a>`,
 	})
