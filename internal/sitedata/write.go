@@ -1,15 +1,58 @@
 package sitedata
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/tbuddy/la-famille/internal/jsonutil"
+	"github.com/tbuddy/la-famille/internal/transform"
 )
 
 // Write writes the meta data to the output directory.
 func Write(outputDir string, metaData map[string]map[string]interface{}) error {
 	if err := jsonutil.WriteJSON(filepath.Join(outputDir, "meta.json"), metaData); err != nil {
 		return err
+	}
+
+	// Generate sitemap.xml
+	outDirClean := filepath.Clean(outputDir)
+	sitemapPath := filepath.Join(outDirClean, "sitemap.xml")
+
+	// Safeguard against path traversal
+	if !strings.HasPrefix(sitemapPath, outDirClean+string(filepath.Separator)) && sitemapPath != outDirClean {
+		return fmt.Errorf("potential path traversal writing sitemap: %s", sitemapPath)
+	}
+
+	var keys []string
+	for k := range metaData {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var sitemapBuilder strings.Builder
+	sitemapBuilder.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+	sitemapBuilder.WriteString("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n")
+
+	for _, k := range keys {
+		// Calculate the output URL
+		meta := metaData[k]
+		slug := ""
+		if slugVal, ok := meta["slug"].(string); ok {
+			slug = slugVal
+		}
+
+		relOut := transform.GetOutputURL(k+".md", slug)
+		urlPath := "/" + filepath.ToSlash(relOut)
+
+		sitemapBuilder.WriteString(fmt.Sprintf("\t<url>\n\t\t<loc>%s</loc>\n\t</url>\n", urlPath))
+	}
+	sitemapBuilder.WriteString("</urlset>\n")
+
+	if err := os.WriteFile(sitemapPath, []byte(sitemapBuilder.String()), 0644); err != nil {
+		return fmt.Errorf("failed to write sitemap.xml: %w", err)
 	}
 
 	return nil
