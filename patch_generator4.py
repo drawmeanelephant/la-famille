@@ -1,92 +1,21 @@
-package generator
+with open("internal/generator/generator.go", "r") as f:
+    content = f.read()
 
-import (
-	"bytes"
-	"errors"
-	"fmt"
-	"html/template"
-	"log"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
-	"sync"
-	"runtime"
-	"time"
+# Instead of lock/unlock on appending to searchIndex, we can pre-allocate an array based on len(keys) and write to index i.
+import os
+os.system("git checkout HEAD -- internal/generator/generator.go")
 
-	"github.com/microcosm-cc/bluemonday"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
-	"github.com/yuin/goldmark/util"
+with open("internal/generator/generator.go", "r") as f:
+    content = f.read()
 
-	"github.com/tbuddy/la-famille/internal/asset"
-	"github.com/tbuddy/la-famille/internal/config"
-	"github.com/tbuddy/la-famille/internal/content"
-	"github.com/tbuddy/la-famille/internal/graph"
-	"github.com/tbuddy/la-famille/internal/page"
-	"github.com/tbuddy/la-famille/internal/render"
-	"github.com/tbuddy/la-famille/internal/search"
-	"github.com/tbuddy/la-famille/internal/sitedata"
-	"github.com/tbuddy/la-famille/internal/stub"
-	"github.com/tbuddy/la-famille/internal/taxonomy"
-	"github.com/tbuddy/la-famille/internal/transform"
-)
+import re
 
-// convertMarkdown is a variable to allow mocking in tests.
-var convertMarkdown = func(md goldmark.Markdown, source []byte, w *bytes.Buffer) error {
-	return md.Convert(source, w)
-}
+if '"sync"' not in content:
+    content = re.sub(r'("strings")', r'\1\n\t"sync"\n\t"runtime"', content)
+elif '"runtime"' not in content:
+    content = re.sub(r'("sync")', r'\1\n\t"runtime"', content)
 
-// BuildResult contains statistics about the build process.
-type BuildResult struct {
-	Duration   time.Duration
-	PageCount  int
-	ErrorCount int
-}
-
-// Build generates the static site based on the given configuration.
-func Build(cfg config.Config) (BuildResult, error) {
-	start := time.Now()
-	var result BuildResult
-
-	// 1. Pass 1: Walk content dir and gather metadata
-	fileMap, err := content.GatherMetadata(cfg.ContentDir)
-	if err != nil {
-		return result, fmt.Errorf("failed to gather metadata: %w", err)
-	}
-
-	// Track missing files that need stubs. map[missingPath][]parentFiles
-	missingFiles := make(map[string][]string)
-	backlinks := make(map[string][]string)
-	g := graph.Graph{
-		Nodes: make(map[string]graph.Node),
-		Edges: [][2]string{},
-	}
-	metaData := make(map[string]map[string]interface{})
-	var searchIndex []search.SearchItem
-
-	// 2. Pass 2: Process files in deterministic order
-	var keys []string
-	for k := range fileMap {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Reusable buffer for markdown conversion
-	renderer := render.New(filepath.Dir(cfg.Template))
-
-	var errs []error
-
-
-	p := bluemonday.UGCPolicy()
-	p.AllowAttrs("class").Globally()
-
-	if err := taxonomy.GenerateTags(cfg, fileMap, renderer, p); err != nil {
-		return result, err
-	}
-
-
+new_loop = """
 	var mu sync.Mutex
 	numWorkers := runtime.NumCPU()
 	if numWorkers < 1 {
@@ -280,49 +209,23 @@ func Build(cfg config.Config) (BuildResult, error) {
 			searchIndex = append(searchIndex, item)
 		}
 	}
+"""
 
-	// Sort searchIndex, edges, and other outputs to ensure deterministic output
-	sort.SliceStable(g.Edges, func(i, j int) bool {
-		return g.Edges[i][0] < g.Edges[j][0]
-	})
+start_str = "	for _, relPath := range keys {"
+end_str = "	if len(errs) > 0 {"
 
-	for k := range backlinks {
-		sort.Strings(backlinks[k])
-	}
+start_idx = content.find(start_str)
+end_idx = content.find(end_str)
 
-	// Sort errs for deterministic order
-	if len(errs) > 0 {
-		sort.Slice(errs, func(i, j int) bool {
-			return errs[i].Error() < errs[j].Error()
-		})
-	}
-	if len(errs) > 0 {
-		return result, errors.Join(errs...)
-	}
-	// 3. Generate stubs for missing files in deterministic order
-	if err := stub.GenerateStubs(cfg, missingFiles, &g, p, fileMap); err != nil {
-		return result, err
-	}
+buf_str = "\n\tvar buf bytes.Buffer\n"
+content = content.replace(buf_str, "\n")
+buf_str2 = "\tvar buf bytes.Buffer\n"
+content = content.replace(buf_str2, "")
 
-	// 4. Verbatim Asset Copy Step
-	if err := asset.CopyAssets(cfg); err != nil {
-		return result, err
-	}
+start_idx = content.find(start_str)
+end_idx = content.find(end_str)
 
-	// Write graph structures via internal/graph
-	// 5. Write JSON outputs
-	if err := graph.WriteGraphFiles(cfg.OutputDir, g, backlinks); err != nil {
-		return result, err
-	}
+new_content = content[:start_idx] + new_loop + "\n\t// Sort errs for deterministic order\n\tif len(errs) > 0 {\n\t\tsort.Slice(errs, func(i, j int) bool {\n\t\t\treturn errs[i].Error() < errs[j].Error()\n\t\t})\n\t}\n" + content[end_idx:]
 
-	if err := sitedata.Write(cfg.OutputDir, metaData); err != nil {
-		return result, err
-	}
-
-	if err := search.WriteMinifiedJSON(filepath.Join(cfg.OutputDir, "search.json"), searchIndex); err != nil {
-		return result, err
-	}
-
-	result.Duration = time.Since(start)
-	return result, nil
-}
+with open("internal/generator/generator.go", "w") as f:
+    f.write(new_content)
