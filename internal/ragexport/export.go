@@ -33,7 +33,6 @@ func RunExport(cfg config.Config) error {
 			"go.mod",
 			"go.sum",
 			"README.md",
-			"TODO.md",
 			"playwright_test.js",
 			".github/workflows/*.yml",
 		},
