@@ -11,7 +11,11 @@
 <span>system.status = UNTAMED // built by jules on go</span>
 </div>
 <nav class="flex gap-gutter font-label-sm text-label-sm tracking-widest">
-<!-- Placeholder for footer links -->
+{{if .Site.SiteLinks}}
+    {{range .Site.SiteLinks}}
+        <a href="{{.URL}}" class="hover:text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{{.Label}}</a>
+    {{end}}
+{{end}}
 </nav>
 </footer>
 {{end}}
