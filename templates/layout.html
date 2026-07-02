@@ -15,6 +15,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
 </head>
 <body class="min-h-screen bg-base-200">
+    {{ template "partials/nav-toast.html" . }}
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Skip to content</a>
 
     <nav aria-label="Main Navigation" class="navbar bg-base-100 shadow-sm mb-8">
@@ -59,17 +60,6 @@
     </footer>
 
     <script src="/assets/js/search.js"></script>
-{{if .ComplianceModal}}
-    <input type="checkbox" id="compliance-modal" class="modal-toggle" checked />
-    <div class="modal" role="dialog">
-        <div class="modal-box">
-            <h3 class="font-bold text-lg">Compliance Required</h3>
-            <p class="py-4">{{.ComplianceModal}}</p>
-            <div class="modal-action">
-                <label for="compliance-modal" class="btn btn-primary">I Reluctantly Agree</label>
-            </div>
-        </div>
-    </div>
-{{end}}
+
 </body>
 </html>

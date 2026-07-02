@@ -1,0 +1,33 @@
+{{/* Combined Navigation & Notification Partial */}}
+
+{{/* Hamburger Navigation Dropdown */}}
+<div class="fixed top-4 left-4 z-[100]">
+    <details class="dropdown">
+        <summary class="btn btn-square btn-ghost focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary m-0" aria-label="Main Navigation">
+            <img src="https://www.gstatic.com/android/keyboard/emojikitchen/20241021/u1f419/u1f419_u1f354.png" aria-hidden="true" focusable="false" class="w-8 h-8" alt="" />
+        </summary>
+        <ul class="menu dropdown-content bg-base-100 rounded-box z-[100] w-52 p-2 shadow mt-4 border border-base-300">
+            <li><a href="/" class="hover:bg-base-200 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:bg-base-200">Home</a></li>
+            <li><a href="/docs/index.html" class="hover:bg-base-200 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:bg-base-200">Documentation</a></li>
+            <li><a href="/showcase/index.html" class="hover:bg-base-200 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:bg-base-200">Showcase</a></li>
+        </ul>
+    </details>
+</div>
+
+{{/* Compliance Cookie Toast */}}
+{{if .ComplianceModal}}
+<div class="fixed bottom-4 right-4 z-[100] pointer-events-none">
+    <input type="checkbox" id="cookie-toast-toggle" class="sr-only peer focus:outline-none" />
+    <div class="toast toast-end pointer-events-auto transition-all duration-300 peer-checked:opacity-0 peer-checked:translate-y-10 peer-checked:pointer-events-none">
+        <div class="alert shadow-lg bg-base-100 border border-base-300 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div>
+                <h3 class="font-bold">Cookie Notice</h3>
+                <div class="text-xs">{{.ComplianceModal}}</div>
+            </div>
+            <div class="flex-none">
+                <label for="cookie-toast-toggle" class="btn btn-sm btn-primary peer-focus:outline peer-focus:outline-2 peer-focus:outline-primary cursor-pointer">Accept</label>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
