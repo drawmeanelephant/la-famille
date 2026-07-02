@@ -20,6 +20,9 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.RagDir != "rag-archive" {
 		t.Errorf("Expected DefaultConfig RagDir to be 'rag-archive', got %s", cfg.RagDir)
 	}
+	if !cfg.CookieNotice {
+		t.Errorf("Expected DefaultConfig CookieNotice to be true, got %v", cfg.CookieNotice)
+	}
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -44,6 +47,7 @@ template: "my_templates/layout.html"
 asset_dir: "my_assets"
 rag_dir: "my_rag"
 port: 8081
+cookienotice: false
 `)
 	testConfigFile := filepath.Join(tmpDir, "config.yaml")
 	if err := os.WriteFile(testConfigFile, yamlContent, 0644); err != nil {
@@ -79,6 +83,9 @@ port: 8081
 	if loadedCfg.Port != 8081 {
 		t.Errorf("Expected Port to be 8081, got %d", loadedCfg.Port)
 	}
+	if loadedCfg.CookieNotice != false {
+		t.Errorf("Expected CookieNotice to be false, got %v", loadedCfg.CookieNotice)
+	}
 }
 
 func TestWriteDefault(t *testing.T) {
@@ -97,6 +104,9 @@ func TestWriteDefault(t *testing.T) {
 
 	if cfg.SiteName != "La Famille" {
 		t.Errorf("Expected generated config to have SiteName 'La Famille', got %s", cfg.SiteName)
+	}
+	if !cfg.CookieNotice {
+		t.Errorf("Expected generated config to have CookieNotice true, got %v", cfg.CookieNotice)
 	}
 }
 
