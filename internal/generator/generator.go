@@ -81,6 +81,8 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 	p := bluemonday.UGCPolicy()
 	p.AllowAttrs("class").Globally()
+	p.AllowElements("svg", "path")
+	p.AllowAttrs("xmlns", "fill", "viewBox", "stroke-linecap", "stroke-linejoin", "stroke-width", "d", "stroke", "class").OnElements("svg", "path")
 
 	if err := taxonomy.GenerateTags(cfg, fileMap, renderer, p); err != nil {
 		return result, err
