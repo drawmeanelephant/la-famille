@@ -161,10 +161,6 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 
 	// Use ExecuteTemplate with the base name to avoid the ParseFiles name trap
 	templateName := filepath.Base(templatePath)
-	//DEBUG
-	//for _, t := range clonedTmpl.Templates() {
-	//	fmt.Printf("Template: %s\n", t.Name())
-	//}
 	if cfg.WatchMode {
 		var buf bytes.Buffer
 		if err := clonedTmpl.ExecuteTemplate(&buf, templateName, p); err != nil {
