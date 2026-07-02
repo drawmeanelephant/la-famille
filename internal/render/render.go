@@ -103,7 +103,6 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 	if layout != "" {
 		if !r.allowlist[layout] {
 			log.Printf("Warning: Layout %q not found in allowlist. Falling back to default %s", layout, cfg.Template)
-			layout = ""
 		} else {
 			layoutPath := filepath.Join("templates", layout+".html")
 			// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille

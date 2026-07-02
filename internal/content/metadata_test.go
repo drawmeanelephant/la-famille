@@ -17,19 +17,19 @@ author: "Test Author"
 ---
 # Content here
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "frontmatter.md"), []byte(mdWithFrontmatter), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "frontmatter.md"), []byte(mdWithFrontmatter), 0600); err != nil {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
 	// 2. Create a markdown file without frontmatter
 	mdWithoutFrontmatter := `# Just content`
-	if err := os.WriteFile(filepath.Join(tmpDir, "no_frontmatter.md"), []byte(mdWithoutFrontmatter), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "no_frontmatter.md"), []byte(mdWithoutFrontmatter), 0600); err != nil {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
 	// 3. Create a non-markdown file
 	txtFile := `Just a text file`
-	if err := os.WriteFile(filepath.Join(tmpDir, "ignore.txt"), []byte(txtFile), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "ignore.txt"), []byte(txtFile), 0600); err != nil {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
@@ -43,7 +43,7 @@ title: "Nested File"
 ---
 # Nested content
 `
-	if err := os.WriteFile(filepath.Join(nestedDir, "nested.md"), []byte(nestedMd), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(nestedDir, "nested.md"), []byte(nestedMd), 0600); err != nil {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
@@ -110,7 +110,7 @@ Render: false
 ---
 Some body text.`
 		fileName := "mixed.md"
-		if err := os.WriteFile(filepath.Join(tmpDir, fileName), []byte(content), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(tmpDir, fileName), []byte(content), 0600); err != nil {
 			t.Fatalf("Failed to write test file: %v", err)
 		}
 
@@ -145,7 +145,7 @@ LAYOUT: "blog"
 ---
 Uppercase body.`
 		fileName := "uppercase.md"
-		if err := os.WriteFile(filepath.Join(tmpDir, fileName), []byte(content), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(tmpDir, fileName), []byte(content), 0600); err != nil {
 			t.Fatalf("Failed to write test file: %v", err)
 		}
 
@@ -188,7 +188,7 @@ date: "invalid-date"
 ---
 Content
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "test.md"), []byte(mdContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "test.md"), []byte(mdContent), 0600); err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 

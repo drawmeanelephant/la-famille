@@ -50,7 +50,7 @@ port: 8081
 cookienotice: false
 `)
 	testConfigFile := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(testConfigFile, yamlContent, 0644); err != nil {
+	if err := os.WriteFile(testConfigFile, yamlContent, 0600); err != nil {
 		t.Fatalf("Failed to write test config file: %v", err)
 	}
 

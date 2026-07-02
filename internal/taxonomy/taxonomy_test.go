@@ -17,11 +17,11 @@ func TestGenerateTags(t *testing.T) {
 	outDir := filepath.Join(tempDir, "public")
 	tmplDir := filepath.Join(tempDir, "templates")
 
-	os.MkdirAll(outDir, 0755)
-	os.MkdirAll(tmplDir, 0755)
+	_ = os.MkdirAll(outDir, 0755)
+	_ = os.MkdirAll(tmplDir, 0755)
 
 	tmplPath := filepath.Join(tmplDir, "layout.html")
-	os.WriteFile(tmplPath, []byte("{{.Content}}"), 0644)
+	_ = os.WriteFile(tmplPath, []byte("{{.Content}}"), 0600)
 
 	cfg := config.Config{
 		OutputDir: outDir,

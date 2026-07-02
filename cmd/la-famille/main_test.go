@@ -25,7 +25,7 @@ output_dir: "default_output_from_config"
 content_dir: "default_content_from_config"
 theme: "dark"
 `)
-	if err := os.WriteFile(configFile, yamlContent, 0644); err != nil {
+	if err := os.WriteFile(configFile, yamlContent, 0600); err != nil {
 		t.Fatalf("Failed to write config.yaml: %v", err)
 	}
 
@@ -42,7 +42,7 @@ title: Test Page
 # Hello World
 <script>alert('xss')</script>
 `)
-	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), mdContent, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), mdContent, 0600); err != nil {
 		t.Fatalf("Failed to write index.md: %v", err)
 	}
 
@@ -58,7 +58,7 @@ title: Test Page
 {{.Content}}
 </body>
 </html>`)
-	if err := os.WriteFile(filepath.Join(templateDir, "layout.html"), htmlContent, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(templateDir, "layout.html"), htmlContent, 0600); err != nil {
 		t.Fatalf("Failed to write layout.html: %v", err)
 	}
 
@@ -231,14 +231,14 @@ func TestProcessFile_PathTraversalPrevented(t *testing.T) {
 		Template:   filepath.Join(tempDir, "layout.html"),
 	}
 
-	os.MkdirAll(cfg.ContentDir, 0755)
-	os.MkdirAll(cfg.OutputDir, 0755)
-	os.WriteFile(cfg.Template, []byte("<html><body>{{.Content}}</body></html>"), 0644)
+	_ = os.MkdirAll(cfg.ContentDir, 0755)
+	_ = os.MkdirAll(cfg.OutputDir, 0755)
+	_ = os.WriteFile(cfg.Template, []byte("<html><body>{{.Content}}</body></html>"), 0600)
 
 	fileName := "index.md"
 	// Path traverses out of the content directory to a theoretical /tmp directory
 	content := []byte("# Home\n[Malicious](../../../../../tmp/hack.md)")
-	os.WriteFile(filepath.Join(cfg.ContentDir, fileName), content, 0644)
+	_ = os.WriteFile(filepath.Join(cfg.ContentDir, fileName), content, 0600)
 
 	_, err := generator.Build(cfg)
 	if err != nil {
@@ -270,8 +270,8 @@ func TestRun_WalkError(t *testing.T) {
 	}
 
 	// Create valid output dir and template file so it only fails on content dir
-	os.MkdirAll(cfg.OutputDir, 0755)
-	os.WriteFile(cfg.Template, []byte("<html><body>{{.Content}}</body></html>"), 0644)
+	_ = os.MkdirAll(cfg.OutputDir, 0755)
+	_ = os.WriteFile(cfg.Template, []byte("<html><body>{{.Content}}</body></html>"), 0600)
 
 	_, err := generator.Build(cfg)
 	if err == nil {

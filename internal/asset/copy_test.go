@@ -15,12 +15,12 @@ func TestCopyAssets(t *testing.T) {
 	outputDir := filepath.Join(tempDir, "public")
 
 	// Create asset dir and some files
-	os.MkdirAll(filepath.Join(assetDir, "css"), 0755)
-	os.MkdirAll(filepath.Join(assetDir, "testdata"), 0755)
+	_ = os.MkdirAll(filepath.Join(assetDir, "css"), 0755)
+	_ = os.MkdirAll(filepath.Join(assetDir, "testdata"), 0755)
 
-	os.WriteFile(filepath.Join(assetDir, "main.css"), []byte("body { color: red; }"), 0644)
-	os.WriteFile(filepath.Join(assetDir, "css", "style.css"), []byte("h1 { color: blue; }"), 0644)
-	os.WriteFile(filepath.Join(assetDir, "testdata", "ignore.txt"), []byte("ignore me"), 0644)
+	_ = os.WriteFile(filepath.Join(assetDir, "main.css"), []byte("body { color: red; }"), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "css", "style.css"), []byte("h1 { color: blue; }"), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "testdata", "ignore.txt"), []byte("ignore me"), 0600)
 
 	cfg := config.Config{
 		AssetDir:  assetDir,
@@ -63,10 +63,10 @@ func TestCopyAssets_SkipGoAndGitignore(t *testing.T) {
 	outputDir := filepath.Join(tempDir, "public")
 
 	// Create asset dir and some files
-	os.MkdirAll(assetDir, 0755)
+	_ = os.MkdirAll(assetDir, 0755)
 
-	os.WriteFile(filepath.Join(assetDir, "main.go"), []byte("package main"), 0644)
-	os.WriteFile(filepath.Join(assetDir, "main.css"), []byte("body { color: red; }"), 0644)
+	_ = os.WriteFile(filepath.Join(assetDir, "main.go"), []byte("package main"), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "main.css"), []byte("body { color: red; }"), 0600)
 
 	cfg := config.Config{
 		AssetDir:  assetDir,
@@ -99,10 +99,10 @@ func TestCopyAssetsGitNotAvailable(t *testing.T) {
 	outputDir := filepath.Join(tempDir, "public")
 
 	// Create asset dir and some files
-	os.MkdirAll(filepath.Join(assetDir, "css"), 0755)
+	_ = os.MkdirAll(filepath.Join(assetDir, "css"), 0755)
 
-	os.WriteFile(filepath.Join(assetDir, "main.css"), []byte("body { color: red; }"), 0644)
-	os.WriteFile(filepath.Join(assetDir, "css", "style.css"), []byte("h1 { color: blue; }"), 0644)
+	_ = os.WriteFile(filepath.Join(assetDir, "main.css"), []byte("body { color: red; }"), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "css", "style.css"), []byte("h1 { color: blue; }"), 0600)
 
 	cfg := config.Config{
 		AssetDir:  assetDir,

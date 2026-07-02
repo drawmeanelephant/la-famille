@@ -23,7 +23,7 @@ var p *tea.Program
 var tuiCmd = &cobra.Command{
 	Use:   "tui",
 	Short: "Launch the semi-graphical user interface",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		cfg, err := config.Load("config.yaml")
 		if err != nil {
 			// use defaults if config fails
@@ -133,7 +133,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.screen == screenServe && m.server != nil {
 					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 					defer cancel()
-					m.server.Shutdown(ctx)
+					_ = m.server.Shutdown(ctx)
 					m.server = nil
 				}
 				m.screen = screenMenu
@@ -148,7 +148,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.screen == screenServe && m.server != nil {
 					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 					defer cancel()
-					m.server.Shutdown(ctx)
+					_ = m.server.Shutdown(ctx)
 					m.server = nil
 				}
 				m.screen = screenMenu

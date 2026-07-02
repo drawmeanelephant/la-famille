@@ -8,22 +8,20 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
-	"runtime"
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
-	"github.com/yuin/goldmark/util"
 
 	"github.com/tbuddy/la-famille/internal/asset"
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/graph"
+	"github.com/tbuddy/la-famille/internal/markdown"
 	"github.com/tbuddy/la-famille/internal/page"
 	"github.com/tbuddy/la-famille/internal/render"
 	"github.com/tbuddy/la-famille/internal/search"
@@ -64,7 +62,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 		Edges: [][2]string{},
 	}
 	metaData := make(map[string]map[string]interface{})
-	var searchIndex []search.SearchItem
+	var searchIndex []search.Item
 
 	// 2. Pass 2: Process files in deterministic order
 	var keys []string
@@ -78,14 +76,14 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 	var errs []error
 
-
 	p := bluemonday.UGCPolicy()
 	p.AllowAttrs("class").Globally()
+	p.AllowElements("svg", "path")
+	p.AllowAttrs("xmlns", "fill", "viewBox", "stroke-linecap", "stroke-linejoin", "stroke-width", "d", "stroke", "class").OnElements("svg", "path")
 
 	if err := taxonomy.GenerateTags(cfg, fileMap, renderer, p); err != nil {
 		return result, err
 	}
-
 
 	var mu sync.Mutex
 	numWorkers := runtime.NumCPU()
@@ -93,7 +91,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 		numWorkers = 1
 	}
 
-	searchIndexItems := make([]search.SearchItem, len(keys))
+	searchIndexItems := make([]search.Item, len(keys))
 
 	type job struct {
 		index   int
@@ -156,7 +154,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 					urlOut := transform.GetOutputURL(relPath, meta.Slug)
 					urlPath := "/" + filepath.ToSlash(urlOut)
 
-					searchIndexItems[idx] = search.SearchItem{
+					searchIndexItems[idx] = search.Item{
 						Title:   title,
 						URL:     urlPath,
 						Tags:    meta.Tags,
@@ -194,7 +192,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 				if !shouldRender {
 					// Just copy the file
-					if err := os.WriteFile(outPath, meta.Content, 0644); err != nil {
+					if err := os.WriteFile(outPath, meta.Content, 0600); err != nil {
 						mu.Lock()
 						errs = append(errs, err)
 						mu.Unlock()
@@ -212,19 +210,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 					Mu:           &mu,
 				}
 
-				md := goldmark.New(
-					goldmark.WithParserOptions(
-						parser.WithASTTransformers(
-							util.Prioritized(transformer, 100),
-						),
-						parser.WithInlineParsers(
-							util.Prioritized(&transform.EmojiKitchenParser{}, 100),
-						),
-					),
-					goldmark.WithRendererOptions(
-						html.WithUnsafe(),
-					),
-				)
+				md := markdown.NewEngine(transformer)
 
 				buf.Reset()
 				if err := convertMarkdown(md, meta.Rest, &buf); err != nil {
@@ -256,7 +242,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 					SoundtrackTheme: meta.SoundtrackTheme,
 					Layout:          meta.Layout,
 					ComplianceModal: meta.ComplianceModal,
-					Content:         template.HTML(sanitizedHTML),
+					Content:         template.HTML(sanitizedHTML), // #nosec G203
 					Description:     desc,
 					Image:           img,
 				}

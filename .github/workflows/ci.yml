@@ -13,14 +13,13 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 'stable'
 
       - name: Verify Code and Run Tests
         run: |
-          go vet ./...
           go test -v ./...

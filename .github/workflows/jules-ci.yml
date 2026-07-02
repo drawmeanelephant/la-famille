@@ -12,17 +12,21 @@ jobs:
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 'stable'
 
       - name: Run Verification Suite
         run: |
-          go vet ./...
           go test -v ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64.5
 
       - name: Auto-Merge Green PRs
         if: success()

@@ -29,7 +29,7 @@ This text needs to be long enough to exceed the one hundred and sixty character 
 func TestWriteMinifiedJSON(t *testing.T) {
 	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "search.json")
-	items := []SearchItem{
+	items := []Item{
 		{Title: "Test", URL: "/test", Tags: []string{"a"}, Snippet: "snip"},
 	}
 	err := WriteMinifiedJSON(path, items)

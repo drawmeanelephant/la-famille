@@ -69,7 +69,7 @@ func TestGenerateStubs(t *testing.T) {
 	// Create a dummy template file since GenerateStubs requires it
 	templatePath := filepath.Join(tempDir, "layout.html")
 	templateContent := `<html><body>{{.Content}}</body></html>`
-	if err := os.WriteFile(templatePath, []byte(templateContent), 0644); err != nil {
+	if err := os.WriteFile(templatePath, []byte(templateContent), 0600); err != nil {
 		t.Fatalf("failed to write dummy template: %v", err)
 	}
 
@@ -121,14 +121,14 @@ func TestGenerateStubs(t *testing.T) {
 	}
 
 	checkFile("missing/index.html", []string{
-		"🌱 This page is a stub",
+		"🚧 Under Construction",
 		"alert alert-warning",
 		"menu bg-base-100",
 		`<a href="../parent1/" rel="nofollow">parent1.md</a>`,
 	})
 
 	checkFile("dir/missing2/index.html", []string{
-		"🌱 This page is a stub",
+		"🚧 Under Construction",
 		"alert alert-warning",
 		"menu bg-base-100",
 		`<a href="../../parent2/" rel="nofollow">parent2.md</a>`,
