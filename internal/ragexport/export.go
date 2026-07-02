@@ -68,14 +68,14 @@ func RunExport(cfg config.Config) error {
 	}
 	defer cfgFile.Close()
 
-	cfgFile.WriteString("<file path=\"assets/\">\n<content>\n")
-	filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "assets"), func(path string, d fs.DirEntry, err error) error {
+	_, _ = cfgFile.WriteString("<file path=\"assets/\">\n<content>\n")
+	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "assets"), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // ignore missing assets dir
 		}
 		// if it's a directory, just print the path with a trailing slash
 		if d.IsDir() {
-			cfgFile.WriteString(filepath.ToSlash(getRel(cfg.ProjectRoot, path)) + "/\n")
+			_, _ = cfgFile.WriteString(filepath.ToSlash(getRel(cfg.ProjectRoot, path)) + "/\n")
 		} else {
 			// for files, print size and name
 			info, err := d.Info()
@@ -83,20 +83,20 @@ func RunExport(cfg config.Config) error {
 			if err == nil {
 				size = info.Size()
 			}
-			cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(getRel(cfg.ProjectRoot, path)), size))
+			_, _ = cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(getRel(cfg.ProjectRoot, path)), size))
 		}
 		return nil
 	})
-	cfgFile.WriteString("</content>\n</file>\n\n")
+	_, _ = cfgFile.WriteString("</content>\n</file>\n\n")
 
-	cfgFile.WriteString("<file path=\"templates/\">\n<content>\n")
-	filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "templates"), func(path string, d fs.DirEntry, err error) error {
+	_, _ = cfgFile.WriteString("<file path=\"templates/\">\n<content>\n")
+	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "templates"), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // ignore missing templates dir
 		}
 		// if it's a directory, just print the path with a trailing slash
 		if d.IsDir() {
-			cfgFile.WriteString(filepath.ToSlash(getRel(cfg.ProjectRoot, path)) + "/\n")
+			_, _ = cfgFile.WriteString(filepath.ToSlash(getRel(cfg.ProjectRoot, path)) + "/\n")
 		} else {
 			// for files, print size and name
 			info, err := d.Info()
@@ -104,11 +104,11 @@ func RunExport(cfg config.Config) error {
 			if err == nil {
 				size = info.Size()
 			}
-			cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(getRel(cfg.ProjectRoot, path)), size))
+			_, _ = cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(getRel(cfg.ProjectRoot, path)), size))
 		}
 		return nil
 	})
-	cfgFile.WriteString("</content>\n</file>\n\n")
+	_, _ = cfgFile.WriteString("</content>\n</file>\n\n")
 
 	fmt.Println("Created rag-config.md")
 

@@ -16,9 +16,9 @@ func TestHTML(t *testing.T) {
 
 	// Setup a fake template
 	tmplDir := filepath.Join(tmpDir, "templates")
-	os.MkdirAll(tmplDir, 0755)
+	_ = os.MkdirAll(tmplDir, 0755)
 	tmplPath := filepath.Join(tmplDir, "layout.html")
-	err := os.WriteFile(tmplPath, []byte("Hello {{.Title}}"), 0644)
+	err := os.WriteFile(tmplPath, []byte("Hello {{.Title}}"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,16 +47,16 @@ func TestHTMLLayoutSelection(t *testing.T) {
 
 	// Setup fake templates
 	tmplDir := filepath.Join(tmpDir, "templates")
-	os.MkdirAll(tmplDir, 0755)
+	_ = os.MkdirAll(tmplDir, 0755)
 
 	defaultTmplPath := filepath.Join(tmplDir, "layout.html")
-	err := os.WriteFile(defaultTmplPath, []byte("Default: {{.Title}}"), 0644)
+	err := os.WriteFile(defaultTmplPath, []byte("Default: {{.Title}}"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	customTmplPath := filepath.Join(tmplDir, "custom.html")
-	err = os.WriteFile(customTmplPath, []byte("Custom: {{.Title}}"), 0644)
+	err = os.WriteFile(customTmplPath, []byte("Custom: {{.Title}}"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestHTMLLayoutSelection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 	err = os.Chdir(tmpDir)
 	if err != nil {
 		t.Fatal(err)
@@ -155,16 +155,16 @@ func TestHTMLLayoutSelection(t *testing.T) {
 func TestDiscoverLayouts(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "layout1.html"), []byte("<html></html>"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "layout1.html"), []byte("<html></html>"), 0600); err != nil {
 		t.Fatalf("Failed to write layout1.html: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "not-a-layout.txt"), []byte("text"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "not-a-layout.txt"), []byte("text"), 0600); err != nil {
 		t.Fatalf("Failed to write not-a-layout.txt: %v", err)
 	}
 	if err := os.MkdirAll(filepath.Join(tmpDir, "partials"), 0755); err != nil {
 		t.Fatalf("Failed to create partials dir: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "partials", "partial.html"), []byte("<div></div>"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "partials", "partial.html"), []byte("<div></div>"), 0600); err != nil {
 		t.Fatalf("Failed to write partial.html: %v", err)
 	}
 
@@ -187,20 +187,20 @@ func TestHTMLWithPartial(t *testing.T) {
 
 	// Setup fake templates directory structure
 	tmplDir := filepath.Join(tmpDir, "templates")
-	os.MkdirAll(tmplDir, 0755)
+	_ = os.MkdirAll(tmplDir, 0755)
 
 	// Layout using a partial
 	tmplPath := filepath.Join(tmplDir, "layout.html")
-	err := os.WriteFile(tmplPath, []byte("Layout: {{template \"partials/footer.html\" .}}"), 0644)
+	err := os.WriteFile(tmplPath, []byte("Layout: {{template \"partials/footer.html\" .}}"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Partial file
 	partialsDir := filepath.Join(tmplDir, "partials")
-	os.MkdirAll(partialsDir, 0755)
+	_ = os.MkdirAll(partialsDir, 0755)
 	partialPath := filepath.Join(partialsDir, "footer.html")
-	err = os.WriteFile(partialPath, []byte("Footer - {{.Title}}"), 0644)
+	err = os.WriteFile(partialPath, []byte("Footer - {{.Title}}"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +210,7 @@ func TestHTMLWithPartial(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 	err = os.Chdir(tmpDir)
 	if err != nil {
 		t.Fatal(err)

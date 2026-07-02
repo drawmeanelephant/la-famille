@@ -57,6 +57,10 @@ The commands above will get you started, but La Famille has a lot more to offer.
 ---
 *Generated with ❤️ by Jules*
 
+
+### CI/Testing
+La Famille uses a comprehensive automated testing pipeline. All code merges are gated by passing `go test` and static analysis provided by `golangci-lint` to ensure security and code quality.
+
 ## GitHub Action 🤖
 
 You can easily build your La Famille site in CI using our GitHub Action:

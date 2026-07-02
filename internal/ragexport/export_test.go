@@ -18,7 +18,7 @@ func TestRunExport_ProjectRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = os.WriteFile(filepath.Join(tempDir, "internal", "foo", "foo.go"), []byte("package foo"), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "internal", "foo", "foo.go"), []byte("package foo"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func TestRunExport_ProjectRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = os.WriteFile(filepath.Join(tempDir, "assets", "logo.png"), []byte("PNG"), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "assets", "logo.png"), []byte("PNG"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,11 +74,11 @@ func TestRunExport_RootLevelMatch(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Should be included (root)
-	err := os.WriteFile(filepath.Join(tempDir, "README.md"), []byte("Root README"), 0644)
+	err := os.WriteFile(filepath.Join(tempDir, "README.md"), []byte("Root README"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = os.WriteFile(filepath.Join(tempDir, "root.go"), []byte("package main"), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "root.go"), []byte("package main"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,11 +88,11 @@ func TestRunExport_RootLevelMatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = os.WriteFile(filepath.Join(tempDir, "nested", "README.md"), []byte("Nested README"), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "nested", "README.md"), []byte("Nested README"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = os.WriteFile(filepath.Join(tempDir, "nested", "nested.go"), []byte("package nested"), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "nested", "nested.go"), []byte("package nested"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}

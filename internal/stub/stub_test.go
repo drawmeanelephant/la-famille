@@ -69,7 +69,7 @@ func TestGenerateStubs(t *testing.T) {
 	// Create a dummy template file since GenerateStubs requires it
 	templatePath := filepath.Join(tempDir, "layout.html")
 	templateContent := `<html><body>{{.Content}}</body></html>`
-	if err := os.WriteFile(templatePath, []byte(templateContent), 0644); err != nil {
+	if err := os.WriteFile(templatePath, []byte(templateContent), 0600); err != nil {
 		t.Fatalf("failed to write dummy template: %v", err)
 	}
 

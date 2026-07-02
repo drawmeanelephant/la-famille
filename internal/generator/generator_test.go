@@ -18,25 +18,25 @@ func TestBuild_MarkdownConversionError(t *testing.T) {
 	outputDir := filepath.Join(tempDir, "public")
 	templateDir := filepath.Join(tempDir, "templates")
 
-	os.MkdirAll(contentDir, 0755)
-	os.MkdirAll(templateDir, 0755)
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(templateDir, 0755)
 
 	templatePath := filepath.Join(templateDir, "layout.html")
-	os.WriteFile(templatePath, []byte("{{.Content}}"), 0644)
+	_ = os.WriteFile(templatePath, []byte("{{.Content}}"), 0600)
 
 	cfg := config.DefaultConfig()
 	cfg.ContentDir = contentDir
 	cfg.OutputDir = outputDir
 	cfg.Template = templatePath
 
-	os.WriteFile(filepath.Join(contentDir, "test1.md"), []byte("# Hello 1"), 0644)
-	os.WriteFile(filepath.Join(contentDir, "test2.md"), []byte("# Hello 2"), 0644)
+	_ = os.WriteFile(filepath.Join(contentDir, "test1.md"), []byte("# Hello 1"), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "test2.md"), []byte("# Hello 2"), 0600)
 
 	// Mock convertMarkdown to always fail
 	originalConvert := convertMarkdown
 	defer func() { convertMarkdown = originalConvert }()
 
-	convertMarkdown = func(md goldmark.Markdown, source []byte, w *bytes.Buffer) error {
+	convertMarkdown = func(_ goldmark.Markdown, _ []byte, _ *bytes.Buffer) error {
 		return errors.New("simulated conversion error")
 	}
 
@@ -60,18 +60,18 @@ func TestBuild_Success(t *testing.T) {
 	outputDir := filepath.Join(tempDir, "public")
 	templateDir := filepath.Join(tempDir, "templates")
 
-	os.MkdirAll(contentDir, 0755)
-	os.MkdirAll(templateDir, 0755)
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(templateDir, 0755)
 
 	templatePath := filepath.Join(templateDir, "layout.html")
-	os.WriteFile(templatePath, []byte("{{.Content}}"), 0644)
+	_ = os.WriteFile(templatePath, []byte("{{.Content}}"), 0600)
 
 	cfg := config.DefaultConfig()
 	cfg.ContentDir = contentDir
 	cfg.OutputDir = outputDir
 	cfg.Template = templatePath
 
-	os.WriteFile(filepath.Join(contentDir, "test.md"), []byte("# Hello"), 0644)
+	_ = os.WriteFile(filepath.Join(contentDir, "test.md"), []byte("# Hello"), 0600)
 
 	_, err := Build(cfg)
 	if err != nil {
@@ -87,15 +87,15 @@ func TestGeneratorSEO(t *testing.T) {
 	ragDir := filepath.Join(tempDir, "rag-archive")
 	tmplDir := filepath.Join(tempDir, "templates")
 
-	os.MkdirAll(contentDir, 0755)
-	os.MkdirAll(outDir, 0755)
-	os.MkdirAll(assetDir, 0755)
-	os.MkdirAll(ragDir, 0755)
-	os.MkdirAll(tmplDir, 0755)
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(outDir, 0755)
+	_ = os.MkdirAll(assetDir, 0755)
+	_ = os.MkdirAll(ragDir, 0755)
+	_ = os.MkdirAll(tmplDir, 0755)
 
 	tmplPath := filepath.Join(tmplDir, "layout.html")
 	tmplContent := `<!DOCTYPE html><html><head><title>{{.Title}}</title><meta name="description" content="{{.Description}}"><meta property="og:image" content="{{.Image}}"></head><body>{{.Content}}</body></html>`
-	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0644); err != nil {
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0600); err != nil {
 		t.Fatalf("failed to write template: %v", err)
 	}
 
@@ -106,7 +106,7 @@ image: "/images/test-seo.png"
 ---
 # Hello SEO`
 	mdPath := filepath.Join(contentDir, "test.md")
-	if err := os.WriteFile(mdPath, []byte(mdContent), 0644); err != nil {
+	if err := os.WriteFile(mdPath, []byte(mdContent), 0600); err != nil {
 		t.Fatalf("failed to write markdown file: %v", err)
 	}
 

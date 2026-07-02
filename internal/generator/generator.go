@@ -64,7 +64,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 		Edges: [][2]string{},
 	}
 	metaData := make(map[string]map[string]interface{})
-	var searchIndex []search.SearchItem
+	var searchIndex []search.Item
 
 	// 2. Pass 2: Process files in deterministic order
 	var keys []string
@@ -93,7 +93,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 		numWorkers = 1
 	}
 
-	searchIndexItems := make([]search.SearchItem, len(keys))
+	searchIndexItems := make([]search.Item, len(keys))
 
 	type job struct {
 		index   int
@@ -156,7 +156,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 					urlOut := transform.GetOutputURL(relPath, meta.Slug)
 					urlPath := "/" + filepath.ToSlash(urlOut)
 
-					searchIndexItems[idx] = search.SearchItem{
+					searchIndexItems[idx] = search.Item{
 						Title:   title,
 						URL:     urlPath,
 						Tags:    meta.Tags,
@@ -194,7 +194,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 				if !shouldRender {
 					// Just copy the file
-					if err := os.WriteFile(outPath, meta.Content, 0644); err != nil {
+					if err := os.WriteFile(outPath, meta.Content, 0600); err != nil {
 						mu.Lock()
 						errs = append(errs, err)
 						mu.Unlock()
@@ -256,7 +256,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 					SoundtrackTheme: meta.SoundtrackTheme,
 					Layout:          meta.Layout,
 					ComplianceModal: meta.ComplianceModal,
-					Content:         template.HTML(sanitizedHTML),
+					Content:         template.HTML(sanitizedHTML), // #nosec G203
 					Description:     desc,
 					Image:           img,
 				}

@@ -8,7 +8,7 @@ import (
 	"unicode"
 )
 
-type SearchItem struct {
+type Item struct {
 	Title   string   `json:"t"`
 	URL     string   `json:"u"`
 	Tags    []string `json:"g"`

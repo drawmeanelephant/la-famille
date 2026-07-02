@@ -148,7 +148,7 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 		pageStruct := page.Page{
 			Site:    cfg,
 			Title:   "Missing Page",
-			Content: template.HTML(p.SanitizeBytes([]byte(htmlContent.String()))),
+			Content: template.HTML(p.SanitizeBytes([]byte(htmlContent.String()))), // #nosec G203
 		}
 
 		outFile, err := os.Create(outPath)

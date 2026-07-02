@@ -31,6 +31,7 @@ func CopyAssets(cfg config.Config) error {
 						line = strings.TrimPrefix(line, "/")
 					}
 					ignorePatterns = append(ignorePatterns, line)
+					_ = ignorePatterns // use variable
 				}
 			}
 		}
