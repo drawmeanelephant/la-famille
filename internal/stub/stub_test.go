@@ -121,14 +121,14 @@ func TestGenerateStubs(t *testing.T) {
 	}
 
 	checkFile("missing/index.html", []string{
-		"🌱 This page is a stub",
+		"🚧 Under Construction",
 		"alert alert-warning",
 		"menu bg-base-100",
 		`<a href="../parent1/" rel="nofollow">parent1.md</a>`,
 	})
 
 	checkFile("dir/missing2/index.html", []string{
-		"🌱 This page is a stub",
+		"🚧 Under Construction",
 		"alert alert-warning",
 		"menu bg-base-100",
 		`<a href="../../parent2/" rel="nofollow">parent2.md</a>`,
