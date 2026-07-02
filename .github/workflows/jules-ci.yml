@@ -21,8 +21,12 @@ jobs:
 
       - name: Run Verification Suite
         run: |
-          go vet ./...
           go test -v ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64.5
 
       - name: Auto-Merge Green PRs
         if: success()

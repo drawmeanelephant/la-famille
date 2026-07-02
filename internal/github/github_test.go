@@ -17,7 +17,7 @@ func TestAreChecksPassing(t *testing.T) {
 					{Status: "completed", Conclusion: "skipped"},
 				},
 			}
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		if r.URL.Path == "/repos/owner/repo/commits/sha456/check-runs" {
@@ -27,7 +27,7 @@ func TestAreChecksPassing(t *testing.T) {
 					{Status: "in_progress"},
 				},
 			}
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		if r.URL.Path == "/repos/owner/repo/commits/sha789/check-runs" {
@@ -37,7 +37,7 @@ func TestAreChecksPassing(t *testing.T) {
 					{Status: "completed", Conclusion: "failure"},
 				},
 			}
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)

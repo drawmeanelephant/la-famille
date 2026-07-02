@@ -89,7 +89,7 @@ func GenerateTags(cfg config.Config, fileMap map[string]*content.FileMeta, rende
 		pageStruct := page.Page{
 			Site:    cfg,
 			Title:   fmt.Sprintf("Tag: %s", tag),
-			Content: template.HTML(sanitizedHTML),
+			Content: template.HTML(sanitizedHTML), // #nosec G203
 		}
 
 		if err := renderer.HTML(cfg, pageStruct, "", outPath); err != nil {

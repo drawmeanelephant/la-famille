@@ -23,10 +23,10 @@ type LinkTransformer struct {
 	Mu           *sync.Mutex
 }
 
-func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
-	sourceId := strings.TrimSuffix(t.CurrentFile, ".md")
+func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
+	sourceID := strings.TrimSuffix(t.CurrentFile, ".md")
 
-	ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
 		}
@@ -53,12 +53,12 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, pc p
 				return ast.WalkContinue, nil
 			}
 
-			targetId := strings.TrimSuffix(targetRelPath, ".md")
+			targetID := strings.TrimSuffix(targetRelPath, ".md")
 			if t.Mu != nil {
 				t.Mu.Lock()
 			}
-			t.Graph.Edges = append(t.Graph.Edges, [2]string{sourceId, targetId})
-			t.Backlinks[targetId] = append(t.Backlinks[targetId], sourceId)
+			t.Graph.Edges = append(t.Graph.Edges, [2]string{sourceID, targetID})
+			t.Backlinks[targetID] = append(t.Backlinks[targetID], sourceID)
 			if t.Mu != nil {
 				t.Mu.Unlock()
 			}
@@ -69,6 +69,7 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, pc p
 			// If target exists and render is explicitly false, keep as .md
 			if exists && meta.Render != nil && !*meta.Render {
 				// keep it as .md, no change needed
+				_ = meta
 			} else {
 				slug := ""
 				if exists && meta != nil {

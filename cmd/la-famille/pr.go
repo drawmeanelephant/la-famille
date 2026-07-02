@@ -19,7 +19,7 @@ var prSyncCmd = &cobra.Command{
 	Long: `Fetches open pull requests by automation agents.
 Closes stale/conflicting PRs and merges passing ones.
 If there are local uncommitted changes, branches and creates a new PR.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		token := os.Getenv("GITHUB_TOKEN")
 		if token == "" {
 			return fmt.Errorf("GITHUB_TOKEN environment variable must be set")

@@ -30,7 +30,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	var buildCmd = &cobra.Command{
 		Use:   "build",
 		Short: "Build the static site",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			// Update config from flags
 			cfg.ContentDir = contentDir
 			cfg.OutputDir = outputDir
@@ -47,7 +47,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	var initCmd = &cobra.Command{
 		Use:   "init",
 		Short: "Initialize default configuration",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			if err := config.WriteDefault("config.yaml"); err != nil {
 				return fmt.Errorf("failed to write config.yaml: %w", err)
 			}
@@ -59,7 +59,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	var ragCmd = &cobra.Command{
 		Use:   "rag",
 		Short: "Export project files into RAG-friendly markdown bundles",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return ragexport.RunExport(cfg)
 		},
 	}
@@ -69,7 +69,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	var serveCmd = &cobra.Command{
 		Use:   "serve",
 		Short: "Start a local web server to serve the generated site",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			// Serve OutputDir
 			dir := cfg.OutputDir
 			port := servePort
@@ -86,7 +86,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 				if _, err := generator.Build(cfg); err != nil {
 					log.Printf("Initial build failed: %v", err)
 				}
-				go watcher.Watch(context.Background(), cfg, nil)
+				go func() { _ = watcher.Watch(context.Background(), cfg, nil) }()
 			}
 
 			fmt.Printf("Serving %s on http://localhost:%d\n", dir, port)

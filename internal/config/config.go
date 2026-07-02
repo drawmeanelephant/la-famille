@@ -99,7 +99,7 @@ theme: "retro"
 # port: The port on which the local development server will run.
 port: 8080
 `
-	return os.WriteFile(filepath, []byte(defaultYaml), 0644)
+	return os.WriteFile(filepath, []byte(defaultYaml), 0600)
 }
 
 // Validate checks that the configuration values are safe and correct.

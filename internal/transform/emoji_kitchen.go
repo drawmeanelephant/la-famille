@@ -16,7 +16,7 @@ func (p *EmojiKitchenParser) Trigger() []byte {
 	return []byte{'!'}
 }
 
-func (p *EmojiKitchenParser) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
+func (p *EmojiKitchenParser) Parse(_ ast.Node, block text.Reader, _ parser.Context) ast.Node {
 	line, _ := block.PeekLine()
 	re := regexp.MustCompile(`^!ek\[([^\+\]]+)\+([^\]]+)\]`)
 	match := re.FindSubmatchIndex(line)

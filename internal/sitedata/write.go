@@ -51,7 +51,7 @@ func Write(outputDir string, metaData map[string]map[string]interface{}) error {
 	}
 	sitemapBuilder.WriteString("</urlset>\n")
 
-	if err := os.WriteFile(sitemapPath, []byte(sitemapBuilder.String()), 0644); err != nil {
+	if err := os.WriteFile(sitemapPath, []byte(sitemapBuilder.String()), 0600); err != nil {
 		return fmt.Errorf("failed to write sitemap.xml: %w", err)
 	}
 
