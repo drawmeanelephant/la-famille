@@ -14,10 +14,10 @@ Date: 2026-06-19
 2. **Refactor Conservatively:** Move or reshape only the selected seam. Do not combine this with unrelated rewrites.
 3. **Preserve Behavior:** The generated output should remain functionally identical unless a bug is explicitly being fixed.
 4. **Strengthen Coverage:** Add or update unit tests or fixture tests to lock in the intended behavior of the extracted seam.
-5. **Record Learnings:** If the refactor reveals a structural pattern worth repeating, log it in `.jules/architecture.md`.
+5. **Record Learnings:** If the refactor reveals a structural pattern worth repeating, log it in `.julesarchitecture.md`.
 
 ## Execution Reminders
-* Next logical seams to extract from `main.go` would be `linkTransformer` (AST traversal and link rewriting) and the HTML rendering phase.
+* Next logical seams to extract would be moving the web server (`serveCmd` logic) out of `main.go` into an `internal/server` package.
 * Keep the change narrow and reversible.
 * Prefer descriptive package boundaries over clever abstractions.
 * Run `go test ./...` and `go vet ./...` before finishing.

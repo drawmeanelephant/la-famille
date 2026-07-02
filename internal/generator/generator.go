@@ -8,22 +8,20 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
-	"runtime"
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
-	"github.com/yuin/goldmark/util"
 
 	"github.com/tbuddy/la-famille/internal/asset"
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/graph"
+	"github.com/tbuddy/la-famille/internal/markdown"
 	"github.com/tbuddy/la-famille/internal/page"
 	"github.com/tbuddy/la-famille/internal/render"
 	"github.com/tbuddy/la-famille/internal/search"
@@ -78,14 +76,12 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 	var errs []error
 
-
 	p := bluemonday.UGCPolicy()
 	p.AllowAttrs("class").Globally()
 
 	if err := taxonomy.GenerateTags(cfg, fileMap, renderer, p); err != nil {
 		return result, err
 	}
-
 
 	var mu sync.Mutex
 	numWorkers := runtime.NumCPU()
@@ -212,19 +208,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 					Mu:           &mu,
 				}
 
-				md := goldmark.New(
-					goldmark.WithParserOptions(
-						parser.WithASTTransformers(
-							util.Prioritized(transformer, 100),
-						),
-						parser.WithInlineParsers(
-							util.Prioritized(&transform.EmojiKitchenParser{}, 100),
-						),
-					),
-					goldmark.WithRendererOptions(
-						html.WithUnsafe(),
-					),
-				)
+				md := markdown.NewEngine(transformer)
 
 				buf.Reset()
 				if err := convertMarkdown(md, meta.Rest, &buf); err != nil {
