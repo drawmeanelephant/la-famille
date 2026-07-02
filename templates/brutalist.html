@@ -78,7 +78,7 @@
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 border-4 border-black p-8 bg-white brutalist-border">
             <div class="flex items-center gap-6">
                 <div class="border-4 border-black p-2 bg-yellow-400">
-                    <img src="/assets/img/jules-logo.png" alt="La Famille" class="h-20 w-20 grayscale contrast-125" />
+                    <img src="/assets/img/mascot-default.jpeg" alt="La Famille" class="h-20 w-20 grayscale contrast-125 border-4 border-black brutalist-border" />
                 </div>
                 <div>
                     <h1 class="text-6xl font-black uppercase tracking-tighter leading-none">LA FAMILLE</h1>
@@ -86,7 +86,13 @@
                 </div>
             </div>
             <nav aria-label="Main Navigation">
-                <ul class="flex flex-wrap gap-4">
+
+                <a href="#mobile-menu" class="btn btn-square brutalist-btn btn-ghost md:hidden focus-visible:outline-2" aria-label="Toggle menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current" aria-hidden="true" focusable="false">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </a>
+                <ul class="hidden md:flex flex-wrap gap-4">
                     <li><a href="/" class="focus-visible:outline-none brutalist-btn btn-ghost">HOME</a></li>
                     <li><a href="/docs/index.html" class="focus-visible:outline-none brutalist-btn btn-primary">ARCHIVES</a></li>
                     <li><a href="/soundtrack/index.html" class="focus-visible:outline-none brutalist-btn btn-secondary">AUDIO</a></li>
@@ -121,9 +127,9 @@
                 <div class="border-4 border-black p-6 bg-yellow-400 brutalist-border-sm">
                     <h3 class="text-2xl font-black uppercase mb-4 border-b-4 border-black pb-2">QUICK NAV</h3>
                     <ul class="space-y-2 font-black uppercase">
-                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:bg-black focus-visible:text-white">-> SYSTEM LOGS</a></li>
-                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:bg-black focus-visible:text-white">-> RAW FEED</a></li>
-                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:bg-black focus-visible:text-white">-> CORE ASSETS</a></li>
+                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:outline-2 focus-visible:bg-black focus-visible:text-white">-> SYSTEM LOGS</a></li>
+                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:outline-2 focus-visible:bg-black focus-visible:text-white">-> RAW FEED</a></li>
+                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:outline-2 focus-visible:bg-black focus-visible:text-white">-> CORE ASSETS</a></li>
                     </ul>
                 </div>
             </aside>
@@ -149,7 +155,7 @@
                     {{end}}
                 </header>
 
-                <div class="prose lg:prose-xl max-w-none prose-headings:uppercase prose-headings:font-black prose-headings:tracking-tighter prose-a:font-black prose-a:underline prose-a:focus-visible:bg-black prose-a:focus-visible:text-white prose-a:focus-visible:outline-none prose-img:border-4 prose-img:border-black prose-img:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                <div class="prose lg:prose-xl max-w-none prose-headings:uppercase prose-headings:font-black prose-headings:tracking-tighter prose-a:font-black prose-a:underline prose-a:focus-visible:bg-black prose-a:focus-visible:text-white prose-a:focus-visible:outline-none prose-a:focus-visible:outline-2 prose-img:border-4 prose-img:border-black prose-img:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                     {{.Content}}
                 </div>
             </article>
@@ -171,15 +177,15 @@
                 <div>
                     <h4 class="font-black uppercase mb-4 text-lg">LEGAL</h4>
                     <ul class="font-bold uppercase space-y-2 text-sm">
-                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:bg-black focus-visible:text-white">TERMS OF SERVICE</a></li>
-                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:bg-black focus-visible:text-white">PRIVACY POLICY</a></li>
-                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:bg-black focus-visible:text-white">SYSTEM ACCESS</a></li>
+                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:outline-2 focus-visible:bg-black focus-visible:text-white">TERMS OF SERVICE</a></li>
+                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:outline-2 focus-visible:bg-black focus-visible:text-white">PRIVACY POLICY</a></li>
+                        <li><a href="#" class="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:outline-2 focus-visible:bg-black focus-visible:text-white">SYSTEM ACCESS</a></li>
                     </ul>
                 </div>
 
                 <div class="flex flex-col items-center md:items-end justify-center">
                     <div class="border-4 border-black p-4 bg-white brutalist-border-sm inline-block">
-                        <img src="/assets/img/mascot-40.jpeg" alt="Official Badge" class="h-24 w-24 grayscale" aria-hidden="true" focusable="false" />
+                        <img src="/assets/img/mascot-default.jpeg" alt="Official Badge" class="h-24 w-24 grayscale border-4 border-black brutalist-border" aria-hidden="true" focusable="false" />
                     </div>
                     <p class="mt-4 font-black text-xs uppercase text-center md:text-right">
                         BUILT IN GO AND JULES AND DAISYUI BY GOOGLE
