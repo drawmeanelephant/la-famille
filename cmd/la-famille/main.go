@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -70,6 +73,9 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		Use:   "serve",
 		Short: "Start a local web server to serve the generated site",
 		RunE: func(_ *cobra.Command, _ []string) error {
+			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+			defer stop()
+
 			// Serve OutputDir
 			dir := cfg.OutputDir
 			port := servePort
@@ -91,7 +97,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			}
 
 			if watchMode {
-				go func() { _ = watcher.Watch(context.Background(), cfg, nil) }()
+				go func() { _ = watcher.Watch(ctx, cfg, nil) }()
 			}
 
 			fmt.Printf("Serving %s on http://localhost:%d\n", dir, port)
@@ -109,7 +115,22 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 				Handler:           mux,
 				ReadHeaderTimeout: 5 * time.Second,
 			}
-			return server.ListenAndServe()
+
+			errChan := make(chan error, 1)
+			go func() {
+				if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					errChan <- err
+				}
+			}()
+
+			select {
+			case err := <-errChan:
+				return err
+			case <-ctx.Done():
+				shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				return server.Shutdown(shutdownCtx)
+			}
 		},
 	}
 	serveCmd.Flags().IntVarP(&servePort, "port", "p", 0, "Port to run the server on (overrides config)")
