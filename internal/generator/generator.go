@@ -112,150 +112,161 @@ func Build(cfg config.Config) (BuildResult, error) {
 			defer wg.Done()
 			var buf bytes.Buffer
 			for j := range jobs {
-				relPath := j.relPath
-				idx := j.index
-				meta := fileMap[relPath]
-				shouldRender := true
-				if meta.Render != nil && !*meta.Render {
-					shouldRender = false
-				}
-
-				id := strings.TrimSuffix(relPath, ".md")
-
-				mu.Lock()
-				g.Nodes[id] = graph.Node{
-					Type:   "page",
-					Render: shouldRender,
-				}
-				mu.Unlock()
-
-				m := make(map[string]interface{})
-				title := meta.Title
-				if title == "" {
-					title = filepath.Base(relPath)
-				}
-				m["title"] = title
-				if meta.Author != "" {
-					m["author"] = meta.Author
-				}
-				if meta.Date != "" {
-					m["date"] = meta.Date
-				}
-				if meta.Tags != nil {
-					m["tags"] = meta.Tags
-				}
-				m["word_count"] = len(strings.Fields(string(meta.Rest)))
-
-				mu.Lock()
-				metaData[id] = m
-				mu.Unlock()
-
-				if shouldRender {
-					urlOut := transform.GetOutputURL(relPath, meta.Slug)
-					urlPath := "/" + filepath.ToSlash(urlOut)
-
-					searchIndexItems[idx] = search.Item{
-						Title:   title,
-						URL:     urlPath,
-						Tags:    meta.Tags,
-						Snippet: search.ExtractSnippet(meta.Rest),
+				func() {
+					type jobUpdate struct {
+						node      graph.Node
+						meta      map[string]interface{}
+						errs      []error
+						errCount  int
+						pageCount int
 					}
-				}
+					var update jobUpdate
 
-				outDirClean := filepath.Clean(cfg.OutputDir)
-				outPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
-				if !strings.HasPrefix(outPath, outDirClean+string(filepath.Separator)) && outPath != outDirClean {
-					mu.Lock()
-					result.ErrorCount++
-					mu.Unlock()
-					log.Printf("Warning: Potential path traversal in page loading detected: %s. Skipping.", relPath)
-					continue
-				}
-				if shouldRender {
-					slug := meta.Slug
-					if slug != "" {
-						if !filepath.IsLocal(slug) || strings.Contains(slug, ".") || strings.Contains(slug, string(filepath.Separator)) || strings.Contains(slug, "/") {
-							log.Printf("Warning: Invalid slug %q for %s. Ignoring.", slug, relPath)
-							slug = ""
+					relPath := j.relPath
+					idx := j.index
+					meta := fileMap[relPath]
+					shouldRender := true
+					if meta.Render != nil && !*meta.Render {
+						shouldRender = false
+					}
+
+					id := strings.TrimSuffix(relPath, ".md")
+
+					update.node = graph.Node{
+						Type:   "page",
+						Render: shouldRender,
+					}
+
+					m := make(map[string]interface{})
+					title := meta.Title
+					if title == "" {
+						title = filepath.Base(relPath)
+					}
+					m["title"] = title
+					if meta.Author != "" {
+						m["author"] = meta.Author
+					}
+					if meta.Date != "" {
+						m["date"] = meta.Date
+					}
+					if meta.Tags != nil {
+						m["tags"] = meta.Tags
+					}
+					m["word_count"] = len(strings.Fields(string(meta.Rest)))
+
+					update.meta = m
+
+					defer func() {
+						mu.Lock()
+						g.Nodes[id] = update.node
+						metaData[id] = update.meta
+						if update.errCount > 0 {
+							result.ErrorCount += update.errCount
+						}
+						if update.pageCount > 0 {
+							result.PageCount += update.pageCount
+						}
+						if len(update.errs) > 0 {
+							errs = append(errs, update.errs...)
+						}
+						mu.Unlock()
+					}()
+
+					if shouldRender {
+						urlOut := transform.GetOutputURL(relPath, meta.Slug)
+						urlPath := "/" + filepath.ToSlash(urlOut)
+
+						searchIndexItems[idx] = search.Item{
+							Title:   title,
+							URL:     urlPath,
+							Tags:    meta.Tags,
+							Snippet: search.ExtractSnippet(meta.Rest),
 						}
 					}
-					relOut := transform.GetOutputURL(relPath, slug)
-					outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
-				}
 
-				if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-					mu.Lock()
-					errs = append(errs, err)
-					mu.Unlock()
-					continue
-				}
-
-				if !shouldRender {
-					// Just copy the file
-					if err := os.WriteFile(outPath, meta.Content, 0600); err != nil {
-						mu.Lock()
-						errs = append(errs, err)
-						mu.Unlock()
+					outDirClean := filepath.Clean(cfg.OutputDir)
+					outPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
+					if !strings.HasPrefix(outPath, outDirClean+string(filepath.Separator)) && outPath != outDirClean {
+						update.errCount++
+						log.Printf("Warning: Potential path traversal in page loading detected: %s. Skipping.", relPath)
+						return
 					}
-					continue
-				}
+					if shouldRender {
+						slug := meta.Slug
+						if slug != "" {
+							if !filepath.IsLocal(slug) || strings.Contains(slug, ".") || strings.Contains(slug, string(filepath.Separator)) || strings.Contains(slug, "/") {
+								log.Printf("Warning: Invalid slug %q for %s. Ignoring.", slug, relPath)
+								slug = ""
+							}
+						}
+						relOut := transform.GetOutputURL(relPath, slug)
+						outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
+					}
 
-				// Set up goldmark with AST transformer
-				transformer := &transform.LinkTransformer{
-					CurrentFile:  relPath,
-					FileMap:      fileMap,
-					MissingFiles: missingFiles,
-					Backlinks:    backlinks,
-					Graph:        &g,
-					Mu:           &mu,
-				}
+					if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+						update.errs = append(update.errs, err)
+						return
+					}
 
-				md := markdown.NewEngine(transformer)
+					if !shouldRender {
+						// Just copy the file
+						if err := os.WriteFile(outPath, meta.Content, 0600); err != nil {
+							update.errs = append(update.errs, err)
+						}
+						return
+					}
 
-				buf.Reset()
-				if err := convertMarkdown(md, meta.Rest, &buf); err != nil {
-					mu.Lock()
-					result.ErrorCount++
-					errs = append(errs, fmt.Errorf("error converting %s: %w", relPath, err))
-					mu.Unlock()
-					continue
-				}
+					// Set up goldmark with AST transformer
+					transformer := &transform.LinkTransformer{
+						CurrentFile:  relPath,
+						FileMap:      fileMap,
+						MissingFiles: missingFiles,
+						Backlinks:    backlinks,
+						Graph:        &g,
+						Mu:           &mu,
+					}
 
-				sanitizedHTML := p.SanitizeBytes(buf.Bytes())
+					md := markdown.NewEngine(transformer)
 
-				desc := meta.Description
-				if desc == "" {
-					desc = cfg.DefaultDescription
-				}
-				img := meta.Image
-				if img == "" {
-					img = cfg.DefaultOGImage
-				}
+					buf.Reset()
+					if err := convertMarkdown(md, meta.Rest, &buf); err != nil {
+						update.errCount++
+						update.errs = append(update.errs, fmt.Errorf("error converting %s: %w", relPath, err))
+						return
+					}
 
-				page := page.Page{
-					Site:            cfg,
-					Title:           title,
-					Author:          meta.Author,
-					Date:            meta.Date,
-					VideoScript:     meta.VideoScript,
-					AnimationCues:   meta.AnimationCues,
-					SoundtrackTheme: meta.SoundtrackTheme,
-					Layout:          meta.Layout,
-					ComplianceModal: meta.ComplianceModal,
-					Content:         template.HTML(sanitizedHTML), // #nosec G203
-					Description:     desc,
-					Image:           img,
-				}
+					sanitizedHTML := p.SanitizeBytes(buf.Bytes())
 
-				if err := renderer.HTML(cfg, page, meta.Layout, outPath); err != nil {
-					mu.Lock()
-					errs = append(errs, err)
-					mu.Unlock()
-					continue
-				}
-				mu.Lock()
-				result.PageCount++
-				mu.Unlock()
+					desc := meta.Description
+					if desc == "" {
+						desc = cfg.DefaultDescription
+					}
+					img := meta.Image
+					if img == "" {
+						img = cfg.DefaultOGImage
+					}
+
+					page := page.Page{
+						Site:            cfg,
+						Title:           title,
+						Author:          meta.Author,
+						Date:            meta.Date,
+						VideoScript:     meta.VideoScript,
+						AnimationCues:   meta.AnimationCues,
+						SoundtrackTheme: meta.SoundtrackTheme,
+						Layout:          meta.Layout,
+						ComplianceModal: meta.ComplianceModal,
+						Content:         template.HTML(sanitizedHTML), // #nosec G203
+						Description:     desc,
+						Image:           img,
+					}
+
+					if err := renderer.HTML(cfg, page, meta.Layout, outPath); err != nil {
+						update.errs = append(update.errs, err)
+						return
+					}
+					update.pageCount++
+				}()
 			}
 		}()
 	}
