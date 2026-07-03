@@ -50,6 +50,9 @@ The commands above will get you started, but La Famille has a lot more to offer.
 *   **[Setup & Getting Started](content/docs/setup.md)**
 *   **[CLI Reference](content/docs/cli.md)**
 *   **[Using the TUI](content/docs/tui.md)**
+*   **[Configuration Guide](content/docs/config.md)**
+*   **[Frontmatter Guide](content/docs/frontmatter.md)**
+*   **[Emoji Kitchen Stickers](content/docs/emoji.md)**
 *   **[Templating Guide](content/docs/templates.md)**
 *   **[RAG Export Guide](content/docs/rag.md)**
 *   **[How the Generator Works](content/docs/generator.md)**

@@ -1,0 +1,27 @@
+<!-- Always-on Hamburger Menu -->
+<nav aria-label="Main Navigation" class="fixed top-4 right-4 z-50">
+  <div class="dropdown dropdown-end">
+    <div tabindex="0" role="button" aria-expanded="false" class="btn btn-ghost btn-circle hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary border-2 border-base-content/20 hover:border-base-content shadow-sm bg-base-100">
+      <img src="https://www.gstatic.com/android/keyboard/emojikitchen/20241021/u1f419/u1f419_u1f354.png" aria-hidden="true" focusable="false" class="w-8 h-8" alt="Octopus Burger Menu Icon" />
+    </div>
+    <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-xl border-2 border-base-content mt-2 gap-1">
+      <li><a href="/" class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary font-bold">Home</a></li>
+      <li><a href="#" class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary font-bold">Menu</a></li>
+      <li><a href="#" class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary font-bold">History</a></li>
+      <li><a href="#" class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary font-bold">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Cookie Consent Toast -->
+{{if .Site.CookieNotice}}
+<div class="toast toast-bottom toast-center z-50 w-full sm:w-auto px-4">
+  <div id="cookie-alert" class="hidden alert alert-warning shadow-xl border-2 border-base-content flex flex-col sm:flex-row gap-4 items-center">
+    <span class="font-bold text-center sm:text-left text-warning-content">We use cookies to make your octopus burgers extra tasty.</span>
+    <div class="flex gap-2">
+      <button id="cookie-accept" class="btn btn-primary btn-sm border-2 border-base-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-base-content">Accept</button>
+      <button id="cookie-decline" class="btn btn-ghost btn-sm border-2 border-base-content hover:bg-warning-content hover:text-warning focus-visible:outline focus-visible:outline-2 focus-visible:outline-base-content" aria-label="Dismiss notification">Decline</button>
+    </div>
+  </div>
+</div>
+{{end}}

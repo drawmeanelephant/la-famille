@@ -28,6 +28,7 @@ type Config struct {
 	ProjectRoot        string     `yaml:"project_root"`
 	DefaultDescription string     `yaml:"default_description"`
 	DefaultOGImage     string     `yaml:"default_og_image"`
+	CookieNotice       bool       `yaml:"cookienotice"`
 	WatchMode          bool       `yaml:"-"`
 	SiteLinks          []SiteLink `yaml:"site_links"`
 }
@@ -44,6 +45,7 @@ func DefaultConfig() Config {
 		Theme:      "retro",
 		Port:       8080,
 		ProjectRoot: ".",
+		CookieNotice: true,
 	}
 }
 
@@ -96,6 +98,9 @@ rag_dir: "rag-archive"
 
 # theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
 theme: "retro"
+
+# cookienotice: Whether to show the cookie consent toast banner.
+cookienotice: true
 
 # default_description: A default description for SEO meta tags.
 # default_description: "A wonderful site built with La Famille"

@@ -137,7 +137,6 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 			r.mu.Unlock()
 			return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
 		}
-
 		for name, path := range partials {
 			pb, err := os.ReadFile(path)
 			if err != nil {
