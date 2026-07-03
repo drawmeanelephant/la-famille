@@ -64,7 +64,7 @@ func findPartials() (map[string]string, error) {
 }
 
 func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta) error {
-	var missingKeys []string
+	missingKeys := make([]string, 0, len(missingFiles))
 	for k := range missingFiles {
 		missingKeys = append(missingKeys, k)
 	}

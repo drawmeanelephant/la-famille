@@ -7,7 +7,7 @@ import (
 
 // WriteJSON writes the given data to the specified path as a formatted JSON file.
 func WriteJSON(path string, data interface{}) error {
-	f, err := os.Create(path)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}

@@ -30,7 +30,7 @@ func GenerateTags(cfg config.Config, fileMap map[string]*content.FileMeta, rende
 		}
 	}
 
-	var tags []string
+	tags := make([]string, 0, len(tagMap))
 	for tag := range tagMap {
 		tags = append(tags, tag)
 	}
