@@ -40,7 +40,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 
 	err := filepath.WalkDir(contentDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("error accessing path %s: %w", path, err)
 		}
 		if d.IsDir() {
 			return nil
@@ -51,14 +51,14 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 
 		relPath, err := filepath.Rel(contentDir, path)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get relative path for %s: %w", path, err)
 		}
 		// Always use forward slashes for internal map keys to match web links
 		relPath = filepath.ToSlash(relPath)
 
 		contentBytes, err := os.ReadFile(path)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read file %s: %w", path, err)
 		}
 
 		// Parse into a generic map to normalize casing first

@@ -65,7 +65,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 	var searchIndex []search.Item
 
 	// 2. Pass 2: Process files in deterministic order
-	var keys []string
+	keys := make([]string, 0, len(fileMap))
 	for k := range fileMap {
 		keys = append(keys, k)
 	}
