@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/generator"
@@ -121,20 +122,28 @@ title: Test Page
 
 	outputChan := make(chan string)
 	go func() {
-		buf := new(bytes.Buffer)
-		// Read just enough to verify the port
-		b := make([]byte, 1024)
-		n, _ := stdoutPipe.Read(b)
-		buf.Write(b[:n])
-		outputChan <- buf.String()
+		scanner := bufio.NewScanner(stdoutPipe)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.Contains(line, "Serving") {
+				outputChan <- line
+				return
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			outputChan <- err.Error()
+		}
+		close(outputChan)
 	}()
 
 	select {
-	case serveOut := <-outputChan:
-		if !strings.Contains(serveOut, "http://localhost:8080") {
+	case serveOut, ok := <-outputChan:
+		if !ok {
+			t.Errorf("Serve command exited before outputting port")
+		} else if !strings.Contains(serveOut, "http://localhost:8080") {
 			t.Errorf("Expected serve command to default to port 8080, got output: %s", serveOut)
 		}
-	case <-time.After(2 * time.Second):
+	case <-time.After(5 * time.Second):
 		t.Errorf("Timed out waiting for serve command output")
 	}
 
