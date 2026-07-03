@@ -83,9 +83,14 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			if watchMode {
 				fmt.Println("Starting watch mode...")
 				cfg.WatchMode = true
-				if _, err := generator.Build(cfg); err != nil {
-					log.Printf("Initial build failed: %v", err)
-				}
+			}
+
+			fmt.Println("Building site...")
+			if _, err := generator.Build(cfg); err != nil {
+				log.Printf("Initial build failed: %v", err)
+			}
+
+			if watchMode {
 				go func() { _ = watcher.Watch(context.Background(), cfg, nil) }()
 			}
 
