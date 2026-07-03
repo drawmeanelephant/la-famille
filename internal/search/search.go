@@ -21,6 +21,7 @@ func ExtractSnippet(rest []byte) string {
 	s := string(rest)
 	s = linkRe.ReplaceAllString(s, "$1")
 	var sb strings.Builder
+	sb.Grow(len(s))
 	for _, r := range s {
 		if r == '#' || r == '*' || r == '[' || r == ']' || r == '`' || r == '>' {
 			continue
@@ -43,7 +44,7 @@ func ExtractSnippet(rest []byte) string {
 }
 
 func WriteMinifiedJSON(path string, data interface{}) error {
-	f, err := os.Create(path)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}

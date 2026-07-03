@@ -14,7 +14,7 @@ import (
 // Write writes the meta data to the output directory.
 func Write(outputDir string, metaData map[string]map[string]interface{}) error {
 	if err := jsonutil.WriteJSON(filepath.Join(outputDir, "meta.json"), metaData); err != nil {
-		return err
+		return fmt.Errorf("failed to write meta.json: %w", err)
 	}
 
 	// Generate sitemap.xml
@@ -26,7 +26,7 @@ func Write(outputDir string, metaData map[string]map[string]interface{}) error {
 		return fmt.Errorf("potential path traversal writing sitemap: %s", sitemapPath)
 	}
 
-	var keys []string
+	keys := make([]string, 0, len(metaData))
 	for k := range metaData {
 		keys = append(keys, k)
 	}
