@@ -1,8 +1,8 @@
 ---
-Title: Refactor One Seam - Site Data
-Date: 2026-06-27
-Routine: Refactor One Seam
-Status: Success
+title: Refactor One Seam - Site Data
+date: 2026-06-27
+routine: Refactor One Seam
+status: Success
 ---
 
 # Refactor One Seam: JSON Metadata Output

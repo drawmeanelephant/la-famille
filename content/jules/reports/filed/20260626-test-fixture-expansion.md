@@ -1,6 +1,6 @@
 ---
-Title: Routine - Test Fixture Expansion Report
-Date: 2026-06-26
+title: Routine - Test Fixture Expansion Report
+date: 2026-06-26
 ---
 
 # Routine Completed: Test Fixture Expansion

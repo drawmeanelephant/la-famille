@@ -1,6 +1,6 @@
 ---
-Title: Report - Improve Missing Page Stub
-Date: 2026-07-01
+title: Report - Improve Missing Page Stub
+date: 2026-07-01
 ---
 
 # Routine: Improve Missing Page Stub - Log

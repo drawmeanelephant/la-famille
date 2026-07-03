@@ -1,7 +1,7 @@
 ---
-Title: Routine - Asset Pipeline Step
-Author: The Human
-Date: 2026-06-19
+title: Routine - Asset Pipeline Step
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Asset Pipeline Step

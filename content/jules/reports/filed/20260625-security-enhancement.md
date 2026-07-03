@@ -1,7 +1,7 @@
 ---
-Title: Routine - Implement Security Enhancement
-Author: Jules
-Date: 2026-06-25
+title: Routine - Implement Security Enhancement
+author: Jules
+date: 2026-06-25
 ---
 
 # Security Enhancement Routine Report

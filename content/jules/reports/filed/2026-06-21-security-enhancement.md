@@ -1,7 +1,7 @@
 ---
-Title: 2026-06-21 - Security Enhancement Routine
-Author: Jules
-Date: 2026-06-21
+title: 2026-06-21 - Security Enhancement Routine
+author: Jules
+date: 2026-06-21
 ---
 
 # Routine Execution Report: Implement Security Enhancement

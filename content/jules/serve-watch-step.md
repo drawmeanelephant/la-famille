@@ -1,7 +1,7 @@
 ---
-Title: Routine - Serve/Watch Step
-Author: The Human
-Date: 2026-06-19
+title: Routine - Serve/Watch Step
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Serve/Watch Step

@@ -1,7 +1,7 @@
 ---
-Title: Routine - Implement Micro-UX Improvement
-Author: The Human
-Date: 2026-06-19
+title: Routine - Implement Micro-UX Improvement
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Implement Micro-UX Improvement

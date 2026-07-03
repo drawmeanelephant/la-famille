@@ -1,7 +1,7 @@
 ---
-Title: Routine - Generate Cat Facts
-Author: The Human
-Date: 2026-06-20
+title: Routine - Generate Cat Facts
+author: The Human
+date: 2026-06-20
 ---
 
 # Routine: Generate Cat Facts

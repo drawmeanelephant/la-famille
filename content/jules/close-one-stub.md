@@ -1,7 +1,7 @@
 ---
-Title: Routine - Close One Stub
-Author: The Human
-Date: 2026-06-19
+title: Routine - Close One Stub
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Close One Stub

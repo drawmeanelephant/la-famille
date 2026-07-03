@@ -1,7 +1,7 @@
 ---
-Title: Routine - Refactor One Seam
-Author: The Human
-Date: 2026-06-19
+title: Routine - Refactor One Seam
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Refactor One Seam

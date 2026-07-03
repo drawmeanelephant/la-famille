@@ -1,7 +1,7 @@
 ---
-Title: Routine - Generate New Layout Template
-Author: The Human
-Date: 2026-06-19
+title: Routine - Generate New Layout Template
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Generate New Layout Template

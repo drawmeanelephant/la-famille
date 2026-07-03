@@ -1,7 +1,7 @@
 ---
-Title: Routine - Metadata Feature Step
-Author: The Human
-Date: 2026-06-19
+title: Routine - Metadata Feature Step
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Metadata Feature Step

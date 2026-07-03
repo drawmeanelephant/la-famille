@@ -1,6 +1,6 @@
 ---
-Title: Report - Docs Reality Pass
-Date: 2026-06-25
+title: Report - Docs Reality Pass
+date: 2026-06-25
 ---
 
 # Docs Reality Pass Complete

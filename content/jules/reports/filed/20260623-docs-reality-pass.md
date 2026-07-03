@@ -1,7 +1,7 @@
 ---
-Title: Docs Reality Pass Routine
-Author: Jules
-Date: 2026-06-23
+title: Docs Reality Pass Routine
+author: Jules
+date: 2026-06-23
 ---
 
 # Routine Report: Docs Reality Pass

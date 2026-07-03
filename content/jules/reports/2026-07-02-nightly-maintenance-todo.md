@@ -1,6 +1,6 @@
 ---
-Title: Report - Nightly Maintenance Stale TODOs Cleanup
-Date: 2026-07-02
+title: Report - Nightly Maintenance Stale TODOs Cleanup
+date: 2026-07-02
 ---
 
 # Routine: Nightly Maintenance Pass - Log

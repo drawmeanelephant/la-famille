@@ -1,7 +1,7 @@
 ---
-Title: Routine - Implement Security Enhancement
-Author: The Human
-Date: 2026-06-19
+title: Routine - Implement Security Enhancement
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Implement Security Enhancement

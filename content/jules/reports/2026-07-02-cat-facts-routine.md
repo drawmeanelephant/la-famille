@@ -1,7 +1,7 @@
 ---
-Title: Routine Report - Cat Facts
-Author: @jules
-Date: 2026-07-02
+title: Routine Report - Cat Facts
+author: @jules
+date: 2026-07-02
 ---
 
 # Cat Facts Routine Run Report

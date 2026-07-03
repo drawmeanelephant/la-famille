@@ -1,7 +1,7 @@
 ---
-Title: Creating Effective Routines for Jules
-Author: The Human
-Date: 2026-06-19
+title: Creating Effective Routines for Jules
+author: The Human
+date: 2026-06-19
 ---
 
 # Creating Effective Routines
