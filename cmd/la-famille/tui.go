@@ -236,6 +236,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						Addr:              fmt.Sprintf("127.0.0.1:%d", port),
 						Handler:           mux,
 						ReadHeaderTimeout: 5 * time.Second,
+						ReadTimeout:       10 * time.Second,
+						WriteTimeout:      10 * time.Second,
 					}
 					go func() {
 						_ = m.server.ListenAndServe()
