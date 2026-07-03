@@ -71,8 +71,10 @@ func TestFixtures(t *testing.T) {
 					t.Fatalf("failed to read expected file %s: %v", relPath, err)
 				}
 
-				if string(actualContent) != string(expectedContent) {
-					t.Errorf("content mismatch in %s:\nExpected:\n%s\nActual:\n%s\n", relPath, string(expectedContent), string(actualContent))
+				actualStr := strings.ReplaceAll(string(actualContent), "\r\n", "\n")
+				expectedStr := strings.ReplaceAll(string(expectedContent), "\r\n", "\n")
+				if actualStr != expectedStr {
+					t.Errorf("content mismatch in %s:\nExpected:\n%s\nActual:\n%s\n", relPath, expectedStr, actualStr)
 				}
 
 				return nil
