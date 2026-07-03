@@ -59,35 +59,35 @@ func CopyAssets(cfg config.Config) error {
 			// Batch check gitignore
 			ignoredPaths := make(map[string]bool)
 			if len(paths) > 0 {
-				cmd := exec.Command("git", "check-ignore", "--stdin")
+				if _, lookErr := exec.LookPath("git"); lookErr != nil {
+					log.Printf("Warning: git binary not found in environment, bypassing check-ignore optimization pass")
+				} else {
+					cmd := exec.Command("git", "check-ignore", "--stdin")
 					projectRoot, _ := filepath.Abs(".")
 					cmd.Dir = projectRoot
-				cmd.Stdin = strings.NewReader(strings.Join(paths, "\n"))
-				out, err := cmd.Output()
-				if err != nil {
-					if _, lookErr := exec.LookPath("git"); lookErr != nil {
-						log.Printf("Warning: git not found in environment, skipping check-ignore")
-					} else {
+					cmd.Stdin = strings.NewReader(strings.Join(paths, "\n"))
+					out, err := cmd.Output()
+					if err != nil {
 						var exitErr *exec.ExitError
 						if errors.As(err, &exitErr) {
 							// exit code 1 means none of the paths are ignored, which is a normal case
 							// exit code 128 means outside repository, which happens in tests
-								if exitErr.ExitCode() != 1 && exitErr.ExitCode() != 128 {
+							if exitErr.ExitCode() != 1 && exitErr.ExitCode() != 128 {
 								log.Printf("Error running git check-ignore: %v (stderr: %q)", err, string(exitErr.Stderr))
 							}
 						} else {
 							log.Printf("Error running git check-ignore: %v", err)
 						}
 					}
-				}
 
-				if len(out) > 0 {
-					lines := strings.Split(strings.TrimSpace(string(out)), "\n")
-					for _, line := range lines {
-						if line != "" {
-							// check-ignore returns absolute or relative paths depending on input. Since we passed relative, it should return relative.
-							// let's use the exact string returned to populate the map.
-							ignoredPaths[line] = true
+					if len(out) > 0 {
+						lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+						for _, line := range lines {
+							if line != "" {
+								// check-ignore returns absolute or relative paths depending on input. Since we passed relative, it should return relative.
+								// let's use the exact string returned to populate the map.
+								ignoredPaths[line] = true
+							}
 						}
 					}
 				}
