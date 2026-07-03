@@ -1,7 +1,7 @@
 ---
-Title: Routine Completion Report - Implement Security Enhancement
-Author: Jules
-Date: 2026-06-26
+title: Routine Completion Report - Implement Security Enhancement
+author: Jules
+date: 2026-06-26
 ---
 
 # Routine Completion Report

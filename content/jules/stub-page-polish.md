@@ -1,7 +1,7 @@
 ---
-Title: Routine - Improve Missing Page Stub
-Author: The Human
-Date: 2026-06-19
+title: Routine - Improve Missing Page Stub
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Improve Missing Page Stub

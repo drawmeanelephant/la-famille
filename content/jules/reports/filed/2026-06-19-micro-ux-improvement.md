@@ -1,8 +1,8 @@
 ---
-Title: Routine Report - Implement Micro-UX Improvement
-Date: 2026-06-19
-Routine: Micro-UX Improvement
-Success: true
+title: Routine Report - Implement Micro-UX Improvement
+date: 2026-06-19
+routine: Micro-UX Improvement
+success: true
 ---
 
 # Execution Report

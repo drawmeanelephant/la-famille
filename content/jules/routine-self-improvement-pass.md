@@ -1,7 +1,7 @@
 ---
-Title: Routine - Self-Improvement Pass
-Author: The Human
-Date: 2026-06-19
+title: Routine - Self-Improvement Pass
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Self-Improvement Pass

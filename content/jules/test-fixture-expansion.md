@@ -1,7 +1,7 @@
 ---
-Title: Routine - Test Fixture Expansion
-Author: The Human
-Date: 2026-06-19
+title: Routine - Test Fixture Expansion
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Test Fixture Expansion

@@ -1,7 +1,7 @@
 ---
-Title: Routine Report - Generate Cat Facts
-Author: @jules
-Date: 2026-06-20
+title: Routine Report - Generate Cat Facts
+author: @jules
+date: 2026-06-20
 ---
 
 # Routine Execution Report: Generate Cat Facts

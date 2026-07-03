@@ -1,7 +1,7 @@
 ---
-Title: Routine Execution - Micro-UX Improvement
-Author: Jules
-Date: 2026-06-21
+title: Routine Execution - Micro-UX Improvement
+author: Jules
+date: 2026-06-21
 ---
 
 ## 2026-06-21 - Micro-UX Improvement

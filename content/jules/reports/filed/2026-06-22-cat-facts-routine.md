@@ -1,7 +1,7 @@
 ---
-Title: Cat Facts Routine Execution Log
-Author: @jules
-Date: 2026-06-22
+title: Cat Facts Routine Execution Log
+author: @jules
+date: 2026-06-22
 ---
 
 # Routine Execution Report: Generate Cat Facts

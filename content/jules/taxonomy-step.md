@@ -1,7 +1,7 @@
 ---
-Title: Routine - Taxonomy Step
-Author: The Human
-Date: 2026-06-19
+title: Routine - Taxonomy Step
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Taxonomy Step

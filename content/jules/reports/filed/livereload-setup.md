@@ -1,7 +1,7 @@
 ---
-Title: Execution Log - LiveReload Setup
-Author: Jules
-Date: 2026-06-29
+title: Execution Log - LiveReload Setup
+author: Jules
+date: 2026-06-29
 ---
 
 # Execution Log: Zero-Dependency LiveReload

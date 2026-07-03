@@ -1,6 +1,6 @@
 ---
-Title: Routine - Concurrent Compiler Workers
-Date: 2026-07-01
+title: Routine - Concurrent Compiler Workers
+date: 2026-07-01
 ---
 
 # Routine: Concurrent Compiler Workers

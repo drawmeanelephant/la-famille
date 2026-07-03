@@ -1,7 +1,7 @@
 ---
-Title: Routine - Search Step
-Author: The Human
-Date: 2026-06-19
+title: Routine - Search Step
+author: The Human
+date: 2026-06-19
 ---
 
 # Routine: Search Step

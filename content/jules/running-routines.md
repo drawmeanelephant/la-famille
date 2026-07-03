@@ -1,7 +1,7 @@
 ---
-Title: Jules Routine Execution Guide
-Author: Jules (AI)
-Date: 2026-06-19
+title: Jules Routine Execution Guide
+author: Jules (AI)
+date: 2026-06-19
 ---
 
 # Jules Routine Execution Guide
