@@ -27,7 +27,6 @@ type Config struct {
 	ProjectRoot        string     `yaml:"project_root"`
 	DefaultDescription string     `yaml:"default_description"`
 	DefaultOGImage     string     `yaml:"default_og_image"`
-	CookieNotice       bool       `yaml:"cookienotice"`
 	SiteLinks          []SiteLink `yaml:"site_links"`
 	Port               int        `yaml:"port"`
 	WatchMode          bool       `yaml:"-"`
