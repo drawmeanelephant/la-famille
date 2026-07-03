@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -70,7 +73,6 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		Use:   "serve",
 		Short: "Start a local web server to serve the generated site",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			// Serve OutputDir
 			dir := cfg.OutputDir
 			port := servePort
 			if port == 0 {
@@ -90,12 +92,13 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 				log.Printf("Initial build failed: %v", err)
 			}
 
-			if watchMode {
-				go func() { _ = watcher.Watch(context.Background(), cfg, nil) }()
-			}
+			// Set up a context that listens for interruption/termination signals
+			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+			defer stop()
 
-			fmt.Printf("Serving %s on http://localhost:%d\n", dir, port)
-			fmt.Printf("Press Ctrl+C to stop\n")
+			if watchMode {
+				go func() { _ = watcher.Watch(ctx, cfg, nil) }()
+			}
 
 			mux := http.NewServeMux()
 			mux.Handle("/", http.FileServer(http.Dir(dir)))
@@ -109,7 +112,30 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 				Handler:           mux,
 				ReadHeaderTimeout: 5 * time.Second,
 			}
-			return server.ListenAndServe()
+
+			// Run server in a background goroutine
+			serverErrChan := make(chan error, 1)
+			go func() {
+				fmt.Printf("Serving %s on http://localhost:%d\n", dir, port)
+				fmt.Printf("Press Ctrl+C to stop\n")
+				if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					serverErrChan <- err
+				}
+			}()
+
+			// Wait for either an error or a shutdown signal
+			select {
+			case err := <-serverErrChan:
+				return err
+			case <-ctx.Done():
+				fmt.Println("\nShutdown signal caught. Cleaning up network handles...")
+				stop() // release resources early
+
+				// Allow up to 5 seconds for running connections to drain gracefully
+				shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				return server.Shutdown(shutdownCtx)
+			}
 		},
 	}
 	serveCmd.Flags().IntVarP(&servePort, "port", "p", 0, "Port to run the server on (overrides config)")
