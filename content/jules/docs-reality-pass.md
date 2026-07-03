@@ -1,25 +1,44 @@
 ---
-Title: Routine - Docs Reality Pass
-Author: The Human
-Date: 2026-06-21
+title: "Routine: Documentation Reality Pass"
+jules_task: true
 ---
 
-# Routine: Docs Reality Pass
+## Goal
 
-**Goal:** Reconcile the user documentation in `content/docs/` with the actual shipped behavior of the codebase. Ensure that as features are added (like TUI, RAG, CLI), the documentation expands to cover them thoroughly.
+Ensure user documentation perfectly aligns with the current Go codebase by
+documenting one major internal package per run.
 
-## Task Details
-1. **Find Missing Polish:** Identify one place in `content/docs/` where a feature is either entirely missing documentation or is documented in a barebones, unhelpful way (e.g., missing setup instructions, missing usage examples).
-2. **Correct the Record:** Update or create the relevant markdown file in `content/docs/` so it thoroughly explains the feature, matching the current reality of the codebase. Include examples where appropriate.
-3. **Index Updates:** If you create a new documentation file, ensure you add it to the list in `content/docs/index.md`.
-4. **Preserve Forward Motion:** If you find a roadmap item or to-do list in the docs that is partially complete, rewrite it as a next-step item instead of deleting it entirely.
+## Priority Queue
+
+Work through components in this order:
+
+1. `internal/generator` → reconcile `content/docs/generator.md`
+2. `internal/render` → create `content/docs/render.md`
+3. `internal/transform` → create `content/docs/transform.md`
+4. `internal/asset` → create `content/docs/assets.md`
+5. `internal/search` → create `content/docs/search.md`
+6. `internal/taxonomy` → create `content/docs/taxonomy.md`
+7. `internal/graph` → create `content/docs/graph.md`
+
+## Task Steps
+
+1. **Select Component:** Pick the next undocumented or stale package from the
+   Priority Queue above.
+2. **Audit Reality:** Read the current Go source for that package. Note all
+   exported structs, functions, and any non-obvious behaviors (e.g., `.gitignore`
+   parsing in `CopyAssets`, template caching in `Renderer`).
+3. **Update Documentation:** Open or create the corresponding file in
+   `content/docs/`. If creating a new file, add a link to it in
+   `content/docs/index.md`.
+4. **Reconcile:** Rewrite the doc to match codebase reality. Remove any
+   outdated explanations or roadmap items that have already shipped.
+5. **Verify:** Run `go run ./cmd/la-famille build` and confirm links resolve
+   and frontmatter is valid.
+6. **Log:** Append a one-line summary to `content/docs/changelog.md` in the
+   format: `YYYY-MM-DD: Documented internal/<package> — <one sentence summary>`
 
 ## Execution Reminders
-* The `config.yaml` is widely applicable and its documentation should be easily discoverable.
-*   **Do NOT rewrite `README.md` during this routine.** The `README.md` is strictly the GitHub landing page overview. This routine is explicitly for expanding and polishing the actual user guides inside `content/docs/`.
-*   Focus on making the documentation useful for end-users, ensuring it covers things like CLI usage (`go run`), flags, and configuration.
-*   Keep edits explicit and ensure they are written in Markdown.
-*   **Upon successful completion, you MUST write a short log (including date, routine name, success status, and any learnings or suggestions for improving this routine) to a new markdown file in `content/jules/reports/` (e.g., `content/jules/reports/[date]-[routine-name].md`).**
 
-* **Configuration Audits:** Ensure core files like `config.yaml` are well-documented and easily discoverable for users.
-* **CLI Flag Audits:** Periodically audit `cmd/la-famille/main.go` flag declarations against the documentation in `cli.md`. Consider using an automated grep test to prevent drift.
+- **No Dev Theatre:** No marketing language. Technical, precise, direct.
+- All code snippets must match actual current Go syntax in the source files.
+- Do not document planned or speculative features — reality only.
