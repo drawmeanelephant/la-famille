@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -15,23 +16,25 @@ import (
 	"github.com/adrg/frontmatter"
 )
 
+var validTagRegex = regexp.MustCompile(`^[a-z0-9-]+$`)
+
 type FileMeta struct {
+	Content         []byte
+	Rest            []byte // The content after frontmatter
+	Tags            []string
 	RelPath         string
 	Title           string
 	Author          string
 	Date            string
-	Render          *bool
 	VideoScript     string
 	AnimationCues   string
 	SoundtrackTheme string
 	Layout          string
 	ComplianceModal string
 	Slug            string
-	Tags            []string
-	Content         []byte
-	Rest            []byte // The content after frontmatter
 	Description     string
 	Image           string
+	Render          *bool
 }
 
 // GatherMetadata walks the content directory and parses the frontmatter for each markdown file.
@@ -40,7 +43,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 
 	err := filepath.WalkDir(contentDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("error accessing path %s: %w", path, err)
 		}
 		if d.IsDir() {
 			return nil
@@ -51,14 +54,14 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 
 		relPath, err := filepath.Rel(contentDir, path)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get relative path for %s: %w", path, err)
 		}
 		// Always use forward slashes for internal map keys to match web links
 		relPath = filepath.ToSlash(relPath)
 
 		contentBytes, err := os.ReadFile(path)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read file %s: %w", path, err)
 		}
 
 		// Parse into a generic map to normalize casing first
@@ -110,6 +113,10 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 		// Tag validation and normalization
 		var normalizedTags []string
 		for _, tag := range matter.Tags {
+			if validTagRegex.MatchString(tag) {
+				normalizedTags = append(normalizedTags, tag)
+				continue
+			}
 			lower := strings.ToLower(tag)
 			var sb strings.Builder
 			for _, r := range lower {

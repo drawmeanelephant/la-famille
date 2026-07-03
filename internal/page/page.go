@@ -8,6 +8,7 @@ import (
 
 type Page struct {
 	Site            config.Config
+	Content         template.HTML
 	Title           string
 	Author          string
 	Date            string
@@ -16,7 +17,6 @@ type Page struct {
 	SoundtrackTheme string
 	Layout          string
 	ComplianceModal string
-	Content         template.HTML
 	Description     string
 	Image           string
 }

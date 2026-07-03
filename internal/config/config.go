@@ -24,13 +24,13 @@ type Config struct {
 	AssetDir           string     `yaml:"asset_dir"`
 	RagDir             string     `yaml:"rag_dir"`
 	Theme              string     `yaml:"theme"`
-	Port               int        `yaml:"port"`
 	ProjectRoot        string     `yaml:"project_root"`
 	DefaultDescription string     `yaml:"default_description"`
 	DefaultOGImage     string     `yaml:"default_og_image"`
 	CookieNotice       bool       `yaml:"cookienotice"`
-	WatchMode          bool       `yaml:"-"`
 	SiteLinks          []SiteLink `yaml:"site_links"`
+	Port               int        `yaml:"port"`
+	WatchMode          bool       `yaml:"-"`
 }
 
 // DefaultConfig returns a Config with sensible default values.

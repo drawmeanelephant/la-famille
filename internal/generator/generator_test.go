@@ -3,6 +3,7 @@ package generator
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -144,5 +145,34 @@ image: "/images/test-seo.png"
 	expectedImage := `<meta property="og:image" content="/images/test-seo.png">`
 	if !strings.Contains(outHTML, expectedImage) {
 		t.Errorf("output HTML missing expected image meta tag.\nGot: %s", outHTML)
+	}
+}
+
+func BenchmarkBuild(b *testing.B) {
+	tempDir := b.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(templateDir, 0755)
+
+	templatePath := filepath.Join(templateDir, "layout.html")
+	_ = os.WriteFile(templatePath, []byte("{{.Content}}"), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = templatePath
+
+	// Create 1000 dummy files
+	for i := 0; i < 1000; i++ {
+		content := []byte("# Hello Benchmark\nThis is a [link](test0.md) to another page.")
+		_ = os.WriteFile(filepath.Join(contentDir, fmt.Sprintf("test%d.md", i)), content, 0600)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = Build(cfg)
 	}
 }

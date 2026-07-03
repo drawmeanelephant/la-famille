@@ -35,9 +35,6 @@ output_dir: "public"
 # theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
 theme: "retro"
 
-# cookienotice: Whether to show the cookie consent toast banner.
-cookienotice: true
-
 # port: The port on which the local development server will run.
 port: 8080
 ```
@@ -53,7 +50,6 @@ Here is a breakdown of each available field:
 *   **`asset_dir`** (string): The directory containing static assets. *Default: "assets"*
 *   **`rag_dir`** (string): The directory where RAG markdown bundles will be exported. *Default: "rag-archive"*
 *   **`theme`** (string): The DaisyUI theme you want to apply globally to your site. This allows you to easily switch between "light", "dark", "retro", "synthwave", and many more! *Default: "retro"*
-*   **`cookienotice`** (boolean): Whether to show the cookie consent toast banner. *Default: true*
 *   **`port`** (integer): The local network port used by the built-in HTTP server (`go run ./cmd/la-famille serve`). *Default: 8080*
 
 ## CLI Flag Overrides
