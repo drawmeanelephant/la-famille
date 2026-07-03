@@ -21,5 +21,18 @@ rag_dir: "rag-archive"
 # theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
 theme: "retro"
 
+# default_description: A default description for SEO meta tags.
+# default_description: "A wonderful site built with La Famille"
+
+# default_og_image: A default OpenGraph image URL.
+# default_og_image: "/assets/default-og.png"
+
+# site_links: Optional links for headers/footers
+# site_links:
+#   - label: "GitHub"
+#     url: "https://github.com"
+#   - label: "Twitter"
+#     url: "https://twitter.com"
+
 # port: The port on which the local development server will run.
 port: 8080

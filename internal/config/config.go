@@ -10,19 +10,26 @@ import (
 )
 
 // Config represents the site configuration.
+type SiteLink struct {
+	Label string `yaml:"label"`
+	URL   string `yaml:"url"`
+}
+
+// Config represents the site configuration.
 type Config struct {
-	SiteName   string `yaml:"site_name"`
-	Template   string `yaml:"template"`
-	ContentDir string `yaml:"content_dir"`
-	OutputDir  string `yaml:"output_dir"`
-	AssetDir   string `yaml:"asset_dir"`
-	RagDir     string `yaml:"rag_dir"`
-	Theme      string `yaml:"theme"`
-	Port        int    `yaml:"port"`
-	ProjectRoot string `yaml:"project_root"`
-	DefaultDescription string `yaml:"default_description"`
-	DefaultOGImage     string `yaml:"default_og_image"`
-	WatchMode          bool   `yaml:"-"`
+	SiteName           string     `yaml:"site_name"`
+	Template           string     `yaml:"template"`
+	ContentDir         string     `yaml:"content_dir"`
+	OutputDir          string     `yaml:"output_dir"`
+	AssetDir           string     `yaml:"asset_dir"`
+	RagDir             string     `yaml:"rag_dir"`
+	Theme              string     `yaml:"theme"`
+	Port               int        `yaml:"port"`
+	ProjectRoot        string     `yaml:"project_root"`
+	DefaultDescription string     `yaml:"default_description"`
+	DefaultOGImage     string     `yaml:"default_og_image"`
+	WatchMode          bool       `yaml:"-"`
+	SiteLinks          []SiteLink `yaml:"site_links"`
 }
 
 // DefaultConfig returns a Config with sensible default values.
@@ -95,6 +102,13 @@ theme: "retro"
 
 # default_og_image: A default OpenGraph image URL.
 # default_og_image: "/assets/default-og.png"
+
+# site_links: Optional links for headers/footers
+# site_links:
+#   - label: "GitHub"
+#     url: "https://github.com"
+#   - label: "Twitter"
+#     url: "https://twitter.com"
 
 # port: The port on which the local development server will run.
 port: 8080
