@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/tbuddy/la-famille/internal/logger"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,15 +20,21 @@ import (
 )
 
 var (
-	contentDir   string
-	outputDir    string
-	templateFile string
+	globalLogFile string
+	contentDir    string
+	outputDir     string
+	templateFile  string
 )
 
 func setupRootCmd(cfg config.Config) *cobra.Command {
 	var rootCmd = &cobra.Command{
 		Use:   "la-famille",
 		Short: "La Famille is a static site generator",
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+			if cmd.Name() != "tui" {
+				_, _ = logger.Setup(globalLogFile, false)
+			}
+		},
 	}
 
 	var buildCmd = &cobra.Command{
@@ -54,7 +61,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			if err := config.WriteDefault("config.yaml"); err != nil {
 				return fmt.Errorf("failed to write config.yaml: %w", err)
 			}
-			fmt.Println("Created default config.yaml")
+			slog.Info("Created default config.yaml")
 			return nil
 		},
 	}
@@ -87,21 +94,21 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			}
 
 			if watchMode {
-				fmt.Println("Starting watch mode...")
+				slog.Info("Starting watch mode...")
 				cfg.WatchMode = true
 			}
 
-			fmt.Println("Building site...")
+			slog.Info("Building site...")
 			if _, err := generator.Build(cfg); err != nil {
-				log.Printf("Initial build failed: %v", err)
+				slog.Error("Initial build failed", "error", err)
 			}
 
 			if watchMode {
 				go func() { _ = watcher.Watch(ctx, cfg, nil) }()
 			}
 
-			fmt.Printf("Serving %s on http://localhost:%d\n", dir, port)
-			fmt.Printf("Press Ctrl+C to stop\n")
+			slog.Info(fmt.Sprintf("Serving %s on http://localhost:%d", dir, port))
+			slog.Info("Press Ctrl+C to stop")
 
 			mux := http.NewServeMux()
 			mux.Handle("/", http.FileServer(http.Dir(dir)))
@@ -143,24 +150,29 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	rootCmd.AddCommand(ragCmd)
 	rootCmd.AddCommand(prCmd)
 	rootCmd.AddCommand(tuiCmd)
+	rootCmd.PersistentFlags().StringVar(&globalLogFile, "log-file", "", "Path to log file (default is stderr for CLI, la-famille.log for TUI)")
+
 	rootCmd.AddCommand(serveCmd)
 
 	return rootCmd
 }
 
 func main() {
+
 	// Load config first to set defaults for flags
 	cfg, err := config.Load("config.yaml")
 	if err != nil {
-		log.Printf("Warning: failed to load config.yaml: %v", err)
+		slog.Warn("Failed to load config.yaml", "error", err)
 	}
 	if err := cfg.Validate(); err != nil {
-		log.Fatalf("Configuration validation failed: %v", err)
+		slog.Error("Configuration validation failed", "error", err)
+		os.Exit(1)
 	}
 
 	rootCmd := setupRootCmd(cfg)
 
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatal(err)
+		slog.Error("Application error", "error", err)
+		os.Exit(1)
 	}
 }

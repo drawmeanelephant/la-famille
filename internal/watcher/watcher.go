@@ -2,7 +2,7 @@ package watcher
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,12 +69,12 @@ func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 		}
 	}
 
-	log.Println("Context-aware file watcher initialized successfully.")
+	slog.Info("Context-aware file watcher initialized successfully.")
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("Halting file watcher: Context canceled.")
+			slog.Info("Halting file watcher: Context canceled.")
 			return ctx.Err()
 
 		case event, ok := <-watcher.Events:
@@ -88,28 +88,28 @@ func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 					if err == nil && stat.IsDir() {
 						cleanName := filepath.Clean(event.Name)
 						if !(cleanName == outDirClean || strings.HasPrefix(cleanName, outDirClean+string(filepath.Separator))) {
-							log.Printf("Dynamic directory tracking added: %s", event.Name)
+							slog.Info("Dynamic directory tracking added", "dir", event.Name)
 							_ = watcher.Add(event.Name)
 						}
 					}
 				}
 
-				log.Printf("Change caught in %s, scheduling build pass...", event.Name)
+				slog.Info("Change caught, scheduling build pass", "file", event.Name)
 				if buildTimer != nil {
 					buildTimer.Stop()
 				}
 
 				buildTimer = time.AfterFunc(500*time.Millisecond, func() {
-					log.Println("Executing pipeline rebuild...")
+					slog.Info("Executing pipeline rebuild...")
 					start := time.Now()
 					if res, err := generator.Build(cfg); err != nil {
 						if onBuild != nil {
 							onBuild(res)
 						}
 						BroadcastReload()
-						log.Printf("Pipeline compilation failed: %v", err)
+						slog.Error("Pipeline compilation failed", "error", err)
 					} else {
-						log.Printf("Rebuild complete in %v.", time.Since(start))
+						slog.Info("Rebuild complete", "duration", time.Since(start))
 						if onBuild != nil {
 							onBuild(res)
 						}
@@ -122,7 +122,7 @@ func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 			if !ok {
 				return nil
 			}
-			log.Printf("Watcher filesystem interruption error: %v", err)
+			slog.Error("Watcher filesystem interruption error", "error", err)
 		}
 	}
 }

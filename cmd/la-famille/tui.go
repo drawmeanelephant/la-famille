@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
+
+	"github.com/tbuddy/la-famille/internal/logger"
 	"net/http"
 	"os"
 	"strings"
@@ -25,6 +27,13 @@ var tuiCmd = &cobra.Command{
 	Use:   "tui",
 	Short: "Launch the semi-graphical user interface",
 	RunE: func(_ *cobra.Command, _ []string) error {
+		logTarget := globalLogFile
+		if logTarget == "" {
+			logTarget = "la-famille.log"
+		}
+		f, _ := logger.Setup(logTarget, true)
+		defer func() { if f != nil { f.Close() } }()
+
 		cfg, err := config.Load("config.yaml")
 		if err != nil {
 			// use defaults if config fails
@@ -219,7 +228,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if choice == "Serve Site with Watch" {
 						m.cfg.WatchMode = true
 						if _, err := generator.Build(m.cfg); err != nil {
-							log.Printf("Initial build failed: %v", err)
+							slog.Error("Initial build failed", "error", err)
 						}
 
 						watchCtx, cancelWatch := context.WithCancel(context.Background())
@@ -231,7 +240,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 									p.Send(statsUpdateMsg{res: res})
 								}
 							}); err != nil {
-								log.Printf("Watcher thread exited with: %v", err)
+								slog.Error("Watcher thread exited", "error", err)
 							}
 						}(watchCtx, m.cfg)
 					}

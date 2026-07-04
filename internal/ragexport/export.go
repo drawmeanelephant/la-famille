@@ -2,6 +2,7 @@ package ragexport
 
 import (
 	"fmt"
+	"log/slog"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -20,7 +21,7 @@ func RunExport(cfg config.Config) error {
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-	fmt.Printf("RAG archive directory created at %s\n", outDir)
+	slog.Info(fmt.Sprintf("RAG archive directory created at %s", outDir))
 
 	// 1. System Bundle
 	if err := writeBundle(
@@ -43,7 +44,7 @@ func RunExport(cfg config.Config) error {
 	); err != nil {
 		return fmt.Errorf("failed to write system bundle: %w", err)
 	}
-	fmt.Println("Created rag-system.md")
+	slog.Info("Created rag-system.md")
 
 	// 2. Config/Templates Bundle
 	if err := writeBundle(
@@ -109,7 +110,7 @@ func RunExport(cfg config.Config) error {
 	})
 	_, _ = cfgFile.WriteString("</content>\n</file>\n\n")
 
-	fmt.Println("Created rag-config.md")
+	slog.Info("Created rag-config.md")
 
 	// 3. Content Bundle
 	if err :=
@@ -125,7 +126,7 @@ func RunExport(cfg config.Config) error {
 		); err != nil {
 		return fmt.Errorf("failed to write content bundle: %w", err)
 	}
-	fmt.Println("Created rag-content.md")
+	slog.Info("Created rag-content.md")
 
 	return nil
 }

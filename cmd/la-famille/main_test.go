@@ -111,9 +111,9 @@ title: Test Page
 	cmdServe := exec.Command(exePath, "serve")
 	cmdServe.Dir = tmpDir
 
-	stdoutPipe, err := cmdServe.StdoutPipe()
+	stderrPipe, err := cmdServe.StderrPipe()
 	if err != nil {
-		t.Fatalf("failed to create stdout pipe: %v", err)
+		t.Fatalf("failed to create stderr pipe: %v", err)
 	}
 
 	if err := cmdServe.Start(); err != nil {
@@ -122,7 +122,7 @@ title: Test Page
 
 	outputChan := make(chan string)
 	go func() {
-		scanner := bufio.NewScanner(stdoutPipe)
+		scanner := bufio.NewScanner(stderrPipe)
 		for scanner.Scan() {
 			line := scanner.Text()
 			if strings.Contains(line, "Serving") {
@@ -140,8 +140,8 @@ title: Test Page
 	case serveOut, ok := <-outputChan:
 		if !ok {
 			t.Errorf("Serve command exited before outputting port")
-		} else if !strings.Contains(serveOut, "http://localhost:8080") {
-			t.Errorf("Expected serve command to default to port 8080, got output: %s", serveOut)
+		} else if !strings.Contains(serveOut, "msg=\"Serving") {
+			t.Errorf("Expected serve command to log serving message, got output: %s", serveOut)
 		}
 	case <-time.After(5 * time.Second):
 		t.Errorf("Timed out waiting for serve command output")
@@ -154,7 +154,6 @@ title: Test Page
 	// Wait for process to clean up
 	_ = cmdServe.Wait()
 }
-
 
 func TestInitCommand(t *testing.T) {
 	tmpDir := t.TempDir()

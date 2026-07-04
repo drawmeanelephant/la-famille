@@ -3,7 +3,7 @@ package render
 import (
 	"fmt"
 	"html/template"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -86,7 +86,7 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 	templatePath := cfg.Template
 	if layout != "" {
 		if !r.allowlist[layout] {
-			log.Printf("Warning: Layout %q not found in allowlist. Falling back to default %s", layout, cfg.Template)
+			slog.Warn("Layout not found in allowlist. Falling back to default", "layout", layout, "default", cfg.Template)
 		} else {
 			layoutPath := filepath.Join("templates", layout+".html")
 			// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille
@@ -99,7 +99,7 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 			if _, err := os.Stat(layoutPath); err == nil {
 				templatePath = layoutPath
 			} else {
-				log.Printf("Warning: layout template %s not found, falling back to %s", layoutPath, cfg.Template)
+				slog.Warn("Layout template not found, falling back to default.", "layout_path", layoutPath, "default", cfg.Template)
 			}
 		}
 	}

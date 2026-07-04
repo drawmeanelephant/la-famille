@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/fs"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -105,7 +105,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 		// Date validation
 		if matter.Date != "" {
 			if _, err := time.Parse(time.DateOnly, matter.Date); err != nil {
-				log.Printf("Warning: Invalid date format in %s: %s", relPath, matter.Date)
+				slog.Warn("Invalid date format", "file", relPath, "date", matter.Date)
 				matter.Date = ""
 			}
 		}
@@ -126,7 +126,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			}
 			normalized := sb.String()
 			if normalized != tag {
-				log.Printf("Warning: Normalized tag '%s' to '%s' in %s", tag, normalized, relPath)
+				slog.Warn("Normalized tag", "original", tag, "normalized", normalized, "file", relPath)
 			}
 			if normalized != "" {
 				normalizedTags = append(normalizedTags, normalized)
