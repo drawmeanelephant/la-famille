@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -33,11 +34,11 @@ If there are local uncommitted changes, branches and creates a new PR.`,
 			DefaultBranch: baseBranch,
 		}
 
-		fmt.Println("Starting automated PR sync...")
+		slog.Info("Starting automated PR sync...")
 		if err := github.RunSync(cfg); err != nil {
 			return fmt.Errorf("sync failed: %w", err)
 		}
-		fmt.Println("Sync completed successfully.")
+		slog.Info("Sync completed successfully.")
 		return nil
 	},
 }

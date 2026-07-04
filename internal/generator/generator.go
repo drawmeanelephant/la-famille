@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -191,7 +191,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 						slug := meta.Slug
 						if slug != "" {
 							if !filepath.IsLocal(slug) || strings.Contains(slug, ".") || strings.Contains(slug, string(filepath.Separator)) || strings.Contains(slug, "/") {
-								log.Printf("Warning: Invalid slug %q for %s. Ignoring.", slug, relPath)
+								slog.Warn("Invalid slug. Ignoring.", "slug", slug, "file", relPath)
 								slug = ""
 							}
 						}
@@ -202,7 +202,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 					// Validate the final outPath against directory escapes
 					if !strings.HasPrefix(outPath, outDirClean+string(filepath.Separator)) && outPath != outDirClean {
 						update.errCount++
-						log.Printf("Warning: Potential path traversal in page loading detected: %s. Skipping.", outPath)
+						slog.Warn("Potential path traversal in page loading detected. Skipping.", "path", outPath)
 						return
 					}
 
