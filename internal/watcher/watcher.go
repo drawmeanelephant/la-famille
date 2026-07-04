@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -40,10 +41,18 @@ func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 		dirsToWatch = append(dirsToWatch, "assets")
 	}
 
+	outDirClean := filepath.Clean(cfg.OutputDir)
 	for _, dir := range dirsToWatch {
 		err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
+			}
+			cleanPath := filepath.Clean(path)
+			if cleanPath == outDirClean || strings.HasPrefix(cleanPath, outDirClean+string(filepath.Separator)) {
+				if d.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
 			}
 			if d.IsDir() {
 				return watcher.Add(path)
@@ -72,8 +81,11 @@ func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 				if event.Has(fsnotify.Create) {
 					stat, err := os.Stat(event.Name)
 					if err == nil && stat.IsDir() {
-						log.Printf("Dynamic directory tracking added: %s", event.Name)
-						_ = watcher.Add(event.Name)
+						cleanName := filepath.Clean(event.Name)
+						if !(cleanName == outDirClean || strings.HasPrefix(cleanName, outDirClean+string(filepath.Separator))) {
+							log.Printf("Dynamic directory tracking added: %s", event.Name)
+							_ = watcher.Add(event.Name)
+						}
 					}
 				}
 
