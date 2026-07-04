@@ -111,7 +111,7 @@ title: Test Page
 	cmdServe := exec.Command(exePath, "serve")
 	cmdServe.Dir = tmpDir
 
-	stdoutPipe, err := cmdServe.StderrPipe()
+	stderrPipe, err := cmdServe.StderrPipe()
 	if err != nil {
 		t.Fatalf("failed to create stdout pipe: %v", err)
 	}
@@ -122,7 +122,7 @@ title: Test Page
 
 	outputChan := make(chan string)
 	go func() {
-		scanner := bufio.NewScanner(stdoutPipe)
+		scanner := bufio.NewScanner(stderrPipe)
 		for scanner.Scan() {
 			line := scanner.Text()
 			if strings.Contains(line, "Serving") {
@@ -154,7 +154,6 @@ title: Test Page
 	// Wait for process to clean up
 	_ = cmdServe.Wait()
 }
-
 
 func TestInitCommand(t *testing.T) {
 	tmpDir := t.TempDir()

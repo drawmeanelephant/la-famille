@@ -30,6 +30,11 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	var rootCmd = &cobra.Command{
 		Use:   "la-famille",
 		Short: "La Famille is a static site generator",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if cmd.Name() != "tui" {
+				_, _ = logger.Setup(globalLogFile, false)
+			}
+		},
 	}
 
 	var buildCmd = &cobra.Command{
@@ -153,8 +158,6 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 }
 
 func main() {
-	// CLI logger setup (TUI commands will overwrite this when they execute)
-	logger.Setup(globalLogFile, false)
 
 	// Load config first to set defaults for flags
 	cfg, err := config.Load("config.yaml")
