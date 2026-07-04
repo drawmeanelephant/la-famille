@@ -120,9 +120,6 @@ func RunSync(cfg SyncConfig) error {
 		return fmt.Errorf("failed to push: %w", err)
 	}
 
-	// Give GitHub a tiny moment to register the branch before creating the PR.
-	time.Sleep(2 * time.Second)
-
 	prTitle := fmt.Sprintf("Automated Routine Execution: %s", timestamp)
 	prBody := "This PR was generated automatically by the la-famille GitHub sync feature to commit routine artifacts."
 
@@ -131,8 +128,25 @@ func RunSync(cfg SyncConfig) error {
 		baseBranch = "main" // Default fallback
 	}
 
-	if err := client.CreatePR(prTitle, prBody, branchName, baseBranch); err != nil {
-		return fmt.Errorf("failed to create PR: %w", err)
+	maxAttempts := 5
+	backoff := 2 * time.Second
+	var errPR error
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		// Wait before each attempt to give GitHub time to register the branch
+		time.Sleep(backoff)
+
+		errPR = client.CreatePR(prTitle, prBody, branchName, baseBranch)
+		if errPR == nil {
+			break
+		}
+
+		log.Printf("Attempt %d to create PR failed: %v. Retrying in %v...", attempt, errPR, backoff*2)
+		backoff *= 2
+	}
+
+	if errPR != nil {
+		return fmt.Errorf("failed to create PR after %d attempts: %w", maxAttempts, errPR)
 	}
 
 	log.Printf("Successfully created PR for branch %s", branchName)
