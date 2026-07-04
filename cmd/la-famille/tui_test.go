@@ -62,7 +62,7 @@ func TestTUIServeShutdownAndRestart(t *testing.T) {
 
 	up := false
 	for i := 0; i < 20; i++ {
-		resp, err := http.Get(serverURL)
+		resp, err := http.Get(serverURL) // #nosec G107 - Test URL is internal/local
 		if err == nil {
 			resp.Body.Close()
 			up = true
@@ -75,7 +75,7 @@ func TestTUIServeShutdownAndRestart(t *testing.T) {
 		t.Fatalf("Server never started listening on port %d", port)
 	}
 
-	newModel, cmd = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
 	m = newModel.(model)
 
 	if m.screen != screenMenu {
