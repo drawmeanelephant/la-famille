@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -85,6 +86,7 @@ type model struct {
 	workMsg       string
 	workErr       error
 	server        *http.Server
+	serverCancel  context.CancelFunc
 	watcherCancel context.CancelFunc
 	stats         *generator.BuildResult
 }
@@ -130,6 +132,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.watcherCancel()
 					m.watcherCancel = nil
 				}
+				if m.serverCancel != nil {
+					m.serverCancel()
+					m.serverCancel = nil
+				}
 				if m.screen == screenServe && m.server != nil {
 					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 					defer cancel()
@@ -144,6 +150,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.watcherCancel != nil {
 					m.watcherCancel()
 					m.watcherCancel = nil
+				}
+				if m.serverCancel != nil {
+					m.serverCancel()
+					m.serverCancel = nil
 				}
 				if m.screen == screenServe && m.server != nil {
 					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -232,12 +242,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						mux.HandleFunc("/livereload", watcher.LiveReloadHandler)
 					}
 
+					serverCtx, serverCancel := context.WithCancel(context.Background())
+					m.serverCancel = serverCancel
+
 					m.server = &http.Server{
 						Addr:              fmt.Sprintf("127.0.0.1:%d", port),
 						Handler:           mux,
 						ReadHeaderTimeout: 5 * time.Second,
 						ReadTimeout:       10 * time.Second,
 						WriteTimeout:      10 * time.Second,
+						BaseContext: func(net.Listener) context.Context {
+							return serverCtx
+						},
 					}
 					go func() {
 						_ = m.server.ListenAndServe()
