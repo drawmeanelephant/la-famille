@@ -1,6 +1,6 @@
 ---
 title: 2026-06-24 - Security Enhancement Routine
-author: Jules
+author: "Jules"
 date: 2026-06-24
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: Jules Routine Execution Guide
-author: Jules (AI)
+author: "Jules"
 date: 2026-06-19
 ---
 

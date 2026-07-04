@@ -1,6 +1,6 @@
 ---
 title: Jules Routines Index
-author: Jules (AI)
+author: "Jules"
 date: 2026-06-20
 ---
 

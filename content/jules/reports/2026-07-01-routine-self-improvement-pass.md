@@ -1,6 +1,6 @@
 ---
 title: Routine - Self-Improvement Pass
-author: Jules
+author: "Jules"
 date: 2026-07-01
 ---
 

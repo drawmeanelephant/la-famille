@@ -1,6 +1,6 @@
 ---
 title: Cat Facts Routine Execution Log
-author: @jules
+author: "Jules"
 date: 2026-06-22
 ---
 

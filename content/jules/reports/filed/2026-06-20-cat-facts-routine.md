@@ -1,6 +1,6 @@
 ---
 title: Routine Report - Generate Cat Facts
-author: @jules
+author: "Jules"
 date: 2026-06-20
 ---
 
