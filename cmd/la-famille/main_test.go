@@ -113,7 +113,7 @@ title: Test Page
 
 	stderrPipe, err := cmdServe.StderrPipe()
 	if err != nil {
-		t.Fatalf("failed to create stdout pipe: %v", err)
+		t.Fatalf("failed to create stderr pipe: %v", err)
 	}
 
 	if err := cmdServe.Start(); err != nil {
@@ -141,7 +141,7 @@ title: Test Page
 		if !ok {
 			t.Errorf("Serve command exited before outputting port")
 		} else if !strings.Contains(serveOut, "msg=\"Serving") {
-			t.Errorf("Expected serve command to default to port 8080, got output: %s", serveOut)
+			t.Errorf("Expected serve command to log serving message, got output: %s", serveOut)
 		}
 	case <-time.After(5 * time.Second):
 		t.Errorf("Timed out waiting for serve command output")

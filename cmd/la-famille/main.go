@@ -30,7 +30,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	var rootCmd = &cobra.Command{
 		Use:   "la-famille",
 		Short: "La Famille is a static site generator",
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 			if cmd.Name() != "tui" {
 				_, _ = logger.Setup(globalLogFile, false)
 			}
