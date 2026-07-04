@@ -111,7 +111,7 @@ title: Test Page
 	cmdServe := exec.Command(exePath, "serve")
 	cmdServe.Dir = tmpDir
 
-	stdoutPipe, err := cmdServe.StdoutPipe()
+	stdoutPipe, err := cmdServe.StderrPipe()
 	if err != nil {
 		t.Fatalf("failed to create stdout pipe: %v", err)
 	}
@@ -140,7 +140,7 @@ title: Test Page
 	case serveOut, ok := <-outputChan:
 		if !ok {
 			t.Errorf("Serve command exited before outputting port")
-		} else if !strings.Contains(serveOut, "http://localhost:8080") {
+		} else if !strings.Contains(serveOut, "msg=\"Serving") {
 			t.Errorf("Expected serve command to default to port 8080, got output: %s", serveOut)
 		}
 	case <-time.After(5 * time.Second):

@@ -16,6 +16,7 @@ type SiteLink struct {
 
 // Config represents the site configuration.
 type Config struct {
+
 	SiteName           string     `yaml:"site_name"`
 	Template           string     `yaml:"template"`
 	ContentDir         string     `yaml:"content_dir"`

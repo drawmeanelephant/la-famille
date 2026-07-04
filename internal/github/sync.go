@@ -2,7 +2,7 @@ package github
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 
 	"time"
 
@@ -34,7 +34,7 @@ func RunSync(cfg SyncConfig) error {
 	}
 
 	client := NewClient(cfg.Token, owner, repo)
-	log.Printf("Starting sync for %s/%s", owner, repo)
+	slog.Info("Starting sync", "owner", owner, "repo", repo)
 
 	// 2. Fetch and process existing PRs
 	prs, err := client.ListOpenPRs(cfg.BotAuthors)
@@ -42,28 +42,28 @@ func RunSync(cfg SyncConfig) error {
 		return fmt.Errorf("failed to list PRs: %w", err)
 	}
 
-	log.Printf("Found %d open PRs authored by bots", len(prs))
+	slog.Info("Found open PRs authored by bots", "count", len(prs))
 
 	for _, pr := range prs {
 		// We need to fetch the PR individually to reliably get the `mergeable` status.
 		// The list endpoint sometimes omits it or caches old values.
 		fullPR, err := client.GetPR(pr.Number)
 		if err != nil {
-			log.Printf("Failed to get details for PR #%d: %v", pr.Number, err)
+			slog.Error("Failed to get PR details", "pr", pr.Number, "error", err)
 			continue
 		}
 
 		if fullPR.Mergeable == nil {
-			log.Printf("PR #%d mergeable status is computing (null), skipping for now", pr.Number)
+			slog.Info("PR mergeable status is computing, skipping", "pr", pr.Number)
 			continue
 		}
 
 		if !*fullPR.Mergeable {
-			log.Printf("PR #%d has conflicts (mergeable=false), closing", pr.Number)
+			slog.Info("PR has conflicts, closing", "pr", pr.Number)
 			if err := client.ClosePR(pr.Number); err != nil {
-				log.Printf("Failed to close PR #%d: %v", pr.Number, err)
+				slog.Error("Failed to close PR", "pr", pr.Number, "error", err)
 			} else {
-				log.Printf("Successfully closed PR #%d", pr.Number)
+				slog.Info("Successfully closed PR", "pr", pr.Number)
 			}
 			continue
 		}
@@ -71,19 +71,19 @@ func RunSync(cfg SyncConfig) error {
 		// PR is mergeable, check CI status
 		passing, err := client.AreChecksPassing(fullPR.Head.Sha)
 		if err != nil {
-			log.Printf("Failed to get check runs for PR #%d (sha: %s): %v", pr.Number, fullPR.Head.Sha, err)
+			slog.Error("Failed to get check runs for PR", "pr", pr.Number, "sha", fullPR.Head.Sha, "error", err)
 			continue
 		}
 
 		if passing {
-			log.Printf("PR #%d checks are passing and mergeable=true, merging", pr.Number)
+			slog.Info("PR checks are passing and mergeable, merging", "pr", pr.Number)
 			if err := client.MergePR(pr.Number); err != nil {
-				log.Printf("Failed to merge PR #%d: %v", pr.Number, err)
+				slog.Error("Failed to merge PR", "pr", pr.Number, "error", err)
 			} else {
-				log.Printf("Successfully merged PR #%d", pr.Number)
+				slog.Info("Successfully merged PR", "pr", pr.Number)
 			}
 		} else {
-			log.Printf("PR #%d checks are not yet fully passing, skipping", pr.Number)
+			slog.Info("PR checks are not yet fully passing, skipping", "pr", pr.Number)
 		}
 	}
 
@@ -94,11 +94,11 @@ func RunSync(cfg SyncConfig) error {
 	}
 
 	if !hasChanges {
-		log.Println("No local changes detected. Sync complete.")
+		slog.Info("No local changes detected. Sync complete.")
 		return nil
 	}
 
-	log.Println("Local changes detected. Creating a new automated PR.")
+	slog.Info("Local changes detected. Creating a new automated PR.")
 	timestamp := time.Now().Format("20060102150405")
 	branchName := fmt.Sprintf("jules-auto-%s", timestamp)
 
@@ -115,7 +115,7 @@ func RunSync(cfg SyncConfig) error {
 		return fmt.Errorf("failed to commit: %w", err)
 	}
 
-	log.Printf("Pushing branch %s...", branchName)
+	slog.Info("Pushing branch", "branch", branchName)
 	if err := git.Push("origin", branchName); err != nil {
 		return fmt.Errorf("failed to push: %w", err)
 	}
@@ -141,7 +141,7 @@ func RunSync(cfg SyncConfig) error {
 			break
 		}
 
-		log.Printf("Attempt %d to create PR failed: %v. Retrying in %v...", attempt, errPR, backoff*2)
+		slog.Warn("Attempt to create PR failed. Retrying.", "attempt", attempt, "error", errPR, "retry_in", backoff*2)
 		backoff *= 2
 	}
 
@@ -149,7 +149,7 @@ func RunSync(cfg SyncConfig) error {
 		return fmt.Errorf("failed to create PR after %d attempts: %w", maxAttempts, errPR)
 	}
 
-	log.Printf("Successfully created PR for branch %s", branchName)
+	slog.Info("Successfully created PR for branch", "branch", branchName)
 
 	// Switch back to original branch? Let's just stay here or we'd need to know what we were on.
 	// For automation containers, it usually doesn't matter since it's transient.

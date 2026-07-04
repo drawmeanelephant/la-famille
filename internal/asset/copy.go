@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -60,7 +60,7 @@ func CopyAssets(cfg config.Config) error {
 			ignoredPaths := make(map[string]bool)
 			if len(paths) > 0 {
 				if _, lookErr := exec.LookPath("git"); lookErr != nil {
-					log.Printf("Warning: git binary not found in environment, bypassing check-ignore optimization pass")
+					slog.Warn("Git binary not found in environment, bypassing check-ignore optimization pass")
 				} else {
 					cmd := exec.Command("git", "check-ignore", "--stdin")
 					projectRoot, _ := filepath.Abs(".")
@@ -73,10 +73,10 @@ func CopyAssets(cfg config.Config) error {
 							// exit code 1 means none of the paths are ignored, which is a normal case
 							// exit code 128 means outside repository, which happens in tests
 							if exitErr.ExitCode() != 1 && exitErr.ExitCode() != 128 {
-								log.Printf("Error running git check-ignore: %v (stderr: %q)", err, string(exitErr.Stderr))
+								slog.Error("Error running git check-ignore", "error", err, "stderr", string(exitErr.Stderr))
 							}
 						} else {
-							log.Printf("Error running git check-ignore: %v", err)
+							slog.Error("Error running git check-ignore", "error", err)
 						}
 					}
 
@@ -115,7 +115,7 @@ func CopyAssets(cfg config.Config) error {
 				outDirClean := filepath.Clean(filepath.Join(cfg.OutputDir, "assets"))
 				destPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
 				if !strings.HasPrefix(destPath, outDirClean+string(filepath.Separator)) && destPath != outDirClean {
-					log.Printf("Warning: Potential path traversal in asset copying detected: %s. Skipping.", relPath)
+					slog.Warn("Potential path traversal in asset copying detected. Skipping.", "path", relPath)
 					continue
 				}
 				if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
