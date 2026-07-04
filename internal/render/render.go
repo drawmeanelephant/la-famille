@@ -1,7 +1,6 @@
 package render
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
 	"log"
@@ -155,15 +154,15 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 	// Use ExecuteTemplate with the base name to avoid the ParseFiles name trap
 	templateName := filepath.Base(templatePath)
 	if cfg.WatchMode {
-		var buf bytes.Buffer
-		if err := clonedTmpl.ExecuteTemplate(&buf, templateName, p); err != nil {
+		var sb strings.Builder
+		if err := clonedTmpl.ExecuteTemplate(&sb, templateName, p); err != nil {
 			return err
 		}
 
-		b := buf.Bytes()
-		idx := bytes.LastIndex(b, []byte("</body>"))
+		s := sb.String()
+		idx := strings.LastIndex(s, "</body>")
 
-		script := []byte(`<script>
+		script := `<script>
 		if (window.EventSource) {
 			var source = new EventSource('/livereload');
 			source.onmessage = function(e) {
@@ -173,20 +172,19 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 			};
 		}
 		</script>
-</body>`)
+</body>`
 
 		if idx != -1 {
-			if _, err := outFile.Write(b[:idx]); err != nil {
-				return err
-			}
-			if _, err := outFile.Write(script); err != nil {
-				return err
-			}
-			if _, err := outFile.Write(b[idx+7:]); err != nil {
+			var final strings.Builder
+			final.Grow(len(s) + len(script))
+			final.WriteString(s[:idx])
+			final.WriteString(script)
+			final.WriteString(s[idx+7:])
+			if _, err := outFile.WriteString(final.String()); err != nil {
 				return err
 			}
 		} else {
-			if _, err := outFile.Write(b); err != nil {
+			if _, err := outFile.WriteString(s); err != nil {
 				return err
 			}
 		}
