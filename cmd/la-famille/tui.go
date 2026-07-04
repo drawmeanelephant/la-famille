@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-
 	"github.com/tbuddy/la-famille/internal/logger"
 	"net/http"
 	"os"
