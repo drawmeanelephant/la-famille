@@ -122,7 +122,25 @@ func CopyAssets(cfg config.Config) error {
 					return err
 				}
 
+				srcStat, err := os.Stat(path)
+				if err != nil {
+					return err
+				}
+
+				destStat, err := os.Stat(destPath)
+				if err == nil {
+					if srcStat.Size() == destStat.Size() && srcStat.ModTime().Equal(destStat.ModTime()) {
+						continue
+					}
+				} else if !os.IsNotExist(err) {
+					return err
+				}
+
 				if err := CopyFile(path, destPath); err != nil {
+					return err
+				}
+
+				if err := os.Chtimes(destPath, srcStat.ModTime(), srcStat.ModTime()); err != nil {
 					return err
 				}
 			}
@@ -139,7 +157,7 @@ func CopyFile(src, dst string) (err error) {
 	}
 	defer source.Close()
 
-	destination, err := os.Create(dst)
+	destination, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to create destination file: %w", err)
 	}
