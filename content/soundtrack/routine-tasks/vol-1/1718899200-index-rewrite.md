@@ -1,6 +1,6 @@
 ---
 title: Index Refresh Workflow
-author: Jules
+author: "Jules"
 date: 2026-06-20
 ---
 

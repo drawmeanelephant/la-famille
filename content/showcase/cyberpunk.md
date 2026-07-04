@@ -1,7 +1,7 @@
 ---
 title: "Cyberpunk Premium Demo"
 layout: "cyberpunk"
-author: "@jules"
+author: "Jules"
 date: "2026-07-02"
 description: "Neon-drenched interface validator utilizing high-contrast focus states and custom inline emoji extensions."
 image: "/assets/img/mascot-electric-blue.jpeg"

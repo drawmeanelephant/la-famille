@@ -1,7 +1,7 @@
 ---
 title: "Routine Execution: Stub Page Polish"
 date: 2026-06-25
-author: Jules
+author: "Jules"
 ---
 
 # Routine: Improve Missing Page Stub

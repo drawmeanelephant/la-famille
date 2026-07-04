@@ -1,6 +1,6 @@
 ---
 title: Flow Music Project Context
-author: @jules
+author: "Jules"
 date: 2024-06-19
 ---
 

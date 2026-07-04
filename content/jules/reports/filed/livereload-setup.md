@@ -1,6 +1,6 @@
 ---
 title: Execution Log - LiveReload Setup
-author: Jules
+author: "Jules"
 date: 2026-06-29
 ---
 

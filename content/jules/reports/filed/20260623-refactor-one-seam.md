@@ -1,6 +1,6 @@
 ---
 title: Report - Refactor One Seam (Stub Generator)
-author: Jules
+author: "Jules"
 date: 2026-06-23
 ---
 

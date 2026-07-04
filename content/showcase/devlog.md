@@ -1,7 +1,7 @@
 ---
 title: "Devlog Premium Demo"
 layout: "devlog"
-author: "@jules"
+author: "Jules"
 date: "2026-07-02"
 description: "Multimedia developer tracking log showcasing video scripts, animation cues, and asset syncing."
 image: "/assets/img/Octopus_mascot_riding_skateboard…_202606200817.jpeg"
