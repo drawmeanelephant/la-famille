@@ -39,13 +39,20 @@ func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.
 				return ast.WalkContinue, nil
 			}
 
-			// Path is relative, like "../file.md" or "file.md"
-			// Need to resolve it relative to the directory of CurrentFile
-			dir := filepath.Dir(t.CurrentFile)
-			// filepath.Join uses OS separators, but we want to stick to slashes
-			targetRelPath := filepath.ToSlash(filepath.Clean(dir + "/" + u.Path))
-			if dir == "." {
-				targetRelPath = filepath.ToSlash(filepath.Clean(u.Path))
+			// Path could be root-relative or relative.
+			var targetRelPath string
+			if strings.HasPrefix(u.Path, "/") {
+				// Root-relative link: resolve relative to the base ContentDir root.
+				// Since all keys in t.FileMap are relative paths from ContentDir,
+				// we just need to strip the leading slash and clean.
+				targetRelPath = filepath.ToSlash(filepath.Clean(strings.TrimPrefix(u.Path, "/")))
+			} else {
+				// Relative link: resolve relative to the directory of CurrentFile.
+				dir := filepath.Dir(t.CurrentFile)
+				targetRelPath = filepath.ToSlash(filepath.Clean(dir + "/" + u.Path))
+				if dir == "." {
+					targetRelPath = filepath.ToSlash(filepath.Clean(u.Path))
+				}
 			}
 
 			// Prevent path traversal

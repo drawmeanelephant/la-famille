@@ -186,11 +186,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 					outDirClean := filepath.Clean(cfg.OutputDir)
 					outPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
-					if !strings.HasPrefix(outPath, outDirClean+string(filepath.Separator)) && outPath != outDirClean {
-						update.errCount++
-						log.Printf("Warning: Potential path traversal in page loading detected: %s. Skipping.", relPath)
-						return
-					}
+
 					if shouldRender {
 						slug := meta.Slug
 						if slug != "" {
@@ -203,7 +199,14 @@ func Build(cfg config.Config) (BuildResult, error) {
 						outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
 					}
 
-					if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+					// Validate the final outPath against directory escapes
+					if !strings.HasPrefix(outPath, outDirClean+string(filepath.Separator)) && outPath != outDirClean {
+						update.errCount++
+						log.Printf("Warning: Potential path traversal in page loading detected: %s. Skipping.", outPath)
+						return
+					}
+
+					if err := os.MkdirAll(filepath.Dir(outPath), 0700); err != nil {
 						update.errs = append(update.errs, err)
 						return
 					}
