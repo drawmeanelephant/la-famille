@@ -47,6 +47,11 @@ func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 			if err != nil {
 				return err
 			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
 			cleanPath := filepath.Clean(path)
 			if cleanPath == outDirClean || strings.HasPrefix(cleanPath, outDirClean+string(filepath.Separator)) {
 				if d.IsDir() {
