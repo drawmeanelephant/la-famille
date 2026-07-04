@@ -112,15 +112,6 @@ func TestConfigValidation(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "empty content_dir",
-			cfg: func() Config {
-				c := DefaultConfig()
-				c.ContentDir = ""
-				return c
-			}(),
-			wantErr: true,
-		},
-		{
 			name: "invalid port (too low)",
 			cfg: func() Config {
 				c := DefaultConfig()
@@ -138,33 +129,48 @@ func TestConfigValidation(t *testing.T) {
 			}(),
 			wantErr: true,
 		},
-		{
-			name: "absolute path for output_dir",
+	}
+
+	dirFields := []struct {
+		name     string
+		setEmpty func(*Config)
+		setAbs   func(*Config)
+	}{
+		{name: "ContentDir", setEmpty: func(c *Config) { c.ContentDir = "" }, setAbs: func(c *Config) { c.ContentDir = "/etc/passwd" }},
+		{name: "OutputDir", setEmpty: func(c *Config) { c.OutputDir = "" }, setAbs: func(c *Config) { c.OutputDir = "/etc/passwd" }},
+		{name: "Template", setEmpty: func(c *Config) { c.Template = "" }, setAbs: func(c *Config) { c.Template = "/etc/passwd" }},
+		{name: "AssetDir", setEmpty: func(c *Config) { c.AssetDir = "" }, setAbs: func(c *Config) { c.AssetDir = "/etc/passwd" }},
+		{name: "RagDir", setEmpty: func(c *Config) { c.RagDir = "" }, setAbs: func(c *Config) { c.RagDir = "/etc/passwd" }},
+		{name: "ProjectRoot", setEmpty: func(c *Config) { c.ProjectRoot = "" }, setAbs: func(c *Config) { c.ProjectRoot = "/etc/passwd" }},
+	}
+
+	for _, field := range dirFields {
+		tests = append(tests, struct {
+			name    string
+			cfg     Config
+			wantErr bool
+		}{
+			name: "empty " + field.name,
 			cfg: func() Config {
 				c := DefaultConfig()
-				c.OutputDir = "/etc/passwd"
+				field.setEmpty(&c)
 				return c
 			}(),
 			wantErr: true,
-		},
-		{
-			name: "empty output_dir",
+		})
+		tests = append(tests, struct {
+			name    string
+			cfg     Config
+			wantErr bool
+		}{
+			name: "absolute path for " + field.name,
 			cfg: func() Config {
 				c := DefaultConfig()
-				c.OutputDir = ""
+				field.setAbs(&c)
 				return c
 			}(),
 			wantErr: true,
-		},
-		{
-			name: "empty template",
-			cfg: func() Config {
-				c := DefaultConfig()
-				c.Template = ""
-				return c
-			}(),
-			wantErr: true,
-		},
+		})
 	}
 
 	for _, tt := range tests {

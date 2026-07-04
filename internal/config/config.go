@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -118,41 +117,27 @@ port: 8080
 
 // Validate checks that the configuration values are safe and correct.
 func (c Config) Validate() error {
-	if c.ContentDir == "" {
-		return errors.New("ContentDir cannot be empty")
-	}
-	if c.OutputDir == "" {
-		return errors.New("OutputDir cannot be empty")
-	}
-	if c.Template == "" {
-		return errors.New("Template cannot be empty")
-	}
-	if c.AssetDir == "" {
-		return errors.New("AssetDir cannot be empty")
-	}
-	if c.RagDir == "" {
-		return errors.New("RagDir cannot be empty")
-	}
-
 	if c.Port < 1 || c.Port > 65535 {
 		return fmt.Errorf("Port must be between 1 and 65535, got %d", c.Port)
 	}
 
-	// Validate path locality (prevent directory traversal)
-	if !filepath.IsLocal(c.ContentDir) {
-		return fmt.Errorf("ContentDir must be a local path, got %s", c.ContentDir)
+	dirs := []struct{ name, path string }{
+		{"ContentDir", c.ContentDir},
+		{"OutputDir", c.OutputDir},
+		{"Template", c.Template},
+		{"AssetDir", c.AssetDir},
+		{"RagDir", c.RagDir},
+		{"ProjectRoot", c.ProjectRoot},
 	}
-	if !filepath.IsLocal(c.OutputDir) {
-		return fmt.Errorf("OutputDir must be a local path, got %s", c.OutputDir)
-	}
-	if !filepath.IsLocal(c.Template) {
-		return fmt.Errorf("Template must be a local path, got %s", c.Template)
-	}
-	if !filepath.IsLocal(c.AssetDir) {
-		return fmt.Errorf("AssetDir must be a local path, got %s", c.AssetDir)
-	}
-	if !filepath.IsLocal(c.RagDir) {
-		return fmt.Errorf("RagDir must be a local path, got %s", c.RagDir)
+
+	for _, d := range dirs {
+		name, path := d.name, d.path
+		if path == "" {
+			return fmt.Errorf("%s cannot be empty", name)
+		}
+		if !filepath.IsLocal(path) {
+			return fmt.Errorf("%s must be a local path, got %s", name, path)
+		}
 	}
 
 	return nil
