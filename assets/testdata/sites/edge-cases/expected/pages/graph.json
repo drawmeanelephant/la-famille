@@ -1,9 +1,22 @@
 {
   "nodes": {
+    "absolute/path": {
+      "type": "stub",
+      "render": true,
+      "missing": true,
+      "referenced_by": [
+        "index.md"
+      ]
+    },
     "index": {
       "type": "page",
       "render": true
     }
   },
-  "edges": []
+  "edges": [
+    [
+      "index",
+      "absolute/path"
+    ]
+  ]
 }
