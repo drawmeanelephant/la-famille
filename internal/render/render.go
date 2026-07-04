@@ -15,9 +15,11 @@ import (
 )
 
 type Renderer struct {
-	cache     map[string]*template.Template
-	allowlist map[string]bool
-	mu        sync.Mutex
+	cache map[string]*template.Template
+	// allowlist is immutable after initialization and requires no lock.
+	allowlist   map[string]bool
+	mu          sync.RWMutex
+	templateDir string
 }
 
 func New(templateDir string) *Renderer {
@@ -26,8 +28,9 @@ func New(templateDir string) *Renderer {
 		allowlist = make(map[string]bool)
 	}
 	return &Renderer{
-		cache:     make(map[string]*template.Template),
-		allowlist: allowlist,
+		cache:       make(map[string]*template.Template),
+		allowlist:   allowlist,
+		templateDir: templateDir,
 	}
 }
 
@@ -46,38 +49,20 @@ func DiscoverLayouts(templateDir string) (map[string]bool, error) {
 	return allowlist, nil
 }
 
-func findPartials() (map[string]string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-	var templatesDir string
-	for {
-		potential := filepath.Join(wd, "templates")
-		if stat, err := os.Stat(potential); err == nil && stat.IsDir() {
-			templatesDir = potential
-			break
-		}
-		parent := filepath.Dir(wd)
-		if parent == wd {
-			// Reached root without finding it, just return empty to not break existing flow
-			return nil, nil
-		}
-		wd = parent
-	}
-
-	partialsDir := filepath.Join(templatesDir, "partials")
+// DiscoverPartials walks the templates/partials directory to find available partials.
+func DiscoverPartials(templateDir string) (map[string]string, error) {
+	partialsDir := filepath.Join(templateDir, "partials")
 	if _, err := os.Stat(partialsDir); os.IsNotExist(err) {
 		return nil, nil
 	}
 
 	partials := make(map[string]string)
-	err = filepath.WalkDir(partialsDir, func(path string, d os.DirEntry, err error) error {
+	err := filepath.WalkDir(partialsDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.IsDir() && filepath.Ext(d.Name()) == ".html" {
-			rel, err := filepath.Rel(templatesDir, path)
+			rel, err := filepath.Rel(templateDir, path)
 			if err != nil {
 				return err
 			}
@@ -120,40 +105,47 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 		}
 	}
 
-	r.mu.Lock()
+	r.mu.RLock()
 	cachedTmpl, exists := r.cache[templatePath]
+	r.mu.RUnlock()
+
 	if !exists {
-		partials, _ := findPartials()
+		// Discover partials and read/parse files outside the critical section
+		partials, _ := DiscoverPartials(r.templateDir)
 
 		b, err := os.ReadFile(templatePath)
 		if err != nil {
-			r.mu.Unlock()
 			return fmt.Errorf("failed to read template %s: %w", templatePath, err)
 		}
 
 		parsedTmpl := template.New(filepath.Base(templatePath))
 		parsedTmpl, err = parsedTmpl.Parse(string(b))
 		if err != nil {
-			r.mu.Unlock()
 			return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
 		}
 
 		for name, path := range partials {
 			pb, err := os.ReadFile(path)
 			if err != nil {
-				r.mu.Unlock()
 				return fmt.Errorf("failed to read partial %s: %w", path, err)
 			}
 			_, err = parsedTmpl.New(name).Parse(string(pb))
 			if err != nil {
-				r.mu.Unlock()
 				return fmt.Errorf("failed to parse partial %s: %w", path, err)
 			}
 		}
-		r.cache[templatePath] = parsedTmpl
-		cachedTmpl = parsedTmpl
+
+		// Acquire write lock to update the cache
+		r.mu.Lock()
+		// Double-check if another goroutine has already cached it
+		if existing, ok := r.cache[templatePath]; ok {
+			cachedTmpl = existing
+		} else {
+			r.cache[templatePath] = parsedTmpl
+			cachedTmpl = parsedTmpl
+		}
+		r.mu.Unlock()
 	}
-	r.mu.Unlock()
 
 	clonedTmpl, err := cachedTmpl.Clone()
 	if err != nil {
@@ -168,7 +160,10 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 			return err
 		}
 
-		script := `<script>
+		b := buf.Bytes()
+		idx := bytes.LastIndex(b, []byte("</body>"))
+
+		script := []byte(`<script>
 		if (window.EventSource) {
 			var source = new EventSource('/livereload');
 			source.onmessage = function(e) {
@@ -178,13 +173,24 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 			};
 		}
 		</script>
-</body>`
+</body>`)
 
-		htmlStr := buf.String()
-		htmlStr = strings.Replace(htmlStr, "</body>", script, 1)
-
-		_, err = outFile.WriteString(htmlStr)
-		return err
+		if idx != -1 {
+			if _, err := outFile.Write(b[:idx]); err != nil {
+				return err
+			}
+			if _, err := outFile.Write(script); err != nil {
+				return err
+			}
+			if _, err := outFile.Write(b[idx+7:]); err != nil {
+				return err
+			}
+		} else {
+			if _, err := outFile.Write(b); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 
 	if err := clonedTmpl.ExecuteTemplate(outFile, templateName, p); err != nil {
