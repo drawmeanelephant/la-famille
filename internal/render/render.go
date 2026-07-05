@@ -95,6 +95,7 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 		}
 	}
 
+	templatePath = filepath.Clean(templatePath)
 	r.mu.Lock()
 	once, onceExists := r.onces[templatePath]
 	if !onceExists {
