@@ -23,6 +23,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/graph"
 	"github.com/tbuddy/la-famille/internal/markdown"
 	"github.com/tbuddy/la-famille/internal/page"
+	"github.com/tbuddy/la-famille/internal/pathutil"
 	"github.com/tbuddy/la-famille/internal/render"
 	"github.com/tbuddy/la-famille/internal/search"
 	"github.com/tbuddy/la-famille/internal/sitedata"
@@ -199,8 +200,8 @@ func Build(cfg config.Config) (BuildResult, error) {
 						outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
 					}
 
-					// Validate the final outPath against directory escapes
-					if !strings.HasPrefix(outPath, outDirClean+string(filepath.Separator)) && outPath != outDirClean {
+					// Validate the final outPath against directory escapes using IsSafePath
+					if !pathutil.IsSafePath(outDirClean, outPath) {
 						update.errCount++
 						slog.Warn("Potential path traversal in page loading detected. Skipping.", "path", outPath)
 						return
