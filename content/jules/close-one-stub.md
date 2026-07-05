@@ -1,6 +1,6 @@
 ---
 title: Routine - Close One Stub
-author: The Human
+author: "The Human"
 date: 2026-06-19
 ---
 
