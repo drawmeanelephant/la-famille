@@ -24,7 +24,6 @@ import (
 	"github.com/tbuddy/la-famille/internal/markdown"
 	"github.com/tbuddy/la-famille/internal/pathutil"
 	"github.com/tbuddy/la-famille/internal/page"
-	"github.com/tbuddy/la-famille/internal/pathutil"
 	"github.com/tbuddy/la-famille/internal/render"
 	"github.com/tbuddy/la-famille/internal/search"
 	"github.com/tbuddy/la-famille/internal/sitedata"
