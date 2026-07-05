@@ -9,26 +9,22 @@ import (
 	"strings"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/pathutil"
 )
 
-// CopyAssets copies files from the configured AssetDir to OutputDir/assets,
-// skipping testdata directories, handling .gitignore patterns natively, and checking for path traversal.
 func CopyAssets(cfg config.Config) error {
 	if cfg.AssetDir == "" {
 		return nil
 	}
 
-	// 1. Read and parse local .gitignore patterns natively
 	var ignorePatterns []string
 	if gitignore, err := os.ReadFile(filepath.Join(cfg.ProjectRoot, ".gitignore")); err == nil {
 		lines := strings.Split(string(gitignore), "\n")
 		for _, line := range lines {
 			line = strings.TrimSpace(line)
-			if line == "" || strings.HasPrefix(line, "#") {
-				continue
+			if line != "" && !strings.HasPrefix(line, "#") {
+				ignorePatterns = append(ignorePatterns, filepath.ToSlash(line))
 			}
-			// Convert to unified forward slashes for matching consistency
-			ignorePatterns = append(ignorePatterns, filepath.ToSlash(line))
 		}
 	}
 
@@ -39,41 +35,26 @@ func CopyAssets(cfg config.Config) error {
 		return err
 	}
 
-	targetDir := filepath.Join(cfg.OutputDir, "assets")
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	outDirClean := filepath.Clean(filepath.Join(cfg.OutputDir, "assets"))
+	if err := os.MkdirAll(outDirClean, 0755); err != nil {
 		return err
 	}
 
-	// 2. Walk directory to gather asset files
-	var paths []string
-	err := filepath.WalkDir(cfg.AssetDir, func(path string, d os.DirEntry, err error) error {
+	return filepath.WalkDir(cfg.AssetDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() {
-			paths = append(paths, path)
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	// 3. Process and filter gathered assets
-	for _, path := range paths {
-		if filepath.Ext(path) == ".go" {
-			continue
+		if d.IsDir() {
+			return nil
 		}
 
-		// Skip testdata in path structures
-		if strings.Contains(path, "/testdata/") || strings.Contains(path, "\\testdata\\") ||
-			strings.HasSuffix(path, "/testdata") || strings.HasSuffix(path, "\\testdata") {
-			continue
+		if filepath.Ext(path) == ".go" || strings.Contains(path, "/testdata/") || strings.Contains(path, "\\testdata\\") {
+			return nil
 		}
 
-		// Native ignore check
-		if isIgnored(path, ignorePatterns) {
-			continue
+		slashPath := filepath.ToSlash(path)
+		if isIgnored(slashPath, ignorePatterns) {
+			return nil
 		}
 
 		relPath, err := filepath.Rel(cfg.AssetDir, path)
@@ -81,20 +62,21 @@ func CopyAssets(cfg config.Config) error {
 			return err
 		}
 
-		outDirClean := filepath.Clean(filepath.Join(cfg.OutputDir, "assets"))
 		destPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
+		if !pathutil.IsSafePath(outDirClean, destPath) {
+			slog.Warn("Static asset sync boundary intervention blocked layout breakout", "path", relPath)
+			return nil
+		}
 
-		// Guard against directory escape
-		if !strings.HasPrefix(destPath, outDirClean+string(filepath.Separator)) && destPath != outDirClean {
-			slog.Warn("Potential path traversal in asset copying detected. Skipping.", "path", relPath)
-			continue
+		if err := os.WriteFile(destPath, nil, 0600); err == nil {
+			_ = os.Remove(destPath)
 		}
 
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 			return err
 		}
 
-		srcStat, err := os.Stat(path)
+		srcStat, err := d.Info()
 		if err != nil {
 			return err
 		}
@@ -102,47 +84,36 @@ func CopyAssets(cfg config.Config) error {
 		destStat, err := os.Stat(destPath)
 		if err == nil {
 			if srcStat.Size() == destStat.Size() && srcStat.ModTime().Equal(destStat.ModTime()) {
-				continue
+				return nil
 			}
-		} else if !os.IsNotExist(err) {
-			return err
 		}
 
 		if err := CopyFile(path, destPath); err != nil {
 			return err
 		}
 
-		if err := os.Chtimes(destPath, srcStat.ModTime(), srcStat.ModTime()); err != nil {
-			return err
-		}
-	}
-
-	return nil
+		return os.Chtimes(destPath, srcStat.ModTime(), srcStat.ModTime())
+	})
 }
 
-// isIgnored evaluates a filepath against parsed .gitignore strings natively.
-func isIgnored(path string, patterns []string) bool {
-	slashPath := filepath.ToSlash(path)
+func isIgnored(slashPath string, patterns []string) bool {
 	segments := strings.Split(slashPath, "/")
 
 	for _, pattern := range patterns {
 		cleanPattern := strings.TrimSuffix(pattern, "/")
 
-		// Match individual path segments (exact matches)
 		for _, seg := range segments {
 			if seg == cleanPattern {
 				return true
 			}
 		}
 
-		// Match basic wildcards (e.g., *.log or temp*)
 		for _, seg := range segments {
 			if matched, _ := filepath.Match(cleanPattern, seg); matched {
 				return true
 			}
 		}
 
-		// Match absolute containment pathways
 		if strings.Contains(slashPath, "/"+cleanPattern+"/") ||
 			strings.HasPrefix(slashPath, cleanPattern+"/") ||
 			strings.HasSuffix(slashPath, "/"+cleanPattern) ||
@@ -153,17 +124,16 @@ func isIgnored(path string, patterns []string) bool {
 	return false
 }
 
-// CopyFile streams the contents of src to dst using a buffer.
 func CopyFile(src, dst string) (err error) {
 	source, err := os.Open(src)
 	if err != nil {
-		return fmt.Errorf("failed to open source file: %w", err)
+		return fmt.Errorf("failed to open source: %w", err)
 	}
 	defer source.Close()
 
 	destination, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
-		return fmt.Errorf("failed to create destination file: %w", err)
+		return fmt.Errorf("failed to establish destination: %w", err)
 	}
 	defer func() {
 		cerr := destination.Close()
@@ -173,12 +143,8 @@ func CopyFile(src, dst string) (err error) {
 	}()
 
 	if _, err = io.Copy(destination, source); err != nil {
-		return fmt.Errorf("failed to copy data: %w", err)
+		return fmt.Errorf("payload copy error: %w", err)
 	}
 
-	if err = destination.Sync(); err != nil {
-		return fmt.Errorf("failed to sync destination: %w", err)
-	}
-
-	return nil
+	return destination.Sync()
 }
