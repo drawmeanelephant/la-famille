@@ -89,42 +89,6 @@ func TestCopyAssets_SkipGoAndGitignore(t *testing.T) {
 	}
 }
 
-func TestCopyAssetsGitNotAvailable(t *testing.T) {
-	// Temporarily stub PATH to make git unavailable
-	originalPath := os.Getenv("PATH")
-	defer os.Setenv("PATH", originalPath)
-	os.Setenv("PATH", "")
-
-	tempDir := t.TempDir()
-
-	assetDir := filepath.Join(tempDir, "assets")
-	outputDir := filepath.Join(tempDir, "public")
-
-	// Create asset dir and some files
-	_ = os.MkdirAll(filepath.Join(assetDir, "css"), 0755)
-
-	_ = os.WriteFile(filepath.Join(assetDir, "main.css"), []byte("body { color: red; }"), 0600)
-	_ = os.WriteFile(filepath.Join(assetDir, "css", "style.css"), []byte("h1 { color: blue; }"), 0600)
-
-	cfg := config.Config{
-		AssetDir:  assetDir,
-		OutputDir: outputDir,
-	}
-
-	err := CopyAssets(cfg)
-	if err != nil {
-		t.Fatalf("CopyAssets failed when git is not available: %v", err)
-	}
-
-	// Verify copied files even when git check-ignore is skipped
-	if _, err := os.Stat(filepath.Join(outputDir, "assets", "main.css")); os.IsNotExist(err) {
-		t.Errorf("main.css was not copied")
-	}
-	if _, err := os.Stat(filepath.Join(outputDir, "assets", "css", "style.css")); os.IsNotExist(err) {
-		t.Errorf("style.css was not copied")
-	}
-}
-
 func TestCopyAssets_Incremental(t *testing.T) {
 	tempDir := t.TempDir()
 	assetDir := filepath.Join(tempDir, "assets")
@@ -186,5 +150,56 @@ func TestCopyAssets_Incremental(t *testing.T) {
 	}
 	if !destStat3.ModTime().Equal(updatedTime) {
 		t.Errorf("Expected updated mod time %v, got %v", updatedTime, destStat3.ModTime())
+	}
+}
+
+func TestCopyAssets_NativeIgnoreMatching(t *testing.T) {
+	tempDir := t.TempDir()
+
+	assetDir := filepath.Join(tempDir, "assets")
+	outputDir := filepath.Join(tempDir, "public")
+
+	_ = os.MkdirAll(assetDir, 0755)
+
+	// Write mock assets
+	_ = os.WriteFile(filepath.Join(assetDir, "main.css"), []byte("body {}"), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "skip-me.log"), []byte("log data"), 0600)
+
+	nestedIgnoreDir := filepath.Join(assetDir, "node_modules")
+	_ = os.MkdirAll(nestedIgnoreDir, 0755)
+	_ = os.WriteFile(filepath.Join(nestedIgnoreDir, "dep.js"), []byte("const x = 1;"), 0600)
+
+	// Write native .gitignore inside the mock ProjectRoot (tempDir)
+	gitignoreContent := `
+# Mock ignore file
+*.log
+node_modules/
+`
+	_ = os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte(gitignoreContent), 0600)
+
+	cfg := config.Config{
+		ProjectRoot: tempDir,
+		AssetDir:    assetDir,
+		OutputDir:   outputDir,
+	}
+
+	err := CopyAssets(cfg)
+	if err != nil {
+		t.Fatalf("CopyAssets with native ignores failed: %v", err)
+	}
+
+	// 1. Verify standard files copy successfully
+	if _, err := os.Stat(filepath.Join(outputDir, "assets", "main.css")); os.IsNotExist(err) {
+		t.Errorf("Expected main.css to copy natively")
+	}
+
+	// 2. Verify wildcard logs are ignored
+	if _, err := os.Stat(filepath.Join(outputDir, "assets", "skip-me.log")); !os.IsNotExist(err) {
+		t.Errorf("Expected skip-me.log to be skipped natively")
+	}
+
+	// 3. Verify directory paths are ignored
+	if _, err := os.Stat(filepath.Join(outputDir, "assets", "node_modules", "dep.js")); !os.IsNotExist(err) {
+		t.Errorf("Expected node_modules directory path to be ignored natively")
 	}
 }
