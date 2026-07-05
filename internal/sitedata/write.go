@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/tbuddy/la-famille/internal/jsonutil"
+	"github.com/tbuddy/la-famille/internal/pathutil"
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
@@ -21,8 +22,8 @@ func Write(outputDir string, metaData map[string]map[string]interface{}) error {
 	outDirClean := filepath.Clean(outputDir)
 	sitemapPath := filepath.Join(outDirClean, "sitemap.xml")
 
-	// Safeguard against path traversal
-	if !strings.HasPrefix(sitemapPath, outDirClean+string(filepath.Separator)) && sitemapPath != outDirClean {
+	// Safeguard against path traversal using IsSafePath
+	if !pathutil.IsSafePath(outDirClean, sitemapPath) {
 		return fmt.Errorf("potential path traversal writing sitemap: %s", sitemapPath)
 	}
 
