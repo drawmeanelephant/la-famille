@@ -1,9 +1,11 @@
 package render
 
 import (
+	"fmt"
 	"html/template"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/tbuddy/la-famille/internal/config"
@@ -234,4 +236,31 @@ func TestHTMLWithPartial(t *testing.T) {
 	if string(content) != expected {
 		t.Errorf("expected %q, got %q", expected, string(content))
 	}
+}
+
+func TestHTMLParallelContention(t *testing.T) {
+	tmpDir := t.TempDir()
+	tmplDir := filepath.Join(tmpDir, "templates")
+	_ = os.MkdirAll(tmplDir, 0755)
+	tmplPath := filepath.Join(tmplDir, "layout.html")
+	_ = os.WriteFile(tmplPath, []byte("Hello {{.Title}}"), 0600)
+
+	cfg := config.Config{Template: tmplPath}
+	renderer := New(tmplDir)
+
+	var wg sync.WaitGroup
+	numWorkers := 50
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			outPath := filepath.Join(tmpDir, fmt.Sprintf("out_%d.html", id))
+			p := page.Page{Title: fmt.Sprintf("Worker %d", id)}
+			err := renderer.HTML(cfg, p, "", outPath)
+			if err != nil {
+				t.Errorf("worker %d failed: %v", id, err)
+			}
+		}(i)
+	}
+	wg.Wait()
 }

@@ -13,9 +13,14 @@ import (
 	"github.com/tbuddy/la-famille/internal/page"
 )
 
+type cacheEntry struct {
+	tmpl *template.Template
+	err  error
+}
+
 type Renderer struct {
-	cache map[string]*template.Template
-	// allowlist is immutable after initialization and requires no lock.
+	cache       map[string]*cacheEntry
+	onces       map[string]*sync.Once
 	allowlist   map[string]bool
 	mu          sync.RWMutex
 	templateDir string
@@ -27,7 +32,8 @@ func New(templateDir string) *Renderer {
 		allowlist = make(map[string]bool)
 	}
 	return &Renderer{
-		cache:       make(map[string]*template.Template),
+		cache:       make(map[string]*cacheEntry),
+		onces:       make(map[string]*sync.Once),
 		allowlist:   allowlist,
 		templateDir: templateDir,
 	}
@@ -89,7 +95,6 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 			slog.Warn("Layout not found in allowlist. Falling back to default", "layout", layout, "default", cfg.Template)
 		} else {
 			layoutPath := filepath.Join("templates", layout+".html")
-			// If we are running tests, the templates directory is relative to the root, but the test might run from cmd/la-famille
 			if _, err := os.Stat(layoutPath); os.IsNotExist(err) {
 				layoutPathFallback := filepath.Join("..", "..", "templates", layout+".html")
 				if _, err2 := os.Stat(layoutPathFallback); err2 == nil {
@@ -104,54 +109,68 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 		}
 	}
 
-	r.mu.RLock()
-	cachedTmpl, exists := r.cache[templatePath]
-	r.mu.RUnlock()
+	r.mu.Lock()
+	once, onceExists := r.onces[templatePath]
+	if !onceExists {
+		once = &sync.Once{}
+		r.onces[templatePath] = once
+	}
+	entry, entryExists := r.cache[templatePath]
+	if !entryExists {
+		entry = &cacheEntry{}
+		r.cache[templatePath] = entry
+	}
+	r.mu.Unlock()
 
-	if !exists {
-		// Discover partials and read/parse files outside the critical section
-		partials, _ := DiscoverPartials(r.templateDir)
+	once.Do(func() {
+		partials, err := DiscoverPartials(r.templateDir)
+		if err != nil {
+			entry.err = fmt.Errorf("failed to discover partials: %w", err)
+			return
+		}
 
 		b, err := os.ReadFile(templatePath)
 		if err != nil {
-			return fmt.Errorf("failed to read template %s: %w", templatePath, err)
+			entry.err = fmt.Errorf("failed to read template %s: %w", templatePath, err)
+			return
 		}
 
 		parsedTmpl := template.New(filepath.Base(templatePath))
 		parsedTmpl, err = parsedTmpl.Parse(string(b))
 		if err != nil {
-			return fmt.Errorf("failed to parse template %s: %w", templatePath, err)
+			entry.err = fmt.Errorf("failed to parse template %s: %w", templatePath, err)
+			return
 		}
 
 		for name, path := range partials {
 			pb, err := os.ReadFile(path)
 			if err != nil {
-				return fmt.Errorf("failed to read partial %s: %w", path, err)
+				entry.err = fmt.Errorf("failed to read partial %s: %w", path, err)
+				return
 			}
 			_, err = parsedTmpl.New(name).Parse(string(pb))
 			if err != nil {
-				return fmt.Errorf("failed to parse partial %s: %w", path, err)
+				entry.err = fmt.Errorf("failed to parse partial %s: %w", path, err)
+				return
 			}
 		}
 
-		// Acquire write lock to update the cache
+		entry.tmpl = parsedTmpl
+	})
+
+	if entry.err != nil {
 		r.mu.Lock()
-		// Double-check if another goroutine has already cached it
-		if existing, ok := r.cache[templatePath]; ok {
-			cachedTmpl = existing
-		} else {
-			r.cache[templatePath] = parsedTmpl
-			cachedTmpl = parsedTmpl
-		}
+		delete(r.onces, templatePath)
+		delete(r.cache, templatePath)
 		r.mu.Unlock()
+		return entry.err
 	}
 
-	clonedTmpl, err := cachedTmpl.Clone()
+	clonedTmpl, err := entry.tmpl.Clone()
 	if err != nil {
 		return fmt.Errorf("failed to clone template %s: %w", templatePath, err)
 	}
 
-	// Use ExecuteTemplate with the base name to avoid the ParseFiles name trap
 	templateName := filepath.Base(templatePath)
 	if cfg.WatchMode {
 		var sb strings.Builder
