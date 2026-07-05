@@ -68,10 +68,7 @@ func CopyAssets(cfg config.Config) error {
 			return nil
 		}
 
-		if err := os.WriteFile(destPath, nil, 0600); err == nil {
-			_ = os.Remove(destPath)
-		}
-
+		// Ensure directory structure is built first
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 			return err
 		}

@@ -6,12 +6,19 @@ import (
 )
 
 // IsSafePath checks if targetPath resides lexically within baseDir.
-// It handles volume casing issues on Windows and prevents relative-path breakout attacks.
+// Resolving both paths to absolute paths ensures consistent drive-letter casing
+// and absolute vs. relative uniformity across all platforms (such as Windows C: vs c:).
 func IsSafePath(baseDir, targetPath string) bool {
-	baseClean := filepath.Clean(baseDir)
-	targetClean := filepath.Clean(targetPath)
+	baseAbs, err := filepath.Abs(baseDir)
+	if err != nil {
+		return false
+	}
+	targetAbs, err := filepath.Abs(targetPath)
+	if err != nil {
+		return false
+	}
 
-	rel, err := filepath.Rel(baseClean, targetClean)
+	rel, err := filepath.Rel(baseAbs, targetAbs)
 	if err != nil {
 		return false
 	}
