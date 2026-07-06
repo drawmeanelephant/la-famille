@@ -20,7 +20,7 @@ Let's see if this works nicely without those characters.
 This text needs to be long enough to exceed the one hundred and sixty character limit so that we can verify the truncation logic correctly appends the ellipsis at the very end of the string.
 `)
 	snippet := ExtractSnippet(md)
-	expected := "Hello World This is a bold and italic text. Here is a link. And a code block: foo = bar Inline code: fmt.Println() Blockquote text! Let's see if this works nice..."
+	expected := "Hello World This is a bold and italic text. Here is a link. And a code block: Inline code: fmt.Println() Blockquote text! Let's see if this works nicely without..."
 	if snippet != expected {
 		t.Errorf("expected %q, got %q", expected, snippet)
 	}

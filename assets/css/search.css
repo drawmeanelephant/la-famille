@@ -1,0 +1,14 @@
+/* search dropdown overrides */
+#search-results-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--fallback-bc,oklch(var(--bc)/0.3)) transparent;
+}
+
+#search-results-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+#search-results-list::-webkit-scrollbar-thumb {
+  background-color: var(--fallback-bc,oklch(var(--bc)/0.3));
+  border-radius: 4px;
+}
