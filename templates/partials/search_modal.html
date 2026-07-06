@@ -1,0 +1,14 @@
+{{define "search_modal"}}
+<!-- Optional standalone search component -->
+<div class="relative max-w-xs w-full">
+    <form action="#" method="get" class="m-0" onsubmit="event.preventDefault();">
+        <label for="site-search" class="sr-only">Search site</label>
+        <input type="search" id="site-search" placeholder="Type / to search..."
+               class="input input-bordered w-full pr-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+               autocomplete="off" aria-autocomplete="list" aria-controls="search-results-list" />
+    </form>
+    <ul id="search-results-list" role="listbox" aria-label="Search results"
+        class="absolute z-50 left-0 right-0 mt-2 max-h-60 overflow-y-auto hidden bg-base-200 border border-base-300 rounded-box shadow-xl p-2 text-sm space-y-1">
+    </ul>
+</div>
+{{end}}

@@ -13,6 +13,7 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
     <!-- Tailwind CSS with Typography plugin via CDN -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link rel="stylesheet" href="/assets/css/search.css">
 </head>
 <body class="min-h-screen bg-base-200 prose-a:focus-visible:outline prose-a:focus-visible:outline-2 prose-a:focus-visible:outline-primary">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Skip to content</a>
@@ -30,17 +31,7 @@
                 {{.Site.SiteName}}
             </a>
         </div>
-        <div class="relative max-w-xs w-full">
-            <form action="#" method="get" class="m-0" onsubmit="event.preventDefault();">
-                <label for="site-search" class="sr-only">Search site</label>
-                <input type="search" id="site-search" placeholder="Type / to search..."
-                       class="input input-bordered w-full pr-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                       autocomplete="off" aria-autocomplete="list" aria-controls="search-results-list" />
-            </form>
-            <ul id="search-results-list" role="listbox" aria-label="Search results"
-                class="absolute z-50 left-0 right-0 mt-2 max-h-60 overflow-y-auto hidden bg-base-200 border border-base-300 rounded-box shadow-xl p-2 text-sm space-y-1">
-            </ul>
-        </div>
+        {{ template "search_modal" . }}
     </nav>
 
     <main id="main-content" class="container mx-auto px-4 max-w-4xl">
@@ -80,5 +71,6 @@
         </div>
     </div>
 {{end}}
+<script src="/assets/js/search.js"></script>
 </body>
 </html>
