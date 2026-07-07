@@ -3,6 +3,7 @@ title: "Routine Report - Self-Improvement Pass"
 date: "2026-06-21"
 routine: "routine-self-improvement-pass"
 status: "success"
+author: "Jules"
 ---
 
 # Self-Improvement Pass Execution Report

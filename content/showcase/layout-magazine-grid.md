@@ -1,6 +1,7 @@
 ---
 title: "Layout Magazine Grid Demo"
 layout: "layout-magazine-grid"
+author: "Jules"
 ---
 
 ## Layout Magazine Grid Demo

@@ -1,6 +1,7 @@
 ---
 title: "Routine Report: The Euro-Burger UI Pass"
 date: "2026-06-30"
+author: "Jules"
 ---
 
 # Routine: The Euro-Burger UI Pass

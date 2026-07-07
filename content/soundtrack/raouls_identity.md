@@ -1,6 +1,7 @@
 ---
 title: "Raoul(s) Takes the Stage"
 date: "2024-06-20"
+author: "Jules"
 ---
 
 # Raoul(s) Takes the Stage

@@ -1,6 +1,7 @@
 ---
 title: "Luxury Magazine Demo"
 layout: "luxury_magazine"
+author: "Jules"
 ---
 
 ## Luxury Magazine Demo

@@ -1,6 +1,7 @@
 ---
 title: "Layout Asymmetric Demo"
 layout: "layout-asymmetric"
+author: "Jules"
 ---
 
 ## Layout Asymmetric Demo

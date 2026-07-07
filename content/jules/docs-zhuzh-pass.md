@@ -1,6 +1,7 @@
 ---
 title: "Routine: Nightly Documentation Zhuzh Pass"
 jules_task: true
+author: "Jules"
 ---
 
 # Routine: Nightly Documentation Zhuzh Pass

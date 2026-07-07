@@ -1,6 +1,7 @@
 ---
 title: Report - Improve Missing Page Stub
 date: 2026-07-01
+author: "Jules"
 ---
 
 # Routine: Improve Missing Page Stub - Log

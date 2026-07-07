@@ -1,6 +1,7 @@
 ---
 title: "Raoul(s) - The Multipersonality Octodeveloper"
 date: "2024-06-20"
+author: "Jules"
 ---
 
 # Meet Raoul(s)

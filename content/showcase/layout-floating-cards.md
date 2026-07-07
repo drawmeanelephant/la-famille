@@ -1,6 +1,7 @@
 ---
 title: "Layout Floating Cards Demo"
 layout: "layout-floating-cards"
+author: "Jules"
 ---
 
 ## Layout Floating Cards Demo

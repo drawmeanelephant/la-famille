@@ -1,6 +1,7 @@
 ---
 title: Report - Nightly Maintenance Content Frontmatter Normalization
 date: 2026-07-03
+author: "Jules"
 ---
 
 # Routine: Nightly Maintenance Pass - Log

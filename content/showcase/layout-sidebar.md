@@ -1,6 +1,7 @@
 ---
 title: "Layout Sidebar Demo"
 layout: "layout-sidebar"
+author: "Jules"
 ---
 
 ## Layout Sidebar Demo
