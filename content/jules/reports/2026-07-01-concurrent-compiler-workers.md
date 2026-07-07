@@ -1,6 +1,7 @@
 ---
 title: Routine - Concurrent Compiler Workers
 date: 2026-07-01
+author: "Jules"
 ---
 
 # Routine: Concurrent Compiler Workers

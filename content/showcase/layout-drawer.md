@@ -1,6 +1,7 @@
 ---
 title: "Layout Drawer Demo"
 layout: "layout-drawer"
+author: "Jules"
 ---
 
 ## Layout Drawer Demo

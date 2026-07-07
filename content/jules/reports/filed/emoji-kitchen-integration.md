@@ -2,6 +2,7 @@
 title: "Emoji Kitchen Integration"
 date: "2026-06-30"
 tags: ["routine", "emoji", "goldmark"]
+author: "Jules"
 ---
 
 # Emoji Kitchen Integration

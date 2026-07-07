@@ -1,6 +1,7 @@
 ---
 title: "Layout Glassmorphism Demo"
 layout: "layout-glassmorphism"
+author: "Jules"
 ---
 
 ## Layout Glassmorphism Demo

@@ -1,6 +1,7 @@
 ---
 title: "Routine Report: Sitemap Generation and Docs Sync"
 date: "2026-07-01"
+author: "Jules"
 ---
 
 # Routine Report: Sitemap Generation and Docs Sync

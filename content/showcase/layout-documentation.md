@@ -1,6 +1,7 @@
 ---
 title: "Layout Documentation Demo"
 layout: "layout-documentation"
+author: "Jules"
 ---
 
 ## Layout Documentation Demo

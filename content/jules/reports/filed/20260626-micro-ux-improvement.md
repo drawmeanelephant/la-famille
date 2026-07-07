@@ -1,6 +1,7 @@
 ---
 title: "Micro UX Improvement Report"
 date: 2026-06-26
+author: "Jules"
 ---
 # Report
 - Routine Name: Implement Micro-UX Improvement

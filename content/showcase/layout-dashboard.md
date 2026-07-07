@@ -1,6 +1,7 @@
 ---
 title: "Layout Dashboard Demo"
 layout: "layout-dashboard"
+author: "Jules"
 ---
 
 ## Layout Dashboard Demo

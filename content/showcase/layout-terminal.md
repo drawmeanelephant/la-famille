@@ -1,6 +1,7 @@
 ---
 title: "Layout Terminal Demo"
 layout: "layout-terminal"
+author: "Jules"
 ---
 
 ## Layout Terminal Demo

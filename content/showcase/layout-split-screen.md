@@ -1,6 +1,7 @@
 ---
 title: "Layout Split Screen Demo"
 layout: "layout-split-screen"
+author: "Jules"
 ---
 
 ## Layout Split Screen Demo

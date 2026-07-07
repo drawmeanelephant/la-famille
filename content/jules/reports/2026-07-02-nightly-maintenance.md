@@ -1,6 +1,7 @@
 ---
 title: Report - Nightly Maintenance Stale Docs Cleanup
 date: 2026-07-02
+author: "Jules"
 ---
 
 # Routine: Nightly Maintenance Pass - Log

@@ -1,6 +1,7 @@
 ---
 title: "Layout The Hacker Demo"
 layout: "layout-the-hacker"
+author: "Jules"
 ---
 
 ## Layout The Hacker Demo

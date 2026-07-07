@@ -2,6 +2,7 @@
 title: "Layout Demo"
 layout: "layout"
 compliance_modal: "By reading this demo, you agree to the cookie treaty of 1842."
+author: "Jules"
 ---
 
 ## Layout Demo

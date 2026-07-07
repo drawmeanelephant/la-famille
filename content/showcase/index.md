@@ -1,6 +1,7 @@
 ---
 title: "Template Gallery"
 description: "A visual index of every layout available."
+author: "Jules"
 ---
 
 # Template Gallery

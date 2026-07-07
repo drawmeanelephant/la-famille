@@ -1,6 +1,7 @@
 ---
 title: Report - Implement Micro-UX Improvement
 date: 2026-06-19
+author: "Jules"
 ---
 
 # Routine: Implement Micro-UX Improvement (Completed)

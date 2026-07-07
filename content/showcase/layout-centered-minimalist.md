@@ -1,6 +1,7 @@
 ---
 title: "Layout Centered Minimalist Demo"
 layout: "layout-centered-minimalist"
+author: "Jules"
 ---
 
 ## Layout Centered Minimalist Demo

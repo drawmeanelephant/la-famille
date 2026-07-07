@@ -1,6 +1,7 @@
 ---
 title: "Layout Bento Demo"
 layout: "layout-bento"
+author: "Jules"
 ---
 
 ## Layout Bento Demo

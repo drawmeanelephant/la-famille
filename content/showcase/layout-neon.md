@@ -1,6 +1,7 @@
 ---
 title: "Layout Neon Demo"
 layout: "layout-neon"
+author: "Jules"
 ---
 
 ## Layout Neon Demo

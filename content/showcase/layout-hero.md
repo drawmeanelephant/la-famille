@@ -1,6 +1,7 @@
 ---
 title: "Layout Hero Demo"
 layout: "layout-hero"
+author: "Jules"
 ---
 
 ## Layout Hero Demo
