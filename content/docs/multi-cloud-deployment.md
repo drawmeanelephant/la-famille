@@ -1,6 +1,6 @@
 ---
 title: "Multi-Cloud Static Deployment Guide"
-author: "Core Architecture Team"
+author: "The Human"
 date: "2026-07-07"
 description: "How to deploy La Famille static site outputs to GitHub Pages, Cloudflare Pages, and standard worker pipelines."
 ---

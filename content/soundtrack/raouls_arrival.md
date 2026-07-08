@@ -1,3 +1,7 @@
+---
+title: "Raoul(s)'s Arrival"
+author: "Jules"
+---
 # Raoul(s)'s Arrival
 
 **Genre:** Synthwave / French Electro

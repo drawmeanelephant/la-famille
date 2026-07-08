@@ -1,3 +1,7 @@
+---
+title: "Template Loading and Execution Revamp Report"
+author: "Jules"
+---
 # Template Loading and Execution Revamp Report
 
 ## Issue Addressed
