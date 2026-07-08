@@ -1,3 +1,7 @@
+---
+title: "Routine: Refactor One Seam Report"
+author: "Jules"
+---
 # Routine: Refactor One Seam Report
 **Date:** 2026-06-25
 **Status:** Success

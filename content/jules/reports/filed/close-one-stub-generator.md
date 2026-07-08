@@ -1,3 +1,7 @@
+---
+title: "Close One Stub Routine: generator.md"
+author: "Jules"
+---
 # Close One Stub Routine: generator.md
 
 ## Description

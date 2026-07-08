@@ -1,3 +1,7 @@
+---
+title: "Routine Run: Cat Facts"
+author: "Jules"
+---
 # Routine Run: Cat Facts
 **Date:** 2026-06-26
 **Status:** Success

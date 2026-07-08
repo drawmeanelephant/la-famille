@@ -1,3 +1,7 @@
+---
+title: "Generator Stub Report"
+author: "Jules"
+---
 # Generator Stub Report
 
 ## Actions Taken

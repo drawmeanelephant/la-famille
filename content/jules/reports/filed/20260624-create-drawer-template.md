@@ -1,3 +1,7 @@
+---
+title: "Routine Report: Create Template (Drawer Layout)"
+author: "Jules"
+---
 # Routine Report: Create Template (Drawer Layout)
 
 **Date:** 2026-06-24

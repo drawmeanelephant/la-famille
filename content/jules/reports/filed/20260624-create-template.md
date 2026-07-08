@@ -1,3 +1,7 @@
+---
+title: "Routine Report: Generate New Layout Template"
+author: "Jules"
+---
 # Routine Report: Generate New Layout Template
 
 **Date:** 2026-06-24
