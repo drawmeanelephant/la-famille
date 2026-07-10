@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Layout Centered Minimalist Demo"
 layout: "layout-centered-minimalist"
 author: "Jules"

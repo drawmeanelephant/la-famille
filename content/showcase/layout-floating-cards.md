@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Layout Floating Cards Demo"
 layout: "layout-floating-cards"
 author: "Jules"

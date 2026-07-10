@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Layout The Hacker Demo"
 layout: "layout-the-hacker"
 author: "Jules"

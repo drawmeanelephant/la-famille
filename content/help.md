@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Help Menu & Documentation"
 author: "Jules"
 ---

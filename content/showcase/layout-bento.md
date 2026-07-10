@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Layout Bento Demo"
 layout: "layout-bento"
 author: "Jules"

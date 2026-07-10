@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Layout Split Screen Demo"
 layout: "layout-split-screen"
 author: "Jules"

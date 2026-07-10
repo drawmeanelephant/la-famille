@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Routine Report: Create Template (Drawer Layout)"
 author: "Jules"
 ---
