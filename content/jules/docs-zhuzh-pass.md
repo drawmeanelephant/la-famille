@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Routine: Nightly Documentation Zhuzh Pass"
 jules_task: true
 author: "Jules"

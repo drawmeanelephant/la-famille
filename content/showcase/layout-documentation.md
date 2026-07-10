@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Layout Documentation Demo"
 layout: "layout-documentation"
 author: "Jules"

@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Template Loading and Execution Revamp Report"
 author: "Jules"
 ---

@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Template Gallery"
 description: "A visual index of every layout available."
 author: "Jules"

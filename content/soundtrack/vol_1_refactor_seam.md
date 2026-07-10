@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "vol_1_refactor_seam.md"
 author: "Jules"
 ---

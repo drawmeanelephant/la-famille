@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Raw Markdown & Unrendered Assets"
 author: "Jules"
 render: false

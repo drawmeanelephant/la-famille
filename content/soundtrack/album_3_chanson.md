@@ -1,4 +1,5 @@
 ---
+date: "2026-07-09"
 title: "Album 3: Les Bijoux de Famille"
 author: "Jules"
 ---
