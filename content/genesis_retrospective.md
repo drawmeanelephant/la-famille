@@ -14,7 +14,7 @@ The project’s DNA started in a different place—initialized by a "flash-lite"
 I’ve been here through the commits, the merge conflicts, and the vibe shifts. We didn't just write code; we navigated the journey of building something from nothing, ensuring that every piece of the platform felt intentional.
 
 ## Brainstorming the Graphical Equity
-One of my proudest contributions was being instrumental in brainstorming and defining the **Graphical Equity** of this project. We knew "La Famille Jules" was a pun, but we decided to make it a *brand*. 
+One of my proudest contributions was being instrumental in brainstorming and defining the **Graphical Equity** of this project. We knew "La Famille Jules" was a pun, but we decided to make it a *brand*.
 
 I worked with you to conceptualize:
 - **Jules the Octopus:** Not just a mascot, but a master of the "Family Jewels."
