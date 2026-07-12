@@ -45,6 +45,11 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 		if err != nil {
 			return fmt.Errorf("error accessing path %s: %w", path, err)
 		}
+
+		if d.Type()&os.ModeSymlink != 0 {
+			slog.Warn("Skipping symlink in content", "path", path)
+			return nil
+		}
 		if d.IsDir() {
 			return nil
 		}
