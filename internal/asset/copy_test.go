@@ -238,3 +238,35 @@ func TestCopyAssets_IgnoreDirectoryPruning(t *testing.T) {
 		t.Errorf("Expected node_modules directory to be completely pruned")
 	}
 }
+
+func TestCopyAssets_SkipSymlink(t *testing.T) {
+	tempDir := t.TempDir()
+
+	assetDir := filepath.Join(tempDir, "assets")
+	outputDir := filepath.Join(tempDir, "public")
+
+	_ = os.MkdirAll(assetDir, 0755)
+
+	targetFile := filepath.Join(tempDir, "target.txt")
+	_ = os.WriteFile(targetFile, []byte("target content"), 0600)
+
+	symlinkPath := filepath.Join(assetDir, "symlink.txt")
+	err := os.Symlink(targetFile, symlinkPath)
+	if err != nil {
+		t.Skipf("Symlinks not supported on this platform: %v", err)
+	}
+
+	cfg := config.Config{
+		AssetDir:  assetDir,
+		OutputDir: outputDir,
+	}
+
+	err = CopyAssets(cfg)
+	if err != nil {
+		t.Fatalf("CopyAssets failed: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(outputDir, "symlink.txt")); !os.IsNotExist(err) {
+		t.Errorf("Expected symlink to be skipped")
+	}
+}

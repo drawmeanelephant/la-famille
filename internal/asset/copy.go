@@ -44,6 +44,11 @@ func CopyAssets(cfg config.Config) error {
 		if err != nil {
 			return err
 		}
+
+		if d.Type()&os.ModeSymlink != 0 {
+			slog.Warn("Skipping symlink in assets", "path", path)
+			return nil
+		}
 		relPath, err := filepath.Rel(cfg.AssetDir, path)
 		if err != nil {
 			return err

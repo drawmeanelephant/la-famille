@@ -216,3 +216,28 @@ Content
 		t.Errorf("Expected tag 1 to be 'invlidtag', got: %s", meta.Tags[1])
 	}
 }
+
+func TestGatherMetadata_SkipSymlink(t *testing.T) {
+	tempDir := t.TempDir()
+
+	targetFile := filepath.Join(tempDir, "target.md")
+	_ = os.WriteFile(targetFile, []byte("# Target"), 0600)
+
+	contentDir := filepath.Join(tempDir, "content")
+	_ = os.MkdirAll(contentDir, 0755)
+
+	symlinkPath := filepath.Join(contentDir, "symlink.md")
+	err := os.Symlink(targetFile, symlinkPath)
+	if err != nil {
+		t.Skipf("Symlinks not supported on this platform: %v", err)
+	}
+
+	fileMap, err := GatherMetadata(contentDir)
+	if err != nil {
+		t.Fatalf("GatherMetadata failed: %v", err)
+	}
+
+	if _, ok := fileMap["symlink.md"]; ok {
+		t.Errorf("Expected symlink to be skipped")
+	}
+}
