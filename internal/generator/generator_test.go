@@ -176,3 +176,144 @@ func BenchmarkBuild(b *testing.B) {
 		_, _ = Build(cfg)
 	}
 }
+
+func TestCollisionDeterminism(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(filepath.Join(tempDir, "templates"), 0755)
+	_ = os.WriteFile(filepath.Join(tempDir, "templates", "layout.html"), []byte("{{.Content}}"), 0600)
+
+	_ = os.WriteFile(filepath.Join(contentDir, "alpha.md"), []byte("---\nslug: shared\n---\nAlpha"), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "beta.md"), []byte("---\nslug: shared\n---\nBeta"), 0600)
+
+	cfg := config.Config{
+		ContentDir: contentDir,
+		OutputDir:  outputDir,
+		Template:   filepath.Join(tempDir, "templates", "layout.html"),
+	}
+
+	_, err := Build(cfg)
+	if err == nil {
+		t.Fatal("Expected build to fail due to output path collision, but it succeeded")
+	}
+	if !strings.Contains(err.Error(), "output path collision") {
+		t.Fatalf("Expected collision error, got: %v", err)
+	}
+}
+
+func TestRaceRegression(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(filepath.Join(tempDir, "templates"), 0755)
+	_ = os.WriteFile(filepath.Join(tempDir, "templates", "layout.html"), []byte("{{.Content}}"), 0600)
+
+	for i := 0; i < 50; i++ {
+		content := fmt.Sprintf("---\ntitle: Page %d\n---\n[Link to missing](missing.md)\n[Link to next](page%d.md)", i, (i+1)%50)
+		_ = os.WriteFile(filepath.Join(contentDir, fmt.Sprintf("page%d.md", i)), []byte(content), 0600)
+	}
+
+	cfg := config.Config{
+		ContentDir: contentDir,
+		OutputDir:  outputDir,
+		Template:   filepath.Join(tempDir, "templates", "layout.html"),
+	}
+
+	_, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("First build failed: %v", err)
+	}
+
+	b1, err := os.ReadFile(filepath.Join(outputDir, "graph.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = Build(cfg)
+	if err != nil {
+		t.Fatalf("Second build failed: %v", err)
+	}
+
+	b2, err := os.ReadFile(filepath.Join(outputDir, "graph.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(b1) != string(b2) {
+		t.Errorf("Graph JSON changed between builds: %s != %s", string(b1), string(b2))
+	}
+}
+
+func TestErrorOrdering(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+	templatePath := filepath.Join(templateDir, "layout.html")
+
+	if err := os.MkdirAll(contentDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(templateDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(templatePath, []byte("{{.Content}}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	files := map[string]string{
+		"z_fail.md": "Z_FAIL",
+		"a_fail.md": "A_FAIL",
+		"m_fail.md": "M_FAIL",
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(contentDir, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cfg := config.Config{
+		ContentDir: contentDir,
+		OutputDir:  outputDir,
+		Template:   templatePath,
+	}
+
+	originalConvert := convertMarkdown
+	t.Cleanup(func() { convertMarkdown = originalConvert })
+
+	convertMarkdown = func(_ goldmark.Markdown, source []byte, _ *bytes.Buffer) error {
+		return fmt.Errorf("forced conversion failure: %s", source)
+	}
+
+	result, err := Build(cfg)
+	if err == nil {
+		t.Fatal("Build() error = nil, want conversion failures")
+	}
+	if result.ErrorCount != 3 {
+		t.Fatalf("ErrorCount = %d, want 3", result.ErrorCount)
+	}
+
+	got := err.Error()
+	wantOrder := []string{
+		"error converting a_fail.md: forced conversion failure: A_FAIL",
+		"error converting m_fail.md: forced conversion failure: M_FAIL",
+		"error converting z_fail.md: forced conversion failure: Z_FAIL",
+	}
+
+	previous := -1
+	for _, want := range wantOrder {
+		position := strings.Index(got, want)
+		if position < 0 {
+			t.Fatalf("combined error missing %q:\n%s", want, got)
+		}
+		if position <= previous {
+			t.Fatalf("errors are not in deterministic source-path order:\n%s", got)
+		}
+		previous = position
+	}
+}

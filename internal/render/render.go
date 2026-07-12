@@ -1,8 +1,10 @@
 package render
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -159,29 +161,44 @@ func (r *Renderer) HTML(cfg config.Config, p page.Page, layout, outPath string) 
 
 	templateName := filepath.Base(templatePath)
 	if cfg.WatchMode {
-		var sb strings.Builder
-		if err := clonedTmpl.ExecuteTemplate(&sb, templateName, p); err != nil {
+		var buf bytes.Buffer
+		if err := clonedTmpl.ExecuteTemplate(&buf, templateName, p); err != nil {
 			return err
 		}
-
-		s := sb.String()
-		idx := strings.LastIndex(s, "</body>")
-		if idx != -1 {
-			var final strings.Builder
-			final.Grow(len(s) + 250)
-			final.WriteString(s[:idx])
-			final.WriteString(`<script>
-			if (window.EventSource) {
-				var source = new EventSource('/livereload');
-				source.onmessage = function(e) { if (e.data === 'reload') window.location.reload(); };
-			}
-			</script>
-</body>`)
-			final.WriteString(s[idx+7:])
-			_, err = outFile.WriteString(final.String())
-			return err
-		}
+		return writeWithLiveReload(outFile, buf.Bytes())
 	}
 
 	return clonedTmpl.ExecuteTemplate(outFile, templateName, p)
+}
+
+const liveReloadScript = `<script>
+if (window.EventSource) {
+	var source = new EventSource('/livereload');
+	source.onmessage = function(e) { if (e.data === 'reload') window.location.reload(); };
+}
+</script>
+`
+
+func writeWithLiveReload(w io.Writer, rendered []byte) error {
+	marker := []byte("</body>")
+	index := bytes.LastIndex(rendered, marker)
+
+	if index < 0 {
+		_, err := w.Write(rendered)
+		return err
+	}
+
+	if bytes.Contains(rendered, []byte("new EventSource('/livereload')")) {
+		_, err := w.Write(rendered)
+		return err
+	}
+
+	if _, err := w.Write(rendered[:index]); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, liveReloadScript); err != nil {
+		return err
+	}
+	_, err := w.Write(rendered[index:])
+	return err
 }

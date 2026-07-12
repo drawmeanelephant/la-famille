@@ -44,22 +44,25 @@ func CopyAssets(cfg config.Config) error {
 		if err != nil {
 			return err
 		}
+		relPath, err := filepath.Rel(cfg.AssetDir, path)
+		if err != nil {
+			return err
+		}
+
+		relSlash := filepath.ToSlash(relPath)
+		if relSlash != "." && isIgnored(relSlash, ignorePatterns) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
 		if d.IsDir() {
 			return nil
 		}
 
-		if filepath.Ext(path) == ".go" || strings.Contains(path, "/testdata/") || strings.Contains(path, "\\testdata\\") {
+		if filepath.Ext(path) == ".go" || strings.Contains(relSlash, "/testdata/") || strings.HasPrefix(relSlash, "testdata/") || relSlash == "testdata" {
 			return nil
-		}
-
-		slashPath := filepath.ToSlash(path)
-		if isIgnored(slashPath, ignorePatterns) {
-			return nil
-		}
-
-		relPath, err := filepath.Rel(cfg.AssetDir, path)
-		if err != nil {
-			return err
 		}
 
 		destPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
@@ -143,5 +146,5 @@ func CopyFile(src, dst string) (err error) {
 		return fmt.Errorf("payload copy error: %w", err)
 	}
 
-	return destination.Sync()
+	return nil
 }

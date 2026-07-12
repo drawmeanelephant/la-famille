@@ -35,7 +35,7 @@ func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.
 			dest := string(link.Destination)
 			u, err := url.Parse(dest)
 			// Ignore if parse fails, or it's an absolute url (like http://...), or not a .md file
-			if err != nil || u.IsAbs() || !strings.HasSuffix(u.Path, ".md") {
+			if err != nil || u.IsAbs() || strings.HasPrefix(dest, "//") || !strings.HasSuffix(u.Path, ".md") {
 				return ast.WalkContinue, nil
 			}
 
@@ -56,7 +56,7 @@ func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.
 			}
 
 			// Prevent path traversal
-			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) {
+			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) || strings.Contains(dest, "%2E%2E") {
 				return ast.WalkContinue, nil
 			}
 

@@ -22,8 +22,8 @@ import (
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/graph"
 	"github.com/tbuddy/la-famille/internal/markdown"
-	"github.com/tbuddy/la-famille/internal/pathutil"
 	"github.com/tbuddy/la-famille/internal/page"
+	"github.com/tbuddy/la-famille/internal/pathutil"
 	"github.com/tbuddy/la-famille/internal/render"
 	"github.com/tbuddy/la-famille/internal/search"
 	"github.com/tbuddy/la-famille/internal/sitedata"
@@ -66,6 +66,9 @@ func Build(cfg config.Config) (BuildResult, error) {
 	var searchIndex []search.Item
 
 	// 2. Pass 2: Process files in deterministic order
+	if err := validateOutputPaths(fileMap, cfg.OutputDir); err != nil {
+		return result, err
+	}
 	keys := make([]string, 0, len(fileMap))
 	for k := range fileMap {
 		keys = append(keys, k)
@@ -75,7 +78,11 @@ func Build(cfg config.Config) (BuildResult, error) {
 	// Reusable buffer for markdown conversion
 	renderer := render.New(filepath.Dir(cfg.Template))
 
-	var errs []error
+	type indexedError struct {
+		index int
+		err   error
+	}
+	var errs []indexedError
 
 	p := bluemonday.UGCPolicy()
 	p.AllowAttrs("class").Globally()
@@ -168,7 +175,9 @@ func Build(cfg config.Config) (BuildResult, error) {
 							result.PageCount += update.pageCount
 						}
 						if len(update.errs) > 0 {
-							errs = append(errs, update.errs...)
+							for _, e := range update.errs {
+								errs = append(errs, indexedError{idx, e})
+							}
 						}
 						mu.Unlock()
 					}()
@@ -293,12 +302,18 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 	// Sort errs for deterministic order
 	if len(errs) > 0 {
-		sort.Slice(errs, func(i, j int) bool {
-			return errs[i].Error() < errs[j].Error()
+		sort.SliceStable(errs, func(i, j int) bool {
+			if errs[i].index == errs[j].index {
+				return errs[i].err.Error() < errs[j].err.Error()
+			}
+			return errs[i].index < errs[j].index
 		})
-	}
-	if len(errs) > 0 {
-		return result, errors.Join(errs...)
+
+		var joinErrs []error
+		for _, ie := range errs {
+			joinErrs = append(joinErrs, ie.err)
+		}
+		return result, errors.Join(joinErrs...)
 	}
 	// 3. Generate stubs for missing files in deterministic order
 	if err := stub.GenerateStubs(cfg, missingFiles, &g, p, fileMap); err != nil {
@@ -326,4 +341,27 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 	result.Duration = time.Since(start)
 	return result, nil
+}
+
+func validateOutputPaths(fileMap map[string]*content.FileMeta, outputDir string) error {
+	owners := make(map[string]string, len(fileMap))
+
+	for relPath, meta := range fileMap {
+		if meta.Render != nil && !*meta.Render {
+			continue
+		}
+
+		relOut := transform.GetOutputURL(relPath, meta.Slug)
+		target := filepath.Clean(filepath.Join(
+			outputDir,
+			filepath.FromSlash(relOut),
+		))
+
+		if previous, exists := owners[target]; exists {
+			return fmt.Errorf("output path collision: %q and %q both map to %q", previous, relPath, target)
+		}
+		owners[target] = relPath
+	}
+
+	return nil
 }
