@@ -303,9 +303,6 @@ func Build(cfg config.Config) (BuildResult, error) {
 	// Sort errs for deterministic order
 	if len(errs) > 0 {
 		sort.SliceStable(errs, func(i, j int) bool {
-			if errs[i].index == errs[j].index {
-				return errs[i].err.Error() < errs[j].err.Error()
-			}
 			return errs[i].index < errs[j].index
 		})
 
