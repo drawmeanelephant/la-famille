@@ -264,3 +264,52 @@ func TestHTMLParallelContention(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestRendererConcurrentLayouts(t *testing.T) {
+	tmpDir := t.TempDir()
+	tmplDir := filepath.Join(tmpDir, "templates")
+	_ = os.MkdirAll(tmplDir, 0755)
+
+	_ = os.WriteFile(filepath.Join(tmplDir, "layout1.html"), []byte("Layout1 {{.Title}}"), 0600)
+	_ = os.WriteFile(filepath.Join(tmplDir, "layout2.html"), []byte("Layout2 {{.Title}}"), 0600)
+
+	cfg1 := config.Config{Template: filepath.Join(tmplDir, "layout1.html")}
+	cfg2 := config.Config{Template: filepath.Join(tmplDir, "layout2.html")}
+
+	renderer := New(tmplDir)
+
+	var wg sync.WaitGroup
+	numWorkers := 50
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+
+			cfg := cfg1
+			layout := "layout1"
+			expectedPrefix := "Layout1 "
+			if id%2 == 0 {
+				cfg = cfg2
+				layout = "layout2"
+				expectedPrefix = "Layout2 "
+			}
+
+			outPath := filepath.Join(tmpDir, fmt.Sprintf("out_%d.html", id))
+			p := page.Page{Title: fmt.Sprintf("Worker %d", id)}
+			err := renderer.HTML(cfg, p, layout, outPath)
+			if err != nil {
+				t.Errorf("worker %d failed: %v", id, err)
+			}
+
+			b, err := os.ReadFile(outPath)
+			if err != nil {
+				t.Errorf("read file failed for worker %d: %v", id, err)
+			}
+			expected := expectedPrefix + fmt.Sprintf("Worker %d", id)
+			if string(b) != expected {
+				t.Errorf("worker %d expected %q, got %q", id, expected, string(b))
+			}
+		}(i)
+	}
+	wg.Wait()
+}

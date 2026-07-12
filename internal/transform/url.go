@@ -12,6 +12,13 @@ func GetOutputURL(relPath string, slug string) string {
 		dir = ""
 	}
 
+	if relPath == "index.md" || path.Base(relPath) == "index.md" {
+		if dir == "" {
+			return "index.html"
+		}
+		return path.Join(dir, "index.html")
+	}
+
 	base := path.Base(relPath)
 	name := strings.TrimSuffix(base, ".md")
 
@@ -19,12 +26,6 @@ func GetOutputURL(relPath string, slug string) string {
 		name = slug
 	}
 
-	if name == "index" {
-		if dir == "" {
-			return "index.html"
-		}
-		return path.Join(dir, "index.html")
-	}
 
 	return path.Join(dir, name, "index.html")
 }

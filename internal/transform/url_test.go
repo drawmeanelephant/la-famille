@@ -31,7 +31,7 @@ func TestGetOutputURL(t *testing.T) {
 			name:     "index md file with slug",
 			relPath:  "index.md",
 			slug:     "home",
-			expected: "home/index.html",
+			expected: "index.html",
 		},
 		{
 			name:     "nested standard md file",
@@ -58,6 +58,33 @@ func TestGetOutputURL(t *testing.T) {
 			actual := GetOutputURL(tc.relPath, tc.slug)
 			if actual != tc.expected {
 				t.Errorf("GetOutputURL(%q, %q) = %q; expected %q", tc.relPath, tc.slug, actual, tc.expected)
+			}
+		})
+	}
+}
+
+func TestGetOutputURLBoundaries(t *testing.T) {
+	tests := []struct {
+		name    string
+		relPath string
+		slug    string
+		want    string
+	}{
+		{"root index", "index.md", "", "index.html"},
+		{"nested index", "docs/index.md", "", "docs/index.html"},
+		{"root page", "about.md", "", "about/index.html"},
+		{"nested page", "docs/install.md", "", "docs/install/index.html"},
+		{"slug replaces filename", "docs/install.md", "setup", "docs/setup/index.html"},
+		{"index ignores slug by current contract", "index.md", "home", "index.html"},
+		{"nested index ignores slug by current contract", "docs/index.md", "home", "docs/index.html"},
+		{"dot-like source basename", "docs/v1.2.md", "", "docs/v1.2/index.html"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetOutputURL(tt.relPath, tt.slug); got != tt.want {
+				t.Fatalf("GetOutputURL(%q, %q) = %q, want %q",
+					tt.relPath, tt.slug, got, tt.want)
 			}
 		})
 	}

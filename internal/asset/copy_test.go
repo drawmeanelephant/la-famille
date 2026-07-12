@@ -203,3 +203,38 @@ node_modules/
 		t.Errorf("Expected node_modules directory path to be ignored natively")
 	}
 }
+
+func TestCopyAssets_IgnoreDirectoryPruning(t *testing.T) {
+	tempDir := t.TempDir()
+
+	assetDir := filepath.Join(tempDir, "assets")
+	outputDir := filepath.Join(tempDir, "public")
+
+	_ = os.MkdirAll(assetDir, 0755)
+
+	nestedIgnoreDir := filepath.Join(assetDir, "node_modules")
+	_ = os.MkdirAll(nestedIgnoreDir, 0755)
+	_ = os.WriteFile(filepath.Join(nestedIgnoreDir, "dep.js"), []byte("const x = 1;"), 0600)
+
+	deepNestedDir := filepath.Join(nestedIgnoreDir, "deep")
+	_ = os.MkdirAll(deepNestedDir, 0755)
+	_ = os.WriteFile(filepath.Join(deepNestedDir, "dep2.js"), []byte("const y = 2;"), 0600)
+
+	gitignoreContent := "\nnode_modules/\n"
+	_ = os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte(gitignoreContent), 0600)
+
+	cfg := config.Config{
+		ProjectRoot: tempDir,
+		AssetDir:    assetDir,
+		OutputDir:   outputDir,
+	}
+
+	err := CopyAssets(cfg)
+	if err != nil {
+		t.Fatalf("CopyAssets failed: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(outputDir, "assets", "node_modules")); !os.IsNotExist(err) {
+		t.Errorf("Expected node_modules directory to be completely pruned")
+	}
+}
