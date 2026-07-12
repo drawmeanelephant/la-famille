@@ -3,6 +3,11 @@ package transform
 import (
 	"bytes"
 	"testing"
+	"strings"
+	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/ast"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/parser"
@@ -319,5 +324,50 @@ func TestLinkTransformerExtended(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLinkTransformerRenderFalse(t *testing.T) {
+	fileMap := map[string]*content.FileMeta{
+		"raw.md": {Render: new(bool)}, // false
+		"doc.md": {Render: nil},       // implicitly true
+	}
+	*fileMap["raw.md"].Render = false
+
+	g := &graph.Graph{Nodes: make(map[string]graph.Node)}
+	backlinks := make(map[string][]string)
+	missing := make(map[string][]string)
+
+	transformer := &LinkTransformer{
+		CurrentFile:  "index.md",
+		FileMap:      fileMap,
+		MissingFiles: missing,
+		Backlinks:    backlinks,
+		Graph:        g,
+	}
+
+	source := []byte(`Link to [raw](raw.md) and [doc](doc.md)`)
+
+	node := parser.NewParser(
+		parser.WithBlockParsers(parser.DefaultBlockParsers()...),
+		parser.WithInlineParsers(parser.DefaultInlineParsers()...),
+	).Parse(text.NewReader(source))
+
+	transformer.Transform(node.(*ast.Document), text.NewReader(source), nil)
+
+	var buf bytes.Buffer
+	renderer := renderer.NewRenderer(renderer.WithNodeRenderers(util.Prioritized(html.NewRenderer(), 1000)))
+
+	err := renderer.Render(&buf, source, node)
+	if err != nil {
+		t.Fatalf("Render failed: %v", err)
+	}
+
+	outHTML := buf.String()
+	if !strings.Contains(outHTML, `href="raw.md"`) {
+		t.Errorf("Expected href=\"raw.md\", got: %s", outHTML)
+	}
+	if !strings.Contains(outHTML, `href="doc/"`) {
+		t.Errorf("Expected href=\"doc/\", got: %s", outHTML)
 	}
 }

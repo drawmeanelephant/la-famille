@@ -55,7 +55,7 @@ func TestGetOutputURL(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := GetOutputURL(tc.relPath, tc.slug)
+			actual := GetOutputURL(tc.relPath, tc.slug, true)
 			if actual != tc.expected {
 				t.Errorf("GetOutputURL(%q, %q) = %q; expected %q", tc.relPath, tc.slug, actual, tc.expected)
 			}
@@ -82,10 +82,18 @@ func TestGetOutputURLBoundaries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetOutputURL(tt.relPath, tt.slug); got != tt.want {
+			if got := GetOutputURL(tt.relPath, tt.slug, true); got != tt.want {
 				t.Fatalf("GetOutputURL(%q, %q) = %q, want %q",
 					tt.relPath, tt.slug, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestGetOutputURLRenderFalse(t *testing.T) {
+	expected := "about.md"
+	actual := GetOutputURL("about.md", "bio", false)
+	if actual != expected {
+		t.Errorf("GetOutputURL(..., false) = %q; expected %q", actual, expected)
 	}
 }

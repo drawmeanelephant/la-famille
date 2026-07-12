@@ -1,13 +1,21 @@
 {
-  "hidden": {
+  "hidden.md": {
+    "render": false,
     "title": "hidden.md",
     "word_count": 5
   },
   "index": {
+    "render": true,
     "title": "Home",
     "word_count": 1
   },
-  "raw": {
+  "links": {
+    "render": true,
+    "title": "Links",
+    "word_count": 5
+  },
+  "raw.md": {
+    "render": false,
     "title": "raw.md",
     "word_count": 4
   }

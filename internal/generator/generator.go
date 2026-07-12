@@ -154,6 +154,9 @@ func Build(cfg config.Config) (BuildResult, error) {
 					}
 
 					id := strings.TrimSuffix(relPath, ".md")
+					if !shouldRender {
+						id = relPath
+					}
 
 					update.node = graph.Node{
 						Type:   "page",
@@ -176,6 +179,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 						m["tags"] = meta.Tags
 					}
 					m["word_count"] = len(strings.Fields(string(meta.Rest)))
+					m["render"] = shouldRender
 
 					update.meta = m
 
@@ -198,7 +202,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 					}()
 
 					if shouldRender {
-						urlOut := transform.GetOutputURL(relPath, meta.Slug)
+						urlOut := transform.GetOutputURL(relPath, meta.Slug, shouldRender)
 						urlPath := "/" + filepath.ToSlash(urlOut)
 
 						searchIndexItems[idx] = search.Item{
@@ -220,7 +224,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 								slug = ""
 							}
 						}
-						relOut := transform.GetOutputURL(relPath, slug)
+						relOut := transform.GetOutputURL(relPath, slug, shouldRender)
 						outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
 					}
 
@@ -363,7 +367,7 @@ func validateOutputPaths(fileMap map[string]*content.FileMeta, outputDir string)
 			continue
 		}
 
-		relOut := transform.GetOutputURL(relPath, meta.Slug)
+		relOut := transform.GetOutputURL(relPath, meta.Slug, true)
 		target := filepath.Clean(filepath.Join(
 			outputDir,
 			filepath.FromSlash(relOut),

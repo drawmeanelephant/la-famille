@@ -25,6 +25,9 @@ type LinkTransformer struct {
 
 func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
 	sourceID := strings.TrimSuffix(t.CurrentFile, ".md")
+	if m, ok := t.FileMap[t.CurrentFile]; ok && m.Render != nil && !*m.Render {
+		sourceID = t.CurrentFile
+	}
 
 	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
@@ -60,7 +63,14 @@ func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.
 				return ast.WalkContinue, nil
 			}
 
+			// Check file map
+			meta, exists := t.FileMap[targetRelPath]
+
 			targetID := strings.TrimSuffix(targetRelPath, ".md")
+			if exists && meta.Render != nil && !*meta.Render {
+				targetID = targetRelPath
+			}
+
 			if t.Mu != nil {
 				t.Mu.Lock()
 			}
@@ -69,9 +79,6 @@ func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.
 			if t.Mu != nil {
 				t.Mu.Unlock()
 			}
-
-			// Check file map
-			meta, exists := t.FileMap[targetRelPath]
 
 			// If target exists and render is explicitly false, keep as .md
 			if exists && meta.Render != nil && !*meta.Render {
@@ -88,8 +95,16 @@ func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.
 					}
 				}
 
-				currOut := GetOutputURL(t.CurrentFile, "")
-				targetOut := GetOutputURL(targetRelPath, slug)
+				currRender := true
+				if m, ok := t.FileMap[t.CurrentFile]; ok && m.Render != nil && !*m.Render {
+					currRender = false
+				}
+				currOut := GetOutputURL(t.CurrentFile, "", currRender)
+				targetRender := true
+				if m, ok := t.FileMap[targetRelPath]; ok && m.Render != nil && !*m.Render {
+					targetRender = false
+				}
+				targetOut := GetOutputURL(targetRelPath, slug, targetRender)
 
 				currDir := filepath.Dir(currOut)
 				if currDir == "." {

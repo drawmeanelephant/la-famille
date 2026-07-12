@@ -1,9 +1,11 @@
 {
   "about": {
+    "render": true,
     "title": "About",
     "word_count": 3
   },
   "index": {
+    "render": true,
     "title": "Home",
     "word_count": 3
   }

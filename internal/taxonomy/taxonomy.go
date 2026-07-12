@@ -43,7 +43,7 @@ func GenerateTags(cfg config.Config, fileMap map[string]*content.FileMeta, rende
 		sort.Strings(pages)
 
 		tagRelPath := fmt.Sprintf("tags/%s/index.md", tag)
-		tagOut := transform.GetOutputURL(tagRelPath, "")
+		tagOut := transform.GetOutputURL(tagRelPath, "", true)
 		outPath := filepath.Join(outDirClean, filepath.FromSlash(tagOut))
 
 		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
@@ -62,7 +62,11 @@ func GenerateTags(cfg config.Config, fileMap map[string]*content.FileMeta, rende
 				title = filepath.Base(relPath)
 			}
 
-			pageOut := transform.GetOutputURL(relPath, meta.Slug)
+			pageRender := true
+			if meta.Render != nil && !*meta.Render {
+				pageRender = false
+			}
+			pageOut := transform.GetOutputURL(relPath, meta.Slug, pageRender)
 
 			currDir := filepath.Dir(tagOut)
 			if currDir == "." {

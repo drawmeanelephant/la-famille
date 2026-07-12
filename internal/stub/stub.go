@@ -39,7 +39,7 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 
 func generateSingleStub(cfg config.Config, missingRelPath string, parents []string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, partials map[string]string) error {
 	outDirClean := filepath.Clean(cfg.OutputDir)
-	relOut := transform.GetOutputURL(missingRelPath, "")
+	relOut := transform.GetOutputURL(missingRelPath, "", true)
 	outPath := filepath.Join(outDirClean, filepath.FromSlash(relOut))
 
 	if !pathutil.IsSafePath(outDirClean, outPath) {
@@ -72,7 +72,12 @@ func generateSingleStub(cfg config.Config, missingRelPath string, parents []stri
 			parentSlug = meta.Slug
 		}
 
-		parentOut := transform.GetOutputURL(parent, parentSlug)
+		parentRender := true
+		if meta, ok := fileMap[parent]; ok && meta != nil && meta.Render != nil && !*meta.Render {
+			parentRender = false
+		}
+
+		parentOut := transform.GetOutputURL(parent, parentSlug, parentRender)
 		currDir := filepath.Dir(relOut)
 		if currDir == "." {
 			currDir = ""

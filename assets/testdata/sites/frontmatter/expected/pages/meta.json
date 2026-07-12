@@ -1,12 +1,14 @@
 {
   "fallback-title": {
     "author": "Bob",
+    "render": true,
     "title": "fallback-title.md",
     "word_count": 2
   },
   "post": {
     "author": "Alice",
     "date": "2023-10-27",
+    "render": true,
     "tags": [
       "go",
       "test"

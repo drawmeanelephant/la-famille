@@ -1,6 +1,6 @@
 {
   "nodes": {
-    "hidden": {
+    "hidden.md": {
       "type": "page",
       "render": false
     },
@@ -8,10 +8,23 @@
       "type": "page",
       "render": true
     },
-    "raw": {
+    "links": {
+      "type": "page",
+      "render": true
+    },
+    "raw.md": {
       "type": "page",
       "render": false
     }
   },
-  "edges": []
+  "edges": [
+    [
+      "links",
+      "raw.md"
+    ],
+    [
+      "links",
+      "hidden.md"
+    ]
+  ]
 }

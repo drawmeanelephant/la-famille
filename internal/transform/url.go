@@ -6,7 +6,10 @@ import (
 )
 
 // GetOutputURL calculates the output URL (with index.html) for a given .md relative path and optional slug override.
-func GetOutputURL(relPath string, slug string) string {
+func GetOutputURL(relPath string, slug string, render bool) string {
+	if !render {
+		return relPath
+	}
 	dir := path.Dir(relPath)
 	if dir == "." {
 		dir = ""

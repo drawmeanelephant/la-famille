@@ -1,17 +1,21 @@
 {
   "a": {
+    "render": true,
     "title": "a.md",
     "word_count": 3
   },
   "b": {
+    "render": true,
     "title": "b.md",
     "word_count": 2
   },
   "c": {
+    "render": true,
     "title": "c.md",
     "word_count": 2
   },
   "index": {
+    "render": true,
     "title": "index.md",
     "word_count": 6
   }
