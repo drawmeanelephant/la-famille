@@ -33,8 +33,23 @@ import (
 )
 
 // convertMarkdown is a variable to allow mocking in tests.
-var convertMarkdown = func(md goldmark.Markdown, source []byte, w *bytes.Buffer) error {
-	return md.Convert(source, w)
+var (
+	convertMu       sync.RWMutex
+	convertMarkdown = func(md goldmark.Markdown, source []byte, w *bytes.Buffer) error {
+		return md.Convert(source, w)
+	}
+)
+
+func getConvertMarkdown() func(goldmark.Markdown, []byte, *bytes.Buffer) error {
+	convertMu.RLock()
+	defer convertMu.RUnlock()
+	return convertMarkdown
+}
+
+func setConvertMarkdown(fn func(goldmark.Markdown, []byte, *bytes.Buffer) error) {
+	convertMu.Lock()
+	defer convertMu.Unlock()
+	convertMarkdown = fn
 }
 
 // BuildResult contains statistics about the build process.
@@ -242,7 +257,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 					md := markdown.NewEngine(transformer)
 
 					buf.Reset()
-					if err := convertMarkdown(md, meta.Rest, &buf); err != nil {
+					if err := getConvertMarkdown()(md, meta.Rest, &buf); err != nil {
 						update.errCount++
 						update.errs = append(update.errs, fmt.Errorf("error converting %s: %w", relPath, err))
 						return

@@ -34,12 +34,12 @@ func TestBuild_MarkdownConversionError(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(contentDir, "test2.md"), []byte("# Hello 2"), 0600)
 
 	// Mock convertMarkdown to always fail
-	originalConvert := convertMarkdown
-	defer func() { convertMarkdown = originalConvert }()
+	originalConvert := getConvertMarkdown()
+	defer func() { setConvertMarkdown(originalConvert) }()
 
-	convertMarkdown = func(_ goldmark.Markdown, _ []byte, _ *bytes.Buffer) error {
+	setConvertMarkdown(func(_ goldmark.Markdown, _ []byte, _ *bytes.Buffer) error {
 		return errors.New("simulated conversion error")
-	}
+	})
 
 	res, err := Build(cfg)
 	if err == nil {
@@ -283,12 +283,12 @@ func TestErrorOrdering(t *testing.T) {
 		Template:   templatePath,
 	}
 
-	originalConvert := convertMarkdown
-	t.Cleanup(func() { convertMarkdown = originalConvert })
+	originalConvert := getConvertMarkdown()
+	t.Cleanup(func() { setConvertMarkdown(originalConvert) })
 
-	convertMarkdown = func(_ goldmark.Markdown, source []byte, _ *bytes.Buffer) error {
+	setConvertMarkdown(func(_ goldmark.Markdown, source []byte, _ *bytes.Buffer) error {
 		return fmt.Errorf("forced conversion failure: %s", source)
-	}
+	})
 
 	result, err := Build(cfg)
 	if err == nil {
