@@ -1,13 +1,16 @@
 {
   "about": {
+    "render": true,
     "title": "about.md",
     "word_count": 11
   },
   "blog/post": {
+    "render": true,
     "title": "post.md",
     "word_count": 7
   },
   "index": {
+    "render": true,
     "title": "index.md",
     "word_count": 4
   }

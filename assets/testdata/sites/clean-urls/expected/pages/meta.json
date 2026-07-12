@@ -1,13 +1,16 @@
 {
   "bio": {
+    "render": true,
     "title": "About Me",
     "word_count": 6
   },
   "blog/post": {
+    "render": true,
     "title": "My Blog Post",
     "word_count": 4
   },
   "index": {
+    "render": true,
     "title": "Home",
     "word_count": 12
   }

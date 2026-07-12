@@ -1,9 +1,11 @@
 {
   "index": {
+    "render": true,
     "title": "index.md",
     "word_count": 15
   },
   "other": {
+    "render": true,
     "title": "other.md",
     "word_count": 11
   }

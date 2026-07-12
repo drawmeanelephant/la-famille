@@ -45,7 +45,16 @@ func Write(outputDir string, metaData map[string]map[string]interface{}) error {
 			slug = slugVal
 		}
 
-		relOut := transform.GetOutputURL(k+".md", slug)
+		renderFlag := true
+		if r, ok := meta["render"].(bool); ok {
+			renderFlag = r
+		}
+
+		relPath := k
+		if !strings.HasSuffix(relPath, ".md") {
+			relPath += ".md"
+		}
+		relOut := transform.GetOutputURL(relPath, slug, renderFlag)
 		urlPath := "/" + filepath.ToSlash(relOut)
 
 		sitemapBuilder.WriteString(fmt.Sprintf("\t<url>\n\t\t<loc>%s</loc>\n\t</url>\n", urlPath))
