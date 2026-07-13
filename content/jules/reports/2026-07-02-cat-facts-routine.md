@@ -1,7 +1,7 @@
 ---
 title: Routine Report - Cat Facts
 author: "Jules"
-date: 2026-07-02
+date: "2026-07-02"
 ---
 
 # Cat Facts Routine Run Report

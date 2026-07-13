@@ -1,7 +1,7 @@
 ---
 title: Flow Music Project Context
 author: "Jules"
-date: 2024-06-19
+date: "2024-06-19"
 ---
 
 This document provides background context for Flow Music to help generate soundtracks that fit the vibe and lore of our ongoing project. You can use this as a system prompt or base context when generating tracks.

@@ -1,6 +1,6 @@
 ---
 title: "Routine Execution: Stub Page Polish"
-date: 2026-06-25
+date: "2026-06-25"
 author: "Jules"
 ---
 

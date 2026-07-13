@@ -1,7 +1,7 @@
 ---
 title: Routine - Self-Improvement Pass
 author: "Jules"
-date: 2026-07-01
+date: "2026-07-01"
 ---
 
 # Routine: Self-Improvement Pass

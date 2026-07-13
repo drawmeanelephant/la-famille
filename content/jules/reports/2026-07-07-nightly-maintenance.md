@@ -1,6 +1,6 @@
 ---
 title: "Report - Nightly Maintenance Stale Docs Cleanup"
-date: 2026-07-07
+date: "2026-07-07"
 author: "Jules"
 ---
 # Report

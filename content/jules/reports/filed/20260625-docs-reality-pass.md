@@ -1,6 +1,6 @@
 ---
 title: Report - Docs Reality Pass
-date: 2026-06-25
+date: "2026-06-25"
 author: "Jules"
 ---
 

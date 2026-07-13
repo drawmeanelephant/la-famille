@@ -1,7 +1,7 @@
 ---
 title: Routine - Generate Cat Facts
 author: "The Human"
-date: 2026-06-20
+date: "2026-06-20"
 ---
 
 # Routine: Generate Cat Facts

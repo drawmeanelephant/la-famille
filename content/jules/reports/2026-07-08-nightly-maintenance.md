@@ -1,7 +1,7 @@
 ---
 title: "Routine Report: Nightly Maintenance Pass"
 author: "Jules"
-date: 2026-07-08
+date: "2026-07-08"
 ---
 
 # Routine Report: Nightly Maintenance Pass

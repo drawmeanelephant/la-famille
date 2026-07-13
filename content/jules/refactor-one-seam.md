@@ -1,7 +1,7 @@
 ---
 title: Routine - Refactor One Seam
 author: "The Human"
-date: 2026-06-19
+date: "2026-06-19"
 ---
 
 # Routine: Refactor One Seam

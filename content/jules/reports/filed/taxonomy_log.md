@@ -1,6 +1,6 @@
 ---
 title: Taxonomy Generation
-date: 2026-06-29
+date: "2026-06-29"
 tags: [routine, execution]
 author: "Jules"
 ---

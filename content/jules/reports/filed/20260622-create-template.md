@@ -1,7 +1,7 @@
 ---
 title: Routine Report - Generate New Layout Template (Floating Cards)
 author: "Jules"
-date: 2026-06-22
+date: "2026-06-22"
 ---
 
 # Routine Report: Generate New Layout Template
