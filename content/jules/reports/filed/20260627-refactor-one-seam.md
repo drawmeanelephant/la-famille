@@ -1,6 +1,6 @@
 ---
 title: Refactor One Seam - Site Data
-date: 2026-06-27
+date: "2026-06-27"
 routine: Refactor One Seam
 status: Success
 author: "Jules"

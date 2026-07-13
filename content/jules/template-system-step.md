@@ -1,7 +1,7 @@
 ---
 title: Routine - Template System Step
 author: "The Human"
-date: 2026-06-19
+date: "2026-06-19"
 ---
 
 # Routine: Template System Step

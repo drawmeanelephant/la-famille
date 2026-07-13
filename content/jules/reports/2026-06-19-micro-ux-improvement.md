@@ -1,6 +1,6 @@
 ---
 title: Report - Implement Micro-UX Improvement
-date: 2026-06-19
+date: "2026-06-19"
 author: "Jules"
 ---
 

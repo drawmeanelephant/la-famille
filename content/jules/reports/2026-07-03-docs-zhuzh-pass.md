@@ -1,6 +1,6 @@
 ---
 title: "Routine Report: Nightly Documentation Zhuzh Pass"
-date: 2026-07-03
+date: "2026-07-03"
 author: "Jules"
 ---
 

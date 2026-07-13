@@ -1,6 +1,6 @@
 ---
 title: "Micro UX Improvement Report"
-date: 2026-06-26
+date: "2026-06-26"
 author: "Jules"
 ---
 # Report

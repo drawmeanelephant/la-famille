@@ -1,6 +1,6 @@
 ---
 title: Execution Report - Refactor One Seam
-date: 2026-06-20
+date: "2026-06-20"
 routine: Refactor One Seam
 author: "Jules"
 ---

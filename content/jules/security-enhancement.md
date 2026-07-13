@@ -1,7 +1,7 @@
 ---
 title: Routine - Implement Security Enhancement
 author: "The Human"
-date: 2026-06-19
+date: "2026-06-19"
 ---
 
 # Routine: Implement Security Enhancement

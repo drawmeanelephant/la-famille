@@ -1,6 +1,6 @@
 ---
 title: Routine - Test Fixture Expansion Report
-date: 2026-06-26
+date: "2026-06-26"
 author: "Jules"
 ---
 

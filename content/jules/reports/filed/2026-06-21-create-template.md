@@ -1,6 +1,6 @@
 ---
 title: "Execution Report: Generate New Layout Template"
-date: 2026-06-21
+date: "2026-06-21"
 author: "Jules"
 ---
 

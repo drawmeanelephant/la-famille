@@ -1,7 +1,7 @@
 ---
 title: Docs Reality Pass Routine
 author: "Jules"
-date: 2026-06-23
+date: "2026-06-23"
 ---
 
 # Routine Report: Docs Reality Pass

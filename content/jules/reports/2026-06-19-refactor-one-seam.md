@@ -1,6 +1,6 @@
 ---
 title: Routine Report - Refactor One Seam
-date: 2026-06-19
+date: "2026-06-19"
 author: "Jules"
 ---
 
