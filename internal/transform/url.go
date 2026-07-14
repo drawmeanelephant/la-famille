@@ -29,6 +29,5 @@ func GetOutputURL(relPath string, slug string, render bool) string {
 		name = slug
 	}
 
-
 	return path.Join(dir, name, "index.html")
 }

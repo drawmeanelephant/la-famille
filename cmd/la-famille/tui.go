@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/tbuddy/la-famille/internal/logger"
 	"log/slog"
 	"net"
-	"github.com/tbuddy/la-famille/internal/logger"
 	"net/http"
 	"os"
 	"strings"
@@ -31,7 +31,11 @@ var tuiCmd = &cobra.Command{
 			logTarget = "la-famille.log"
 		}
 		f, _ := logger.Setup(logTarget, true)
-		defer func() { if f != nil { f.Close() } }()
+		defer func() {
+			if f != nil {
+				f.Close()
+			}
+		}()
 
 		cfg, err := config.Load("config.yaml")
 		if err != nil {

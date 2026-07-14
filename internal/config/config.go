@@ -34,14 +34,14 @@ type Config struct {
 // DefaultConfig returns a Config with sensible default values.
 func DefaultConfig() Config {
 	return Config{
-		SiteName:   "La Famille",
-		Template:   "templates/layout.html",
-		ContentDir: "content",
-		OutputDir:  "public",
-		AssetDir:   "assets",
-		RagDir:     "rag-archive",
-		Theme:      "retro",
-		Port:       8080,
+		SiteName:    "La Famille",
+		Template:    "templates/layout.html",
+		ContentDir:  "content",
+		OutputDir:   "public",
+		AssetDir:    "assets",
+		RagDir:      "rag-archive",
+		Theme:       "retro",
+		Port:        8080,
 		ProjectRoot: ".",
 	}
 }
