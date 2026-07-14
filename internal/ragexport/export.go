@@ -2,8 +2,8 @@ package ragexport
 
 import (
 	"fmt"
-	"log/slog"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"

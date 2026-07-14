@@ -76,8 +76,8 @@ func TestNewEngine_GFMAndTypographer(t *testing.T) {
 			markdown: `"Hello" -- writing text...`,
 			expected: []string{
 				"&ldquo;Hello&rdquo;", // Curly double quotes
-				"&ndash;",              // En-dash (default behavior for --)
-				"&hellip;",              // Ellipsis
+				"&ndash;",             // En-dash (default behavior for --)
+				"&hellip;",            // Ellipsis
 			},
 		},
 	}

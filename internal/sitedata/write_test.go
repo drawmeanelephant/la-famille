@@ -17,7 +17,7 @@ func TestWrite(t *testing.T) {
 		},
 		"about/me": {
 			"title": "About Me",
-			"slug": "jules",
+			"slug":  "jules",
 		},
 	}
 

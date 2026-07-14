@@ -2,12 +2,12 @@ package transform
 
 import (
 	"bytes"
-	"testing"
-	"strings"
-	"github.com/yuin/goldmark/text"
-	"github.com/yuin/goldmark/renderer/html"
-	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/text"
+	"strings"
+	"testing"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/parser"
