@@ -11,7 +11,7 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/spf13/cobra v1.10.2
-	github.com/yuin/goldmark v1.8.2
+	github.com/yuin/goldmark v1.8.4
 	gopkg.in/yaml.v2 v2.4.0
 )
 
