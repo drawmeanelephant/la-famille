@@ -1,5 +1,5 @@
 ---
-title: Report - Refactor One Seam (Stub Generator)
+title: "Report - Refactor One Seam (Stub Generator)"
 author: "Jules"
 date: "2026-06-23"
 ---

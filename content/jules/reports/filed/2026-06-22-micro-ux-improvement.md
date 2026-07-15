@@ -1,5 +1,5 @@
 ---
-title: Routine Report - Micro-UX Improvement
+title: "Routine Report - Micro-UX Improvement"
 date: "2026-06-22"
 author: "Jules"
 ---

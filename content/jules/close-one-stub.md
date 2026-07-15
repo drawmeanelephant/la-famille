@@ -1,5 +1,5 @@
 ---
-title: Routine - Close One Stub
+title: "Routine - Close One Stub"
 author: "The Human"
 date: "2026-06-19"
 ---

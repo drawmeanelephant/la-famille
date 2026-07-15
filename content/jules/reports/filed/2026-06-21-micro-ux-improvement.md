@@ -1,5 +1,5 @@
 ---
-title: Routine Execution - Micro-UX Improvement
+title: "Routine Execution - Micro-UX Improvement"
 author: "Jules"
 date: "2026-06-21"
 ---

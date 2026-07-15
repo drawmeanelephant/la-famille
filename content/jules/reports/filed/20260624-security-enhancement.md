@@ -1,5 +1,5 @@
 ---
-title: 2026-06-24 - Security Enhancement Routine
+title: "2026-06-24 - Security Enhancement Routine"
 author: "Jules"
 date: "2026-06-24"
 ---

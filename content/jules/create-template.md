@@ -1,5 +1,5 @@
 ---
-title: Routine - Generate New Layout Template
+title: "Routine - Generate New Layout Template"
 author: "The Human"
 date: "2026-06-19"
 ---

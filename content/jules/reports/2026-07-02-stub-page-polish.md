@@ -1,5 +1,5 @@
 ---
-title: Report - Improve Missing Page Stub
+title: "Report - Improve Missing Page Stub"
 author: "Jules"
 date: "2026-07-02"
 ---

@@ -1,5 +1,5 @@
 ---
-title: Routine - Test Fixture Expansion
+title: "Routine - Test Fixture Expansion"
 author: "The Human"
 date: "2026-06-19"
 ---
