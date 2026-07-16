@@ -1,5 +1,5 @@
 ---
-title: Report - Nightly Maintenance Content Frontmatter Normalization
+title: "Report - Nightly Maintenance Content Frontmatter Normalization"
 date: "2026-07-03"
 author: "Jules"
 ---

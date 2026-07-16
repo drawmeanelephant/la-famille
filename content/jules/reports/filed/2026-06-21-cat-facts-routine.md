@@ -1,5 +1,5 @@
 ---
-title: Execution Report - Generate Cat Facts
+title: "Execution Report - Generate Cat Facts"
 author: "Jules"
 date: "2026-06-21"
 ---

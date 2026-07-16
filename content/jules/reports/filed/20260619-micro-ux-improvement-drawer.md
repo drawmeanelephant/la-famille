@@ -1,5 +1,5 @@
 ---
-title: Micro-UX Improvement Report
+title: "Micro-UX Improvement Report"
 author: "Jules"
 date: "2026-06-19"
 ---

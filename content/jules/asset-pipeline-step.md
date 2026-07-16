@@ -1,5 +1,5 @@
 ---
-title: Routine - Asset Pipeline Step
+title: "Routine - Asset Pipeline Step"
 author: "The Human"
 date: "2026-06-19"
 ---

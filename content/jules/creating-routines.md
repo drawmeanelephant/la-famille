@@ -1,5 +1,5 @@
 ---
-title: Creating Effective Routines for Jules
+title: "Creating Effective Routines for Jules"
 author: "The Human"
 date: "2026-06-19"
 ---

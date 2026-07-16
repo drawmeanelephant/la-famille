@@ -1,5 +1,5 @@
 ---
-title: Routine - Self-Improvement Pass
+title: "Routine - Self-Improvement Pass"
 author: "Jules"
 date: "2026-07-01"
 ---

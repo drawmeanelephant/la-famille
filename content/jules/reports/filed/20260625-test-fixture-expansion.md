@@ -1,5 +1,5 @@
 ---
-title: Test Fixture Expansion Report
+title: "Test Fixture Expansion Report"
 date: "2026-06-25"
 routine: Test Fixture Expansion
 status: Success

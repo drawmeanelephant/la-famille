@@ -1,5 +1,5 @@
 ---
-title: Execution Log - LiveReload Setup
+title: "Execution Log - LiveReload Setup"
 author: "Jules"
 date: "2026-06-29"
 ---

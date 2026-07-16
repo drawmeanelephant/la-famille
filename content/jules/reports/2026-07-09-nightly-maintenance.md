@@ -1,5 +1,5 @@
 ---
-title: Report - Nightly Maintenance Content Consistency
+title: "Report - Nightly Maintenance Content Consistency"
 date: "2026-07-09"
 author: "Jules"
 ---

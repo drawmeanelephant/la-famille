@@ -1,5 +1,5 @@
 ---
-title: Routine - Concurrent Compiler Workers
+title: "Routine - Concurrent Compiler Workers"
 date: "2026-07-01"
 author: "Jules"
 ---

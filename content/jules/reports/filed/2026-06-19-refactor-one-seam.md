@@ -1,5 +1,5 @@
 ---
-title: Report - Refactor One Seam
+title: "Report - Refactor One Seam"
 author: "Jules"
 date: "2026-06-19"
 ---

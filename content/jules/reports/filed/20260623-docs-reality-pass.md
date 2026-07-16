@@ -1,5 +1,5 @@
 ---
-title: Docs Reality Pass Routine
+title: "Docs Reality Pass Routine"
 author: "Jules"
 date: "2026-06-23"
 ---
