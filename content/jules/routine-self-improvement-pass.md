@@ -1,5 +1,5 @@
 ---
-title: Routine - Self-Improvement Pass
+title: "Routine - Self-Improvement Pass"
 author: "The Human"
 date: "2026-06-19"
 ---

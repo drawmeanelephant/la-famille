@@ -1,5 +1,5 @@
 ---
-title: Routine Report - Generate Cat Facts
+title: "Routine Report - Generate Cat Facts"
 author: "Jules"
 date: "2026-06-20"
 ---

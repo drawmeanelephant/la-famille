@@ -1,5 +1,5 @@
 ---
-title: Routine - Generate New Layout Template Log
+title: "Routine - Generate New Layout Template Log"
 author: "Jules"
 date: "2026-06-25"
 ---

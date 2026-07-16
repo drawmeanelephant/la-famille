@@ -1,5 +1,5 @@
 ---
-title: Routine - Nightly Maintenance Pass
+title: "Routine - Nightly Maintenance Pass"
 author: "The Human"
 date: "2026-06-19"
 ---

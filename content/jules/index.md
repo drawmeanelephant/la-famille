@@ -1,5 +1,5 @@
 ---
-title: Jules Routines Index
+title: "Jules Routines Index"
 author: "Jules"
 date: "2026-06-20"
 ---

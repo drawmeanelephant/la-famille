@@ -1,5 +1,5 @@
 ---
-title: Flow Music Project Context
+title: "Flow Music Project Context"
 author: "Jules"
 date: "2024-06-19"
 ---

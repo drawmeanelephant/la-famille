@@ -1,5 +1,5 @@
 ---
-title: Routine Completion Report - Implement Security Enhancement
+title: "Routine Completion Report - Implement Security Enhancement"
 author: "Jules"
 date: "2026-06-26"
 ---

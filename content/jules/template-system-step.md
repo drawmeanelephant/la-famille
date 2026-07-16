@@ -1,5 +1,5 @@
 ---
-title: Routine - Template System Step
+title: "Routine - Template System Step"
 author: "The Human"
 date: "2026-06-19"
 ---

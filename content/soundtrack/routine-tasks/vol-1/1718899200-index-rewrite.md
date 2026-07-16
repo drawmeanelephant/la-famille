@@ -1,5 +1,5 @@
 ---
-title: Index Refresh Workflow
+title: "Index Refresh Workflow"
 author: "Jules"
 date: "2026-06-20"
 ---

@@ -1,5 +1,5 @@
 ---
-title: Run Report - Generate New Layout Template
+title: "Run Report - Generate New Layout Template"
 date: "2026-06-20"
 routine: Generate New Layout Template
 success: Yes
