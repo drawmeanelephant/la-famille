@@ -17,7 +17,7 @@ This routine handles the creation of a multimedia-focused development log update
 3. **Create the Devlog File:**
    - Create a new markdown file in the `content/devlog/` directory. Use a descriptive filename (e.g., `content/devlog/added-search-feature.md`).
    - Include the standard frontmatter (`title`, `author`, `date`) PLUS the new multimedia fields (`video_script`, `animation_cues`, `soundtrack_theme`, `layout`).
-   - **Important:** Set `layout: devlog` in the frontmatter to ensure the correct template is applied.
+   - **Important:** Set `layout: "devlog"` in the frontmatter to ensure the correct template is applied.
    - Add a brief summary paragraph in the body content.
 
 ## Example File Output
@@ -27,7 +27,7 @@ This routine handles the creation of a multimedia-focused development log update
 title: "La Famille Gets Search!"
 author: "Jules"
 date: "2024-05-20"
-layout: devlog
+layout: "devlog"
 video_script: "Searching for content just got easier! We've added full-text search to La Famille using bleve. Just type and find instantly."
 animation_cues: "Zoom in on a search bar. The word 'octopus' is typed. Fast transition to a grid of results popping up with a neon glow."
 soundtrack_theme: "Upbeat synthwave bassline. Lyrics: 'Searching the depths, finding the light, data flows fast into the night.'"
