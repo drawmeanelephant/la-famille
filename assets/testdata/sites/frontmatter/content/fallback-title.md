@@ -1,4 +1,4 @@
 ---
-author: Bob
+author: "Bob"
 ---
 Fallback content
