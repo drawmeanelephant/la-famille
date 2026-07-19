@@ -1,7 +1,7 @@
 ---
 title: "Run Report - Implement automated PR management"
 date: "2024-06-20"
-routine: 'Implement automated PR management ("clearing the litterbox")'
+routine: "Implement automated PR management (clearing the litterbox)"
 success: "Yes"
 author: "Jules"
 ---
