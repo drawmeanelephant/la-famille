@@ -2,46 +2,42 @@
 
 ## Part 1: Component Identification
 
-Here is a mapping of the major components currently residing in the `internal/` directories and a brief summary of their responsibilities based on the current code:
+The `internal/` directory contains the core application logic, modularized by responsibility. Here is the architectural map of the major components:
 
-*   **`internal/generator`**: Orchestrates the core build process for the static site. It ties together config reading, metadata gathering, stub generation, link transforming, and rendering markdown into the output directory.
-*   **`internal/render`**: Manages HTML template rendering. It discovers partials and layouts, implements caching for parsed templates, and applies the parsed templates to page structures to generate the final HTML output.
-*   **`internal/transform`**: Handles AST transformations during markdown parsing. This includes link resolution/transformations (`LinkTransformer`) to handle relative/absolute URLs and custom extensions like the `EmojiKitchenParser`.
-*   **`internal/asset`**: Responsible for copying static assets (like images, CSS, JS) from the asset directory to the output directory while honoring `.gitignore` rules natively.
-*   **`internal/search`**: Processes markdown and HTML content to extract clean text snippets, stripping code blocks and formatting markers, and formats this into JSON for the client-side search index.
-*   **`internal/taxonomy`**: Handles tag extraction, normalization, and generating index pages for each tag found across the markdown content.
-*   **`internal/graph`**: Constructs and serializes the graph of bidirectional links (backlinks and forward links) between pages, enabling network views.
-*   **`internal/ragexport`**: Packages the project’s content into clean, concatenated markdown files suitable for Retrieval-Augmented Generation (RAG) consumption by LLMs.
-*   **`internal/config`**: Defines the `Config` struct, handles loading `la-famille.yml`, and validates configuration parameters (e.g., path boundaries, port numbers).
-*   **`internal/content`**: Walks the content directory, parses YAML frontmatter using `goldmark`, and returns metadata (like Title, Tags, Date) along with the raw body text.
-*   **`internal/stub`**: Automatically generates placeholder HTML pages for broken links (files that are linked to but don't exist yet) along with backlinks pointing to where they were referenced.
-*   **`internal/page`**: Defines the core `Page` struct used to pass data (Content, Meta, Config, etc.) into the HTML templates during the render phase.
-*   **`internal/sitedata`**: Handles the writing of structural site data to the output directory, such as the `sitemap.xml` and `site_meta.json`.
-*   **`internal/markdown`**: Configures and initializes the Goldmark engine with extensions (e.g., GFM, Typographer, frontmatter) and custom link transformers.
-*   **`internal/git`**: Provides native Go wrappers and shell-outs for standard git operations (like checkout, commit, push) and checking for uncommitted changes.
-*   **`internal/github`**: Manages interaction with the GitHub API for syncing PRs, listing open PRs, checking PR statuses (CheckRuns), and orchestrating background sync workflows.
-*   **`internal/watcher`**: Implements WatchMode. Uses `fsnotify` to watch for file changes, triggers partial rebuilds, and manages the Server-Sent Events (SSE) server for browser live-reloading.
+- **`internal/generator`**: The orchestration engine for the static site build process. It coordinates metadata gathering, multi-threaded Markdown conversion, graph generation, search indexing, and rendering.
+- **`internal/render`**: Manages HTML output generation using Go templates. It includes a double-checked caching mechanism for layouts and handles WatchMode live-reload script injection.
+- **`internal/transform`**: Handles Markdown AST transformations via Goldmark. Crucially, its `LinkTransformer` resolves internal links, tracks backlink edges for the graph, and detects missing files to be stubbed. Also includes specialized parsers like `EmojiKitchenParser`.
+- **`internal/asset`**: Responsible for syncing static assets from the asset directory to the public output directory. It natively parses `.gitignore` rules to exclude non-public files without relying on external Git binaries.
+- **`internal/search`**: Builds the search index data structure (`search.json`). Implements an `ExtractSnippet` utility to strip markdown and HTML noise, producing clean, minified snippet strings.
+- **`internal/taxonomy`**: Handles tag extraction, validation, and generates localized HTML pages grouping content by their assigned tags.
+- **`internal/graph`**: Writes deterministic JSON artifacts mapping the site's link graph (nodes and directional edges) and backlinks for client-side consumption.
+- **`internal/ragexport`**: Provides functionality to bundle the project files into consolidated, RAG-friendly markdown exports for downstream AI and LLM consumption.
+- **`internal/config`**: Defines the `Config` data model, parses YAML configuration files, and applies safe fallback defaults for the site.
+- **`internal/content`**: Walks the source directory to parse frontmatter metadata from Markdown files (`GatherMetadata`), validates formatting, and tracks rendering rules.
+- **`internal/stub`**: Generates missing link placeholder pages. Resolves broken internal links automatically to maintain graph integrity and prevent 404 dead-ends.
+- **`internal/page`**: Defines the central `Page` struct model passed to HTML templates, encapsulating site config, frontmatter metadata, and the rendered content payload.
+- **`internal/sitedata`**: Writes aggregate JSON metadata representing the site's structure to the output directory, useful for sitemaps or client-side indexing.
+- **`internal/markdown`**: Configures and instantiates the `goldmark` Markdown engine, registering extensions like GFM, Typography, and custom parsers/transformers.
+- **`internal/git`**: Wraps local Git repository operations, likely to extract commit metadata, modification dates, or author information for content.
+- **`internal/github`**: Handles external GitHub API interactions, such as repository syncing operations and pull request checks.
+- **`internal/watcher`**: Implements context-aware file system watching via `fsnotify`. Monitors content, templates, and assets to trigger debounced live rebuilds and Server-Sent Events (SSE) reloads.
 
 ## Part 2: Micro-Improvements
 
-Here are 4 high-ROI micro-improvements that can be implemented for localized enhancements:
+Here are 4 high-ROI, localized micro-improvements to enhance performance, maintainability, and code hygiene without major architectural shifts:
 
-1.  **Pre-allocate `strings.Builder` capacity with `Grow()`**:
-    *   **Location**: `internal/sitedata/write.go` (`sitemapBuilder`), `internal/taxonomy/taxonomy.go` (`htmlContent`), `internal/stub/stub.go` (`htmlContent`), and `internal/content/metadata.go` (`sb`).
-    *   **Issue**: These packages build relatively large HTML or XML strings in memory iteratively without pre-allocating the underlying byte slice.
-    *   **Fix**: Call `builder.Grow(estimatedSize)` right after declaring the `strings.Builder`. For example, in `sitemapBuilder.Grow(4096)` based on an estimated sitemap size. This prevents multiple memory re-allocations as the string grows.
+1. **Better Error Wrapping in File System Operations**
+   - *Context:* Functions in `internal/watcher/watcher.go` (like `filepath.WalkDir` callbacks) and `internal/asset/copy.go` (like `os.MkdirAll`) often return raw errors (e.g., `return err`).
+   - *Improvement:* Wrap these errors with context using `fmt.Errorf("failed to walk directory %q: %w", path, err)`. This will significantly improve debugging by pinpointing exactly which directory or file caused the underlying I/O failure.
 
-2.  **Optimize Struct Alignment for Memory Packing**:
-    *   **Location**: `internal/config/config.go` (`Config`), `internal/content/metadata.go` (`FileMeta`), and `internal/page/page.go` (`Page`).
-    *   **Issue**: Several large structs have loosely ordered fields. For instance, in `Config`, boolean fields (`WatchMode`) or integer fields (`Port`) are placed next to slices (`SiteLinks`) or strings.
-    *   **Fix**: Reorder the fields from largest to smallest (e.g., Slices/Maps first, Strings/Pointers next, Integers next, and Booleans last) to reduce struct padding and optimize memory layout, especially when processing hundreds of pages.
+2. **Reduce Linear Scans in `transform.LinkTransformer`**
+   - *Context:* In `internal/transform/link_transformer.go`, deduplicating missing files relies on a linear slice scan (`for _, p := range parents`).
+   - *Improvement:* Change the tracking structure for `MissingFiles` from `map[string][]string` to `map[string]map[string]struct{}` (or a similar set abstraction). This converts an $O(N)$ linear scan into an $O(1)$ map lookup, cleaning up localized technical debt and saving CPU cycles during large graph traversals.
 
-3.  **Use `sync.OnceValues` for Discovering Layouts/Partials**:
-    *   **Location**: `internal/render/render.go` (in `DiscoverLayouts` and `DiscoverPartials` initialization).
-    *   **Issue**: The `Renderer` currently stores `onces map[string]*sync.Once` and requires manual locking to initialize specific templates.
-    *   **Fix**: If Go 1.21+ is available, use `sync.OnceValues` or standard `sync.Map` for concurrent cache population, which slightly simplifies the locking logic in `Render.HTML` and reduces the risk of map-read panics.
+3. **Pre-allocation Optimization in `generator.Build`**
+   - *Context:* In `internal/generator/generator.go`, the final `searchIndex` slice is populated by iteratively appending items from `searchIndexItems` that have a valid URL.
+   - *Improvement:* Pre-allocate `searchIndex` with a known capacity before the loop: `searchIndex := make([]search.Item, 0, len(searchIndexItems))`. This prevents dynamic slice reallocation overhead during the append operations.
 
-4.  **Refine Slice Pre-allocation in `generator.go`**:
-    *   **Location**: `internal/generator/generator.go`
-    *   **Issue**: `searchIndexItems := make([]search.Item, len(keys))` is well-allocated. However, loops that append to slices like `missingFiles` or dynamically built file lists might benefit from capacity hints where bounds are known.
-    *   **Fix**: Ensure `make([]T, 0, len(known))` is consistently applied across all packages where the maximum bound is known beforehand, particularly in the `WriteGraphFiles` loop inside `internal/graph/write.go`.
+4. **Struct Field Alignment in `search.Item`**
+   - *Context:* In `internal/search/search.go`, the `Item` struct places a 24-byte slice (`Tags []string`) between 16-byte strings (`URL` and `Snippet`).
+   - *Improvement:* Move the `Tags` slice to the first field of the struct (or group it with other slices/pointers). This minimizes padding bytes generated by the compiler to align fields on 64-bit architectures, improving memory packing for large search indexes.
