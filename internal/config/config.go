@@ -16,6 +16,7 @@ type SiteLink struct {
 
 // Config represents the site configuration.
 type Config struct {
+	SiteLinks          []SiteLink `yaml:"site_links"`
 	SiteName           string     `yaml:"site_name"`
 	Template           string     `yaml:"template"`
 	ContentDir         string     `yaml:"content_dir"`
@@ -26,7 +27,6 @@ type Config struct {
 	ProjectRoot        string     `yaml:"project_root"`
 	DefaultDescription string     `yaml:"default_description"`
 	DefaultOGImage     string     `yaml:"default_og_image"`
-	SiteLinks          []SiteLink `yaml:"site_links"`
 	Port               int        `yaml:"port"`
 	WatchMode          bool       `yaml:"-"`
 }

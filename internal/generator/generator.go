@@ -325,7 +325,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 			return errs[i].index < errs[j].index
 		})
 
-		var joinErrs []error
+		joinErrs := make([]error, 0, len(errs))
 		for _, ie := range errs {
 			joinErrs = append(joinErrs, ie.err)
 		}

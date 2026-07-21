@@ -9,9 +9,9 @@ import (
 )
 
 type Item struct {
+	Tags    []string `json:"g"`
 	Title   string   `json:"t"`
 	URL     string   `json:"u"`
-	Tags    []string `json:"g"`
 	Snippet string   `json:"s"`
 }
 

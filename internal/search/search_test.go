@@ -41,7 +41,7 @@ func TestWriteMinifiedJSON(t *testing.T) {
 		t.Fatalf("ReadFile failed: %v", err)
 	}
 	str := string(b)
-	if str != `[{"t":"Test","u":"/test","g":["a"],"s":"snip"}]`+"\n" {
+	if str != `[{"g":["a"],"t":"Test","u":"/test","s":"snip"}]`+"\n" {
 		t.Errorf("unexpected json output: %q", str)
 	}
 }
