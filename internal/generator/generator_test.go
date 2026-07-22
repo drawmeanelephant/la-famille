@@ -453,6 +453,51 @@ func TestGeneratorSEOEmptySiteURLUsesRelativeSitemap(t *testing.T) {
 	}
 }
 
+func TestBuildGeneratesRSSForDatedRenderedPages(t *testing.T) {
+	root := t.TempDir()
+	content := filepath.Join(root, "content")
+	output := filepath.Join(root, "public")
+	templates := filepath.Join(root, "templates")
+	for _, dir := range []string{content, templates} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(templates, "layout.html"), []byte("{{.Title}} {{.Content}}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(content, "index.md"), []byte("---\ntitle: Welcome\ndate: 2024-03-10\n---\n# Hello\nA dated page."), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(content, "older.md"), []byte("---\ntitle: Older\ndate: 2024-01-01\n---\nOlder content."), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(content, "draft.md"), []byte("---\ntitle: Draft\ndate: 2024-04-01\nrender: false\n---\nHidden."), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = content
+	cfg.OutputDir = output
+	cfg.Template = filepath.Join(templates, "layout.html")
+	cfg.SiteURL = "https://example.com/site"
+	if _, err := Build(cfg); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(output, "feed.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	for _, want := range []string{"https://example.com/site/", "https://example.com/site/older/", "Welcome", "Older"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("feed missing %q: %s", want, got)
+		}
+	}
+	if strings.Contains(got, "Draft") || strings.Contains(got, "draft") {
+		t.Errorf("feed must exclude render:false pages: %s", got)
+	}
+}
+
 func BenchmarkBuild(b *testing.B) {
 	tempDir := b.TempDir()
 	contentDir := filepath.Join(tempDir, "content")

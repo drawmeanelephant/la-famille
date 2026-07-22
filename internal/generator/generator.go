@@ -21,6 +21,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/discovery"
+	"github.com/tbuddy/la-famille/internal/feed"
 	"github.com/tbuddy/la-famille/internal/graph"
 	"github.com/tbuddy/la-famille/internal/markdown"
 	"github.com/tbuddy/la-famille/internal/page"
@@ -168,6 +169,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 
 	searchIndexItems := make([]search.Item, len(keys))
 	renderedPaths := make([]string, len(keys))
+	rssItems := make([]feed.Item, len(keys))
 
 	type job struct {
 		index   int
@@ -365,6 +367,18 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						return
 					}
 					renderedPaths[idx] = relOut
+					if meta.Date != "" {
+						itemURL := cfg.URLForOutputPath(relOut)
+						if itemURL == "" {
+							itemURL = feed.LocalURL(relOut)
+						}
+						rssItems[idx] = feed.Item{
+							Title:       title,
+							URL:         itemURL,
+							Date:        meta.Date,
+							Description: search.ExtractSnippet(meta.Rest),
+						}
+					}
 					update.pageCount++
 				}()
 			}
@@ -439,6 +453,15 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	}
 
 	if err := search.WriteMinifiedJSON(filepath.Join(cfg.OutputDir, "search.json"), searchIndex); err != nil {
+		return result, err
+	}
+	var datedItems []feed.Item
+	for _, item := range rssItems {
+		if item.URL != "" {
+			datedItems = append(datedItems, item)
+		}
+	}
+	if err := feed.Write(cfg, datedItems); err != nil {
 		return result, err
 	}
 	files, err := generatedFiles(cfg.OutputDir)
