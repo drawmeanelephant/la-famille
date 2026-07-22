@@ -92,6 +92,13 @@ type workResultMsg struct {
 	res *generator.BuildResult
 }
 
+type workProgressMsg struct {
+	phase     string
+	completed int
+	total     int
+	detail    string
+}
+
 type serverErrorMsg struct {
 	err error
 }
@@ -105,6 +112,10 @@ type model struct {
 	frame         int
 	workMsg       string
 	workErr       error
+	workPhase     string
+	workCompleted int
+	workTotal     int
+	workEvents    []string
 	server        *http.Server
 	serverCancel  context.CancelFunc
 	watcherCancel context.CancelFunc
@@ -163,6 +174,31 @@ func tickCmd() tea.Cmd {
 	return tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
+}
+
+func buildProgressCmd(cfg config.Config) tea.Cmd {
+	progress := func(phase string, completed int) tea.Cmd {
+		return func() tea.Msg {
+			return workProgressMsg{phase: phase, completed: completed, total: 4}
+		}
+	}
+	return tea.Sequence(
+		progress("Preparing build", 1),
+		progress("Rendering pages", 2),
+		progress("Writing assets and indexes", 3),
+		func() tea.Msg {
+			res, err := generator.Build(cfg)
+			msg := "Build complete"
+			if err == nil {
+				if res.CacheHit {
+					msg = "Build complete (cache hit)"
+				} else {
+					msg = "Build complete (cache miss)"
+				}
+			}
+			return workResultMsg{err: err, msg: msg, res: &res}
+		},
+	)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -229,21 +265,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.screen = screenWorking
 					m.workMsg = "Building site..."
 					m.workErr = nil
-
-					// Re-assigning to avoid capturing loop variable problem, though we don't have a loop here
-					cfg := m.cfg
-					return m, func() tea.Msg {
-						res, err := generator.Build(cfg)
-						msg := "Build complete"
-						if err == nil {
-							if res.CacheHit {
-								msg = "Build complete (cache hit)"
-							} else {
-								msg = "Build complete (cache miss)"
-							}
-						}
-						return workResultMsg{err: err, msg: msg, res: &res}
-					}
+					m.workPhase = "Preparing build"
+					m.workCompleted, m.workTotal = 0, 4
+					m.workEvents = nil
+					return m, buildProgressCmd(m.cfg)
 				case "RAG Export":
 					m.screen = screenWorking
 					m.workMsg = "Exporting RAG data..."
@@ -330,8 +355,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case workResultMsg:
 		m.workMsg = msg.msg
 		m.workErr = msg.err
+		m.workCompleted = m.workTotal
+		m.workPhase = "Complete"
+		if msg.err != nil {
+			m.workPhase = "Build failed"
+			m.workEvents = append(m.workEvents, fmt.Sprintf("Error: %v", msg.err))
+		}
 		if msg.res != nil {
 			m.stats = msg.res
+			if msg.res.ErrorCount > 0 {
+				m.workEvents = append(m.workEvents, fmt.Sprintf("Warning: %d build errors reported", msg.res.ErrorCount))
+			}
+		}
+
+	case workProgressMsg:
+		m.workPhase = msg.phase
+		m.workCompleted = msg.completed
+		m.workTotal = msg.total
+		if msg.detail != "" {
+			m.workEvents = append(m.workEvents, msg.detail)
 		}
 
 	case serverErrorMsg:
@@ -428,6 +470,15 @@ func (m model) View() string {
 
 	case screenWorking:
 		s := m.workMsg + "\n"
+		if m.workPhase != "" && m.workTotal > 0 {
+			s += fmt.Sprintf("Phase: %s (%d/%d)\n", m.workPhase, m.workCompleted, m.workTotal)
+		}
+		if len(m.workEvents) > 0 {
+			s += "\nEvents:\n"
+			for _, event := range m.workEvents {
+				s += "- " + event + "\n"
+			}
+		}
 		if m.workErr != nil {
 			s += lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(fmt.Sprintf("Error: %v", m.workErr)) + "\n"
 		} else if strings.Contains(m.workMsg, "complete") {
