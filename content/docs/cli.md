@@ -93,3 +93,23 @@ go run ./cmd/la-famille pr [command]
 
 *   **Description:** A suite of tools for managing PRs, particularly useful for clearing out stale PRs created by automation agents via the `sync` subcommand.
 *   **See Also:** [Pull Request Management Guide](pr.md) for full details and configuration requirements.
+
+### `new`
+
+Scaffolds a new Markdown content file with YAML frontmatter.
+
+```bash
+go run ./cmd/la-famille new <slug-or-filename> [flags]
+```
+
+*   **Description:** Creates a new Markdown file in the configured content directory (`content/` by default). Generates valid frontmatter with default or custom metadata, creating parent directories if needed.
+*   **Flags:**
+    *   `--title`, `-t` (string): Title of the page. Defaults to title-cased filename if omitted.
+    *   `--tags` (strings): Comma-separated list or multiple instances of tags.
+    *   `--layout` (string): Layout template name for the page.
+    *   `--date` (string): Publication date in `YYYY-MM-DD` format. Defaults to today's date.
+    *   `--force`, `-f` (bool): Force overwrite an existing file.
+    *   `--content`, `-c` (string): Override target content directory.
+
+*Example:* `go run ./cmd/la-famille new blog/my-first-post --title "My First Post" --tags "tech,go"`
+
