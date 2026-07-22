@@ -130,6 +130,8 @@ type model struct {
 	diagnostics       []diagnostic
 	diagnosticCursor  int
 	diagnosticsReturn screen
+	width             int
+	height            int
 }
 
 func initialModel(cfg config.Config) model {
@@ -236,6 +238,11 @@ func buildProgressCmd(cfg config.Config) tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		return m, nil
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -452,35 +459,201 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+var (
+	titleStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("205"))
+
+	headerStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("228"))
+
+	accentStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("39"))
+
+	subtleStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("244"))
+
+	successBadge = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("10")).
+			Bold(true)
+
+	warningBadge = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("215")).
+			Bold(true)
+
+	errorBadge = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("9")).
+			Bold(true)
+
+	infoBadge = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("39")).
+			Bold(true)
+
+	offBadge = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("240"))
+
+	panelBorder = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("63")).
+			Padding(0, 1)
+
+	boxBorder = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("240")).
+			Padding(0, 1)
+)
+
+func (m model) renderStatusPanel(maxWidth int) string {
+	var sb strings.Builder
+
+	sb.WriteString(headerStyle.Render("📊 DASHBOARD STATUS") + "\n\n")
+
+	// 1. Watch Mode
+	watchStr := offBadge.Render("DISABLED")
+	if m.cfg.WatchMode {
+		watchStr = successBadge.Render("ENABLED")
+	}
+	sb.WriteString(fmt.Sprintf("%s %s\n", subtleStyle.Render("Watch Mode:"), watchStr))
+
+	// 2. Server Status
+	serverStr := offBadge.Render("OFF")
+	if m.server != nil {
+		port := m.cfg.Port
+		if port == 0 {
+			port = config.DefaultConfig().Port
+		}
+		serverStr = infoBadge.Render(fmt.Sprintf("RUNNING (127.0.0.1:%d)", port))
+	}
+	sb.WriteString(fmt.Sprintf("%s %s\n", subtleStyle.Render("Server Status:"), serverStr))
+
+	// 3. Build Phase
+	phaseStr := subtleStyle.Render("Idle")
+	if m.workPhase != "" {
+		if m.workPhase == "Complete" {
+			phaseStr = successBadge.Render("Complete")
+		} else if strings.Contains(m.workPhase, "failed") || strings.Contains(m.workPhase, "Error") {
+			phaseStr = errorBadge.Render(m.workPhase)
+		} else {
+			phaseStr = warningBadge.Render(m.workPhase)
+		}
+	}
+	sb.WriteString(fmt.Sprintf("%s %s\n", subtleStyle.Render("Build Phase:"), phaseStr))
+
+	// 4. Cache Status
+	cacheStr := subtleStyle.Render("N/A")
+	if m.stats != nil {
+		if m.stats.CacheHit {
+			cacheStr = successBadge.Render("HIT")
+		} else {
+			cacheStr = warningBadge.Render("MISS")
+		}
+	}
+	sb.WriteString(fmt.Sprintf("%s %s\n", subtleStyle.Render("Cache Status:"), cacheStr))
+
+	// 5. Diagnostics
+	diagStr := successBadge.Render("OK")
+	if m.workErr != nil {
+		diagStr = errorBadge.Render(fmt.Sprintf("1 error (%v)", m.workErr))
+	} else if m.stats != nil && m.stats.ErrorCount > 0 {
+		diagStr = warningBadge.Render(fmt.Sprintf("%d build warnings/errors", m.stats.ErrorCount))
+	}
+	sb.WriteString(fmt.Sprintf("%s %s\n", subtleStyle.Render("Diagnostics:"), diagStr))
+
+	// 6. Build Stats Summary
+	if m.stats != nil {
+		sb.WriteString(fmt.Sprintf("%s %d ms | %s %d pages\n",
+			subtleStyle.Render("Duration:"), m.stats.Duration.Milliseconds(),
+			subtleStyle.Render("Generated:"), m.stats.PageCount))
+	}
+
+	// 7. RAG Estimates Summary
+	ragDir := m.cfg.RagDir
+	if ragDir == "" {
+		ragDir = "rag-archive"
+	}
+	totalTokens := 0
+	files, err := os.ReadDir(ragDir)
+	if err == nil {
+		for _, file := range files {
+			if !file.IsDir() && strings.HasSuffix(file.Name(), ".md") {
+				if info, err := file.Info(); err == nil {
+					totalTokens += int(info.Size() / bytesPerToken)
+				}
+			}
+		}
+		sb.WriteString(fmt.Sprintf("%s ~%d tokens\n", subtleStyle.Render("RAG Tokens:"), totalTokens))
+	} else {
+		sb.WriteString(fmt.Sprintf("%s Not exported\n", subtleStyle.Render("RAG Archive:")))
+	}
+
+	style := panelBorder
+	if maxWidth > 4 {
+		style = style.MaxWidth(maxWidth)
+	}
+	return style.Render(sb.String())
+}
+
 func (m model) View() string {
 	switch m.screen {
 	case screenMenu:
-		s := lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(staticRaoul()) + "\n\n"
-		s += lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("Welcome to La Famille TUI") + "\n\n"
-		s += lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("228")).Render("🍔 OCTOBURGER MENU") + "\n"
-		if !m.menuOpen {
-			return s + "\nMenu closed. Press m to open commands, q to quit."
+		isWide := m.width >= 80 || m.width <= 0
+		effectiveWidth := m.width
+		if effectiveWidth <= 0 {
+			effectiveWidth = 80
 		}
 
-		for i, choice := range m.choices {
-			cursor := "  "
-			style := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-			if m.cursor == i {
-				cursor = "> "
-				style = lipgloss.NewStyle().Foreground(lipgloss.Color("212")).Bold(true)
+		var leftBuf strings.Builder
+		leftBuf.WriteString(accentStyle.Render(staticRaoul()) + "\n\n")
+		leftBuf.WriteString(titleStyle.Render("Welcome to La Famille TUI") + "\n\n")
+		leftBuf.WriteString(headerStyle.Render("🍔 OCTOBURGER MENU") + "\n")
+
+		if !m.menuOpen {
+			leftBuf.WriteString("\nMenu closed. Press m to open commands, q to quit.")
+		} else {
+			for i, choice := range m.choices {
+				cursor := "  "
+				style := subtleStyle
+				if m.cursor == i {
+					cursor = "> "
+					style = lipgloss.NewStyle().Foreground(lipgloss.Color("212")).Bold(true)
+				}
+				leftBuf.WriteString(fmt.Sprintf("%s %s\n", cursor, style.Render(choice.label)))
 			}
-			s += fmt.Sprintf("%s %s\n", cursor, style.Render(choice.label))
+			leftBuf.WriteString("\nPress q to quit.")
 		}
-		s += "\nPress q to quit."
-		return s
+
+		if isWide {
+			leftColWidth := 38
+			if effectiveWidth > 90 {
+				leftColWidth = 42
+			}
+			rightColWidth := effectiveWidth - leftColWidth - 4
+			if rightColWidth < 35 {
+				rightColWidth = 35
+			}
+
+			leftView := lipgloss.NewStyle().Width(leftColWidth).Render(leftBuf.String())
+			rightView := m.renderStatusPanel(rightColWidth)
+
+			return lipgloss.JoinHorizontal(lipgloss.Top, leftView, "  ", rightView)
+		} else {
+			// Compact stacked layout for narrow screens
+			statusView := m.renderStatusPanel(effectiveWidth - 2)
+			stacked := lipgloss.JoinVertical(lipgloss.Left, leftBuf.String(), "\n", statusView)
+			return lipgloss.NewStyle().MaxWidth(effectiveWidth).Render(stacked)
+		}
 
 	case screenRaoul:
-		s := lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(animatedRaoul(m.frame))
+		s := accentStyle.Render(animatedRaoul(m.frame))
 		s += "\n\nPress Esc or q to go back."
+		if m.width > 0 {
+			return lipgloss.NewStyle().MaxWidth(m.width).Render(s)
+		}
 		return s
 
 	case screenStats:
-		s := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("Stats Dashboard") + "\n\n"
+		s := titleStyle.Render("Stats Dashboard") + "\n\n"
 		if m.stats == nil {
 			s += "No build has been run yet in this session.\n"
 		} else {
@@ -517,6 +690,9 @@ func (m model) View() string {
 			s += "RAG archive not found. Run 'RAG Export' to generate bundles.\n"
 		}
 		s += "\nPress Esc or q to go back."
+		if m.width > 0 {
+			return boxBorder.MaxWidth(m.width).Render(s)
+		}
 		return s
 
 	case screenDiagnostics:
@@ -541,11 +717,19 @@ func (m model) View() string {
 				s += fmt.Sprintf("    %s\n", item.source)
 			}
 		}
-		return s + "\nUse ↑/↓ to navigate, c to clear, d/Esc/q to return."
+		s += "\nUse ↑/↓ to navigate, c to clear, d/Esc/q to return."
+		if m.width > 0 {
+			return boxBorder.MaxWidth(m.width).Render(s)
+		}
+		return s
 
 	case screenHelp:
-		return lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("La Famille Help") +
+		s := titleStyle.Render("La Famille Help") +
 			"\n\n↑/k and ↓/j  Navigate\nEnter/Space  Select\nm             Toggle octoburger menu\nEsc           Close menu or go back\nq             Quit\n\nPress Esc or q to go back."
+		if m.width > 0 {
+			return boxBorder.MaxWidth(m.width).Render(s)
+		}
+		return s
 
 	case screenWorking:
 		s := m.workMsg + "\n"
@@ -559,11 +743,14 @@ func (m model) View() string {
 			}
 		}
 		if m.workErr != nil {
-			s += lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(fmt.Sprintf("Error: %v", m.workErr)) + "\n"
+			s += errorBadge.Render(fmt.Sprintf("Error: %v", m.workErr)) + "\n"
 		} else if strings.Contains(m.workMsg, "complete") {
-			s += lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Render("Success!") + "\n"
+			s += successBadge.Render("Success!") + "\n"
 		}
 		s += "\nPress Enter or Esc to return to the menu."
+		if m.width > 0 {
+			return boxBorder.MaxWidth(m.width).Render(s)
+		}
 		return s
 
 	case screenServe:
@@ -571,10 +758,13 @@ func (m model) View() string {
 		if port == 0 {
 			port = config.DefaultConfig().Port
 		}
-		s := lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(animatedRaoul(m.frame))
+		s := accentStyle.Render(animatedRaoul(m.frame))
 		s += "\n\n"
-		s += lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).Render(fmt.Sprintf("Serving site on http://localhost:%d", port))
+		s += titleStyle.Render(fmt.Sprintf("Serving site on http://localhost:%d", port))
 		s += "\n\nPress Esc or q to stop serving and go back."
+		if m.width > 0 {
+			return lipgloss.NewStyle().MaxWidth(m.width).Render(s)
+		}
 		return s
 	}
 
