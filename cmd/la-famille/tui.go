@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/tbuddy/la-famille/internal/logger"
 	"log/slog"
@@ -89,6 +90,10 @@ type workResultMsg struct {
 	res *generator.BuildResult
 }
 
+type serverErrorMsg struct {
+	err error
+}
+
 type model struct {
 	cfg           config.Config
 	screen        screen
@@ -123,6 +128,32 @@ func (m model) Init() tea.Cmd {
 	return nil
 }
 
+// stopServing stops any server and watcher started by the TUI. It deliberately
+// leaves screen selection to its caller so the same cleanup works for both a
+// user-initiated exit and an unexpected server failure.
+func (m *model) stopServing() {
+	if m.watcherCancel != nil {
+		m.watcherCancel()
+		m.watcherCancel = nil
+	}
+	if m.serverCancel != nil {
+		m.serverCancel()
+		m.serverCancel = nil
+	}
+	if m.server != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = m.server.Shutdown(ctx)
+		m.server = nil
+	}
+}
+
+func runServer(server *http.Server, report func(tea.Msg)) {
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		report(serverErrorMsg{err: err})
+	}
+}
+
 func tickCmd() tea.Cmd {
 	return tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
 		return tickMsg(t)
@@ -136,43 +167,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
-		case "q":
-			if m.screen == screenMenu {
+		case "q", "esc":
+			if msg.String() == "q" && m.screen == screenMenu {
 				return m, tea.Quit
-			} else if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.screen == screenServe {
-				if m.watcherCancel != nil {
-					m.watcherCancel()
-					m.watcherCancel = nil
-				}
-				if m.serverCancel != nil {
-					m.serverCancel()
-					m.serverCancel = nil
-				}
-				if m.screen == screenServe && m.server != nil {
-					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-					defer cancel()
-					_ = m.server.Shutdown(ctx)
-					m.server = nil
-				}
-				m.screen = screenMenu
-				return m, nil
 			}
-		case "esc":
 			if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.screen == screenServe {
-				if m.watcherCancel != nil {
-					m.watcherCancel()
-					m.watcherCancel = nil
-				}
-				if m.serverCancel != nil {
-					m.serverCancel()
-					m.serverCancel = nil
-				}
-				if m.screen == screenServe && m.server != nil {
-					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-					defer cancel()
-					_ = m.server.Shutdown(ctx)
-					m.server = nil
-				}
+				m.stopServing()
 				m.screen = screenMenu
 				return m, nil
 			}
@@ -257,7 +257,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					serverCtx, serverCancel := context.WithCancel(context.Background())
 					m.serverCancel = serverCancel
 
-					m.server = &http.Server{
+					server := &http.Server{
 						Addr:              fmt.Sprintf("127.0.0.1:%d", port),
 						Handler:           mux,
 						ReadHeaderTimeout: 5 * time.Second,
@@ -267,8 +267,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							return serverCtx
 						},
 					}
+					m.server = server
 					go func() {
-						_ = m.server.ListenAndServe()
+						runServer(server, func(msg tea.Msg) {
+							if p != nil {
+								p.Send(msg)
+							}
+						})
 					}()
 					return m, tickCmd()
 				}
@@ -296,6 +301,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.res != nil {
 			m.stats = msg.res
 		}
+
+	case serverErrorMsg:
+		m.stopServing()
+		m.screen = screenWorking
+		m.workMsg = "Unable to start server"
+		m.workErr = msg.err
 
 	}
 
