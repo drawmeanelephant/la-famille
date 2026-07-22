@@ -24,6 +24,9 @@ type LinkTransformer struct {
 }
 
 func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
+	if t == nil {
+		return
+	}
 	sourceID := strings.TrimSuffix(t.CurrentFile, ".md")
 	if m, ok := t.FileMap[t.CurrentFile]; ok && m.Render != nil && !*m.Render {
 		sourceID = t.CurrentFile
