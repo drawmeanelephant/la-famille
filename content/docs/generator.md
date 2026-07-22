@@ -19,6 +19,7 @@ The build process is executed in several distinct passes to ensure accurate link
 5.  **Stub Generation:** For any internal links pointing to non-existent pages, simple HTML "stubs" are automatically generated. This ensures there are no broken links on the site and provides clear entry points for future content.
 6.  **Asset Copy:** Static assets like images and CSS are copied verbatim into the output directory, respecting any ignore patterns.
 7.  **JSON Output:** Finally, site metadata and graph structures are exported as JSON for advanced client-side functionality.
+8.  **Discovery Feeds:** If any rendered page has a valid `date` in its frontmatter, the build emits a deterministic `feed.xml` RSS 2.0 feed. Pages marked `render: false` are excluded. Feed links use `siteurl` when configured and root-relative URLs for local builds; no feed is retained when there are no dated rendered pages.
 
 ## Key Internal Packages
 
@@ -39,3 +40,4 @@ As part of the JSON Output step, the generator produces a few specialized files 
 *   **`backlinks.json`**: A mapping of pages to the list of pages that link *to* them. This makes it easy to build "Mentioned In" features at the bottom of articles.
 *   **`meta.json`**: Provides global site metadata mapped to page IDs, such as page titles, word counts, and tags.
 *   **`search.json`**: Contains a minified array of `SearchItem` structs, providing a compressed plaintext snippet of each page's content for client-side search discovery.
+*   **`feed.xml`**: An RSS 2.0 feed of dated rendered pages, ordered newest first and then by URL. It is omitted when no rendered page has a date.
