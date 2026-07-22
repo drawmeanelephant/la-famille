@@ -321,4 +321,14 @@ func TestCommandFlags(t *testing.T) {
 			t.Errorf("serveCmd is missing expected flag: %s", flag)
 		}
 	}
+
+	// Test check command flags
+	checkCmd, _, err := rootCmd.Find([]string{"check"})
+	if err != nil {
+		t.Fatalf("Failed to find check command: %v", err)
+	}
+
+	if checkCmd.Flags().Lookup("content") == nil {
+		t.Errorf("checkCmd is missing expected flag: content")
+	}
 }

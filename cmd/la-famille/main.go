@@ -153,6 +153,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&globalLogFile, "log-file", "", "Path to log file (default is stderr for CLI, la-famille.log for TUI)")
 
 	rootCmd.AddCommand(serveCmd)
+	rootCmd.AddCommand(setupCheckCmd(cfg))
 
 	return rootCmd
 }
