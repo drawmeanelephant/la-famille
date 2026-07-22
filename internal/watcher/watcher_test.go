@@ -26,7 +26,7 @@ func testConfig(t *testing.T) config.Config {
 		}
 	}
 	template := filepath.Join(root, "templates", "layout.html")
-	if err := os.WriteFile(template, []byte("ok"), 0o644); err != nil {
+	if err := os.WriteFile(template, []byte("ok"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	return config.Config{
@@ -72,7 +72,7 @@ func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
 	if err := os.Mkdir(nested, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(nested, "theme.css"), []byte("body{}"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(nested, "theme.css"), []byte("body{}"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -82,7 +82,7 @@ func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
 	}
 	// A burst of events should result in one debounced build, not one per event.
 	for i := 0; i < 4; i++ {
-		if err := os.WriteFile(filepath.Join(cfg.ContentDir, "page.md"), []byte(strings.Repeat("x", i+1)), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(cfg.ContentDir, "page.md"), []byte(strings.Repeat("x", i+1)), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
