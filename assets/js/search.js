@@ -1,27 +1,18 @@
 (function() {
-    // Prevent DOM XSS on user content
-    function escapeHtml(unsafe) {
-        if (!unsafe) return "";
-        return unsafe
-             .toString()
-             .replace(/&/g, "&amp;")
-             .replace(/</g, "&lt;")
-             .replace(/>/g, "&gt;")
-             .replace(/"/g, "&quot;")
-             .replace(/'/g, "&#039;");
-    }
-
     document.addEventListener("DOMContentLoaded", () => {
         const searchInput = document.getElementById("site-search");
         const resultsContainer = document.getElementById("search-results-list");
 
         if (!searchInput) return; // Search not available on this page
 
-        // Global keydown listener for `/`
+        // Global keydown listener for `/` and `Escape`
         document.addEventListener("keydown", (e) => {
-            if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+            if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable) {
                 e.preventDefault();
                 searchInput.focus();
+            } else if (e.key === "Escape" && resultsContainer && !resultsContainer.classList.contains("hidden")) {
+                resultsContainer.classList.add("hidden");
+                searchInput.blur();
             }
         });
 
@@ -66,13 +57,18 @@
 
                 await fetchMetaData();
 
-                if (!window.LaFamilleSearchIndex) return;
+                if (!window.LaFamilleSearchIndex) {
+                    resultsContainer.classList.add("hidden");
+                    resultsContainer.innerHTML = "";
+                    return;
+                }
 
                 const results = window.LaFamilleSearchIndex.filter(item => {
                     const titleMatch = (item.t || "").toLowerCase().includes(query);
                     const tagMatch = (item.g || []).some(tag => tag.toLowerCase().includes(query));
                     const snippetMatch = (item.s || "").toLowerCase().includes(query);
-                    return titleMatch || tagMatch || snippetMatch;
+                    const headingMatch = (item.h || []).some(h => h.toLowerCase().includes(query));
+                    return titleMatch || tagMatch || snippetMatch || headingMatch;
                 }).slice(0, 7);
 
                 resultsContainer.innerHTML = "";
@@ -91,17 +87,17 @@
 
                     const li = document.createElement("li");
                     const a = document.createElement("a");
-                    // Important: encodeURI on interpolated variables to prevent DOM-based XSS
+                    // encodeURI on interpolated variables to prevent DOM-based XSS
                     a.href = encodeURI(item.u);
                     a.className = "block p-4 hover:bg-base-200 text-sm focus-visible:bg-base-200 focus-visible:outline-none border-b border-base-200 last:border-0";
 
                     const titleDiv = document.createElement("div");
                     titleDiv.className = "font-bold text-base-content";
-                    titleDiv.innerHTML = escapeHtml(title); // Use our custom escaper!
+                    titleDiv.textContent = title;
 
                     const snippetDiv = document.createElement("div");
                     snippetDiv.className = "text-xs text-base-content/70 mt-1 line-clamp-2";
-                    snippetDiv.innerHTML = escapeHtml(snippet); // Use our custom escaper!
+                    snippetDiv.textContent = snippet;
 
                     a.appendChild(titleDiv);
                     if (snippet) {

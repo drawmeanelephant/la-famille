@@ -9,15 +9,16 @@ import (
 )
 
 type Item struct {
-	Title   string   `json:"t"`
-	URL     string   `json:"u"`
-	Tags    []string `json:"g"`
-	Snippet string   `json:"s"`
+	Title    string   `json:"t"`
+	URL      string   `json:"u"`
+	Tags     []string `json:"g"`
+	Snippet  string   `json:"s"`
+	Headings []string `json:"h,omitempty"`
 }
 
 var (
-	linkRe      = regexp.MustCompile(`\[([^\]]+)\]\([^\)]+\)`)
-	codeBlockRe = regexp.MustCompile("(?s)```[a-zA-Z0-9]*\\n(.*?)(\\n)```")
+	linkRe      = regexp.MustCompile(`!?\[([^\]]*)\]\([^\)]+\)`)
+	codeBlockRe = regexp.MustCompile("(?s)```[^\\n]*\\n(.*?)```")
 	htmlTagRe   = regexp.MustCompile(`<[^>]*>`)
 )
 
@@ -29,7 +30,7 @@ func ExtractSnippet(rest []byte) string {
 	// 1. Strip Markdown code blocks
 	s = codeBlockRe.ReplaceAllString(s, "")
 
-	// 2. Strip Markdown links, preserving only anchor text
+	// 2. Strip Markdown links and images, preserving anchor text
 	s = linkRe.ReplaceAllString(s, "$1")
 
 	// 3. Strip raw HTML tags to prevent indexing styling classes or scripts
@@ -58,6 +59,74 @@ func ExtractSnippet(rest []byte) string {
 		return string(runes)
 	}
 	return ""
+}
+
+// ExtractHeadings extracts ATX heading texts (# to ######) from raw Markdown content.
+// It excludes code blocks and strips inline Markdown formatting to return clean heading signals.
+func ExtractHeadings(rest []byte) []string {
+	var headings []string
+	seen := make(map[string]bool)
+
+	lines := strings.Split(string(rest), "\n")
+	inCodeBlock := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+		if inCodeBlock || !strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+
+		// Count leading '#'
+		i := 0
+		for i < len(trimmed) && trimmed[i] == '#' {
+			i++
+		}
+		if i < 1 || i > 6 {
+			continue
+		}
+		// ATX heading requires space or tab or end of line after '#'
+		if i < len(trimmed) && trimmed[i] != ' ' && trimmed[i] != '\t' {
+			continue
+		}
+
+		headingContent := strings.TrimSpace(trimmed[i:])
+		// Strip trailing '#' if ATX heading closes with '#'
+		headingContent = strings.TrimRight(headingContent, "# \t")
+
+		if headingContent == "" {
+			continue
+		}
+
+		clean := cleanHeadingText(headingContent)
+		if clean != "" && !seen[clean] {
+			seen[clean] = true
+			headings = append(headings, clean)
+		}
+	}
+
+	return headings
+}
+
+func cleanHeadingText(s string) string {
+	s = linkRe.ReplaceAllString(s, "$1")
+	s = htmlTagRe.ReplaceAllString(s, "")
+	var sb strings.Builder
+	sb.Grow(len(s))
+	for _, r := range s {
+		if r == '#' || r == '*' || r == '[' || r == ']' || r == '`' || r == '>' || r == '_' || r == '~' {
+			continue
+		}
+		if unicode.IsSpace(r) {
+			sb.WriteRune(' ')
+		} else {
+			sb.WriteRune(r)
+		}
+	}
+	return strings.Join(strings.Fields(sb.String()), " ")
 }
 
 func WriteMinifiedJSON(path string, data interface{}) error {

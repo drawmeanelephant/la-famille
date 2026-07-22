@@ -697,3 +697,54 @@ func TestBuild_CacheHitMissStats(t *testing.T) {
 		t.Errorf("Build 4 CacheHit = false, want true (cache hit)")
 	}
 }
+
+func TestBuild_SearchIndexHeadings(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(templateDir, 0755)
+
+	templatePath := filepath.Join(templateDir, "layout.html")
+	_ = os.WriteFile(templatePath, []byte("{{.Content}}"), 0600)
+
+	mdContent := `---
+title: "Search Test Page"
+tags: ["search", "test"]
+---
+# Main Header
+
+Some introductory text.
+
+## Feature Section
+
+More text.
+`
+	_ = os.WriteFile(filepath.Join(contentDir, "test.md"), []byte(mdContent), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = templatePath
+
+	_, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	searchJSONPath := filepath.Join(outputDir, "search.json")
+	data, err := os.ReadFile(searchJSONPath)
+	if err != nil {
+		t.Fatalf("failed to read search.json: %v", err)
+	}
+
+	searchJSON := string(data)
+	if !strings.Contains(searchJSON, `"t":"Search Test Page"`) {
+		t.Errorf("search.json missing title: %s", searchJSON)
+	}
+	if !strings.Contains(searchJSON, `"h":["Main Header","Feature Section"]`) {
+		t.Errorf("search.json missing expected headings: %s", searchJSON)
+	}
+}

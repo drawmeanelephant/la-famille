@@ -258,10 +258,11 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						urlPath := "/" + filepath.ToSlash(urlOut)
 
 						searchIndexItems[idx] = search.Item{
-							Title:   title,
-							URL:     urlPath,
-							Tags:    meta.Tags,
-							Snippet: search.ExtractSnippet(meta.Rest),
+							Title:    title,
+							URL:      urlPath,
+							Tags:     meta.Tags,
+							Snippet:  search.ExtractSnippet(meta.Rest),
+							Headings: search.ExtractHeadings(meta.Rest),
 						}
 					}
 
