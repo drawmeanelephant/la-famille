@@ -20,7 +20,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
-func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta) error {
+func GenerateStubs(cfg, siteCfg config.Config, missingFiles map[string][]string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta) error {
 	missingKeys := make([]string, 0, len(missingFiles))
 	for k := range missingFiles {
 		missingKeys = append(missingKeys, k)
@@ -30,14 +30,14 @@ func GenerateStubs(cfg config.Config, missingFiles map[string][]string, g *graph
 	partials, _ := render.DiscoverPartials(filepath.Dir(cfg.Template))
 
 	for _, missingRelPath := range missingKeys {
-		if err := generateSingleStub(cfg, missingRelPath, missingFiles[missingRelPath], g, p, fileMap, partials); err != nil {
+		if err := generateSingleStub(cfg, siteCfg, missingRelPath, missingFiles[missingRelPath], g, p, fileMap, partials); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func generateSingleStub(cfg config.Config, missingRelPath string, parents []string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, partials map[string]string) error {
+func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, parents []string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, partials map[string]string) error {
 	outDirClean := filepath.Clean(cfg.OutputDir)
 	relOut := transform.GetOutputURL(missingRelPath, "", true)
 	outPath := filepath.Join(outDirClean, filepath.FromSlash(relOut))
@@ -101,10 +101,10 @@ func generateSingleStub(cfg config.Config, missingRelPath string, parents []stri
 	htmlContent.WriteString("</ul>\n")
 
 	pageStruct := page.Page{
-		Site:         cfg,
+		Site:         siteCfg,
 		Title:        "Missing Page",
 		Content:      template.HTML(p.SanitizeBytes([]byte(htmlContent.String()))), // #nosec G203
-		CanonicalURL: cfg.URLForOutputPath(relOut),
+		CanonicalURL: siteCfg.URLForOutputPath(relOut),
 	}
 
 	outFile, err := os.Create(outPath)

@@ -93,7 +93,7 @@ func TestGenerateStubs(t *testing.T) {
 	// Execute GenerateStubs
 
 	fileMap := make(map[string]*content.FileMeta)
-	if err := GenerateStubs(cfg, missingFiles, g, p, fileMap); err != nil {
+	if err := GenerateStubs(cfg, cfg, missingFiles, g, p, fileMap); err != nil {
 		t.Fatalf("unexpected error from GenerateStubs: %v", err)
 	}
 

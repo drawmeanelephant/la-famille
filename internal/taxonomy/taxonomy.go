@@ -18,7 +18,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
-func GenerateTags(cfg config.Config, fileMap map[string]*content.FileMeta, renderer *render.Renderer, p *bluemonday.Policy) error {
+func GenerateTags(cfg, siteCfg config.Config, fileMap map[string]*content.FileMeta, renderer *render.Renderer, p *bluemonday.Policy) error {
 	tagMap := make(map[string][]string)
 
 	for relPath, meta := range fileMap {
@@ -91,10 +91,10 @@ func GenerateTags(cfg config.Config, fileMap map[string]*content.FileMeta, rende
 		sanitizedHTML := p.SanitizeBytes([]byte(htmlContent.String()))
 
 		pageStruct := page.Page{
-			Site:         cfg,
+			Site:         siteCfg,
 			Title:        fmt.Sprintf("Tag: %s", tag),
 			Content:      template.HTML(sanitizedHTML), // #nosec G203
-			CanonicalURL: cfg.URLForOutputPath(tagOut),
+			CanonicalURL: siteCfg.URLForOutputPath(tagOut),
 		}
 
 		if err := renderer.HTML(cfg, pageStruct, "", outPath); err != nil {
