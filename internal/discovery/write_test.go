@@ -55,8 +55,8 @@ func TestWriteWithoutSiteURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(sitemap), "<loc>") {
-		t.Fatalf("sitemap without site URL must not contain a location: %s", sitemap)
+	if !strings.Contains(string(sitemap), "<loc>/</loc>") {
+		t.Fatalf("sitemap without site URL must contain a local root location: %s", sitemap)
 	}
 
 	robots, err := os.ReadFile(filepath.Join(outputDir, "robots.txt"))
