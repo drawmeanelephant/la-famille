@@ -62,40 +62,12 @@ type BuildResult struct {
 
 // Build generates the static site based on the given configuration.
 func Build(cfg config.Config) (BuildResult, error) {
-	outputDir, stagingDir, err := createStagingOutput(cfg.OutputDir)
-	if err != nil {
-		return BuildResult{}, err
-	}
-
-	committed := false
-	defer func() {
-		if !committed {
-			if err := os.RemoveAll(stagingDir); err != nil {
-				slog.Warn("Failed to remove build staging directory", "path", stagingDir, "error", err)
-			}
-		}
-	}()
-
-	stagedCfg := cfg
-	stagedCfg.OutputDir = stagingDir
-	result, err := build(stagedCfg, cfg)
-	if err != nil {
-		return result, err
-	}
-
-	if err := replaceOutputDirectory(outputDir, stagingDir); err != nil {
-		return result, err
-	}
-	committed = true
-	return result, nil
-}
-
-func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	start := time.Now()
 	outputDir, stagingDir, err := createStagingOutput(cfg.OutputDir)
 	if err != nil {
 		return BuildResult{}, err
 	}
+
 	committed := false
 	defer func() {
 		if !committed {
@@ -104,7 +76,6 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 			}
 		}
 	}()
-
 	fingerprint, err := cacheFingerprint(cfg, cfg.ContentDir, filepath.Dir(cfg.Template), cfg.AssetDir, filepath.Join(cfg.ProjectRoot, ".gitignore"))
 	if err != nil {
 		return BuildResult{}, fmt.Errorf("failed to fingerprint build inputs: %w", err)
