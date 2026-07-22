@@ -24,6 +24,8 @@
             background: linear-gradient(180deg, hsl(var(--p)) 0%, hsl(var(--s)) 100%);
         }
     </style>
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
 </head>
 <body class="min-h-screen flex flex-col lg:flex-row font-mono">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">Skip to content</a>

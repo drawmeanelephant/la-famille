@@ -36,6 +36,9 @@ output_dir: "public"
 # theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
 theme: "retro"
 
+# site_url: Public URL used for canonical links, sitemap.xml, and robots.txt.
+# site_url: "https://example.com"
+
 # port: The port on which the local development server will run.
 port: 8080
 ```
@@ -51,6 +54,7 @@ Here is a breakdown of each available field:
 *   **`asset_dir`** (string): The directory containing static assets. *Default: "assets"*
 *   **`rag_dir`** (string): The directory where RAG markdown bundles will be exported. *Default: "rag-archive"*
 *   **`theme`** (string): The DaisyUI theme you want to apply globally to your site. This allows you to easily switch between "light", "dark", "retro", "synthwave", and many more! *Default: "retro"*
+*   **`site_url`** (string, optional): The public base URL for canonical links, Open Graph URLs, `sitemap.xml`, and the `Sitemap` directive in `robots.txt`. Leave it unset for local-only builds; the generator omits absolute URLs rather than guessing one.
 *   **`port`** (integer): The local network port used by the built-in HTTP server (`go run ./cmd/la-famille serve`). *Default: 8080*
 
 ## CLI Flag Overrides

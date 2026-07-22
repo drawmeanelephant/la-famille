@@ -91,9 +91,10 @@ func GenerateTags(cfg config.Config, fileMap map[string]*content.FileMeta, rende
 		sanitizedHTML := p.SanitizeBytes([]byte(htmlContent.String()))
 
 		pageStruct := page.Page{
-			Site:    cfg,
-			Title:   fmt.Sprintf("Tag: %s", tag),
-			Content: template.HTML(sanitizedHTML), // #nosec G203
+			Site:         cfg,
+			Title:        fmt.Sprintf("Tag: %s", tag),
+			Content:      template.HTML(sanitizedHTML), // #nosec G203
+			CanonicalURL: cfg.URLForOutputPath(tagOut),
 		}
 
 		if err := renderer.HTML(cfg, pageStruct, "", outPath); err != nil {

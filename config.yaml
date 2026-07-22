@@ -27,6 +27,9 @@ theme: "retro"
 # default_og_image: A default OpenGraph image URL.
 # default_og_image: "/assets/default-og.png"
 
+# site_url: The public base URL used for canonical links, sitemap.xml, and robots.txt.
+# site_url: "https://example.com"
+
 # site_links: Optional links for headers/footers
 # site_links:
 #   - label: "GitHub"

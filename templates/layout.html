@@ -9,6 +9,8 @@
     <meta property="og:description" content="{{.Description}}">
     <meta property="og:image" content="{{.Image}}">
     <meta property="og:type" content="website">
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
     <!-- DaisyUI CSS -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
     <!-- Tailwind CSS with Typography plugin via CDN -->

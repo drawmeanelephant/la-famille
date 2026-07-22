@@ -9,6 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
     <!-- Tailwind CSS with Typography plugin via CDN -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
 </head>
 <body class="bg-base-100 text-base-content min-h-screen flex flex-col">
 

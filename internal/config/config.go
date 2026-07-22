@@ -2,8 +2,11 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v2" // Using v2 to match the indirect dependency from frontmatter
 )
@@ -26,6 +29,7 @@ type Config struct {
 	ProjectRoot        string     `yaml:"project_root"`
 	DefaultDescription string     `yaml:"default_description"`
 	DefaultOGImage     string     `yaml:"default_og_image"`
+	SiteURL            string     `yaml:"site_url"`
 	SiteLinks          []SiteLink `yaml:"site_links"`
 	Port               int        `yaml:"port"`
 	WatchMode          bool       `yaml:"-"`
@@ -102,6 +106,9 @@ theme: "retro"
 # default_og_image: A default OpenGraph image URL.
 # default_og_image: "/assets/default-og.png"
 
+# site_url: The public base URL used for canonical links and discovery files.
+# site_url: "https://example.com"
+
 # site_links: Optional links for headers/footers
 # site_links:
 #   - label: "GitHub"
@@ -113,6 +120,39 @@ theme: "retro"
 port: 8080
 `
 	return os.WriteFile(filepath, []byte(defaultYaml), 0600)
+}
+
+// URLForOutputPath returns the canonical public URL for an output path. An
+// unavailable or invalid SiteURL intentionally produces an empty result so
+// local builds do not emit malformed absolute URLs.
+func (c Config) URLForOutputPath(outputPath string) string {
+	if strings.TrimSpace(c.SiteURL) == "" {
+		return ""
+	}
+
+	base, err := url.Parse(c.SiteURL)
+	if err != nil || (base.Scheme != "http" && base.Scheme != "https") || base.Host == "" || base.RawQuery != "" || base.Fragment != "" {
+		return ""
+	}
+
+	publicPath := publicPathForOutput(outputPath)
+	basePath := strings.TrimSuffix(base.Path, "/")
+	base.Path = basePath + publicPath
+	if publicPath == "/" && basePath == "" {
+		base.Path = "/"
+	}
+	return base.String()
+}
+
+func publicPathForOutput(outputPath string) string {
+	outputPath = strings.TrimPrefix(filepath.ToSlash(outputPath), "/")
+	if outputPath == "index.html" {
+		return "/"
+	}
+	if strings.HasSuffix(outputPath, "/index.html") {
+		return "/" + strings.TrimSuffix(outputPath, "index.html")
+	}
+	return "/" + path.Clean(outputPath)
 }
 
 // Validate checks that the configuration values are safe and correct.

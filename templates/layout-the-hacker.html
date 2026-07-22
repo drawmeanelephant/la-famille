@@ -233,6 +233,8 @@
              color: var(--color-secondary-fixed-dim, #a1d800) !important;
         }
     </style>
+{{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}"/>
+<meta property="og:url" content="{{.CanonicalURL}}"/>{{end}}
 </head>
 <body class="bg-[#2d1b4e] text-on-surface min-h-screen relative overflow-x-hidden selection:bg-secondary-fixed-dim selection:text-black">
 <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">Skip to content</a>
