@@ -635,14 +635,13 @@ func (m model) View() string {
 
 			leftView := lipgloss.NewStyle().Width(leftColWidth).Render(leftBuf.String())
 			rightView := m.renderStatusPanel(rightColWidth)
-
 			return lipgloss.JoinHorizontal(lipgloss.Top, leftView, "  ", rightView)
-		} else {
-			// Compact stacked layout for narrow screens
-			statusView := m.renderStatusPanel(effectiveWidth - 2)
-			stacked := lipgloss.JoinVertical(lipgloss.Left, leftBuf.String(), "\n", statusView)
-			return lipgloss.NewStyle().MaxWidth(effectiveWidth).Render(stacked)
 		}
+
+		// Compact stacked layout for narrow screens
+		statusView := m.renderStatusPanel(effectiveWidth - 2)
+		stacked := lipgloss.JoinVertical(lipgloss.Left, leftBuf.String(), "\n", statusView)
+		return lipgloss.NewStyle().MaxWidth(effectiveWidth).Render(stacked)
 
 	case screenRaoul:
 		s := accentStyle.Render(animatedRaoul(m.frame))
