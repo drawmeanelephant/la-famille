@@ -155,7 +155,8 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	p.AllowElements("svg", "path")
 	p.AllowAttrs("xmlns", "fill", "viewBox", "stroke-linecap", "stroke-linejoin", "stroke-width", "d", "stroke", "class").OnElements("svg", "path")
 
-	if err := taxonomy.GenerateTags(cfg, siteCfg, fileMap, renderer, p); err != nil {
+	taxPaths, err := taxonomy.GenerateTaxonomies(cfg, siteCfg, fileMap, renderer, p)
+	if err != nil {
 		return result, err
 	}
 
@@ -359,6 +360,13 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 		}()
 	}
 	wg.Wait()
+
+	for _, tp := range taxPaths {
+		if tp != "" {
+			renderedPaths = append(renderedPaths, tp)
+		}
+	}
+	result.PageCount += len(taxPaths)
 
 	for _, item := range searchIndexItems {
 		if item.URL != "" {

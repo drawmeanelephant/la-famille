@@ -748,3 +748,82 @@ More text.
 		t.Errorf("search.json missing expected headings: %s", searchJSON)
 	}
 }
+
+func TestBuild_TaxonomyPagesIntegration(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(templateDir, 0755)
+
+	templatePath := filepath.Join(templateDir, "layout.html")
+	_ = os.WriteFile(templatePath, []byte("{{.Content}}"), 0600)
+
+	page1 := `---
+title: "First Post"
+tags: ["go", "web"]
+category: "tech"
+---
+# First Post Content
+`
+	page2 := `---
+title: "Second Post"
+tags: ["go"]
+categories: ["tech", "news"]
+---
+# Second Post Content
+`
+	hiddenPage := `---
+title: "Hidden Draft"
+tags: ["secret"]
+category: "internal"
+render: false
+---
+# Hidden
+`
+	_ = os.WriteFile(filepath.Join(contentDir, "p1.md"), []byte(page1), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "p2.md"), []byte(page2), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "hidden.md"), []byte(hiddenPage), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = templatePath
+	cfg.ProjectRoot = tempDir
+
+	res, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	// 2 rendered pages + 3 tag pages (tags/index, tags/go, tags/web) + 3 category pages (categories/index, categories/news, categories/tech) = 8 pages total
+	if res.PageCount != 8 {
+		t.Errorf("expected PageCount = 8, got %d", res.PageCount)
+	}
+
+	// Verify tag index page exists
+	tagIndexBytes, err := os.ReadFile(filepath.Join(outputDir, "tags", "index.html"))
+	if err != nil {
+		t.Fatalf("tags/index.html missing: %v", err)
+	}
+	if !strings.Contains(string(tagIndexBytes), `href="go/"`) || !strings.Contains(string(tagIndexBytes), `href="web/"`) {
+		t.Errorf("tags/index.html content unexpected: %s", string(tagIndexBytes))
+	}
+
+	// Verify secret tag (from render: false) is NOT created
+	if _, err := os.Stat(filepath.Join(outputDir, "tags", "secret", "index.html")); !os.IsNotExist(err) {
+		t.Errorf("tags/secret/index.html should not exist for render: false page")
+	}
+
+	// Verify sitemap.xml includes taxonomy pages
+	sitemapBytes, err := os.ReadFile(filepath.Join(outputDir, "sitemap.xml"))
+	if err != nil {
+		t.Fatalf("sitemap.xml missing: %v", err)
+	}
+	sitemap := string(sitemapBytes)
+	if !strings.Contains(sitemap, "/tags/") || !strings.Contains(sitemap, "/categories/") {
+		t.Errorf("sitemap.xml missing taxonomy URLs: %s", sitemap)
+	}
+}

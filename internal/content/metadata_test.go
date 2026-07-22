@@ -184,6 +184,8 @@ func TestGatherMetadataValidation(t *testing.T) {
 	mdContent := `---
 title: "Test Title"
 tags: ["Valid-Tag", "Inv@lid_Tag"]
+category: "Engineering"
+categories: ["Tech", "Engineering"]
 date: "invalid-date"
 ---
 Content
@@ -214,6 +216,13 @@ Content
 	}
 	if meta.Tags[1] != "invlidtag" {
 		t.Errorf("Expected tag 1 to be 'invlidtag', got: %s", meta.Tags[1])
+	}
+
+	if len(meta.Categories) != 2 {
+		t.Fatalf("Expected 2 normalized unique categories, got %d: %v", len(meta.Categories), meta.Categories)
+	}
+	if meta.Categories[0] != "tech" || meta.Categories[1] != "engineering" {
+		t.Errorf("Expected categories ['tech', 'engineering'], got %v", meta.Categories)
 	}
 }
 
