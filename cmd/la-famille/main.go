@@ -24,6 +24,7 @@ var (
 	contentDir    string
 	outputDir     string
 	templateFile  string
+	siteURL       string
 )
 
 func setupRootCmd(cfg config.Config) *cobra.Command {
@@ -40,11 +41,17 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	var buildCmd = &cobra.Command{
 		Use:   "build",
 		Short: "Build the static site",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			// Update config from flags
 			cfg.ContentDir = contentDir
 			cfg.OutputDir = outputDir
 			cfg.Template = templateFile
+			if cmd.Flags().Changed("site-url") || cmd.Flags().Changed("siteurl") {
+				cfg.SiteURL = siteURL
+				if err := cfg.ValidateSiteURL(); err != nil {
+					return fmt.Errorf("invalid configuration: %w", err)
+				}
+			}
 			res, err := generator.Build(cfg)
 			if err != nil {
 				return err
@@ -61,6 +68,8 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	buildCmd.Flags().StringVarP(&contentDir, "content", "c", cfg.ContentDir, "Directory containing markdown files")
 	buildCmd.Flags().StringVarP(&outputDir, "output", "o", cfg.OutputDir, "Directory for generated static site")
 	buildCmd.Flags().StringVarP(&templateFile, "template", "t", cfg.Template, "Path to HTML layout template")
+	buildCmd.Flags().StringVarP(&siteURL, "site-url", "s", cfg.SiteURL, "Public base URL of the site")
+	buildCmd.Flags().StringVar(&siteURL, "siteurl", cfg.SiteURL, "Public base URL of the site (alias for --site-url)")
 
 	var initCmd = &cobra.Command{
 		Use:   "init",

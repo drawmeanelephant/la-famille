@@ -78,3 +78,19 @@ steps:
   - name: Build with La Famille
     uses: drawmeanelephant/la-famille@main
 ```
+
+### Configurable Inputs
+
+All inputs are optional and fall back to sensible defaults:
+
+```yaml
+steps:
+  - uses: actions/checkout@v4
+  - name: Build with La Famille
+    uses: drawmeanelephant/la-famille@main
+    with:
+      content-dir: 'content'
+      output-dir: 'public'
+      template: 'templates/layout.html'
+      site-url: 'https://example.github.io/my-site'
+```

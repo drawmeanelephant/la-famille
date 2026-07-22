@@ -172,15 +172,23 @@ func publicPathForOutput(outputPath string) string {
 	return "/" + path.Clean(outputPath)
 }
 
+// ValidateSiteURL checks that SiteURL (or LegacySiteURL), if set, is a valid absolute HTTP or HTTPS URL.
+func (c Config) ValidateSiteURL() error {
+	if strings.TrimSpace(c.SiteURL) != "" || strings.TrimSpace(c.LegacySiteURL) != "" {
+		if _, ok := c.publicURL(); !ok {
+			return fmt.Errorf("SiteURL must be an absolute HTTP or HTTPS URL without query, fragment, userinfo, or traversal")
+		}
+	}
+	return nil
+}
+
 // Validate checks that the configuration values are safe and correct.
 func (c Config) Validate() error {
 	if c.Port < 1 || c.Port > 65535 {
 		return fmt.Errorf("Port must be between 1 and 65535, got %d", c.Port)
 	}
-	if strings.TrimSpace(c.SiteURL) != "" || strings.TrimSpace(c.LegacySiteURL) != "" {
-		if _, ok := c.publicURL(); !ok {
-			return fmt.Errorf("SiteURL must be an absolute HTTP or HTTPS URL without query, fragment, userinfo, or traversal")
-		}
+	if err := c.ValidateSiteURL(); err != nil {
+		return err
 	}
 
 	dirs := []struct{ name, path string }{
