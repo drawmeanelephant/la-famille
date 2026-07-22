@@ -91,7 +91,7 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 				return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(targetPath), err)
 			}
 
-			if err := os.WriteFile(targetPath, []byte(content), 0644); err != nil {
+			if err := os.WriteFile(targetPath, []byte(content), 0600); err != nil {
 				return fmt.Errorf("failed to write content file %s: %w", targetPath, err)
 			}
 

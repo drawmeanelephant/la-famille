@@ -187,7 +187,7 @@ func TestNewCommand_OverwriteRefusalAndForce(t *testing.T) {
 	cfg.ContentDir = contentDir
 
 	targetPath := filepath.Join(contentDir, "existing.md")
-	if err := os.WriteFile(targetPath, []byte("original content"), 0644); err != nil {
+	if err := os.WriteFile(targetPath, []byte("original content"), 0600); err != nil {
 		t.Fatal(err)
 	}
 
