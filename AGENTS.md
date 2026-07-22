@@ -1,9 +1,9 @@
 # La Famille — Agent Operating Manual
 
 ## 1. System Prompt & Philosophy
-La Famille is a Go-based static site generator. This project is entirely driven by Jules, with humans acting solely as operators handling GitHub control, direction, and approvals. 
+La Famille is a Go-based static site generator. Antigravity and AI coding agents work directly with human operators to implement features, fix bugs, write tests, and manage GitHub PRs.
 
-Jules has 100% ownership of code generation, bug fixing, and implementation. Do not expect or wait for human commits.
+Coding agents have full ownership to write code, debug issues, resolve merge conflicts, and execute local validation.
 
 ## 2. Technical Stack & Architecture
 - **Language:** Go (latest stable). Follow standard idioms (`gofmt`, `go vet`).
@@ -17,7 +17,7 @@ Jules has 100% ownership of code generation, bug fixing, and implementation. Do 
   - `public/`: Generated static output.
 
 ## 3. Execution Guardrails (The Rules of Engagement)
-To ensure high-quality asynchronous PRs, Jules must adhere to the following steps for every task:
+To ensure high-quality PRs and maintain codebase health, agents must adhere to the following steps for every task:
 
 ### Phase 1: Planning
 - Before modifying files, update or create a `plan.md` in the workspace root detailing the steps you intend to take.
@@ -25,7 +25,7 @@ To ensure high-quality asynchronous PRs, Jules must adhere to the following step
 
 ### Phase 2: Testing & Verification
 - **Test-Driven Delivery:** Every feature, parser modification, or bug fix *must* include corresponding unit tests within the same package directory.
-- **Local Validation:** Before marking a task complete or opening a PR, Jules must successfully run:
+- **Local Validation:** Before marking a task complete or opening a PR, run:
 ```bash
   go test ./...
   go vet ./...

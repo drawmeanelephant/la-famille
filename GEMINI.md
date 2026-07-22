@@ -1,7 +1,7 @@
 # La Famille Project Instructions
 
 ## Purpose
-La Famille is a Go-based static site generator. This project is entirely driven by Jules, with humans acting solely as "in-the-loop" operators handling GitHub control and approvals.
+La Famille is a Go-based static site generator. Antigravity and AI coding agents work directly alongside human operators on feature implementation, bug fixing, code review, and PR management.
 
 ## Structure
 - `cmd/la-famille/`: Main application entry point.
@@ -12,9 +12,8 @@ La Famille is a Go-based static site generator. This project is entirely driven 
 - `public/`: Output directory where the generated static site is placed.
 
 ## Conventions
-- **Strict Division of Labor:** The local user and local AI agent (Gemini CLI) MUST NOT write code, fix bugs, or get into "the weeds" of implementation. Our role is strictly to review, prepare notes, create tasks, and provide instructions so that Jules can do the actual coding work.
+- **Direct Implementation:** AI agents can directly write code, resolve merge conflicts, fix bugs, run local tests, and manage PRs.
 - Follow standard Go idioms (`gofmt`, `go vet`).
 - Use descriptive naming.
 - Keep dependencies minimal.
-- **Always tag Jules in GitHub PR comments or messages to ensure visibility and keep the AI looped into all discussions.**
-  - *Crucial for PR Management*: Whenever you manually close, reject, or merge a PR, you MUST use the command line (`gh pr comment <PR_NUMBER> --body "@jules [Your message]"`) to reply directly on the PR. This ensures Jules clears the task from its internal limbo queue.
+- **GitHub & PR Management:** Maintain clean git workflows. Run local validation (`go test ./...`, `go vet ./...`) before committing or pushing.
