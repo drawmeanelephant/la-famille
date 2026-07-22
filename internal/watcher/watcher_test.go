@@ -60,14 +60,15 @@ func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	var builds atomic.Int32
-	built := make(chan struct{}, 4)
+	built := make(chan struct{}, 8)
 	done := make(chan error, 1)
+	debounce := 50 * time.Millisecond
 	go func() {
 		done <- watch(ctx, cfg, func(generator.BuildResult) { builds.Add(1); built <- struct{}{} }, func(config.Config) (generator.BuildResult, error) {
 			return generator.BuildResult{}, nil
-		}, 20*time.Millisecond)
+		}, debounce)
 	}()
-	time.Sleep(30 * time.Millisecond)
+	time.Sleep(2 * debounce)
 	nested := filepath.Join(cfg.AssetDir, "new-theme")
 	if err := os.Mkdir(nested, 0o755); err != nil {
 		t.Fatal(err)
@@ -80,6 +81,7 @@ func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("watch did not rebuild for a file in a newly-created directory")
 	}
+	time.Sleep(2 * debounce)
 	// A burst of events should result in one debounced build, not one per event.
 	for i := 0; i < 4; i++ {
 		if err := os.WriteFile(filepath.Join(cfg.ContentDir, "page.md"), []byte(strings.Repeat("x", i+1)), 0o600); err != nil {
@@ -91,9 +93,9 @@ func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("watch did not rebuild after content changes")
 	}
-	time.Sleep(80 * time.Millisecond)
-	if got := builds.Load(); got > 2 {
-		t.Fatalf("debounce produced %d builds for two change bursts", got)
+	time.Sleep(2 * debounce)
+	if got := builds.Load(); got != 2 {
+		t.Fatalf("debounce produced %d builds for two change bursts, want 2", got)
 	}
 	cancel()
 	<-done
@@ -128,6 +130,42 @@ func TestLiveReloadBroadcastAndDisconnect(t *testing.T) {
 	if clientsSnapshot() != 0 {
 		t.Fatal("disconnected SSE client remained registered")
 	}
+}
+
+func TestWatchTracksNestedNewDirectories(t *testing.T) {
+	cfg := testConfig(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	built := make(chan struct{}, 8)
+	done := make(chan error, 1)
+	debounce := 50 * time.Millisecond
+	go func() {
+		done <- watch(ctx, cfg, func(generator.BuildResult) { built <- struct{}{} }, func(config.Config) (generator.BuildResult, error) {
+			return generator.BuildResult{}, nil
+		}, debounce)
+	}()
+	time.Sleep(2 * debounce)
+	nestedDir := filepath.Join(cfg.AssetDir, "sub1", "sub2")
+	if err := os.MkdirAll(nestedDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-built:
+	case <-time.After(2 * time.Second):
+		t.Fatal("watch did not rebuild for newly created nested directory")
+	}
+	time.Sleep(2 * debounce)
+	file := filepath.Join(nestedDir, "style.css")
+	if err := os.WriteFile(file, []byte("h1{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-built:
+	case <-time.After(2 * time.Second):
+		t.Fatal("watch did not rebuild for file created inside nested directory")
+	}
+	cancel()
+	<-done
 }
 
 type syncResponseWriter struct {
