@@ -337,3 +337,51 @@ func TestTUIWorkErrorPopulatesDiagnostics(t *testing.T) {
 		t.Fatalf("diagnostics = %#v", m.diagnostics)
 	}
 }
+
+func TestTUIDashboardLayoutWidths(t *testing.T) {
+	m := initialModel(config.Config{
+		WatchMode: true,
+	})
+	m.stats = &generator.BuildResult{
+		Duration:   120 * time.Millisecond,
+		PageCount:  12,
+		ErrorCount: 0,
+		CacheHit:   true,
+	}
+
+	// 1. Test WindowSizeMsg updates model
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 50, Height: 24})
+	mNarrow := updated.(model)
+	if mNarrow.width != 50 || mNarrow.height != 24 {
+		t.Fatalf("WindowSizeMsg did not set dimensions: width=%d height=%d", mNarrow.width, mNarrow.height)
+	}
+
+	// 2. Test narrow view (50 cols)
+	narrowView := mNarrow.View()
+	if !strings.Contains(narrowView, "OCTOBURGER MENU") {
+		t.Errorf("narrow view missing OCTOBURGER MENU header: %s", narrowView)
+	}
+	if !strings.Contains(narrowView, "DASHBOARD STATUS") {
+		t.Errorf("narrow view missing DASHBOARD STATUS header: %s", narrowView)
+	}
+	if !strings.Contains(narrowView, "Watch Mode:") || !strings.Contains(narrowView, "ENABLED") {
+		t.Errorf("narrow view missing watch mode status: %s", narrowView)
+	}
+	if !strings.Contains(narrowView, "Cache Status:") || !strings.Contains(narrowView, "HIT") {
+		t.Errorf("narrow view missing cache status: %s", narrowView)
+	}
+
+	// 3. Test wide view (100 cols)
+	updatedWide, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+	mWide := updatedWide.(model)
+	wideView := mWide.View()
+	if !strings.Contains(wideView, "OCTOBURGER MENU") {
+		t.Errorf("wide view missing OCTOBURGER MENU header: %s", wideView)
+	}
+	if !strings.Contains(wideView, "DASHBOARD STATUS") {
+		t.Errorf("wide view missing DASHBOARD STATUS header: %s", wideView)
+	}
+	if !strings.Contains(wideView, "12 pages") {
+		t.Errorf("wide view missing page count stats: %s", wideView)
+	}
+}
