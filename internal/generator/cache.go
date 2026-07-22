@@ -17,10 +17,11 @@ import (
 const cacheFileName = ".la-famille-cache.json"
 
 type buildCache struct {
-	Version        int      `json:"version"`
-	Fingerprint    string   `json:"fingerprint"`
-	GeneratedFiles []string `json:"generated_files"`
-	PageCount      int      `json:"page_count"`
+	Version        int           `json:"version"`
+	Fingerprint    string        `json:"fingerprint"`
+	GeneratedFiles []string      `json:"generated_files"`
+	PageCount      int           `json:"page_count"`
+	Health         ContentHealth `json:"health,omitempty"`
 }
 
 func cachePath(outputDir string) string { return filepath.Join(outputDir, cacheFileName) }
@@ -147,8 +148,8 @@ func generatedFiles(outputDir string) ([]string, error) {
 	return files, nil
 }
 
-func writeBuildCache(path, fingerprint string, files []string, pageCount int) error {
-	cache := buildCache{Version: 1, Fingerprint: fingerprint, GeneratedFiles: files, PageCount: pageCount}
+func writeBuildCache(path, fingerprint string, files []string, pageCount int, health ContentHealth) error {
+	cache := buildCache{Version: 1, Fingerprint: fingerprint, GeneratedFiles: files, PageCount: pageCount, Health: health}
 	data, err := json.MarshalIndent(cache, "", "  ")
 	if err != nil {
 		return err

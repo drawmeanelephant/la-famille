@@ -60,6 +60,7 @@ type BuildResult struct {
 	PageCount  int
 	ErrorCount int
 	CacheHit   bool
+	Health     ContentHealth
 }
 
 // Build generates the static site based on the given configuration.
@@ -91,6 +92,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 			Duration:  time.Since(start),
 			PageCount: cache.PageCount,
 			CacheHit:  true,
+			Health:    cache.Health,
 		}, nil
 	}
 
@@ -464,11 +466,13 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	if err := feed.Write(cfg, datedItems); err != nil {
 		return result, err
 	}
+	result.Health = ComputeContentHealth(fileMap, g, backlinks)
+
 	files, err := generatedFiles(cfg.OutputDir)
 	if err != nil {
 		return result, fmt.Errorf("failed to collect generated files: %w", err)
 	}
-	if err := writeBuildCache(cachePath(cfg.OutputDir), fingerprint, files, result.PageCount); err != nil {
+	if err := writeBuildCache(cachePath(cfg.OutputDir), fingerprint, files, result.PageCount, result.Health); err != nil {
 		return result, fmt.Errorf("failed to write build cache: %w", err)
 	}
 
