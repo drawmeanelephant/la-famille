@@ -94,6 +94,16 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	start := time.Now()
 	var result BuildResult
 
+	fingerprint, err := cacheFingerprint(cfg, cfg.ContentDir, filepath.Dir(cfg.Template), cfg.AssetDir)
+	if err != nil {
+		return result, fmt.Errorf("failed to fingerprint build inputs: %w", err)
+	}
+	if cache, cacheErr := loadBuildCache(cachePath(cfg.OutputDir)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
+		result.Duration = time.Since(start)
+		result.PageCount = cache.PageCount
+		return result, nil
+	}
+
 	// 1. Pass 1: Walk content dir and gather metadata
 	fileMap, err := content.GatherMetadata(cfg.ContentDir)
 	if err != nil {
@@ -387,6 +397,13 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 
 	if err := search.WriteMinifiedJSON(filepath.Join(cfg.OutputDir, "search.json"), searchIndex); err != nil {
 		return result, err
+	}
+	files, err := generatedFiles(cfg.OutputDir)
+	if err != nil {
+		return result, fmt.Errorf("failed to collect generated files: %w", err)
+	}
+	if err := writeBuildCache(cachePath(cfg.OutputDir), fingerprint, files, result.PageCount); err != nil {
+		return result, fmt.Errorf("failed to write build cache: %w", err)
 	}
 
 	if err := discovery.Write(cfg, renderedPaths); err != nil {

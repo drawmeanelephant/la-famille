@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/tbuddy/la-famille/internal/config"
@@ -174,6 +175,72 @@ func TestBuildRemovesOutputForDeletedSource(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(outputDir, "gone", "index.html")); !os.IsNotExist(err) {
 		t.Fatalf("deleted source output remains after rebuild: %v", err)
+	}
+}
+
+func TestBuild_UsesAndInvalidatesCache(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	templateDir := filepath.Join(tempDir, "templates")
+	outputDir := filepath.Join(tempDir, "public")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatePath := filepath.Join(templateDir, "layout.html")
+	if err := os.WriteFile(templatePath, []byte("{{.Content}}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	contentPath := filepath.Join(contentDir, "page.md")
+	if err := os.WriteFile(contentPath, []byte("# first"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.DefaultConfig()
+	cfg.ContentDir, cfg.Template, cfg.OutputDir = contentDir, templatePath, outputDir
+
+	var conversions atomic.Int32
+	original := getConvertMarkdown()
+	defer func() { setConvertMarkdown(original) }()
+	setConvertMarkdown(func(md goldmark.Markdown, source []byte, w *bytes.Buffer) error {
+		conversions.Add(1)
+		return md.Convert(source, w)
+	})
+	if _, err := Build(cfg); err != nil {
+		t.Fatal(err)
+	}
+	first := conversions.Load()
+	if _, err := Build(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if got := conversions.Load(); got != first {
+		t.Fatalf("cache miss rebuilt unchanged content: conversions %d -> %d", first, got)
+	}
+	cfg.Theme = "dark"
+	if _, err := Build(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if conversions.Load() <= first {
+		t.Fatal("output-affecting config change did not invalidate cache")
+	}
+	if err := os.WriteFile(contentPath, []byte("# changed"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Build(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if conversions.Load() <= first {
+		t.Fatal("content change did not invalidate cache")
+	}
+	if err := os.Remove(filepath.Join(outputDir, "page", "index.html")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Build(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "page", "index.html")); err != nil {
+		t.Fatalf("missing output was not rebuilt: %v", err)
 	}
 }
 
