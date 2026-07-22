@@ -121,9 +121,9 @@ func TestGenerateTaxonomies_TagsAndCategories(t *testing.T) {
 	}
 
 	// Verify search items details
-	itemByUrl := make(map[string]string)
+	itemByURL := make(map[string]string)
 	for _, it := range items {
-		itemByUrl[it.URL] = it.Title
+		itemByURL[it.URL] = it.Title
 	}
 	expectedSearchURLs := map[string]string{
 		"/tags/index.html":            "Tags",
@@ -134,7 +134,7 @@ func TestGenerateTaxonomies_TagsAndCategories(t *testing.T) {
 		"/categories/tech/index.html": "Category: tech",
 	}
 	for url, expectedTitle := range expectedSearchURLs {
-		if title, ok := itemByUrl[url]; !ok {
+		if title, ok := itemByURL[url]; !ok {
 			t.Errorf("missing search item for URL %q", url)
 		} else if title != expectedTitle {
 			t.Errorf("search item %q title = %q, want %q", url, title, expectedTitle)
