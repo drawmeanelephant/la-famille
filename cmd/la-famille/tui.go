@@ -72,6 +72,8 @@ const (
 	screenStats
 	screenWorking
 	screenServe
+	screenDiagnostics
+	screenHelp
 )
 
 type menuOption struct {
@@ -99,6 +101,7 @@ type model struct {
 	screen        screen
 	choices       []menuOption
 	cursor        int
+	menuOpen      bool
 	frame         int
 	workMsg       string
 	workErr       error
@@ -114,13 +117,15 @@ func initialModel(cfg config.Config) model {
 		screen: screenMenu,
 		choices: []menuOption{
 			{"Build Site"},
-			{"RAG Export"},
 			{"Serve Site"},
-			{"Serve Site with Watch"},
+			{"Toggle Watch Mode"},
 			{"Stats"},
-			{"Just Raoul"},
+			{"Diagnostics"},
+			{"RAG Export"},
+			{"Help"},
 			{"Quit"},
 		},
+		menuOpen: true,
 	}
 }
 
@@ -167,7 +172,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+		case "m":
+			if m.screen == screenMenu {
+				m.menuOpen = !m.menuOpen
+				return m, nil
+			}
 		case "q", "esc":
+			if m.screen == screenMenu && msg.String() == "esc" {
+				m.menuOpen = false
+				return m, nil
+			}
 			if msg.String() == "q" && m.screen == screenMenu {
 				return m, tea.Quit
 			}
@@ -177,19 +191,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "up", "k":
-			if m.screen == screenMenu {
+			if m.screen == screenMenu && m.menuOpen {
 				if m.cursor > 0 {
 					m.cursor--
 				}
 			}
 		case "down", "j":
-			if m.screen == screenMenu {
+			if m.screen == screenMenu && m.menuOpen {
 				if m.cursor < len(m.choices)-1 {
 					m.cursor++
 				}
 			}
 		case "enter", " ":
-			if m.screen == screenMenu {
+			if m.screen == screenMenu && m.menuOpen {
 				choice := m.choices[m.cursor].label
 				switch choice {
 				case "Quit":
@@ -200,6 +214,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tickCmd()
 				case "Stats":
 					m.screen = screenStats
+					return m, nil
+				case "Diagnostics":
+					m.screen = screenDiagnostics
+					return m, nil
+				case "Help":
+					m.screen = screenHelp
+					return m, nil
+				case "Toggle Watch Mode":
+					m.cfg.WatchMode = !m.cfg.WatchMode
+					m.workMsg = fmt.Sprintf("Watch mode %s", map[bool]string{true: "enabled", false: "disabled"}[m.cfg.WatchMode])
 					return m, nil
 				case "Build Site":
 					m.screen = screenWorking
@@ -326,6 +350,10 @@ func (m model) View() string {
 	case screenMenu:
 		s := lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(staticRaoul()) + "\n\n"
 		s += lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("Welcome to La Famille TUI") + "\n\n"
+		s += lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("228")).Render("🍔 OCTOBURGER MENU") + "\n"
+		if !m.menuOpen {
+			return s + "\nMenu closed. Press m to open commands, q to quit."
+		}
 
 		for i, choice := range m.choices {
 			cursor := "  "
@@ -383,6 +411,20 @@ func (m model) View() string {
 		}
 		s += "\nPress Esc or q to go back."
 		return s
+
+	case screenDiagnostics:
+		s := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("Diagnostics") + "\n\n"
+		if m.workErr == nil {
+			s += "No errors recorded in this session.\n"
+		} else {
+			s += lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(m.workErr.Error()) + "\n"
+		}
+		s += "\nPress Esc or q to go back."
+		return s
+
+	case screenHelp:
+		return lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("La Famille Help") +
+			"\n\n↑/k and ↓/j  Navigate\nEnter/Space  Select\nm             Toggle octoburger menu\nEsc           Close menu or go back\nq             Quit\n\nPress Esc or q to go back."
 
 	case screenWorking:
 		s := m.workMsg + "\n"

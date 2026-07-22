@@ -185,3 +185,63 @@ func TestTUIStatsCacheStatus(t *testing.T) {
 		t.Errorf("Expected view to contain 'Cache Status: Miss', got: %s", viewMiss)
 	}
 }
+
+func TestTUICommandMenuOpenNavigationAndEscape(t *testing.T) {
+	m := initialModel(config.Config{})
+	if !m.menuOpen {
+		t.Fatal("command menu should be open initially")
+	}
+	start := m.cursor
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m = newModel.(model)
+	if m.cursor != start+1 {
+		t.Fatalf("cursor = %d, want %d after down", m.cursor, start+1)
+	}
+
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = newModel.(model)
+	if m.menuOpen {
+		t.Fatal("escape should close the command menu")
+	}
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	m = newModel.(model)
+	if !m.menuOpen {
+		t.Fatal("m should reopen the command menu")
+	}
+}
+
+func TestTUICommandMenuSelection(t *testing.T) {
+	m := initialModel(config.Config{})
+	for i, choice := range m.choices {
+		if choice.label == "Diagnostics" {
+			m.cursor = i
+			break
+		}
+	}
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = newModel.(model)
+	if m.screen != screenDiagnostics {
+		t.Fatalf("screen = %v, want diagnostics after selecting command", m.screen)
+	}
+
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = newModel.(model)
+	if m.screen != screenMenu || !m.menuOpen {
+		t.Fatalf("escape should return to open menu, screen=%v open=%t", m.screen, m.menuOpen)
+	}
+}
+
+func TestTUICommandMenuToggleWatch(t *testing.T) {
+	m := initialModel(config.Config{})
+	for i, choice := range m.choices {
+		if choice.label == "Toggle Watch Mode" {
+			m.cursor = i
+			break
+		}
+	}
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = newModel.(model)
+	if !m.cfg.WatchMode {
+		t.Fatal("watch mode should be enabled after first toggle")
+	}
+}
