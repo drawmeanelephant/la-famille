@@ -243,6 +243,7 @@ func TestTUICommandMenuToggleWatch(t *testing.T) {
 	m = newModel.(model)
 	if !m.cfg.WatchMode {
 		t.Fatal("watch mode should be enabled after first toggle")
+	}
 }
 
 func TestTUIBuildProgressTransitions(t *testing.T) {
