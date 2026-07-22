@@ -1,6 +1,7 @@
 /bin/
 /public/
 /rag-archive/
+.la-famille-cache.json
 SUPPORT/
 
 # macOS hidden files

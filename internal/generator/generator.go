@@ -62,6 +62,7 @@ type BuildResult struct {
 
 // Build generates the static site based on the given configuration.
 func Build(cfg config.Config) (BuildResult, error) {
+	start := time.Now()
 	outputDir, stagingDir, err := createStagingOutput(cfg.OutputDir)
 	if err != nil {
 		return BuildResult{}, err
@@ -75,6 +76,17 @@ func Build(cfg config.Config) (BuildResult, error) {
 			}
 		}
 	}()
+	fingerprint, err := cacheFingerprint(cfg, cfg.ContentDir, filepath.Dir(cfg.Template), cfg.AssetDir, filepath.Join(cfg.ProjectRoot, ".gitignore"))
+	if err != nil {
+		return BuildResult{}, fmt.Errorf("failed to fingerprint build inputs: %w", err)
+	}
+	if cache, cacheErr := loadBuildCache(cachePath(cfg.OutputDir)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
+		if err := os.RemoveAll(stagingDir); err != nil {
+			return BuildResult{}, fmt.Errorf("remove unused build staging directory: %w", err)
+		}
+		committed = true
+		return BuildResult{Duration: time.Since(start), PageCount: cache.PageCount}, nil
+	}
 
 	stagedCfg := cfg
 	stagedCfg.OutputDir = stagingDir
@@ -94,6 +106,10 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	start := time.Now()
 	var result BuildResult
 
+	fingerprint, err := cacheFingerprint(siteCfg, siteCfg.ContentDir, filepath.Dir(siteCfg.Template), siteCfg.AssetDir, filepath.Join(siteCfg.ProjectRoot, ".gitignore"))
+	if err != nil {
+		return result, fmt.Errorf("failed to fingerprint build inputs: %w", err)
+	}
 	// 1. Pass 1: Walk content dir and gather metadata
 	fileMap, err := content.GatherMetadata(cfg.ContentDir)
 	if err != nil {
@@ -387,6 +403,13 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 
 	if err := search.WriteMinifiedJSON(filepath.Join(cfg.OutputDir, "search.json"), searchIndex); err != nil {
 		return result, err
+	}
+	files, err := generatedFiles(cfg.OutputDir)
+	if err != nil {
+		return result, fmt.Errorf("failed to collect generated files: %w", err)
+	}
+	if err := writeBuildCache(cachePath(cfg.OutputDir), fingerprint, files, result.PageCount); err != nil {
+		return result, fmt.Errorf("failed to write build cache: %w", err)
 	}
 
 	if err := discovery.Write(cfg, renderedPaths); err != nil {
