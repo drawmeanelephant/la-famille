@@ -160,6 +160,90 @@ func TestRunExport_ExcludesConfiguredOutputDirectory(t *testing.T) {
 	}
 }
 
+func TestRunExport_ExcludesConfiguredOutputDirectory_AssetsAndTemplates(t *testing.T) {
+	t.Run("Under Assets", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		ragDir := filepath.Join(projectRoot, "assets", "rag-archive")
+
+		writeExportTestFile(t, filepath.Join(projectRoot, "assets", "valid.png"), "PNG")
+		writeExportTestFile(t, filepath.Join(ragDir, "stale_asset.png"), "STALE")
+
+		if err := RunExport(config.Config{ProjectRoot: projectRoot, RagDir: ragDir}); err != nil {
+			t.Fatalf("RunExport failed: %v", err)
+		}
+
+		cfgContent, err := os.ReadFile(filepath.Join(ragDir, "rag-config.md"))
+		if err != nil {
+			t.Fatalf("read config bundle: %v", err)
+		}
+		cfgStr := string(cfgContent)
+
+		if strings.Contains(cfgStr, "assets/rag-archive") || strings.Contains(cfgStr, "stale_asset.png") {
+			t.Errorf("config bundle included files/dirs from configured RAG directory under assets:\n%s", cfgStr)
+		}
+		if !strings.Contains(cfgStr, "assets/valid.png") {
+			t.Errorf("config bundle missing valid asset:\n%s", cfgStr)
+		}
+	})
+
+	t.Run("Under Templates", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		ragDir := filepath.Join(projectRoot, "templates", "rag-archive")
+
+		writeExportTestFile(t, filepath.Join(projectRoot, "templates", "base.html"), "<html></html>")
+		writeExportTestFile(t, filepath.Join(ragDir, "stale_template.html"), "<stale></stale>")
+
+		if err := RunExport(config.Config{ProjectRoot: projectRoot, RagDir: ragDir}); err != nil {
+			t.Fatalf("RunExport failed: %v", err)
+		}
+
+		cfgContent, err := os.ReadFile(filepath.Join(ragDir, "rag-config.md"))
+		if err != nil {
+			t.Fatalf("read config bundle: %v", err)
+		}
+		cfgStr := string(cfgContent)
+
+		if strings.Contains(cfgStr, "templates/rag-archive") || strings.Contains(cfgStr, "stale_template.html") {
+			t.Errorf("config bundle included files/dirs from configured RAG directory under templates:\n%s", cfgStr)
+		}
+		if !strings.Contains(cfgStr, "templates/base.html") {
+			t.Errorf("config bundle missing valid template:\n%s", cfgStr)
+		}
+	})
+
+	t.Run("Directly Under Root", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		ragDir := filepath.Join(projectRoot, "rag-archive")
+
+		writeExportTestFile(t, filepath.Join(projectRoot, "content", "index.md"), "# Hello")
+		writeExportTestFile(t, filepath.Join(projectRoot, "main.go"), "package main")
+		writeExportTestFile(t, filepath.Join(ragDir, "stale_content.md"), "# Stale Content")
+		writeExportTestFile(t, filepath.Join(ragDir, "stale.go"), "package stale")
+
+		if err := RunExport(config.Config{ProjectRoot: projectRoot, RagDir: ragDir}); err != nil {
+			t.Fatalf("RunExport failed: %v", err)
+		}
+
+		sysContent, err := os.ReadFile(filepath.Join(ragDir, "rag-system.md"))
+		if err != nil {
+			t.Fatalf("read system bundle: %v", err)
+		}
+		sysStr := string(sysContent)
+		if strings.Contains(sysStr, "rag-archive/stale.go") {
+			t.Errorf("system bundle included stale file from root RAG directory:\n%s", sysStr)
+		}
+
+		cntContent, err := os.ReadFile(filepath.Join(ragDir, "rag-content.md"))
+		if err != nil {
+			t.Fatalf("read content bundle: %v", err)
+		}
+		cntStr := string(cntContent)
+		if strings.Contains(cntStr, "stale_content.md") {
+			t.Errorf("content bundle included stale file from root RAG directory:\n%s", cntStr)
+		}
+	})
+}
+
 func writeExportTestFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
