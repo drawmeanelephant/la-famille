@@ -16,25 +16,15 @@
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content focus-visible:ring-2 focus-visible:ring-primary">Skip to content</a>
 
     <nav aria-label="Main Navigation" class="navbar bg-base-100 shadow-sm mb-8 border-b border-primary/20">
-                <div class="flex-none md:hidden dropdown dropdown-end">
-            <a href="#" tabindex="0" role="button" aria-label="Toggle mobile menu" aria-haspopup="true" class="btn btn-ghost md:hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-                <img src="https://www.gstatic.com/android/keyboard/emojikitchen/20241021/u1f419/u1f419_u1f354.png" alt="" aria-hidden="true" focusable="false" class="w-8 h-8" />
-            </a>
-            <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52">
-                <li><a href="/" class="focus-visible:bg-base-300 focus-visible:outline-none">Home</a></li>
-                <li><a href="/about" class="focus-visible:bg-base-300 focus-visible:outline-none">About</a></li>
-                <li><a href="/contact" class="focus-visible:bg-base-300 focus-visible:outline-none">Contact</a></li>
-            </ul>
-        </div>
         <div class="flex-1">
             <a class="btn btn-ghost text-xl focus-visible:bg-base-content/20 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none text-primary" href="/">{{.Site.SiteName}}</a>
         </div>
 
         <div class="flex-none md:hidden dropdown dropdown-end">
-            <a href="#" tabindex="0" role="button" class="btn btn-ghost focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none" aria-label="Mobile Menu" aria-haspopup="true">
+            <a href="#mobile-menu" tabindex="0" role="button" class="btn btn-ghost focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none" aria-label="Open navigation menu" aria-haspopup="true">
                 <img src="https://www.gstatic.com/android/keyboard/emojikitchen/20241021/u1f419/u1f419_u1f354.png" alt="" aria-hidden="true" focusable="false" class="w-8 h-8" />
             </a>
-            <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52">
+            <ul id="mobile-menu" tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52">
                 <li><a href="/" class="focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none hover:text-secondary focus-visible:text-secondary">Home</a></li>
                 <li><a href="/about" class="focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none hover:text-secondary focus-visible:text-secondary">About</a></li>
                 <li><a href="/contact" class="focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none hover:text-secondary focus-visible:text-secondary">Contact</a></li>
