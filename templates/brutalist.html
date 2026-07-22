@@ -61,6 +61,8 @@
         }
     .brutalist-btn:focus-visible { box-shadow: none !important; transform: translate(2px, 2px) !important; outline: 2px solid black !important; outline-offset: 2px; }
     </style>
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
 </head>
 <body class="min-h-screen bg-base-100 text-base-content antialiased">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-yellow-400 focus:text-black border-4 border-black focus-visible:ring-2 focus-visible:ring-primary">SKIP TO CONTENT</a>
