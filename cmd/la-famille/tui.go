@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -103,23 +104,32 @@ type serverErrorMsg struct {
 	err error
 }
 
+type diagnostic struct {
+	level   string
+	message string
+	source  string
+}
+
 type model struct {
-	cfg           config.Config
-	screen        screen
-	choices       []menuOption
-	cursor        int
-	menuOpen      bool
-	frame         int
-	workMsg       string
-	workErr       error
-	workPhase     string
-	workCompleted int
-	workTotal     int
-	workEvents    []string
-	server        *http.Server
-	serverCancel  context.CancelFunc
-	watcherCancel context.CancelFunc
-	stats         *generator.BuildResult
+	cfg               config.Config
+	screen            screen
+	choices           []menuOption
+	cursor            int
+	menuOpen          bool
+	frame             int
+	workMsg           string
+	workErr           error
+	workPhase         string
+	workCompleted     int
+	workTotal         int
+	workEvents        []string
+	server            *http.Server
+	serverCancel      context.CancelFunc
+	watcherCancel     context.CancelFunc
+	stats             *generator.BuildResult
+	diagnostics       []diagnostic
+	diagnosticCursor  int
+	diagnosticsReturn screen
 }
 
 func initialModel(cfg config.Config) model {
@@ -137,6 +147,29 @@ func initialModel(cfg config.Config) model {
 			{"Quit"},
 		},
 		menuOpen: true,
+	}
+}
+
+var diagnosticSourceRE = regexp.MustCompile(`(?:^|[[:space:]([])([^[:space:]]+:[0-9]+(?::[0-9]+)?)`)
+
+func (m *model) addDiagnostic(level string, err error) {
+	if err == nil {
+		return
+	}
+	message := err.Error()
+	source := ""
+	if match := diagnosticSourceRE.FindStringSubmatch(message); len(match) == 2 {
+		source = match[1]
+	}
+	m.diagnostics = append(m.diagnostics, diagnostic{level: level, message: message, source: source})
+	m.diagnosticCursor = len(m.diagnostics) - 1
+}
+
+func (m *model) showDiagnostics() {
+	m.diagnosticsReturn = m.screen
+	m.screen = screenDiagnostics
+	if len(m.diagnostics) > 0 && m.diagnosticCursor >= len(m.diagnostics) {
+		m.diagnosticCursor = len(m.diagnostics) - 1
 	}
 }
 
@@ -208,12 +241,29 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+		case "d":
+			if m.screen == screenDiagnostics {
+				m.screen = m.diagnosticsReturn
+			} else {
+				m.showDiagnostics()
+			}
+			return m, nil
+		case "c":
+			if m.screen == screenDiagnostics {
+				m.diagnostics = nil
+				m.diagnosticCursor = 0
+				return m, nil
+			}
 		case "m":
 			if m.screen == screenMenu {
 				m.menuOpen = !m.menuOpen
 				return m, nil
 			}
 		case "q", "esc":
+			if m.screen == screenDiagnostics {
+				m.screen = m.diagnosticsReturn
+				return m, nil
+			}
 			if m.screen == screenMenu && msg.String() == "esc" {
 				m.menuOpen = false
 				return m, nil
@@ -227,13 +277,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "up", "k":
-			if m.screen == screenMenu && m.menuOpen {
+			if m.screen == screenDiagnostics {
+				if m.diagnosticCursor > 0 {
+					m.diagnosticCursor--
+				}
+			} else if m.screen == screenMenu && m.menuOpen {
 				if m.cursor > 0 {
 					m.cursor--
 				}
 			}
 		case "down", "j":
-			if m.screen == screenMenu && m.menuOpen {
+			if m.screen == screenDiagnostics {
+				if m.diagnosticCursor < len(m.diagnostics)-1 {
+					m.diagnosticCursor++
+				}
+			} else if m.screen == screenMenu && m.menuOpen {
 				if m.cursor < len(m.choices)-1 {
 					m.cursor++
 				}
@@ -355,6 +413,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case workResultMsg:
 		m.workMsg = msg.msg
 		m.workErr = msg.err
+		if msg.err != nil {
+			m.addDiagnostic("error", msg.err)
+		}
+		if msg.err == nil && msg.res != nil && msg.res.ErrorCount > 0 {
+			m.diagnostics = append(m.diagnostics, diagnostic{level: "warning", message: fmt.Sprintf("Build completed with %d error(s)", msg.res.ErrorCount)})
+		}
 		m.workCompleted = m.workTotal
 		m.workPhase = "Complete"
 		if msg.err != nil {
@@ -377,6 +441,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case serverErrorMsg:
+		m.addDiagnostic("error", msg.err)
 		m.stopServing()
 		m.screen = screenWorking
 		m.workMsg = "Unable to start server"
@@ -456,13 +521,27 @@ func (m model) View() string {
 
 	case screenDiagnostics:
 		s := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("Diagnostics") + "\n\n"
-		if m.workErr == nil {
-			s += "No errors recorded in this session.\n"
-		} else {
-			s += lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(m.workErr.Error()) + "\n"
+		if len(m.diagnostics) == 0 {
+			return s + "No diagnostics recorded.\n\nUse d, Esc, or q to return."
 		}
-		s += "\nPress Esc or q to go back."
-		return s
+		for i, item := range m.diagnostics {
+			cursor := "  "
+			style := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+			if i == m.diagnosticCursor {
+				cursor = "> "
+				style = lipgloss.NewStyle().Bold(true)
+			}
+			color := "9"
+			if item.level == "warning" {
+				color = "11"
+			}
+			label := lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(strings.ToUpper(item.level))
+			s += fmt.Sprintf("%s%s %s\n", cursor, label, style.Render(item.message))
+			if item.source != "" {
+				s += fmt.Sprintf("    %s\n", item.source)
+			}
+		}
+		return s + "\nUse ↑/↓ to navigate, c to clear, d/Esc/q to return."
 
 	case screenHelp:
 		return lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("La Famille Help") +
