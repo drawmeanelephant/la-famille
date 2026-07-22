@@ -15,6 +15,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/page"
 	"github.com/tbuddy/la-famille/internal/render"
+	"github.com/tbuddy/la-famille/internal/search"
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
@@ -45,34 +46,33 @@ var (
 )
 
 // GenerateTags generates rendered tag pages and tag index pages.
-func GenerateTags(cfg, siteCfg config.Config, fileMap map[string]*content.FileMeta, renderer *render.Renderer, p *bluemonday.Policy) error {
-	_, err := generateTaxonomyGroup(cfg, siteCfg, fileMap, renderer, p, tagsSpec)
-	return err
+func GenerateTags(cfg, siteCfg config.Config, fileMap map[string]*content.FileMeta, renderer *render.Renderer, p *bluemonday.Policy) ([]string, []search.Item, error) {
+	return generateTaxonomyGroup(cfg, siteCfg, fileMap, renderer, p, tagsSpec)
 }
 
 // GenerateCategories generates rendered category pages and category index pages.
-func GenerateCategories(cfg, siteCfg config.Config, fileMap map[string]*content.FileMeta, renderer *render.Renderer, p *bluemonday.Policy) error {
-	_, err := generateTaxonomyGroup(cfg, siteCfg, fileMap, renderer, p, categoriesSpec)
-	return err
+func GenerateCategories(cfg, siteCfg config.Config, fileMap map[string]*content.FileMeta, renderer *render.Renderer, p *bluemonday.Policy) ([]string, []search.Item, error) {
+	return generateTaxonomyGroup(cfg, siteCfg, fileMap, renderer, p, categoriesSpec)
 }
 
 // GenerateTaxonomies generates rendered pages for all supported taxonomies (tags, categories)
-// and returns the relative output paths of all generated HTML pages.
-func GenerateTaxonomies(cfg, siteCfg config.Config, fileMap map[string]*content.FileMeta, renderer *render.Renderer, p *bluemonday.Policy) ([]string, error) {
-	tagPaths, err := generateTaxonomyGroup(cfg, siteCfg, fileMap, renderer, p, tagsSpec)
+// and returns the relative output paths and search items of all generated HTML pages.
+func GenerateTaxonomies(cfg, siteCfg config.Config, fileMap map[string]*content.FileMeta, renderer *render.Renderer, p *bluemonday.Policy) ([]string, []search.Item, error) {
+	tagPaths, tagItems, err := generateTaxonomyGroup(cfg, siteCfg, fileMap, renderer, p, tagsSpec)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	catPaths, err := generateTaxonomyGroup(cfg, siteCfg, fileMap, renderer, p, categoriesSpec)
+	catPaths, catItems, err := generateTaxonomyGroup(cfg, siteCfg, fileMap, renderer, p, categoriesSpec)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	allPaths := append(tagPaths, catPaths...)
 	sort.Strings(allPaths)
-	return allPaths, nil
+	allItems := append(tagItems, catItems...)
+	return allPaths, allItems, nil
 }
 
-func generateTaxonomyGroup(cfg, siteCfg config.Config, fileMap map[string]*content.FileMeta, renderer *render.Renderer, p *bluemonday.Policy, spec groupSpec) ([]string, error) {
+func generateTaxonomyGroup(cfg, siteCfg config.Config, fileMap map[string]*content.FileMeta, renderer *render.Renderer, p *bluemonday.Policy, spec groupSpec) ([]string, []search.Item, error) {
 	itemMap := make(map[string][]string)
 
 	for relPath, meta := range fileMap {
@@ -95,11 +95,12 @@ func generateTaxonomyGroup(cfg, siteCfg config.Config, fileMap map[string]*conte
 	sort.Strings(items)
 
 	if len(items) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	outDirClean := filepath.Clean(cfg.OutputDir)
 	var generatedPaths []string
+	var searchItems []search.Item
 
 	// Render main index page for the group (e.g. tags/index.html or categories/index.html)
 	indexRelPath := fmt.Sprintf("%s/index.md", spec.prefix)
@@ -107,7 +108,7 @@ func generateTaxonomyGroup(cfg, siteCfg config.Config, fileMap map[string]*conte
 	indexOutPath := filepath.Join(outDirClean, filepath.FromSlash(indexOut))
 
 	if err := os.MkdirAll(filepath.Dir(indexOutPath), 0755); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var indexHTML strings.Builder
@@ -146,9 +147,13 @@ func generateTaxonomyGroup(cfg, siteCfg config.Config, fileMap map[string]*conte
 	}
 
 	if err := renderer.HTML(cfg, indexPageStruct, "", indexOutPath); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	generatedPaths = append(generatedPaths, indexOut)
+	searchItems = append(searchItems, search.Item{
+		Title: spec.plural,
+		URL:   "/" + filepath.ToSlash(indexOut),
+	})
 
 	// Render individual taxonomy item pages (e.g., tags/go/index.html)
 	for _, item := range items {
@@ -169,7 +174,7 @@ func generateTaxonomyGroup(cfg, siteCfg config.Config, fileMap map[string]*conte
 		outPath := filepath.Join(outDirClean, filepath.FromSlash(itemOut))
 
 		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		var htmlContent strings.Builder
@@ -219,11 +224,16 @@ func generateTaxonomyGroup(cfg, siteCfg config.Config, fileMap map[string]*conte
 		}
 
 		if err := renderer.HTML(cfg, pageStruct, "", outPath); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		generatedPaths = append(generatedPaths, itemOut)
+		searchItems = append(searchItems, search.Item{
+			Title: fmt.Sprintf("%s: %s", spec.singular, item),
+			URL:   "/" + filepath.ToSlash(itemOut),
+			Tags:  []string{item},
+		})
 	}
 
 	sort.Strings(generatedPaths)
-	return generatedPaths, nil
+	return generatedPaths, searchItems, nil
 }

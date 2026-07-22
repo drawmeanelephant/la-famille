@@ -37,9 +37,17 @@ func TestGenerateTags(t *testing.T) {
 	renderer := render.New(tmplDir)
 	p := bluemonday.UGCPolicy()
 
-	err := GenerateTags(cfg, cfg, fileMap, renderer, p)
+	paths, items, err := GenerateTags(cfg, cfg, fileMap, renderer, p)
 	if err != nil {
 		t.Fatalf("GenerateTags failed: %v", err)
+	}
+
+	if len(paths) != 3 {
+		t.Fatalf("expected 3 tag paths, got %d: %v", len(paths), paths)
+	}
+
+	if len(items) != 3 {
+		t.Fatalf("expected 3 tag search items, got %d: %v", len(items), items)
 	}
 
 	// Check if go tag page was created
@@ -85,7 +93,7 @@ func TestGenerateTaxonomies_TagsAndCategories(t *testing.T) {
 	renderer := render.New(tmplDir)
 	p := bluemonday.UGCPolicy()
 
-	paths, err := GenerateTaxonomies(cfg, cfg, fileMap, renderer, p)
+	paths, items, err := GenerateTaxonomies(cfg, cfg, fileMap, renderer, p)
 	if err != nil {
 		t.Fatalf("GenerateTaxonomies failed: %v", err)
 	}
@@ -105,6 +113,31 @@ func TestGenerateTaxonomies_TagsAndCategories(t *testing.T) {
 	for i, expected := range expectedPaths {
 		if paths[i] != expected {
 			t.Errorf("path[%d] = %q, want %q", i, paths[i], expected)
+		}
+	}
+
+	if len(items) != 6 {
+		t.Fatalf("expected 6 search items, got %d: %v", len(items), items)
+	}
+
+	// Verify search items details
+	itemByURL := make(map[string]string)
+	for _, it := range items {
+		itemByURL[it.URL] = it.Title
+	}
+	expectedSearchURLs := map[string]string{
+		"/tags/index.html":            "Tags",
+		"/tags/go/index.html":         "Tag: go",
+		"/tags/web/index.html":        "Tag: web",
+		"/categories/index.html":      "Categories",
+		"/categories/news/index.html": "Category: news",
+		"/categories/tech/index.html": "Category: tech",
+	}
+	for url, expectedTitle := range expectedSearchURLs {
+		if title, ok := itemByURL[url]; !ok {
+			t.Errorf("missing search item for URL %q", url)
+		} else if title != expectedTitle {
+			t.Errorf("search item %q title = %q, want %q", url, title, expectedTitle)
 		}
 	}
 
@@ -162,7 +195,7 @@ func TestGenerateTaxonomies_EmptyAndRenderFalse(t *testing.T) {
 	renderer := render.New(tmplDir)
 	p := bluemonday.UGCPolicy()
 
-	paths, err := GenerateTaxonomies(cfg, cfg, fileMap, renderer, p)
+	paths, items, err := GenerateTaxonomies(cfg, cfg, fileMap, renderer, p)
 	if err != nil {
 		t.Fatalf("GenerateTaxonomies failed: %v", err)
 	}
@@ -171,6 +204,11 @@ func TestGenerateTaxonomies_EmptyAndRenderFalse(t *testing.T) {
 	for _, p := range paths {
 		if strings.Contains(p, "secret") || strings.Contains(p, "internal") {
 			t.Errorf("unexpected path for render:false page taxonomy: %s", p)
+		}
+	}
+	for _, it := range items {
+		if strings.Contains(it.URL, "secret") || strings.Contains(it.URL, "internal") {
+			t.Errorf("unexpected search item for render:false page taxonomy: %v", it)
 		}
 	}
 
@@ -205,7 +243,7 @@ func TestGenerateTaxonomies_EscapingAndOrdering(t *testing.T) {
 	renderer := render.New(tmplDir)
 	p := bluemonday.UGCPolicy()
 
-	_, err := GenerateTaxonomies(cfg, cfg, fileMap, renderer, p)
+	_, _, err := GenerateTaxonomies(cfg, cfg, fileMap, renderer, p)
 	if err != nil {
 		t.Fatalf("GenerateTaxonomies failed: %v", err)
 	}
