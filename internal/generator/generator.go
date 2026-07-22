@@ -61,6 +61,35 @@ type BuildResult struct {
 
 // Build generates the static site based on the given configuration.
 func Build(cfg config.Config) (BuildResult, error) {
+	outputDir, stagingDir, err := createStagingOutput(cfg.OutputDir)
+	if err != nil {
+		return BuildResult{}, err
+	}
+
+	committed := false
+	defer func() {
+		if !committed {
+			if err := os.RemoveAll(stagingDir); err != nil {
+				slog.Warn("Failed to remove build staging directory", "path", stagingDir, "error", err)
+			}
+		}
+	}()
+
+	stagedCfg := cfg
+	stagedCfg.OutputDir = stagingDir
+	result, err := build(stagedCfg, cfg)
+	if err != nil {
+		return result, err
+	}
+
+	if err := replaceOutputDirectory(outputDir, stagingDir); err != nil {
+		return result, err
+	}
+	committed = true
+	return result, nil
+}
+
+func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	start := time.Now()
 	var result BuildResult
 
@@ -104,7 +133,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 	p.AllowElements("svg", "path")
 	p.AllowAttrs("xmlns", "fill", "viewBox", "stroke-linecap", "stroke-linejoin", "stroke-width", "d", "stroke", "class").OnElements("svg", "path")
 
-	if err := taxonomy.GenerateTags(cfg, fileMap, renderer, p); err != nil {
+	if err := taxonomy.GenerateTags(cfg, siteCfg, fileMap, renderer, p); err != nil {
 		return result, err
 	}
 
@@ -279,7 +308,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 					}
 
 					page := page.Page{
-						Site:            cfg,
+						Site:            siteCfg,
 						Title:           title,
 						Author:          meta.Author,
 						Date:            meta.Date,
@@ -332,7 +361,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 		return result, errors.Join(joinErrs...)
 	}
 	// 3. Generate stubs for missing files in deterministic order
-	if err := stub.GenerateStubs(cfg, missingFiles, &g, p, fileMap); err != nil {
+	if err := stub.GenerateStubs(cfg, siteCfg, missingFiles, &g, p, fileMap); err != nil {
 		return result, err
 	}
 
@@ -379,5 +408,98 @@ func validateOutputPaths(fileMap map[string]*content.FileMeta, outputDir string)
 		owners[target] = relPath
 	}
 
+	return nil
+}
+
+// createStagingOutput creates an empty sibling directory for a build. Keeping the
+// staging directory beside the final output means os.Rename can replace the
+// completed site without a cross-filesystem copy.
+func createStagingOutput(configuredOutput string) (string, string, error) {
+	cleanOutput := filepath.Clean(configuredOutput)
+	if cleanOutput == "." || cleanOutput == string(filepath.Separator) {
+		return "", "", fmt.Errorf("output directory must not be the current directory or filesystem root")
+	}
+	if !filepath.IsAbs(cleanOutput) && !filepath.IsLocal(cleanOutput) {
+		return "", "", fmt.Errorf("output directory must be a local path: %q", configuredOutput)
+	}
+
+	outputDir, err := filepath.Abs(cleanOutput)
+	if err != nil {
+		return "", "", fmt.Errorf("resolve output directory: %w", err)
+	}
+	parentDir := filepath.Dir(outputDir)
+	if parentDir == outputDir {
+		return "", "", fmt.Errorf("output directory must not be filesystem root")
+	}
+	if err := os.MkdirAll(parentDir, 0700); err != nil {
+		return "", "", fmt.Errorf("create output parent directory: %w", err)
+	}
+
+	if info, err := os.Lstat(outputDir); err == nil {
+		if info.Mode()&os.ModeSymlink != 0 {
+			return "", "", fmt.Errorf("output directory must not be a symlink: %q", configuredOutput)
+		}
+		if !info.IsDir() {
+			return "", "", fmt.Errorf("output path is not a directory: %q", configuredOutput)
+		}
+	} else if !os.IsNotExist(err) {
+		return "", "", fmt.Errorf("inspect output directory: %w", err)
+	}
+
+	stagingDir, err := os.MkdirTemp(parentDir, "."+filepath.Base(outputDir)+".staging-")
+	if err != nil {
+		return "", "", fmt.Errorf("create build staging directory: %w", err)
+	}
+	return outputDir, stagingDir, nil
+}
+
+// replaceOutputDirectory swaps a completed staging tree into place. The previous
+// output is renamed rather than deleted first so a failed replacement can be
+// restored without exposing a partially generated site.
+func replaceOutputDirectory(outputDir, stagingDir string) error {
+	parentDir := filepath.Dir(outputDir)
+	if filepath.Dir(stagingDir) != parentDir {
+		return fmt.Errorf("staging directory must be a sibling of the output directory")
+	}
+
+	outputExists := false
+	if info, err := os.Lstat(outputDir); err == nil {
+		if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+			return fmt.Errorf("output directory changed while building: %q", outputDir)
+		}
+		outputExists = true
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("inspect output directory before replacement: %w", err)
+	}
+
+	backupDir, err := os.MkdirTemp(parentDir, "."+filepath.Base(outputDir)+".previous-")
+	if err != nil {
+		return fmt.Errorf("create output backup path: %w", err)
+	}
+	if err := os.Remove(backupDir); err != nil {
+		return fmt.Errorf("prepare output backup path: %w", err)
+	}
+
+	if outputExists {
+		if err := os.Rename(outputDir, backupDir); err != nil {
+			return fmt.Errorf("move existing output aside: %w", err)
+		}
+	}
+
+	if err := os.Rename(stagingDir, outputDir); err != nil {
+		if !outputExists {
+			return fmt.Errorf("replace output directory: %w", err)
+		}
+		if restoreErr := os.Rename(backupDir, outputDir); restoreErr != nil {
+			return fmt.Errorf("replace output directory: %w; restore previous output: %v", err, restoreErr)
+		}
+		return fmt.Errorf("replace output directory: %w", err)
+	}
+
+	if outputExists {
+		if err := os.RemoveAll(backupDir); err != nil {
+			slog.Warn("Failed to remove replaced output directory", "path", backupDir, "error", err)
+		}
+	}
 	return nil
 }

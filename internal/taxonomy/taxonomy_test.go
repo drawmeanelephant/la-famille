@@ -37,7 +37,7 @@ func TestGenerateTags(t *testing.T) {
 	renderer := render.New(tmplDir)
 	p := bluemonday.UGCPolicy()
 
-	err := GenerateTags(cfg, fileMap, renderer, p)
+	err := GenerateTags(cfg, cfg, fileMap, renderer, p)
 	if err != nil {
 		t.Fatalf("GenerateTags failed: %v", err)
 	}
