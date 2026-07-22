@@ -98,7 +98,22 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 						cleanName := filepath.Clean(event.Name)
 						if !(cleanName == outDirClean || strings.HasPrefix(cleanName, outDirClean+string(filepath.Separator))) {
 							slog.Info("Dynamic directory tracking added", "dir", event.Name)
-							_ = watcher.Add(event.Name)
+							_ = filepath.WalkDir(event.Name, func(path string, d os.DirEntry, err error) error {
+								if err != nil {
+									return nil
+								}
+								cleanPath := filepath.Clean(path)
+								if cleanPath == outDirClean || strings.HasPrefix(cleanPath, outDirClean+string(filepath.Separator)) {
+									if d.IsDir() {
+										return filepath.SkipDir
+									}
+									return nil
+								}
+								if d.IsDir() {
+									return watcher.Add(path)
+								}
+								return nil
+							})
 						}
 					}
 				}
