@@ -371,3 +371,204 @@ Link to [rendered page](page1.md).
 		t.Errorf("expected 0 findings for valid render:false link scenario, got %d: %v", len(res.Findings), res.Findings)
 	}
 }
+
+func TestValidate_AssetHealth_LargeRaster(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	assetDir := filepath.Join(tempDir, "assets")
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(assetDir, 0755)
+
+	doc := "---\ntitle: Home\n---\n# Home\n![hero](/assets/hero.png)\n"
+	_ = os.WriteFile(filepath.Join(contentDir, "index.md"), []byte(doc), 0600)
+
+	// Create a large file (e.g. 200 bytes with custom low threshold)
+	largeData := make([]byte, 200)
+	_ = os.WriteFile(filepath.Join(assetDir, "hero.png"), largeData, 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.AssetDir = assetDir
+	cfg.CheckAssetHealth = true
+	cfg.MaxAssetSizeBytes = 100 // low threshold for testing
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	foundLarge := false
+	for _, f := range res.Findings {
+		if f.Level == LevelWarn && strings.Contains(f.Message, "unusually large raster asset") {
+			foundLarge = true
+			break
+		}
+	}
+	if !foundLarge {
+		t.Errorf("expected large raster warning, got findings: %v", res.Findings)
+	}
+}
+
+func TestValidate_AssetHealth_SuspiciousExtensions(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	assetDir := filepath.Join(tempDir, "assets")
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(assetDir, 0755)
+
+	_ = os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("---\ntitle: Home\n---\n"), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "design.psd"), []byte("psd content"), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.AssetDir = assetDir
+	cfg.CheckAssetHealth = true
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	foundSuspicious := false
+	for _, f := range res.Findings {
+		if f.Level == LevelWarn && strings.Contains(f.Message, "unsupported or suspicious image extension \".psd\"") {
+			foundSuspicious = true
+			break
+		}
+	}
+	if !foundSuspicious {
+		t.Errorf("expected suspicious extension warning for .psd, got findings: %v", res.Findings)
+	}
+}
+
+func TestValidate_AssetHealth_MissingReferences(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	assetDir := filepath.Join(tempDir, "assets")
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(assetDir, 0755)
+
+	doc := "---\ntitle: Home\n---\n# Home\n![missing](/assets/nonexistent.png)\n"
+	_ = os.WriteFile(filepath.Join(contentDir, "index.md"), []byte(doc), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.AssetDir = assetDir
+	cfg.CheckAssetHealth = true
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	foundMissing := false
+	for _, f := range res.Findings {
+		if f.Level == LevelWarn && strings.Contains(f.Message, "missing referenced asset \"/assets/nonexistent.png\"") {
+			foundMissing = true
+			break
+		}
+	}
+	if !foundMissing {
+		t.Errorf("expected missing reference warning, got findings: %v", res.Findings)
+	}
+}
+
+func TestValidate_AssetHealth_CaseCollision(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	assetDir := filepath.Join(tempDir, "assets")
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(assetDir, 0755)
+
+	doc := "---\ntitle: Home\n---\n# Home\n![logo](/assets/logo.png)\n"
+	_ = os.WriteFile(filepath.Join(contentDir, "index.md"), []byte(doc), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "Logo.png"), []byte("data"), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.AssetDir = assetDir
+	cfg.CheckAssetHealth = true
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	foundCollision := false
+	for _, f := range res.Findings {
+		if f.Level == LevelWarn && (strings.Contains(f.Message, "case mismatch") || strings.Contains(f.Message, "asset case-collision")) {
+			foundCollision = true
+			break
+		}
+	}
+	if !foundCollision {
+		t.Errorf("expected case collision warning, got findings: %v", res.Findings)
+	}
+}
+
+func TestValidate_AssetHealth_IgnoredFiles(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	assetDir := filepath.Join(tempDir, "assets")
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(assetDir, 0755)
+
+	_ = os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("assets/ignored.psd\n"), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("---\ntitle: Home\n---\n"), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "ignored.psd"), []byte("ignored psd"), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ProjectRoot = tempDir
+	cfg.ContentDir = contentDir
+	cfg.AssetDir = assetDir
+	cfg.CheckAssetHealth = true
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	for _, f := range res.Findings {
+		if strings.Contains(f.File, "ignored.psd") {
+			t.Errorf("ignored file should not produce findings, got: %v", f)
+		}
+	}
+}
+
+func TestValidate_AssetHealth_DeterministicFindingOrder(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	assetDir := filepath.Join(tempDir, "assets")
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(assetDir, 0755)
+
+	_ = os.WriteFile(filepath.Join(contentDir, "a.md"), []byte("---\ntitle: A\n---\n![m](/assets/missing_z.png)\n"), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "b.md"), []byte("---\ntitle: B\n---\n![m](/assets/missing_a.png)\n"), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "b_file.psd"), []byte("psd"), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "a_file.psd"), []byte("psd"), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.AssetDir = assetDir
+	cfg.CheckAssetHealth = true
+
+	res1, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	res2, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	if len(res1.Findings) != len(res2.Findings) {
+		t.Fatalf("finding count mismatch: %d vs %d", len(res1.Findings), len(res2.Findings))
+	}
+
+	for i := range res1.Findings {
+		if res1.Findings[i].String() != res2.Findings[i].String() {
+			t.Errorf("finding %d mismatch:\n  res1: %s\n  res2: %s", i, res1.Findings[i].String(), res2.Findings[i].String())
+		}
+	}
+}

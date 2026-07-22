@@ -18,12 +18,9 @@ func CopyAssets(cfg config.Config) error {
 		return nil
 	}
 
-	var ignoreRules []ignoreRule
+	var ignoreRules []IgnoreRule
 	if cfg.ProjectRoot != "" {
-		gitignore, err := os.ReadFile(filepath.Join(cfg.ProjectRoot, ".gitignore"))
-		if err == nil {
-			ignoreRules = parseIgnoreRules(string(gitignore))
-		}
+		ignoreRules = LoadIgnoreRules(cfg.ProjectRoot)
 	}
 
 	if _, err := os.Stat(cfg.AssetDir); err != nil {
@@ -53,27 +50,11 @@ func CopyAssets(cfg config.Config) error {
 		}
 
 		relSlash := filepath.ToSlash(relPath)
-		if len(ignoreRules) > 0 {
-			projectRel, err := filepath.Rel(cfg.ProjectRoot, path)
-			if err != nil {
-				return err
-			}
-			projectSlash := filepath.ToSlash(projectRel)
-			if projectSlash != "." && filepath.IsLocal(projectRel) && isIgnored(projectSlash, d.IsDir(), ignoreRules) {
-				if d.IsDir() {
-					// Do not prune here. A later negated rule may re-include an
-					// asset nested in this ignored directory.
-					return nil
-				}
-				return nil
-			}
-		}
-
-		if d.IsDir() {
+		if IsIgnoredAsset(path, d.IsDir(), relSlash, cfg.ProjectRoot, ignoreRules) {
 			return nil
 		}
 
-		if filepath.Ext(path) == ".go" || strings.Contains(relSlash, "/testdata/") || strings.HasPrefix(relSlash, "testdata/") || relSlash == "testdata" {
+		if d.IsDir() {
 			return nil
 		}
 
@@ -108,22 +89,24 @@ func CopyAssets(cfg config.Config) error {
 	})
 }
 
-type ignoreRule struct {
+type IgnoreRule struct {
 	pattern       []string
 	anchored      bool
 	directoryOnly bool
 	negated       bool
 }
 
-func parseIgnoreRules(contents string) []ignoreRule {
-	var rules []ignoreRule
+type ignoreRule = IgnoreRule
+
+func ParseIgnoreRules(contents string) []IgnoreRule {
+	var rules []IgnoreRule
 	for _, line := range strings.Split(contents, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 
-		rule := ignoreRule{}
+		rule := IgnoreRule{}
 		if strings.HasPrefix(line, "!") {
 			rule.negated = true
 			line = strings.TrimPrefix(line, "!")
@@ -149,9 +132,24 @@ func parseIgnoreRules(contents string) []ignoreRule {
 	return rules
 }
 
-// isIgnored applies rules in file order, matching the final applicable rule.
+func parseIgnoreRules(contents string) []IgnoreRule {
+	return ParseIgnoreRules(contents)
+}
+
+func LoadIgnoreRules(projectRoot string) []IgnoreRule {
+	if projectRoot == "" {
+		return nil
+	}
+	gitignore, err := os.ReadFile(filepath.Join(projectRoot, ".gitignore"))
+	if err != nil {
+		return nil
+	}
+	return ParseIgnoreRules(string(gitignore))
+}
+
+// IsIgnored applies rules in file order, matching the final applicable rule.
 // Paths are slash-separated and relative to the directory containing .gitignore.
-func isIgnored(slashPath string, isDir bool, rules []ignoreRule) bool {
+func IsIgnored(slashPath string, isDir bool, rules []IgnoreRule) bool {
 	segments := strings.Split(strings.Trim(slashPath, "/"), "/")
 	ignored := false
 	for _, rule := range rules {
@@ -160,6 +158,26 @@ func isIgnored(slashPath string, isDir bool, rules []ignoreRule) bool {
 		}
 	}
 	return ignored
+}
+
+func isIgnored(slashPath string, isDir bool, rules []IgnoreRule) bool {
+	return IsIgnored(slashPath, isDir, rules)
+}
+
+func IsIgnoredAsset(path string, isDir bool, relSlash string, projectRoot string, ignoreRules []IgnoreRule) bool {
+	if filepath.Ext(path) == ".go" || strings.Contains(relSlash, "/testdata/") || strings.HasPrefix(relSlash, "testdata/") || relSlash == "testdata" {
+		return true
+	}
+	if len(ignoreRules) > 0 && projectRoot != "" {
+		projectRel, err := filepath.Rel(projectRoot, path)
+		if err == nil {
+			projectSlash := filepath.ToSlash(projectRel)
+			if projectSlash != "." && filepath.IsLocal(projectRel) && IsIgnored(projectSlash, isDir, ignoreRules) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (rule ignoreRule) matches(segments []string, isDir bool) bool {

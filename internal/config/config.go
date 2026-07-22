@@ -34,20 +34,24 @@ type Config struct {
 	SiteLinks          []SiteLink `yaml:"site_links"`
 	Port               int        `yaml:"port"`
 	WatchMode          bool       `yaml:"-"`
+	CheckAssetHealth   bool       `yaml:"check_asset_health"`
+	MaxAssetSizeBytes  int64      `yaml:"max_asset_size_bytes"`
 }
 
 // DefaultConfig returns a Config with sensible default values.
 func DefaultConfig() Config {
 	return Config{
-		SiteName:    "La Famille",
-		Template:    "templates/layout.html",
-		ContentDir:  "content",
-		OutputDir:   "public",
-		AssetDir:    "assets",
-		RagDir:      "rag-archive",
-		Theme:       "retro",
-		Port:        8080,
-		ProjectRoot: ".",
+		SiteName:          "La Famille",
+		Template:          "templates/layout.html",
+		ContentDir:        "content",
+		OutputDir:         "public",
+		AssetDir:          "assets",
+		RagDir:            "rag-archive",
+		Theme:             "retro",
+		Port:              8080,
+		ProjectRoot:       ".",
+		CheckAssetHealth:  false,
+		MaxAssetSizeBytes: 5 * 1024 * 1024,
 	}
 }
 
