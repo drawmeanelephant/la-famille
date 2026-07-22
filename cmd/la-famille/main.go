@@ -45,8 +45,16 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			cfg.ContentDir = contentDir
 			cfg.OutputDir = outputDir
 			cfg.Template = templateFile
-			_, err := generator.Build(cfg)
-			return err
+			res, err := generator.Build(cfg)
+			if err != nil {
+				return err
+			}
+			cacheStatus := "miss"
+			if res.CacheHit {
+				cacheStatus = "hit"
+			}
+			slog.Info("Build complete", "pages", res.PageCount, "duration", res.Duration, "cache", cacheStatus)
+			return nil
 		},
 	}
 

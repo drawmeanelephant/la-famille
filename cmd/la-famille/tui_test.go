@@ -11,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/generator"
 )
 
 func getFreePort() (int, error) {
@@ -153,5 +154,34 @@ func TestTUIServerErrorReturnsToVisibleErrorState(t *testing.T) {
 	}
 	if !strings.Contains(m.View(), wantErr.Error()) {
 		t.Fatalf("Error view does not include server error: %q", m.View())
+	}
+}
+
+func TestTUIStatsCacheStatus(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenStats
+
+	// Test Cache Status: Hit
+	m.stats = &generator.BuildResult{
+		Duration:   10 * time.Millisecond,
+		PageCount:  5,
+		ErrorCount: 0,
+		CacheHit:   true,
+	}
+	viewHit := m.View()
+	if !strings.Contains(viewHit, "Cache Status: Hit") {
+		t.Errorf("Expected view to contain 'Cache Status: Hit', got: %s", viewHit)
+	}
+
+	// Test Cache Status: Miss
+	m.stats = &generator.BuildResult{
+		Duration:   10 * time.Millisecond,
+		PageCount:  5,
+		ErrorCount: 0,
+		CacheHit:   false,
+	}
+	viewMiss := m.View()
+	if !strings.Contains(viewMiss, "Cache Status: Miss") {
+		t.Errorf("Expected view to contain 'Cache Status: Miss', got: %s", viewMiss)
 	}
 }
