@@ -11,8 +11,8 @@ import (
 type Item struct {
 	Title    string   `json:"t"`
 	URL      string   `json:"u"`
-	Tags     []string `json:"g"`
-	Snippet  string   `json:"s"`
+	Tags     []string `json:"g,omitempty"`
+	Snippet  string   `json:"s,omitempty"`
 	Headings []string `json:"h,omitempty"`
 }
 

@@ -104,7 +104,7 @@ func TestItemJSONSerialization(t *testing.T) {
 		t.Fatalf("failed to read json: %v", err)
 	}
 
-	expectedJSON := `[{"t":"Page Title","u":"/page.html","g":["go","search"],"s":"Snippet text","h":["H1","H2"]},{"t":"No Headings Page","u":"/none.html","g":null,"s":"Snippet text"}]` + "\n"
+	expectedJSON := `[{"t":"Page Title","u":"/page.html","g":["go","search"],"s":"Snippet text","h":["H1","H2"]},{"t":"No Headings Page","u":"/none.html","s":"Snippet text"}]` + "\n"
 	if string(b) != expectedJSON {
 		t.Errorf("expected JSON:\n%s\ngot:\n%s", expectedJSON, string(b))
 	}

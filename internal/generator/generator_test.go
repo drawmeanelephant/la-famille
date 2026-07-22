@@ -749,6 +749,93 @@ More text.
 	}
 }
 
+func TestBuild_SearchIndexAudit(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(templateDir, 0755)
+
+	templatePath := filepath.Join(templateDir, "layout.html")
+	_ = os.WriteFile(templatePath, []byte("{{.Content}}"), 0600)
+
+	// Page with valid custom slug, tags, and categories
+	page1 := `---
+title: "Alpha Page"
+slug: "custom-alpha"
+tags: ["go"]
+categories: ["tech"]
+---
+# Alpha Heading
+Alpha snippet content.
+`
+	// Page with invalid slug (should fall back to standard URL)
+	page2 := `---
+title: "Beta Page"
+slug: "../invalid/beta"
+tags: ["search"]
+---
+# Beta Heading
+Beta snippet content.
+`
+	// Page with render: false (should be excluded from search.json)
+	page3 := `---
+title: "Draft Page"
+render: false
+---
+Draft content should not be indexed.
+`
+	_ = os.WriteFile(filepath.Join(contentDir, "alpha.md"), []byte(page1), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "beta.md"), []byte(page2), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "draft.md"), []byte(page3), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = templatePath
+
+	if _, err := Build(cfg); err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	searchJSONPath := filepath.Join(outputDir, "search.json")
+	data, err := os.ReadFile(searchJSONPath)
+	if err != nil {
+		t.Fatalf("failed to read search.json: %v", err)
+	}
+
+	searchJSON := string(data)
+
+	// Verify render: false page is excluded
+	if strings.Contains(searchJSON, "Draft Page") || strings.Contains(searchJSON, "Draft content") {
+		t.Errorf("search.json unexpectedly contains render:false page: %s", searchJSON)
+	}
+
+	// Verify taxonomy (tags + categories merged) for alpha page
+	if !strings.Contains(searchJSON, `"g":["go","tech"]`) {
+		t.Errorf("search.json missing merged taxonomy tags: %s", searchJSON)
+	}
+
+	// Verify valid custom slug URL
+	if !strings.Contains(searchJSON, `"u":"/custom-alpha/index.html"`) {
+		t.Errorf("search.json missing valid custom slug URL: %s", searchJSON)
+	}
+
+	// Verify invalid slug fell back to standard output URL matching relOut
+	if !strings.Contains(searchJSON, `"u":"/beta/index.html"`) {
+		t.Errorf("search.json missing fallback URL for invalid slug: %s", searchJSON)
+	}
+
+	// Verify deterministic URL ordering: /beta/index.html should come before /custom-alpha/index.html
+	alphaIdx := strings.Index(searchJSON, "/custom-alpha/index.html")
+	betaIdx := strings.Index(searchJSON, "/beta/index.html")
+	if alphaIdx == -1 || betaIdx == -1 || betaIdx > alphaIdx {
+		t.Errorf("search.json items are not deterministically sorted by URL: %s", searchJSON)
+	}
+}
+
 func TestBuild_TaxonomyPagesIntegration(t *testing.T) {
 	tempDir := t.TempDir()
 	contentDir := filepath.Join(tempDir, "content")

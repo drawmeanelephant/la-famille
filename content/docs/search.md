@@ -10,7 +10,14 @@ La Famille includes a built-in, lightning-fast client-side search functionality.
 
 ## Overview
 
-During the build process, the generator parses all markdown content and creates a highly compressed `search.json` file in the root of the output directory. This file contains a minified array of all pages, including their title, URL, tags, and a plaintext snippet of the content.
+During the build process, the generator parses all markdown content and creates a highly compressed, deterministic `search.json` file in the root of the output directory. This file contains a minified array of all rendered pages (`render: false` pages are automatically excluded).
+
+Each item in `search.json` includes:
+*   `t`: Page title (or fallback filename)
+*   `u`: Page relative URL (validated against slugs)
+*   `g`: Combined taxonomy metadata terms (tags and categories)
+*   `s`: Cleaned plaintext content excerpt snippet (up to 160 characters)
+*   `h`: Extracted ATX heading titles (# to ######)
 
 The client-side JavaScript (`assets/js/search.js`) fetches this file, caches it in memory, and provides instant, debounce-optimized search results as you type.
 
@@ -46,6 +53,8 @@ Add the following HTML markup to your navigation bar or header to provide the se
 
 ## How It Works
 
+*   **Multi-Signal Matching:** The client filters across title (`t`), taxonomy metadata (`g`), content snippet (`s`), and headings (`h`).
+*   **Rich UI Rendering:** Results display titles, snippets, matched heading section badges, and taxonomy tag badges.
 *   **Keyboard Shortcut:** The search input can be quickly focused from anywhere on the page by pressing the `/` key.
 *   **Lazy Loading:** To conserve bandwidth, `search.json` is only fetched the first time the search input receives focus. It is then cached in `window.LaFamilleSearchIndex`.
 *   **Debouncing:** The search query is debounced by 50ms to prevent excessive filtering during rapid typing.

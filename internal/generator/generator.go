@@ -254,19 +254,6 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						mu.Unlock()
 					}()
 
-					if shouldRender {
-						urlOut := transform.GetOutputURL(relPath, meta.Slug, shouldRender)
-						urlPath := "/" + filepath.ToSlash(urlOut)
-
-						searchIndexItems[idx] = search.Item{
-							Title:    title,
-							URL:      urlPath,
-							Tags:     meta.Tags,
-							Snippet:  search.ExtractSnippet(meta.Rest),
-							Headings: search.ExtractHeadings(meta.Rest),
-						}
-					}
-
 					outDirClean := filepath.Clean(cfg.OutputDir)
 					outPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
 					var relOut string
@@ -281,6 +268,30 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						}
 						relOut = transform.GetOutputURL(relPath, slug, shouldRender)
 						outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
+
+						var taxonomyTerms []string
+						taxonomySeen := make(map[string]bool)
+						for _, tag := range meta.Tags {
+							if tag != "" && !taxonomySeen[tag] {
+								taxonomySeen[tag] = true
+								taxonomyTerms = append(taxonomyTerms, tag)
+							}
+						}
+						for _, cat := range meta.Categories {
+							if cat != "" && !taxonomySeen[cat] {
+								taxonomySeen[cat] = true
+								taxonomyTerms = append(taxonomyTerms, cat)
+							}
+						}
+
+						urlPath := "/" + filepath.ToSlash(relOut)
+						searchIndexItems[idx] = search.Item{
+							Title:    title,
+							URL:      urlPath,
+							Tags:     taxonomyTerms,
+							Snippet:  search.ExtractSnippet(meta.Rest),
+							Headings: search.ExtractHeadings(meta.Rest),
+						}
 					}
 
 					// Validate the final outPath against directory escapes using IsSafePath
@@ -375,6 +386,13 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	}
 
 	// Sort searchIndex, edges, and other outputs to ensure deterministic output
+	sort.SliceStable(searchIndex, func(i, j int) bool {
+		if searchIndex[i].URL != searchIndex[j].URL {
+			return searchIndex[i].URL < searchIndex[j].URL
+		}
+		return searchIndex[i].Title < searchIndex[j].Title
+	})
+
 	sort.SliceStable(g.Edges, func(i, j int) bool {
 		return g.Edges[i][0] < g.Edges[j][0]
 	})
