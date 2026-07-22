@@ -102,3 +102,55 @@ Link to [missing](missing.md).
 		t.Errorf("expected stderr to contain 'broken internal link', got: %s", errBuf.String())
 	}
 }
+
+func TestCheckCommand_AssetHealth_WarningsDoNotFailCommand(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	assetDir := filepath.Join(tempDir, "assets")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(assetDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	doc := `---
+title: Page
+date: 2026-05-10
+---
+# Page
+![missing](/assets/missing.png)
+`
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte(doc), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(assetDir, "design.psd"), []byte("psd"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.AssetDir = assetDir
+
+	rootCmd := setupRootCmd(cfg)
+	var outBuf, errBuf bytes.Buffer
+	rootCmd.SetOut(&outBuf)
+	rootCmd.SetErr(&errBuf)
+	rootCmd.SetArgs([]string{"check", "--content", contentDir, "--asset", assetDir, "--asset-health"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected check command with asset warnings to succeed (warnings do not fail command), got error: %v (stderr: %s)", err, errBuf.String())
+	}
+
+	outStr := outBuf.String()
+	if !strings.Contains(outStr, "[WARN]") {
+		t.Errorf("expected stdout to contain '[WARN]', got: %s", outStr)
+	}
+	if !strings.Contains(outStr, "unsupported or suspicious image extension \".psd\"") {
+		t.Errorf("expected stdout to contain '.psd' warning, got: %s", outStr)
+	}
+	if !strings.Contains(outStr, "missing referenced asset \"/assets/missing.png\"") {
+		t.Errorf("expected stdout to contain missing asset warning, got: %s", outStr)
+	}
+}
