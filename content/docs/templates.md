@@ -38,6 +38,7 @@ A basic layout template looks something like this:
 
 *   `{{ .Title }}`: Injected from the Markdown file's YAML frontmatter.
 *   `{{ .Content }}`: The fully converted HTML output of the Markdown body.
+*   `{{ .CanonicalURL }}`: An absolute public URL for the current page when `siteurl` is configured; empty for local builds. Custom layouts can opt in with conditional canonical and Open Graph URL tags.
 
 ## Available Layouts
 

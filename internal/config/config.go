@@ -29,7 +29,8 @@ type Config struct {
 	ProjectRoot        string     `yaml:"project_root"`
 	DefaultDescription string     `yaml:"default_description"`
 	DefaultOGImage     string     `yaml:"default_og_image"`
-	SiteURL            string     `yaml:"site_url"`
+	SiteURL            string     `yaml:"siteurl"`
+	LegacySiteURL      string     `yaml:"site_url"`
 	SiteLinks          []SiteLink `yaml:"site_links"`
 	Port               int        `yaml:"port"`
 	WatchMode          bool       `yaml:"-"`
@@ -69,6 +70,9 @@ func Load(filepath string) (Config, error) {
 		return config, err
 	}
 
+	if config.SiteURL == "" {
+		config.SiteURL = config.LegacySiteURL
+	}
 	return config, nil
 }
 
@@ -106,8 +110,8 @@ theme: "retro"
 # default_og_image: A default OpenGraph image URL.
 # default_og_image: "/assets/default-og.png"
 
-# site_url: The public base URL used for canonical links and discovery files.
-# site_url: "https://example.com"
+# siteurl: The public base URL used for canonical links, og:url, and discovery files.
+# siteurl: "https://example.github.io/my-site"
 
 # site_links: Optional links for headers/footers
 # site_links:
@@ -126,22 +130,35 @@ port: 8080
 // unavailable or invalid SiteURL intentionally produces an empty result so
 // local builds do not emit malformed absolute URLs.
 func (c Config) URLForOutputPath(outputPath string) string {
-	if strings.TrimSpace(c.SiteURL) == "" {
+	base, ok := c.publicURL()
+	if !ok {
 		return ""
 	}
-
-	base, err := url.Parse(c.SiteURL)
-	if err != nil || (base.Scheme != "http" && base.Scheme != "https") || base.Host == "" || base.RawQuery != "" || base.Fragment != "" {
-		return ""
-	}
-
 	publicPath := publicPathForOutput(outputPath)
-	basePath := strings.TrimSuffix(base.Path, "/")
-	base.Path = basePath + publicPath
-	if publicPath == "/" && basePath == "" {
-		base.Path = "/"
-	}
+	base.Path = strings.TrimRight(base.Path, "/") + publicPath
 	return base.String()
+}
+
+func (c Config) publicURL() (*url.URL, bool) {
+	siteURL := c.SiteURL
+	if strings.TrimSpace(siteURL) == "" {
+		siteURL = c.LegacySiteURL
+	}
+	if strings.TrimSpace(siteURL) == "" {
+		return nil, false
+	}
+	u, err := url.Parse(strings.TrimSpace(siteURL))
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+		return nil, false
+	}
+	for _, segment := range strings.Split(u.EscapedPath(), "/") {
+		if segment == ".." || segment == "." || strings.Contains(strings.ToLower(segment), "%2e") {
+			return nil, false
+		}
+	}
+	u.Path = strings.TrimRight(u.Path, "/")
+	u.RawPath = ""
+	return u, true
 }
 
 func publicPathForOutput(outputPath string) string {
@@ -159,6 +176,11 @@ func publicPathForOutput(outputPath string) string {
 func (c Config) Validate() error {
 	if c.Port < 1 || c.Port > 65535 {
 		return fmt.Errorf("Port must be between 1 and 65535, got %d", c.Port)
+	}
+	if strings.TrimSpace(c.SiteURL) != "" || strings.TrimSpace(c.LegacySiteURL) != "" {
+		if _, ok := c.publicURL(); !ok {
+			return fmt.Errorf("SiteURL must be an absolute HTTP or HTTPS URL without query, fragment, userinfo, or traversal")
+		}
 	}
 
 	dirs := []struct{ name, path string }{

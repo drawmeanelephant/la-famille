@@ -183,26 +183,62 @@ func TestConfigValidation(t *testing.T) {
 	}
 }
 
-func TestURLForOutputPath(t *testing.T) {
-	tests := []struct {
-		name       string
-		siteURL    string
-		outputPath string
-		want       string
-	}{
-		{name: "root page", siteURL: "https://example.com", outputPath: "index.html", want: "https://example.com/"},
-		{name: "nested page", siteURL: "https://example.com/docs/", outputPath: "guide/index.html", want: "https://example.com/docs/guide/"},
-		{name: "discovery file", siteURL: "https://example.com/docs", outputPath: "sitemap.xml", want: "https://example.com/docs/sitemap.xml"},
-		{name: "missing base URL", outputPath: "guide/index.html", want: ""},
-		{name: "invalid base URL", siteURL: "example.com", outputPath: "guide/index.html", want: ""},
-		{name: "base URL with query", siteURL: "https://example.com?source=config", outputPath: "guide/index.html", want: ""},
+func TestSiteURLValidation(t *testing.T) {
+	valid := []string{"https://example.com", "http://localhost:8080/site///"}
+	for _, value := range valid {
+		c := DefaultConfig()
+		c.SiteURL = value
+		if err := c.Validate(); err != nil {
+			t.Errorf("Validate(%q) = %v", value, err)
+		}
 	}
+	invalid := []string{"example.com", "ftp://example.com", "https:///missing-host", "https://user@example.com", "https://example.com/?q=1", "https://example.com/#frag", "https://example.com/a/../b", "https://example.com/a/%2e%2e/b"}
+	for _, value := range invalid {
+		c := DefaultConfig()
+		c.SiteURL = value
+		if err := c.Validate(); err == nil {
+			t.Errorf("Validate(%q) unexpectedly succeeded", value)
+		}
+	}
+}
 
+func TestLegacySiteURLAlias(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "config.yaml")
+	if err := os.WriteFile(p, []byte("site_url: https://example.com/\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.SiteURL != "https://example.com/" {
+		t.Fatalf("legacy site_url not accepted: %q", c.SiteURL)
+	}
+}
+
+func TestLegacySiteURLValidation(t *testing.T) {
+	c := DefaultConfig()
+	c.LegacySiteURL = "https://example.com/../private"
+	if err := c.Validate(); err == nil {
+		t.Fatal("Validate unexpectedly accepted an invalid legacy site_url")
+	}
+}
+
+func TestURLForOutputPath(t *testing.T) {
+	tests := []struct{ name, site, output, want string }{
+		{"root", "https://example.com", "index.html", "https://example.com/"},
+		{"root page", "https://example.com", "about/index.html", "https://example.com/about/"},
+		{"nested index", "https://example.com", "docs/index.html", "https://example.com/docs/"},
+		{"nested page", "https://example.com/", "docs/install/index.html", "https://example.com/docs/install/"},
+		{"slug", "https://example.com///", "guides/quick-start/index.html", "https://example.com/guides/quick-start/"},
+		{"slug override output", "https://example.com", "posts/custom/index.html", "https://example.com/posts/custom/"},
+		{"empty", "", "about/index.html", ""},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := Config{SiteURL: tt.siteURL}
-			if got := cfg.URLForOutputPath(tt.outputPath); got != tt.want {
-				t.Fatalf("URLForOutputPath(%q) = %q, want %q", tt.outputPath, got, tt.want)
+			if got := (Config{SiteURL: tt.site}).URLForOutputPath(tt.output); got != tt.want {
+				t.Errorf("URLForOutputPath = %q, want %q", got, tt.want)
 			}
 		})
 	}

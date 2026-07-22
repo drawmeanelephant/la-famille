@@ -392,6 +392,43 @@ func TestBuildDiscoveryUsesRenderedPagesOnly(t *testing.T) {
 	}
 }
 
+func TestGeneratorSEOEmptySiteURLUsesRelativeSitemap(t *testing.T) {
+	root := t.TempDir()
+	content := filepath.Join(root, "content")
+	output := filepath.Join(root, "public")
+	if err := os.MkdirAll(content, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(content, "index.md"), []byte("# Home"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(content, "draft.md"), []byte("---\nrender: false\n---\n# Draft"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = content
+	cfg.OutputDir = output
+	cfg.Template = "../../templates/layout.html"
+	cfg.SiteURL = ""
+	if _, err := Build(cfg); err != nil {
+		t.Fatal(err)
+	}
+	html, err := os.ReadFile(filepath.Join(output, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(html), "rel=\"canonical\"") || strings.Contains(string(html), "property=\"og:url\"") {
+		t.Fatalf("SEO URL tags should be omitted without siteurl: %s", html)
+	}
+	sitemap, err := os.ReadFile(filepath.Join(output, "sitemap.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(sitemap), "<loc>/</loc>") || strings.Contains(string(sitemap), "draft") {
+		t.Fatalf("unexpected local sitemap: %s", sitemap)
+	}
+}
+
 func BenchmarkBuild(b *testing.B) {
 	tempDir := b.TempDir()
 	contentDir := filepath.Join(tempDir, "content")

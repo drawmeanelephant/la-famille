@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/tbuddy/la-famille/internal/config"
 )
@@ -25,8 +26,8 @@ type sitemapURL struct {
 
 // Write creates sitemap.xml and robots.txt for the supplied rendered page
 // output paths. A missing SiteURL is supported: the sitemap remains valid but
-// contains no unverifiable absolute URLs, and robots.txt omits its Sitemap
-// directive.
+// contains deterministic root-relative locations, and robots.txt omits its
+// Sitemap directive unless a public URL is configured.
 func Write(cfg config.Config, renderedPaths []string) error {
 	if err := os.MkdirAll(cfg.OutputDir, 0700); err != nil {
 		return fmt.Errorf("create discovery output directory: %w", err)
@@ -58,9 +59,11 @@ func sitemapURLs(cfg config.Config, renderedPaths []string) []sitemapURL {
 		if outputPath == "" {
 			continue
 		}
-		if absoluteURL := cfg.URLForOutputPath(outputPath); absoluteURL != "" {
-			unique[absoluteURL] = struct{}{}
+		location := cfg.URLForOutputPath(outputPath)
+		if location == "" {
+			location = localOutputURL(outputPath)
 		}
+		unique[location] = struct{}{}
 	}
 
 	locations := make([]string, 0, len(unique))
@@ -74,4 +77,15 @@ func sitemapURLs(cfg config.Config, renderedPaths []string) []sitemapURL {
 		urls = append(urls, sitemapURL{Location: location})
 	}
 	return urls
+}
+
+func localOutputURL(outputPath string) string {
+	p := filepath.ToSlash(outputPath)
+	if p == "index.html" {
+		return "/"
+	}
+	if strings.HasSuffix(p, "/index.html") {
+		return "/" + strings.TrimSuffix(p, "index.html")
+	}
+	return "/" + strings.TrimSuffix(p, ".html") + "/"
 }
