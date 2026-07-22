@@ -28,7 +28,7 @@
         </div>
         <div class="flex-none lg:hidden">
             <label for="my-drawer-2" tabindex="0" class="btn btn-square btn-ghost drawer-button focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); document.getElementById('my-drawer-2').click(); }">
-                <img src="https://www.gstatic.com/android/keyboard/emojikitchen/20241021/u1f419/u1f419_u1f354.png" aria-hidden="true" focusable="false" class="w-8 h-8" />
+                <img src="https://www.gstatic.com/android/keyboard/emojikitchen/20241021/u1f419/u1f419_u1f354.png" alt="" aria-hidden="true" focusable="false" class="w-8 h-8" />
             </label>
         </div>
     </header>
@@ -38,6 +38,7 @@
 
         <div class="drawer-content flex flex-col items-center justify-start p-4 lg:p-8">
             <main id="main-content" class="w-full max-w-4xl bg-base-100 shadow-xl rounded-box p-6 lg:p-10">
+                <h1 class="text-4xl font-bold mb-8 text-primary">{{.Title}}</h1>
                 {{if or .Author .Date}}
                 <div class="text-sm text-base-content/70 mb-8 border-b border-base-300 pb-4">
                     {{if .Author}}<span class="mr-4"><strong>By:</strong> {{.Author}}</span>{{end}}
