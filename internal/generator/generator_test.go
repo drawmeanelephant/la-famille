@@ -192,7 +192,7 @@ func TestGeneratorSEO(t *testing.T) {
 	_ = os.MkdirAll(tmplDir, 0755)
 
 	tmplPath := filepath.Join(tmplDir, "layout.html")
-	tmplContent := `<!DOCTYPE html><html><head><title>{{.Title}}</title><meta name="description" content="{{.Description}}"><meta property="og:image" content="{{.Image}}"></head><body>{{.Content}}</body></html>`
+	tmplContent := `<!DOCTYPE html><html><head><title>{{.Title}}</title><meta name="description" content="{{.Description}}"><meta property="og:image" content="{{.Image}}">{{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}"><meta property="og:url" content="{{.CanonicalURL}}">{{end}}</head><body>{{.Content}}</body></html>`
 	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0600); err != nil {
 		t.Fatalf("failed to write template: %v", err)
 	}
@@ -219,6 +219,7 @@ image: "/images/test-seo.png"
 		Port:               8080,
 		DefaultDescription: "Default Desc",
 		DefaultOGImage:     "/default.png",
+		SiteURL:            "https://example.com",
 	}
 
 	_, err := Build(cfg)
@@ -242,6 +243,65 @@ image: "/images/test-seo.png"
 	expectedImage := `<meta property="og:image" content="/images/test-seo.png">`
 	if !strings.Contains(outHTML, expectedImage) {
 		t.Errorf("output HTML missing expected image meta tag.\nGot: %s", outHTML)
+	}
+
+	expectedCanonical := `<link rel="canonical" href="https://example.com/test/">`
+	if !strings.Contains(outHTML, expectedCanonical) {
+		t.Errorf("output HTML missing expected canonical link.\nGot: %s", outHTML)
+	}
+
+	expectedOGURL := `<meta property="og:url" content="https://example.com/test/">`
+	if !strings.Contains(outHTML, expectedOGURL) {
+		t.Errorf("output HTML missing expected og:url tag.\nGot: %s", outHTML)
+	}
+}
+
+func TestBuildDiscoveryUsesRenderedPagesOnly(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(templateDir, "layout.html"), []byte("{{.Content}}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("# Home"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "guide.md"), []byte("# Guide"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "source.md"), []byte("---\nrender: false\n---\n# Source"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = filepath.Join(templateDir, "layout.html")
+	cfg.SiteURL = "https://example.com"
+
+	if _, err := Build(cfg); err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+
+	sitemap, err := os.ReadFile(filepath.Join(outputDir, "sitemap.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(sitemap)
+	for _, want := range []string{"https://example.com/", "https://example.com/guide/"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("sitemap missing %q: %s", want, got)
+		}
+	}
+	if strings.Contains(got, "source") {
+		t.Errorf("sitemap must exclude render:false pages: %s", got)
 	}
 }
 

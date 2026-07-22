@@ -123,10 +123,7 @@ func RunSync(cfg SyncConfig) error {
 	prTitle := fmt.Sprintf("Automated Routine Execution: %s", timestamp)
 	prBody := "This PR was generated automatically by the la-famille GitHub sync feature to commit routine artifacts."
 
-	baseBranch := cfg.DefaultBranch
-	if baseBranch == "" {
-		baseBranch = "main" // Default fallback
-	}
+	baseBranch := defaultBranch(cfg.DefaultBranch)
 
 	maxAttempts := 5
 	backoff := 2 * time.Second
@@ -155,4 +152,11 @@ func RunSync(cfg SyncConfig) error {
 	// For automation containers, it usually doesn't matter since it's transient.
 
 	return nil
+}
+
+func defaultBranch(branch string) string {
+	if branch == "" {
+		return "master"
+	}
+	return branch
 }

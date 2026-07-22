@@ -182,3 +182,28 @@ func TestConfigValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestURLForOutputPath(t *testing.T) {
+	tests := []struct {
+		name       string
+		siteURL    string
+		outputPath string
+		want       string
+	}{
+		{name: "root page", siteURL: "https://example.com", outputPath: "index.html", want: "https://example.com/"},
+		{name: "nested page", siteURL: "https://example.com/docs/", outputPath: "guide/index.html", want: "https://example.com/docs/guide/"},
+		{name: "discovery file", siteURL: "https://example.com/docs", outputPath: "sitemap.xml", want: "https://example.com/docs/sitemap.xml"},
+		{name: "missing base URL", outputPath: "guide/index.html", want: ""},
+		{name: "invalid base URL", siteURL: "example.com", outputPath: "guide/index.html", want: ""},
+		{name: "base URL with query", siteURL: "https://example.com?source=config", outputPath: "guide/index.html", want: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{SiteURL: tt.siteURL}
+			if got := cfg.URLForOutputPath(tt.outputPath); got != tt.want {
+				t.Fatalf("URLForOutputPath(%q) = %q, want %q", tt.outputPath, got, tt.want)
+			}
+		})
+	}
+}

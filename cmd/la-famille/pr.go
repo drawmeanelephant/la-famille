@@ -44,7 +44,7 @@ If there are local uncommitted changes, branches and creates a new PR.`,
 }
 
 func init() {
-	prSyncCmd.Flags().String("base", "main", "The base branch to target for new PRs")
+	prSyncCmd.Flags().String("base", "master", "The base branch to target for new PRs")
 	prCmd.AddCommand(prSyncCmd)
 	// We need to add prCmd to rootCmd in main.go
 }

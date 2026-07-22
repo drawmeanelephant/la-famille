@@ -19,4 +19,5 @@ type Page struct {
 	ComplianceModal string
 	Description     string
 	Image           string
+	CanonicalURL    string
 }

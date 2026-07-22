@@ -16,6 +16,8 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
 </head>
 <body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-base-content font-sans bg-fixed">
     <!-- Accessibility Skip Link -->

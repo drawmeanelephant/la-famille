@@ -40,14 +40,6 @@ jobs:
           go run ./cmd/la-famille rag
           cp -r rag-archive public/rag-archive
 
-
-      - name: Commit and Push RAG Export
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add rag-archive/
-          git commit -m "chore: auto-update rag export [skip ci]" || echo "No changes to commit"
-          git push origin HEAD:${GITHUB_REF#refs/heads/}
       - name: Setup Pages
         uses: actions/configure-pages@v6
         with:

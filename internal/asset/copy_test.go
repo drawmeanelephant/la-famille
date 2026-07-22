@@ -204,6 +204,93 @@ node_modules/
 	}
 }
 
+func TestCopyAssets_GitignorePathsAreProjectRelative(t *testing.T) {
+	tempDir := t.TempDir()
+	assetDir := filepath.Join(tempDir, "assets")
+	outputDir := filepath.Join(tempDir, "public")
+
+	for _, name := range []string{
+		"keep.css",
+		"private/secret.css",
+		"nested/private/keep.css",
+	} {
+		path := filepath.Join(assetDir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(name), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("/assets/private/\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	err := CopyAssets(config.Config{
+		ProjectRoot: tempDir,
+		AssetDir:    assetDir,
+		OutputDir:   outputDir,
+	})
+	if err != nil {
+		t.Fatalf("CopyAssets failed: %v", err)
+	}
+
+	for _, name := range []string{"keep.css", "nested/private/keep.css"} {
+		if _, err := os.Stat(filepath.Join(outputDir, "assets", filepath.FromSlash(name))); err != nil {
+			t.Errorf("expected %s to be copied: %v", name, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "assets", "private", "secret.css")); !os.IsNotExist(err) {
+		t.Error("expected anchored /assets/private/ rule to skip the root private directory")
+	}
+}
+
+func TestIsIgnored(t *testing.T) {
+	rules := parseIgnoreRules(`
+# Comments and blank lines do not create rules.
+
+Thumbs.db
+*.log
+cache/
+docs/*.tmp
+/assets/private/
+assets/**/generated/*.js
+reinclude/
+!reinclude/keep.txt
+`)
+
+	tests := []struct {
+		name    string
+		path    string
+		isDir   bool
+		ignored bool
+	}{
+		{name: "exact name at root", path: "Thumbs.db", ignored: true},
+		{name: "exact name nested", path: "assets/images/Thumbs.db", ignored: true},
+		{name: "name does not use substring matching", path: "assets/Thumbs.db.bak", ignored: false},
+		{name: "glob name", path: "assets/build/output.log", ignored: true},
+		{name: "directory rule matches contents", path: "assets/cache/data.json", ignored: true},
+		{name: "directory rule does not ignore a same-named file", path: "cache", ignored: false},
+		{name: "path glob at root", path: "docs/draft.tmp", ignored: true},
+		{name: "path glob does not match nested directory", path: "assets/docs/draft.tmp", ignored: false},
+		{name: "anchored directory", path: "assets/private/secret.css", ignored: true},
+		{name: "anchored directory does not match elsewhere", path: "nested/assets/private/secret.css", ignored: false},
+		{name: "double star path glob", path: "assets/js/generated/app.js", ignored: true},
+		{name: "double star path glob nested", path: "assets/js/vendor/generated/app.js", ignored: true},
+		{name: "later negation re-includes file", path: "reinclude/keep.txt", ignored: false},
+		{name: "later negation leaves sibling ignored", path: "reinclude/drop.txt", ignored: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := isIgnored(test.path, test.isDir, rules); got != test.ignored {
+				t.Errorf("isIgnored(%q, %t) = %t, want %t", test.path, test.isDir, got, test.ignored)
+			}
+		})
+	}
+}
+
 func TestCopyAssets_IgnoreDirectoryPruning(t *testing.T) {
 	tempDir := t.TempDir()
 

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -92,4 +94,64 @@ func TestTUIServeShutdownAndRestart(t *testing.T) {
 		t.Fatalf("Failed to bind to port %d, server probably didn't shutdown cleanly: %v", port, err)
 	}
 	l.Close()
+}
+
+func TestRunServerReportsStartupError(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Reserve port: %v", err)
+	}
+	defer listener.Close()
+
+	server := &http.Server{
+		Addr:              listener.Addr().String(),
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	reported := make(chan tea.Msg, 1)
+	runServer(server, func(msg tea.Msg) {
+		reported <- msg
+	})
+
+	select {
+	case msg := <-reported:
+		serverErr, ok := msg.(serverErrorMsg)
+		if !ok {
+			t.Fatalf("Reported %T, want serverErrorMsg", msg)
+		}
+		if serverErr.err == nil {
+			t.Fatal("Expected ListenAndServe error")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("ListenAndServe startup error was not reported")
+	}
+}
+
+func TestTUIServerErrorReturnsToVisibleErrorState(t *testing.T) {
+	serverCanceled := false
+	watcherCanceled := false
+	wantErr := errors.New("address already in use")
+	m := initialModel(config.Config{})
+	m.screen = screenServe
+	m.server = &http.Server{ReadHeaderTimeout: 5 * time.Second}
+	m.serverCancel = func() { serverCanceled = true }
+	m.watcherCancel = func() { watcherCanceled = true }
+
+	newModel, _ := m.Update(serverErrorMsg{err: wantErr})
+	m = newModel.(model)
+
+	if m.screen != screenWorking {
+		t.Fatalf("Screen = %v, want %v", m.screen, screenWorking)
+	}
+	if !errors.Is(m.workErr, wantErr) {
+		t.Fatalf("workErr = %v, want %v", m.workErr, wantErr)
+	}
+	if m.server != nil || m.serverCancel != nil || m.watcherCancel != nil {
+		t.Fatal("Expected server lifecycle fields to be cleared")
+	}
+	if !serverCanceled || !watcherCanceled {
+		t.Fatalf("Expected cancels to run, server=%t watcher=%t", serverCanceled, watcherCanceled)
+	}
+	if !strings.Contains(m.View(), wantErr.Error()) {
+		t.Fatalf("Error view does not include server error: %q", m.View())
+	}
 }

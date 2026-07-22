@@ -18,6 +18,8 @@
             background-color: black !important;
         }
     </style>
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
 </head>
 <body class="min-h-screen bg-base-300">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Skip to content</a>

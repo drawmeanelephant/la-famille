@@ -101,9 +101,10 @@ func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, paren
 	htmlContent.WriteString("</ul>\n")
 
 	pageStruct := page.Page{
-		Site:    siteCfg,
-		Title:   "Missing Page",
-		Content: template.HTML(p.SanitizeBytes([]byte(htmlContent.String()))), // #nosec G203
+		Site:         siteCfg,
+		Title:        "Missing Page",
+		Content:      template.HTML(p.SanitizeBytes([]byte(htmlContent.String()))), // #nosec G203
+		CanonicalURL: siteCfg.URLForOutputPath(relOut),
 	}
 
 	outFile, err := os.Create(outPath)

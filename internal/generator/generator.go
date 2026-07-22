@@ -20,6 +20,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/asset"
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/content"
+	"github.com/tbuddy/la-famille/internal/discovery"
 	"github.com/tbuddy/la-famille/internal/graph"
 	"github.com/tbuddy/la-famille/internal/markdown"
 	"github.com/tbuddy/la-famille/internal/page"
@@ -144,6 +145,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	}
 
 	searchIndexItems := make([]search.Item, len(keys))
+	renderedPaths := make([]string, len(keys))
 
 	type job struct {
 		index   int
@@ -244,6 +246,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 
 					outDirClean := filepath.Clean(cfg.OutputDir)
 					outPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
+					var relOut string
 
 					if shouldRender {
 						slug := meta.Slug
@@ -253,7 +256,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 								slug = ""
 							}
 						}
-						relOut := transform.GetOutputURL(relPath, slug, shouldRender)
+						relOut = transform.GetOutputURL(relPath, slug, shouldRender)
 						outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
 					}
 
@@ -320,12 +323,14 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						Content:         template.HTML(sanitizedHTML), // #nosec G203
 						Description:     desc,
 						Image:           img,
+						CanonicalURL:    cfg.URLForOutputPath(relOut),
 					}
 
 					if err := renderer.HTML(cfg, page, meta.Layout, outPath); err != nil {
 						update.errs = append(update.errs, err)
 						return
 					}
+					renderedPaths[idx] = relOut
 					update.pageCount++
 				}()
 			}
@@ -381,6 +386,10 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	}
 
 	if err := search.WriteMinifiedJSON(filepath.Join(cfg.OutputDir, "search.json"), searchIndex); err != nil {
+		return result, err
+	}
+
+	if err := discovery.Write(cfg, renderedPaths); err != nil {
 		return result, err
 	}
 

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -17,14 +18,11 @@ func CopyAssets(cfg config.Config) error {
 		return nil
 	}
 
-	var ignorePatterns []string
-	if gitignore, err := os.ReadFile(filepath.Join(cfg.ProjectRoot, ".gitignore")); err == nil {
-		lines := strings.Split(string(gitignore), "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line != "" && !strings.HasPrefix(line, "#") {
-				ignorePatterns = append(ignorePatterns, filepath.ToSlash(line))
-			}
+	var ignoreRules []ignoreRule
+	if cfg.ProjectRoot != "" {
+		gitignore, err := os.ReadFile(filepath.Join(cfg.ProjectRoot, ".gitignore"))
+		if err == nil {
+			ignoreRules = parseIgnoreRules(string(gitignore))
 		}
 	}
 
@@ -55,11 +53,20 @@ func CopyAssets(cfg config.Config) error {
 		}
 
 		relSlash := filepath.ToSlash(relPath)
-		if relSlash != "." && isIgnored(relSlash, ignorePatterns) {
-			if d.IsDir() {
-				return filepath.SkipDir
+		if len(ignoreRules) > 0 {
+			projectRel, err := filepath.Rel(cfg.ProjectRoot, path)
+			if err != nil {
+				return err
 			}
-			return nil
+			projectSlash := filepath.ToSlash(projectRel)
+			if projectSlash != "." && filepath.IsLocal(projectRel) && isIgnored(projectSlash, d.IsDir(), ignoreRules) {
+				if d.IsDir() {
+					// Do not prune here. A later negated rule may re-include an
+					// asset nested in this ignored directory.
+					return nil
+				}
+				return nil
+			}
 		}
 
 		if d.IsDir() {
@@ -101,32 +108,96 @@ func CopyAssets(cfg config.Config) error {
 	})
 }
 
-func isIgnored(slashPath string, patterns []string) bool {
-	segments := strings.Split(slashPath, "/")
+type ignoreRule struct {
+	pattern       []string
+	anchored      bool
+	directoryOnly bool
+	negated       bool
+}
 
-	for _, pattern := range patterns {
-		cleanPattern := strings.TrimSuffix(pattern, "/")
+func parseIgnoreRules(contents string) []ignoreRule {
+	var rules []ignoreRule
+	for _, line := range strings.Split(contents, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
 
-		for _, seg := range segments {
-			if seg == cleanPattern {
+		rule := ignoreRule{}
+		if strings.HasPrefix(line, "!") {
+			rule.negated = true
+			line = strings.TrimPrefix(line, "!")
+		}
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "/") {
+			rule.anchored = true
+			line = strings.TrimPrefix(line, "/")
+		}
+		if strings.HasSuffix(line, "/") {
+			rule.directoryOnly = true
+			line = strings.TrimRight(line, "/")
+		}
+		if line == "" {
+			continue
+		}
+
+		rule.pattern = strings.Split(filepath.ToSlash(line), "/")
+		rules = append(rules, rule)
+	}
+	return rules
+}
+
+// isIgnored applies rules in file order, matching the final applicable rule.
+// Paths are slash-separated and relative to the directory containing .gitignore.
+func isIgnored(slashPath string, isDir bool, rules []ignoreRule) bool {
+	segments := strings.Split(strings.Trim(slashPath, "/"), "/")
+	ignored := false
+	for _, rule := range rules {
+		if rule.matches(segments, isDir) {
+			ignored = !rule.negated
+		}
+	}
+	return ignored
+}
+
+func (rule ignoreRule) matches(segments []string, isDir bool) bool {
+	if len(rule.pattern) == 1 && !rule.anchored {
+		for i, segment := range segments {
+			candidateIsDir := i < len(segments)-1 || isDir
+			if (!rule.directoryOnly || candidateIsDir) && matchSegment(rule.pattern[0], segment) {
 				return true
 			}
 		}
+		return false
+	}
 
-		for _, seg := range segments {
-			if matched, _ := filepath.Match(cleanPattern, seg); matched {
-				return true
-			}
+	for end := 1; end <= len(segments); end++ {
+		candidateIsDir := end < len(segments) || isDir
+		if rule.directoryOnly && !candidateIsDir {
+			continue
 		}
-
-		if strings.Contains(slashPath, "/"+cleanPattern+"/") ||
-			strings.HasPrefix(slashPath, cleanPattern+"/") ||
-			strings.HasSuffix(slashPath, "/"+cleanPattern) ||
-			slashPath == cleanPattern {
+		if matchPath(rule.pattern, segments[:end]) {
 			return true
 		}
 	}
 	return false
+}
+
+func matchPath(pattern, candidate []string) bool {
+	if len(pattern) == 0 {
+		return len(candidate) == 0
+	}
+	if pattern[0] == "**" {
+		return matchPath(pattern[1:], candidate) || (len(candidate) > 0 && matchPath(pattern, candidate[1:]))
+	}
+	return len(candidate) > 0 && matchSegment(pattern[0], candidate[0]) && matchPath(pattern[1:], candidate[1:])
+}
+
+func matchSegment(pattern, candidate string) bool {
+	matched, err := path.Match(pattern, candidate)
+	return err == nil && matched
 }
 
 func CopyFile(src, dst string) (err error) {

@@ -144,6 +144,12 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 			if err != nil {
 				return err
 			}
+			if isWithinDir(path, outDir) {
+				if d.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
 			if d.IsDir() {
 				if d.Name() == ".git" || d.Name() == "test-results" || d.Name() == "public" || d.Name() == "vendor" || d.Name() == "node_modules" {
 					return filepath.SkipDir
@@ -153,9 +159,6 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 
 			relPath := getRel(projectRoot, path)
 			if pathMatch(pattern, filepath.ToSlash(relPath)) {
-				if strings.Contains(filepath.ToSlash(relPath), filepath.ToSlash(outDir)) {
-					return nil
-				}
 				// Check excludes
 				isExcluded := false
 				for _, exclude := range excludes {
@@ -205,6 +208,26 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 	}
 
 	return nil
+}
+
+// isWithinDir reports whether path is dir itself or a descendant of dir.
+// Both paths are made absolute so a configured RAG output directory is
+// excluded correctly regardless of how ProjectRoot or RagDir were written.
+func isWithinDir(path, dir string) bool {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return false
+	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return false
+	}
+
+	rel, err := filepath.Rel(absDir, absPath)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel))
 }
 
 func pathMatch(pattern, path string) bool {
