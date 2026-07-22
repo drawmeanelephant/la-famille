@@ -84,6 +84,8 @@
                 results.forEach(item => {
                     const title = item.t || "Untitled";
                     const snippet = item.s || "";
+                    const headings = item.h || [];
+                    const tags = item.g || [];
 
                     const li = document.createElement("li");
                     const a = document.createElement("a");
@@ -94,14 +96,33 @@
                     const titleDiv = document.createElement("div");
                     titleDiv.className = "font-bold text-base-content";
                     titleDiv.textContent = title;
-
-                    const snippetDiv = document.createElement("div");
-                    snippetDiv.className = "text-xs text-base-content/70 mt-1 line-clamp-2";
-                    snippetDiv.textContent = snippet;
-
                     a.appendChild(titleDiv);
+
+                    const matchedHeading = headings.find(h => h.toLowerCase().includes(query));
+                    if (matchedHeading) {
+                        const headingDiv = document.createElement("div");
+                        headingDiv.className = "text-xs font-medium text-primary mt-0.5";
+                        headingDiv.textContent = "Section: " + matchedHeading;
+                        a.appendChild(headingDiv);
+                    }
+
                     if (snippet) {
+                        const snippetDiv = document.createElement("div");
+                        snippetDiv.className = "text-xs text-base-content/70 mt-1 line-clamp-2";
+                        snippetDiv.textContent = snippet;
                         a.appendChild(snippetDiv);
+                    }
+
+                    if (tags.length > 0) {
+                        const tagsDiv = document.createElement("div");
+                        tagsDiv.className = "flex flex-wrap gap-1 mt-1.5";
+                        tags.forEach(tag => {
+                            const badge = document.createElement("span");
+                            badge.className = "badge badge-xs badge-ghost text-[10px]";
+                            badge.textContent = "#" + tag;
+                            tagsDiv.appendChild(badge);
+                        });
+                        a.appendChild(tagsDiv);
                     }
 
                     li.appendChild(a);

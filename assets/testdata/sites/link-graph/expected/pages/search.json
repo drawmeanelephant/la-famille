@@ -1,1 +1,1 @@
-[{"t":"a.md","u":"/a/index.html","g":null,"s":"Link to C"},{"t":"b.md","u":"/b/index.html","g":null,"s":"B content"},{"t":"c.md","u":"/c/index.html","g":null,"s":"C content"},{"t":"index.md","u":"/index.html","g":null,"s":"Link to A Link to B"}]
+[{"t":"a.md","u":"/a/index.html","s":"Link to C"},{"t":"b.md","u":"/b/index.html","s":"B content"},{"t":"c.md","u":"/c/index.html","s":"C content"},{"t":"index.md","u":"/index.html","s":"Link to A Link to B"}]
