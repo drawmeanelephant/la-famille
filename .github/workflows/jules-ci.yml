@@ -2,7 +2,7 @@ name: La Famille Integration Pipeline
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   verify-and-merge:
