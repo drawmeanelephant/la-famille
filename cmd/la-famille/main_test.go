@@ -332,3 +332,54 @@ func TestCommandFlags(t *testing.T) {
 		t.Errorf("checkCmd is missing expected flag: content")
 	}
 }
+
+func TestCLICacheStatusLogging(t *testing.T) {
+	tmpDir := t.TempDir()
+	contentDir := filepath.Join(tmpDir, "content")
+	outputDir := filepath.Join(tmpDir, "public")
+	templateDir := filepath.Join(tmpDir, "templates")
+
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(templateDir, "layout.html"), []byte("<html><body>{{.Content}}</body></html>"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("# Test Page"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	exePath := filepath.Join(tmpDir, "la-famille.bin")
+	cmdBuildExe := exec.Command("go", "build", "-o", exePath, "../../cmd/la-famille")
+	if err := cmdBuildExe.Run(); err != nil {
+		t.Fatalf("failed to build la-famille: %v", err)
+	}
+
+	// First run: should log cache=miss
+	cmdRun1 := exec.Command(exePath, "build", "--content", contentDir, "--output", outputDir, "--template", filepath.Join(templateDir, "layout.html"))
+	cmdRun1.Dir = tmpDir
+	var stderr1 bytes.Buffer
+	cmdRun1.Stderr = &stderr1
+	if err := cmdRun1.Run(); err != nil {
+		t.Fatalf("first build run failed: %v, stderr: %s", err, stderr1.String())
+	}
+	if !strings.Contains(stderr1.String(), "cache=miss") {
+		t.Errorf("expected stderr to contain 'cache=miss' on initial build, got: %s", stderr1.String())
+	}
+
+	// Second run: should log cache=hit
+	cmdRun2 := exec.Command(exePath, "build", "--content", contentDir, "--output", outputDir, "--template", filepath.Join(templateDir, "layout.html"))
+	cmdRun2.Dir = tmpDir
+	var stderr2 bytes.Buffer
+	cmdRun2.Stderr = &stderr2
+	if err := cmdRun2.Run(); err != nil {
+		t.Fatalf("second build run failed: %v, stderr: %s", err, stderr2.String())
+	}
+	if !strings.Contains(stderr2.String(), "cache=hit") {
+		t.Errorf("expected stderr to contain 'cache=hit' on repeated build, got: %s", stderr2.String())
+	}
+}

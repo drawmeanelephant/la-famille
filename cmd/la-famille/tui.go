@@ -210,7 +210,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cfg := m.cfg
 					return m, func() tea.Msg {
 						res, err := generator.Build(cfg)
-						return workResultMsg{err: err, msg: "Build complete", res: &res}
+						msg := "Build complete"
+						if err == nil {
+							if res.CacheHit {
+								msg = "Build complete (cache hit)"
+							} else {
+								msg = "Build complete (cache miss)"
+							}
+						}
+						return workResultMsg{err: err, msg: msg, res: &res}
 					}
 				case "RAG Export":
 					m.screen = screenWorking
@@ -341,9 +349,14 @@ func (m model) View() string {
 		if m.stats == nil {
 			s += "No build has been run yet in this session.\n"
 		} else {
+			cacheStatus := "Miss"
+			if m.stats.CacheHit {
+				cacheStatus = "Hit"
+			}
 			s += fmt.Sprintf("Last Build Time: %d ms\n", m.stats.Duration.Milliseconds())
 			s += fmt.Sprintf("Total Pages Generated: %d\n", m.stats.PageCount)
 			s += fmt.Sprintf("Error Count: %d\n", m.stats.ErrorCount)
+			s += fmt.Sprintf("Cache Status: %s\n", cacheStatus)
 		}
 		s += "\nRAG Token Estimations:\n"
 		ragDir := m.cfg.RagDir

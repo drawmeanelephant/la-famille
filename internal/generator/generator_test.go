@@ -211,12 +211,20 @@ func TestBuild_UsesAndInvalidatesCache(t *testing.T) {
 		conversions.Add(1)
 		return md.Convert(source, w)
 	})
-	if _, err := Build(cfg); err != nil {
+	resFirst, err := Build(cfg)
+	if err != nil {
 		t.Fatal(err)
 	}
+	if resFirst.CacheHit {
+		t.Error("expected initial build to be a cache miss")
+	}
 	first := conversions.Load()
-	if _, err := Build(cfg); err != nil {
+	resSecond, err := Build(cfg)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if !resSecond.CacheHit {
+		t.Error("expected repeat build to be a cache hit")
 	}
 	if got := conversions.Load(); got != first {
 		t.Fatalf("cache miss rebuilt unchanged content: conversions %d -> %d", first, got)
@@ -231,15 +239,23 @@ func TestBuild_UsesAndInvalidatesCache(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("changed.tmp\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Build(cfg); err != nil {
+	resGitignore, err := Build(cfg)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if resGitignore.CacheHit {
+		t.Error("expected .gitignore change to cause a cache miss")
 	}
 	if conversions.Load() <= first {
 		t.Fatal(".gitignore change did not invalidate cache")
 	}
 	cfg.Theme = "dark"
-	if _, err := Build(cfg); err != nil {
+	resCfg, err := Build(cfg)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if resCfg.CacheHit {
+		t.Error("expected config change to cause a cache miss")
 	}
 	if conversions.Load() <= first {
 		t.Fatal("output-affecting config change did not invalidate cache")
@@ -247,8 +263,12 @@ func TestBuild_UsesAndInvalidatesCache(t *testing.T) {
 	if err := os.WriteFile(contentPath, []byte("# changed"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Build(cfg); err != nil {
+	resContent, err := Build(cfg)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if resContent.CacheHit {
+		t.Error("expected content change to cause a cache miss")
 	}
 	if conversions.Load() <= first {
 		t.Fatal("content change did not invalidate cache")
@@ -256,8 +276,12 @@ func TestBuild_UsesAndInvalidatesCache(t *testing.T) {
 	if err := os.Remove(filepath.Join(outputDir, "page", "index.html")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Build(cfg); err != nil {
+	resMissing, err := Build(cfg)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if resMissing.CacheHit {
+		t.Error("expected missing output file to cause a cache miss")
 	}
 	if _, err := os.Stat(filepath.Join(outputDir, "page", "index.html")); err != nil {
 		t.Fatalf("missing output was not rebuilt: %v", err)
@@ -596,5 +620,80 @@ func TestErrorOrdering(t *testing.T) {
 			t.Fatalf("errors are not in deterministic source-path order:\n%s", got)
 		}
 		previous = position
+	}
+}
+
+func TestBuild_CacheHitMissStats(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	templateDir := filepath.Join(tempDir, "templates")
+	outputDir := filepath.Join(tempDir, "public")
+
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatePath := filepath.Join(templateDir, "layout.html")
+	if err := os.WriteFile(templatePath, []byte("{{.Content}}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "page1.md"), []byte("# Page 1"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "page2.md"), []byte("# Page 2"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.Template = templatePath
+	cfg.OutputDir = outputDir
+	cfg.ProjectRoot = tempDir
+
+	// 1. Initial build: cache miss
+	res1, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build 1 failed: %v", err)
+	}
+	if res1.CacheHit {
+		t.Errorf("Build 1 CacheHit = true, want false (cache miss)")
+	}
+	if res1.PageCount != 2 {
+		t.Errorf("Build 1 PageCount = %d, want 2", res1.PageCount)
+	}
+
+	// 2. Repeat build with no changes: cache hit
+	res2, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build 2 failed: %v", err)
+	}
+	if !res2.CacheHit {
+		t.Errorf("Build 2 CacheHit = false, want true (cache hit)")
+	}
+	if res2.PageCount != 2 {
+		t.Errorf("Build 2 PageCount = %d, want 2", res2.PageCount)
+	}
+
+	// 3. Modify source file: cache miss (invalidation)
+	if err := os.WriteFile(filepath.Join(contentDir, "page1.md"), []byte("# Page 1 updated"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	res3, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build 3 failed: %v", err)
+	}
+	if res3.CacheHit {
+		t.Errorf("Build 3 CacheHit = true, want false after content invalidation")
+	}
+
+	// 4. Repeat build after invalidation rebuild: cache hit
+	res4, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build 4 failed: %v", err)
+	}
+	if !res4.CacheHit {
+		t.Errorf("Build 4 CacheHit = false, want true (cache hit)")
 	}
 }

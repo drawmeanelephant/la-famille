@@ -58,6 +58,7 @@ type BuildResult struct {
 	Duration   time.Duration
 	PageCount  int
 	ErrorCount int
+	CacheHit   bool
 }
 
 // Build generates the static site based on the given configuration.
@@ -85,7 +86,11 @@ func Build(cfg config.Config) (BuildResult, error) {
 			return BuildResult{}, fmt.Errorf("remove unused build staging directory: %w", err)
 		}
 		committed = true
-		return BuildResult{Duration: time.Since(start), PageCount: cache.PageCount}, nil
+		return BuildResult{
+			Duration:  time.Since(start),
+			PageCount: cache.PageCount,
+			CacheHit:  true,
+		}, nil
 	}
 
 	stagedCfg := cfg
