@@ -199,6 +199,10 @@ func TestBuild_UsesAndInvalidatesCache(t *testing.T) {
 	}
 	cfg := config.DefaultConfig()
 	cfg.ContentDir, cfg.Template, cfg.OutputDir = contentDir, templatePath, outputDir
+	cfg.ProjectRoot = tempDir
+	if err := os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("ignored.tmp\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
 
 	var conversions atomic.Int32
 	original := getConvertMarkdown()
@@ -216,6 +220,15 @@ func TestBuild_UsesAndInvalidatesCache(t *testing.T) {
 	}
 	if got := conversions.Load(); got != first {
 		t.Fatalf("cache miss rebuilt unchanged content: conversions %d -> %d", first, got)
+	}
+	if err := os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("changed.tmp\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Build(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if conversions.Load() <= first {
+		t.Fatal(".gitignore change did not invalidate cache")
 	}
 	cfg.Theme = "dark"
 	if _, err := Build(cfg); err != nil {

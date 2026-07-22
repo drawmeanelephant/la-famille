@@ -92,19 +92,10 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	start := time.Now()
-	fingerprint, err := cacheFingerprint(cfg, cfg.ContentDir, filepath.Dir(cfg.Template), cfg.AssetDir)
-	if err != nil {
-		return BuildResult{}, fmt.Errorf("failed to fingerprint build inputs: %w", err)
-	}
-	if cache, cacheErr := loadBuildCache(cachePath(cfg.OutputDir)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
-		return BuildResult{Duration: time.Since(start), PageCount: cache.PageCount}, nil
-	}
-
 	outputDir, stagingDir, err := createStagingOutput(cfg.OutputDir)
 	if err != nil {
 		return BuildResult{}, err
 	}
-
 	committed := false
 	defer func() {
 		if !committed {
@@ -113,6 +104,15 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 			}
 		}
 	}()
+
+	fingerprint, err := cacheFingerprint(cfg, cfg.ContentDir, filepath.Dir(cfg.Template), cfg.AssetDir, filepath.Join(cfg.ProjectRoot, ".gitignore"))
+	if err != nil {
+		return BuildResult{}, fmt.Errorf("failed to fingerprint build inputs: %w", err)
+	}
+	if cache, cacheErr := loadBuildCache(cachePath(cfg.OutputDir)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
+		committed = true
+		return BuildResult{Duration: time.Since(start), PageCount: cache.PageCount}, nil
+	}
 
 	stagedCfg := cfg
 	stagedCfg.OutputDir = stagingDir
@@ -132,7 +132,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	start := time.Now()
 	var result BuildResult
 
-	fingerprint, err := cacheFingerprint(siteCfg, siteCfg.ContentDir, filepath.Dir(siteCfg.Template), siteCfg.AssetDir)
+	fingerprint, err := cacheFingerprint(siteCfg, siteCfg.ContentDir, filepath.Dir(siteCfg.Template), siteCfg.AssetDir, filepath.Join(siteCfg.ProjectRoot, ".gitignore"))
 	if err != nil {
 		return result, fmt.Errorf("failed to fingerprint build inputs: %w", err)
 	}
