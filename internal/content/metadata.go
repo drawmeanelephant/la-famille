@@ -22,6 +22,7 @@ type FileMeta struct {
 	Content         []byte
 	Rest            []byte // The content after frontmatter
 	Tags            []string
+	Categories      []string
 	RelPath         string
 	Title           string
 	Author          string
@@ -78,19 +79,21 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 		}
 
 		var matter struct {
-			Title           string   `yaml:"title"`
-			Author          string   `yaml:"author"`
-			Date            string   `yaml:"date"`
-			Render          *bool    `yaml:"render"`
-			VideoScript     string   `yaml:"video_script"`
-			AnimationCues   string   `yaml:"animation_cues"`
-			SoundtrackTheme string   `yaml:"soundtrack_theme"`
-			Layout          string   `yaml:"layout"`
-			ComplianceModal string   `yaml:"compliance_modal"`
-			Slug            string   `yaml:"slug"`
-			Tags            []string `yaml:"tags"`
-			Description     string   `yaml:"description"`
-			Image           string   `yaml:"image"`
+			Title           string      `yaml:"title"`
+			Author          string      `yaml:"author"`
+			Date            string      `yaml:"date"`
+			Render          *bool       `yaml:"render"`
+			VideoScript     string      `yaml:"video_script"`
+			AnimationCues   string      `yaml:"animation_cues"`
+			SoundtrackTheme string      `yaml:"soundtrack_theme"`
+			Layout          string      `yaml:"layout"`
+			ComplianceModal string      `yaml:"compliance_modal"`
+			Slug            string      `yaml:"slug"`
+			Tags            []string    `yaml:"tags"`
+			Categories      interface{} `yaml:"categories"`
+			Category        interface{} `yaml:"category"`
+			Description     string      `yaml:"description"`
+			Image           string      `yaml:"image"`
 		}
 
 		if rawMatter != nil {
@@ -115,28 +118,12 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			}
 		}
 
-		// Tag validation and normalization
-		var normalizedTags []string
-		for _, tag := range matter.Tags {
-			if validTagRegex.MatchString(tag) {
-				normalizedTags = append(normalizedTags, tag)
-				continue
-			}
-			lower := strings.ToLower(tag)
-			var sb strings.Builder
-			for _, r := range lower {
-				if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
-					sb.WriteRune(r)
-				}
-			}
-			normalized := sb.String()
-			if normalized != tag {
-				slog.Warn("Normalized tag", "original", tag, "normalized", normalized, "file", relPath)
-			}
-			if normalized != "" {
-				normalizedTags = append(normalizedTags, normalized)
-			}
-		}
+		var rawCategories []string
+		rawCategories = append(rawCategories, extractStringSlice(matter.Categories)...)
+		rawCategories = append(rawCategories, extractStringSlice(matter.Category)...)
+
+		normalizedTags := normalizeTaxonomyList(matter.Tags, relPath, "tag")
+		normalizedCategories := normalizeTaxonomyList(rawCategories, relPath, "category")
 
 		fileMap[relPath] = &FileMeta{
 			RelPath:         relPath,
@@ -151,6 +138,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			ComplianceModal: matter.ComplianceModal,
 			Slug:            matter.Slug,
 			Tags:            normalizedTags,
+			Categories:      normalizedCategories,
 			Content:         contentBytes,
 			Rest:            rest,
 			Description:     matter.Description,
@@ -165,4 +153,64 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 	}
 
 	return fileMap, nil
+}
+
+func extractStringSlice(val interface{}) []string {
+	if val == nil {
+		return nil
+	}
+	switch v := val.(type) {
+	case string:
+		if strings.TrimSpace(v) != "" {
+			return []string{strings.TrimSpace(v)}
+		}
+	case []interface{}:
+		var res []string
+		for _, elem := range v {
+			if s, ok := elem.(string); ok && strings.TrimSpace(s) != "" {
+				res = append(res, strings.TrimSpace(s))
+			}
+		}
+		return res
+	case []string:
+		var res []string
+		for _, s := range v {
+			if strings.TrimSpace(s) != "" {
+				res = append(res, strings.TrimSpace(s))
+			}
+		}
+		return res
+	}
+	return nil
+}
+
+func normalizeTaxonomyList(items []string, relPath, kind string) []string {
+	var normalizedList []string
+	seen := make(map[string]bool)
+
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		norm := item
+		if !validTagRegex.MatchString(item) {
+			lower := strings.ToLower(item)
+			var sb strings.Builder
+			for _, r := range lower {
+				if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+					sb.WriteRune(r)
+				}
+			}
+			norm = sb.String()
+			if norm != item {
+				slog.Warn("Normalized "+kind, "original", item, "normalized", norm, "file", relPath)
+			}
+		}
+		if norm != "" && !seen[norm] {
+			seen[norm] = true
+			normalizedList = append(normalizedList, norm)
+		}
+	}
+	return normalizedList
 }
