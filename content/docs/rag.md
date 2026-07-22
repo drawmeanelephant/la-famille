@@ -35,6 +35,8 @@ When the export process completes, it places the resulting datasets into the `ra
 *   **`rag-config.md`**: Captures configuration parameters and global state details relevant to the site's generation.
 *   **`rag-content.md`**: The bulk of the archive. This file compiles all the textual content from your pages, stripped of unnecessary HTML bloat, while preserving semantic meaning and linking structure.
 
+`rag-archive/` is generated output. It is intentionally ignored by Git: regenerate it when needed, and do not edit or commit its files. The deployment workflow can still publish a freshly generated archive at `public/rag-archive/`.
+
 ## Using the Output
 
 You can take these generated files and use them as system context when configuring custom GPTs, uploading them to Claude Projects, or using them in local AI pipelines (like LangChain or LlamaIndex) to allow the model to answer questions accurately based exclusively on your site's data.

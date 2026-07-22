@@ -130,3 +130,42 @@ func TestRunExport_RootLevelMatch(t *testing.T) {
 		t.Errorf("Expected system bundle NOT to contain nested/nested.go")
 	}
 }
+
+func TestRunExport_ExcludesConfiguredOutputDirectory(t *testing.T) {
+	projectRoot := t.TempDir()
+	ragDir := filepath.Join(projectRoot, "internal", "rag-archive")
+
+	writeExportTestFile(t, filepath.Join(projectRoot, "internal", "included", "included.go"), "package included")
+	writeExportTestFile(t, filepath.Join(ragDir, "stale.go"), "package stale")
+	writeExportTestFile(t, filepath.Join(projectRoot, "internal", "rag-archive-backup", "included.go"), "package backup")
+
+	if err := RunExport(config.Config{ProjectRoot: projectRoot, RagDir: ragDir}); err != nil {
+		t.Fatalf("RunExport failed: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(ragDir, "rag-system.md"))
+	if err != nil {
+		t.Fatalf("read system bundle: %v", err)
+	}
+
+	bundle := string(content)
+	if strings.Contains(bundle, "internal/rag-archive/stale.go") {
+		t.Error("system bundle included a file from the configured RAG output directory")
+	}
+	if !strings.Contains(bundle, "internal/included/included.go") {
+		t.Error("system bundle did not include a project source file")
+	}
+	if !strings.Contains(bundle, "internal/rag-archive-backup/included.go") {
+		t.Error("system bundle excluded a sibling directory with a similar name")
+	}
+}
+
+func writeExportTestFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+}
