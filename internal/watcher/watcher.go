@@ -16,6 +16,15 @@ import (
 // Watch starts an fsnotify watcher on the given config's ContentDir, Templates, and Assets dir.
 // It explicitly unbinds and tears down resources once the passed context registers Done.
 func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildResult)) error {
+	return watch(ctx, cfg, onBuild, generator.Build, 500*time.Millisecond)
+}
+
+type buildFunc func(config.Config) (generator.BuildResult, error)
+
+// watch contains the event loop with injectable build and debounce behavior so
+// lifecycle tests do not need to invoke the full generator or wait half a
+// second for every assertion.
+func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildResult), build buildFunc, debounce time.Duration) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
@@ -37,8 +46,8 @@ func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 	if _, err := os.Stat(templateDir); err == nil {
 		dirsToWatch = append(dirsToWatch, templateDir)
 	}
-	if _, err := os.Stat("assets"); err == nil {
-		dirsToWatch = append(dirsToWatch, "assets")
+	if _, err := os.Stat(cfg.AssetDir); err == nil {
+		dirsToWatch = append(dirsToWatch, cfg.AssetDir)
 	}
 
 	outDirClean := filepath.Clean(cfg.OutputDir)
@@ -99,10 +108,15 @@ func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 					buildTimer.Stop()
 				}
 
-				buildTimer = time.AfterFunc(500*time.Millisecond, func() {
+				buildTimer = time.AfterFunc(debounce, func() {
+					select {
+					case <-ctx.Done():
+						return
+					default:
+					}
 					slog.Info("Executing pipeline rebuild...")
 					start := time.Now()
-					if res, err := generator.Build(cfg); err != nil {
+					if res, err := build(cfg); err != nil {
 						if onBuild != nil {
 							onBuild(res)
 						}
