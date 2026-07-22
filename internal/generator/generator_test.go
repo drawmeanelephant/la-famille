@@ -221,6 +221,13 @@ func TestBuild_UsesAndInvalidatesCache(t *testing.T) {
 	if got := conversions.Load(); got != first {
 		t.Fatalf("cache miss rebuilt unchanged content: conversions %d -> %d", first, got)
 	}
+	staging, err := filepath.Glob(filepath.Join(tempDir, ".public.staging-*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(staging) != 0 {
+		t.Fatalf("cache hit leaked staging directories: %v", staging)
+	}
 	if err := os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("changed.tmp\n"), 0600); err != nil {
 		t.Fatal(err)
 	}

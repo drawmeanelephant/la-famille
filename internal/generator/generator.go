@@ -110,6 +110,9 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 		return BuildResult{}, fmt.Errorf("failed to fingerprint build inputs: %w", err)
 	}
 	if cache, cacheErr := loadBuildCache(cachePath(cfg.OutputDir)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
+		if err := os.RemoveAll(stagingDir); err != nil {
+			return BuildResult{}, fmt.Errorf("remove unused build staging directory: %w", err)
+		}
 		committed = true
 		return BuildResult{Duration: time.Since(start), PageCount: cache.PageCount}, nil
 	}
