@@ -664,6 +664,45 @@ func (m model) View() string {
 			s += fmt.Sprintf("Total Pages Generated: %d\n", m.stats.PageCount)
 			s += fmt.Sprintf("Error Count: %d\n", m.stats.ErrorCount)
 			s += fmt.Sprintf("Cache Status: %s\n", cacheStatus)
+
+			h := m.stats.Health
+			s += "\n" + headerStyle.Render("Content Health & Observability") + "\n"
+			s += fmt.Sprintf("Total Word Count: %d\n", h.TotalWordCount)
+			s += fmt.Sprintf("Average Words per Page: %.1f\n", h.AvgWordsPerPage)
+
+			s += "Top Tags: "
+			if len(h.TopTags) == 0 {
+				s += "None\n"
+			} else {
+				var tagStrs []string
+				for _, t := range h.TopTags {
+					tagStrs = append(tagStrs, fmt.Sprintf("%s (%d)", t.Tag, t.Count))
+				}
+				s += strings.Join(tagStrs, ", ") + "\n"
+			}
+
+			s += fmt.Sprintf("Graph Nodes: %d | Graph Edges: %d\n", h.NodeCount, h.EdgeCount)
+
+			s += fmt.Sprintf("Orphaned Pages (%d): ", len(h.OrphanedPages))
+			if len(h.OrphanedPages) == 0 {
+				s += "None\n"
+			} else {
+				s += strings.Join(h.OrphanedPages, ", ") + "\n"
+			}
+
+			s += fmt.Sprintf("Missing Descriptions (%d): ", len(h.MissingDescriptions))
+			if len(h.MissingDescriptions) == 0 {
+				s += "None\n"
+			} else {
+				s += strings.Join(h.MissingDescriptions, ", ") + "\n"
+			}
+
+			s += fmt.Sprintf("Missing Dates (%d): ", len(h.MissingDates))
+			if len(h.MissingDates) == 0 {
+				s += "None\n"
+			} else {
+				s += strings.Join(h.MissingDates, ", ") + "\n"
+			}
 		}
 		s += "\nRAG Token Estimations:\n"
 		ragDir := m.cfg.RagDir

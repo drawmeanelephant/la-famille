@@ -186,6 +186,50 @@ func TestTUIStatsCacheStatus(t *testing.T) {
 	}
 }
 
+func TestTUIStatsContentHealthRendering(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenStats
+
+	m.stats = &generator.BuildResult{
+		Duration:   15 * time.Millisecond,
+		PageCount:  3,
+		ErrorCount: 0,
+		CacheHit:   true,
+		Health: generator.ContentHealth{
+			TotalWordCount:  450,
+			AvgWordsPerPage: 150.0,
+			TopTags: []generator.TagCount{
+				{Tag: "go", Count: 3},
+				{Tag: "tui", Count: 2},
+			},
+			OrphanedPages:       []string{"blog/orphan"},
+			NodeCount:           5,
+			EdgeCount:           4,
+			MissingDescriptions: []string{"index", "blog/orphan"},
+			MissingDates:        []string{"contact"},
+		},
+	}
+
+	view := m.View()
+
+	expectedSubstrings := []string{
+		"Content Health & Observability",
+		"Total Word Count: 450",
+		"Average Words per Page: 150.0",
+		"Top Tags: go (3), tui (2)",
+		"Graph Nodes: 5 | Graph Edges: 4",
+		"Orphaned Pages (1): blog/orphan",
+		"Missing Descriptions (2): index, blog/orphan",
+		"Missing Dates (1): contact",
+	}
+
+	for _, expected := range expectedSubstrings {
+		if !strings.Contains(view, expected) {
+			t.Errorf("Stats view missing expected content health string %q. Full view:\n%s", expected, view)
+		}
+	}
+}
+
 func TestTUICommandMenuOpenNavigationAndEscape(t *testing.T) {
 	m := initialModel(config.Config{})
 	if !m.menuOpen {
