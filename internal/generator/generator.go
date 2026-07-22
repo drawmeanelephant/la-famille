@@ -92,18 +92,50 @@ func Build(cfg config.Config) (BuildResult, error) {
 
 func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	start := time.Now()
+	fingerprint, err := cacheFingerprint(cfg, cfg.ContentDir, filepath.Dir(cfg.Template), cfg.AssetDir)
+	if err != nil {
+		return BuildResult{}, fmt.Errorf("failed to fingerprint build inputs: %w", err)
+	}
+	if cache, cacheErr := loadBuildCache(cachePath(cfg.OutputDir)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
+		return BuildResult{Duration: time.Since(start), PageCount: cache.PageCount}, nil
+	}
+
+	outputDir, stagingDir, err := createStagingOutput(cfg.OutputDir)
+	if err != nil {
+		return BuildResult{}, err
+	}
+
+	committed := false
+	defer func() {
+		if !committed {
+			if err := os.RemoveAll(stagingDir); err != nil {
+				slog.Warn("Failed to remove build staging directory", "path", stagingDir, "error", err)
+			}
+		}
+	}()
+
+	stagedCfg := cfg
+	stagedCfg.OutputDir = stagingDir
+	result, err := build(stagedCfg, cfg)
+	if err != nil {
+		return result, err
+	}
+
+	if err := replaceOutputDirectory(outputDir, stagingDir); err != nil {
+		return result, err
+	}
+	committed = true
+	return result, nil
+}
+
+func build(cfg, siteCfg config.Config) (BuildResult, error) {
+	start := time.Now()
 	var result BuildResult
 
-	fingerprint, err := cacheFingerprint(cfg, cfg.ContentDir, filepath.Dir(cfg.Template), cfg.AssetDir)
+	fingerprint, err := cacheFingerprint(siteCfg, siteCfg.ContentDir, filepath.Dir(siteCfg.Template), siteCfg.AssetDir)
 	if err != nil {
 		return result, fmt.Errorf("failed to fingerprint build inputs: %w", err)
 	}
-	if cache, cacheErr := loadBuildCache(cachePath(cfg.OutputDir)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
-		result.Duration = time.Since(start)
-		result.PageCount = cache.PageCount
-		return result, nil
-	}
-
 	// 1. Pass 1: Walk content dir and gather metadata
 	fileMap, err := content.GatherMetadata(cfg.ContentDir)
 	if err != nil {
