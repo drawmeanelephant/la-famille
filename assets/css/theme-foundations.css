@@ -1,0 +1,53 @@
+/* Shared accessibility and resilience defaults for bundled layouts. Theme-specific CSS
+   and utility classes remain responsible for each layout's visual identity. */
+:root {
+  --lf-focus-ring: 2px solid currentColor;
+  --lf-focus-offset: 3px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+img, video, svg, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+pre, code {
+  max-width: 100%;
+}
+
+pre {
+  overflow-x: auto;
+  white-space: pre;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: var(--lf-focus-ring);
+  outline-offset: var(--lf-focus-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

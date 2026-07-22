@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ .Site.Theme }}">
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <title>{{ .Title }} - {{ .Site.SiteName }}</title>
     <meta name="description" content="{{ .Description }}">
     <meta property="og:image" content="{{ .Image }}">
     <!-- DaisyUI CSS -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="/assets/css/theme-foundations.css">
     <!-- Tailwind CSS with Typography plugin via CDN -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
