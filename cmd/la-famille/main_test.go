@@ -302,7 +302,7 @@ func TestCommandFlags(t *testing.T) {
 		t.Fatalf("Failed to find build command: %v", err)
 	}
 
-	buildFlags := []string{"content", "output", "template"}
+	buildFlags := []string{"content", "output", "template", "site-url", "siteurl"}
 	for _, flag := range buildFlags {
 		if buildCmd.Flags().Lookup(flag) == nil {
 			t.Errorf("buildCmd is missing expected flag: %s", flag)
@@ -381,5 +381,55 @@ func TestCLICacheStatusLogging(t *testing.T) {
 	}
 	if !strings.Contains(stderr2.String(), "cache=hit") {
 		t.Errorf("expected stderr to contain 'cache=hit' on repeated build, got: %s", stderr2.String())
+	}
+}
+
+func TestCLISiteURLOverride(t *testing.T) {
+	tmpDir := t.TempDir()
+	contentDir := filepath.Join(tmpDir, "content")
+	outputDir := filepath.Join(tmpDir, "public")
+	templateDir := filepath.Join(tmpDir, "templates")
+
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(templateDir, "layout.html"), []byte("<html><body>{{.Content}}</body></html>"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("# Test Page"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+
+	// Test valid site-url flag
+	rootCmd := setupRootCmd(cfg)
+	rootCmd.SetArgs([]string{
+		"build",
+		"--content", contentDir,
+		"--output", outputDir,
+		"--template", filepath.Join(templateDir, "layout.html"),
+		"--site-url", "https://my-site.example.com",
+	})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("build failed with valid site-url: %v", err)
+	}
+
+	// Test invalid site-url flag returns validation error
+	rootCmdInvalid := setupRootCmd(cfg)
+	rootCmdInvalid.SetArgs([]string{
+		"build",
+		"--content", contentDir,
+		"--output", outputDir,
+		"--template", filepath.Join(templateDir, "layout.html"),
+		"--site-url", "not-a-valid-url",
+	})
+	if err := rootCmdInvalid.Execute(); err == nil {
+		t.Fatalf("expected error for invalid site-url, got nil")
+	} else if !strings.Contains(err.Error(), "SiteURL must be an absolute HTTP or HTTPS URL") {
+		t.Errorf("expected SiteURL validation error message, got: %v", err)
 	}
 }

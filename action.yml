@@ -13,6 +13,14 @@ inputs:
     description: 'Directory for generated static site'
     required: false
     default: 'public'
+  template:
+    description: 'Path to HTML layout template'
+    required: false
+    default: 'templates/layout.html'
+  site-url:
+    description: 'Public base URL of the generated site'
+    required: false
+    default: ''
 runs:
   using: "composite"
   steps:
@@ -23,5 +31,17 @@ runs:
 
     - name: Build static site
       shell: bash
+      env:
+        INPUT_CONTENT_DIR: ${{ inputs.content-dir }}
+        INPUT_OUTPUT_DIR: ${{ inputs.output-dir }}
+        INPUT_TEMPLATE: ${{ inputs.template }}
+        INPUT_SITE_URL: ${{ inputs.site-url }}
       run: |
-        go run github.com/drawmeanelephant/la-famille/cmd/la-famille@latest build -c ${{ inputs.content-dir }} -o ${{ inputs.output-dir }}
+        ARGS=("-c" "$INPUT_CONTENT_DIR" "-o" "$INPUT_OUTPUT_DIR")
+        if [ -n "$INPUT_TEMPLATE" ]; then
+          ARGS+=("-t" "$INPUT_TEMPLATE")
+        fi
+        if [ -n "$INPUT_SITE_URL" ]; then
+          ARGS+=("--site-url" "$INPUT_SITE_URL")
+        fi
+        go run github.com/drawmeanelephant/la-famille/cmd/la-famille@latest build "${ARGS[@]}"
