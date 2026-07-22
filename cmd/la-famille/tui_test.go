@@ -300,3 +300,40 @@ func TestTUIBuildProgressFailure(t *testing.T) {
 		t.Fatalf("failure view missing error: %q", m.View())
 	}
 }
+
+func TestTUIDiagnosticsDrawerNavigationAndClear(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.addDiagnostic("error", errors.New("content/about.md:12:3: bad link"))
+	m.diagnostics = append(m.diagnostics, diagnostic{level: "warning", message: "watcher warning"})
+	m.screen = screenStats
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = updated.(model)
+	if m.screen != screenDiagnostics || !strings.Contains(m.View(), "content/about.md:12:3") {
+		t.Fatalf("diagnostics view missing source: %s", m.View())
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m = updated.(model)
+	if m.diagnosticCursor != 1 {
+		t.Fatalf("cursor = %d, want 1", m.diagnosticCursor)
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
+	m = updated.(model)
+	if len(m.diagnostics) != 0 || !strings.Contains(m.View(), "No diagnostics recorded") {
+		t.Fatalf("clear/empty state failed: %s", m.View())
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	m = updated.(model)
+	if m.screen != screenStats {
+		t.Fatalf("screen after escape = %v, want stats", m.screen)
+	}
+}
+
+func TestTUIWorkErrorPopulatesDiagnostics(t *testing.T) {
+	m := initialModel(config.Config{})
+	wantErr := errors.New("content/index.md:7: render failed")
+	updated, _ := m.Update(workResultMsg{err: wantErr, msg: "Build failed"})
+	m = updated.(model)
+	if len(m.diagnostics) != 1 || m.diagnostics[0].source != "content/index.md:7" {
+		t.Fatalf("diagnostics = %#v", m.diagnostics)
+	}
+}
