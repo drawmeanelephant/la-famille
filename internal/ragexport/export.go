@@ -73,6 +73,12 @@ func RunExport(cfg config.Config) error {
 		if err != nil {
 			return nil // ignore missing assets dir
 		}
+		if isWithinDir(path, outDir) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
 		// if it's a directory, just print the path with a trailing slash
 		if d.IsDir() {
 			_, _ = cfgFile.WriteString(filepath.ToSlash(getRel(cfg.ProjectRoot, path)) + "/\n")
@@ -93,6 +99,12 @@ func RunExport(cfg config.Config) error {
 	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "templates"), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // ignore missing templates dir
+		}
+		if isWithinDir(path, outDir) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 		// if it's a directory, just print the path with a trailing slash
 		if d.IsDir() {
