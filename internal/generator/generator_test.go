@@ -913,4 +913,66 @@ render: false
 	if !strings.Contains(sitemap, "/tags/") || !strings.Contains(sitemap, "/categories/") {
 		t.Errorf("sitemap.xml missing taxonomy URLs: %s", sitemap)
 	}
+
+	// Verify search.json includes taxonomy entries
+	searchJSONBytes, err := os.ReadFile(filepath.Join(outputDir, "search.json"))
+	if err != nil {
+		t.Fatalf("search.json missing: %v", err)
+	}
+	searchJSON := string(searchJSONBytes)
+
+	expectedTaxonomySearchItems := []string{
+		`"t":"Tags","u":"/tags/index.html"`,
+		`"t":"Tag: go","u":"/tags/go/index.html","g":["go"]`,
+		`"t":"Tag: web","u":"/tags/web/index.html","g":["web"]`,
+		`"t":"Categories","u":"/categories/index.html"`,
+		`"t":"Category: news","u":"/categories/news/index.html","g":["news"]`,
+		`"t":"Category: tech","u":"/categories/tech/index.html","g":["tech"]`,
+	}
+	for _, expectedSub := range expectedTaxonomySearchItems {
+		if !strings.Contains(searchJSON, expectedSub) {
+			t.Errorf("search.json missing taxonomy item %s; got:\n%s", expectedSub, searchJSON)
+		}
+	}
+
+	// Verify render:false terms do not appear in search.json
+	if strings.Contains(searchJSON, "secret") || strings.Contains(searchJSON, "internal") {
+		t.Errorf("search.json unexpectedly contains taxonomy from render:false page: %s", searchJSON)
+	}
+}
+
+func TestBuild_EmptyTaxonomySearchIndex(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(templateDir, 0755)
+
+	templatePath := filepath.Join(templateDir, "layout.html")
+	_ = os.WriteFile(templatePath, []byte("{{.Content}}"), 0600)
+
+	_ = os.WriteFile(filepath.Join(contentDir, "no-tags.md"), []byte("# Plain Page"), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = templatePath
+	cfg.ProjectRoot = tempDir
+
+	_, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	searchJSONBytes, err := os.ReadFile(filepath.Join(outputDir, "search.json"))
+	if err != nil {
+		t.Fatalf("search.json missing: %v", err)
+	}
+	searchJSON := string(searchJSONBytes)
+
+	if strings.Contains(searchJSON, "/tags") || strings.Contains(searchJSON, "/categories") {
+		t.Errorf("search.json unexpectedly contains taxonomy entries when empty: %s", searchJSON)
+	}
 }
