@@ -245,3 +245,58 @@ func TestTUICommandMenuToggleWatch(t *testing.T) {
 		t.Fatal("watch mode should be enabled after first toggle")
 	}
 }
+
+func TestTUIBuildProgressTransitions(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenWorking
+	m.workTotal = 4
+
+	for _, progress := range []workProgressMsg{
+		{phase: "Preparing build", completed: 1, total: 4},
+		{phase: "Rendering pages", completed: 2, total: 4},
+		{phase: "Writing assets and indexes", completed: 3, total: 4},
+	} {
+		updated, _ := m.Update(progress)
+		m = updated.(model)
+		if m.workPhase != progress.phase || m.workCompleted != progress.completed || m.workTotal != progress.total {
+			t.Fatalf("progress state = (%q, %d/%d), want (%q, %d/%d)", m.workPhase, m.workCompleted, m.workTotal, progress.phase, progress.completed, progress.total)
+		}
+	}
+	view := m.View()
+	if !strings.Contains(view, "Phase: Writing assets and indexes (3/4)") {
+		t.Fatalf("progress view missing current phase: %q", view)
+	}
+}
+
+func TestTUIBuildProgressCompletionAndWarning(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenWorking
+	m.workTotal = 4
+	updated, _ := m.Update(workResultMsg{
+		msg: "Build complete (cache miss)",
+		res: &generator.BuildResult{ErrorCount: 2},
+	})
+	m = updated.(model)
+	if m.workPhase != "Complete" || m.workCompleted != 4 {
+		t.Fatalf("completion state = (%q, %d/%d), want Complete 4/4", m.workPhase, m.workCompleted, m.workTotal)
+	}
+	view := m.View()
+	if !strings.Contains(view, "Warning: 2 build errors reported") {
+		t.Fatalf("completion view missing warning: %q", view)
+	}
+}
+
+func TestTUIBuildProgressFailure(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenWorking
+	m.workTotal = 4
+	wantErr := errors.New("render failed")
+	updated, _ := m.Update(workResultMsg{err: wantErr, msg: "Build failed"})
+	m = updated.(model)
+	if m.workPhase != "Build failed" || m.workCompleted != 4 {
+		t.Fatalf("failure state = (%q, %d/%d), want Build failed 4/4", m.workPhase, m.workCompleted, m.workTotal)
+	}
+	if !strings.Contains(m.View(), "Error: render failed") {
+		t.Fatalf("failure view missing error: %q", m.View())
+	}
+}
