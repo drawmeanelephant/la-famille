@@ -61,6 +61,7 @@ type BuildResult struct {
 	ErrorCount int
 	CacheHit   bool
 	Health     ContentHealth
+	Warnings   []string
 }
 
 // Build generates the static site based on the given configuration.
@@ -93,6 +94,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 			PageCount: cache.PageCount,
 			CacheHit:  true,
 			Health:    cache.Health,
+			Warnings:  cache.Warnings,
 		}, nil
 	}
 
@@ -123,6 +125,13 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	if err != nil {
 		return result, fmt.Errorf("failed to gather metadata: %w", err)
 	}
+
+	for _, meta := range fileMap {
+		if len(meta.Warnings) > 0 {
+			result.Warnings = append(result.Warnings, meta.Warnings...)
+		}
+	}
+	sort.Strings(result.Warnings)
 
 	// Track missing files that need stubs. map[missingPath][]parentFiles
 	missingFiles := make(map[string][]string)
@@ -476,7 +485,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	if err != nil {
 		return result, fmt.Errorf("failed to collect generated files: %w", err)
 	}
-	if err := writeBuildCache(cachePath(cfg.OutputDir), fingerprint, files, result.PageCount, result.Health); err != nil {
+	if err := writeBuildCache(cachePath(cfg.OutputDir), fingerprint, files, result.PageCount, result.Health, result.Warnings); err != nil {
 		return result, fmt.Errorf("failed to write build cache: %w", err)
 	}
 

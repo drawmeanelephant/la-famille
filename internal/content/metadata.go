@@ -36,6 +36,7 @@ type FileMeta struct {
 	Description     string
 	Image           string
 	Render          *bool
+	Warnings        []string
 }
 
 // GatherMetadata walks the content directory and parses the frontmatter for each markdown file.
@@ -70,12 +71,17 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			return fmt.Errorf("failed to read file %s: %w", path, err)
 		}
 
+		var warnings []string
+
 		// Parse into a generic map to normalize casing first
 		var rawMatter map[string]interface{}
 		rest, err := frontmatter.Parse(bytes.NewReader(contentBytes), &rawMatter)
 		if err != nil {
 			// If frontmatter parsing fails, treat the whole file as content
 			rest = contentBytes
+			warnMsg := fmt.Sprintf("frontmatter parse warning in %s: %v, falling back to raw markdown", relPath, err)
+			warnings = append(warnings, warnMsg)
+			slog.Warn("Frontmatter parse failed", "file", relPath, "error", err)
 		}
 
 		var matter struct {
@@ -113,6 +119,8 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 		// Date validation
 		if matter.Date != "" {
 			if _, err := time.Parse(time.DateOnly, matter.Date); err != nil {
+				warnMsg := fmt.Sprintf("invalid date format in %s: %s", relPath, matter.Date)
+				warnings = append(warnings, warnMsg)
 				slog.Warn("Invalid date format", "file", relPath, "date", matter.Date)
 				matter.Date = ""
 			}
@@ -143,6 +151,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			Rest:            rest,
 			Description:     matter.Description,
 			Image:           matter.Image,
+			Warnings:        warnings,
 		}
 
 		return nil

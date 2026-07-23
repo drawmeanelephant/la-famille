@@ -22,6 +22,7 @@ type buildCache struct {
 	GeneratedFiles []string      `json:"generated_files"`
 	PageCount      int           `json:"page_count"`
 	Health         ContentHealth `json:"health,omitempty"`
+	Warnings       []string      `json:"warnings,omitempty"`
 }
 
 func cachePath(outputDir string) string { return filepath.Join(outputDir, cacheFileName) }
@@ -151,8 +152,8 @@ func generatedFiles(outputDir string) ([]string, error) {
 	return files, nil
 }
 
-func writeBuildCache(path, fingerprint string, files []string, pageCount int, health ContentHealth) error {
-	cache := buildCache{Version: 1, Fingerprint: fingerprint, GeneratedFiles: files, PageCount: pageCount, Health: health}
+func writeBuildCache(path, fingerprint string, files []string, pageCount int, health ContentHealth, warnings []string) error {
+	cache := buildCache{Version: 1, Fingerprint: fingerprint, GeneratedFiles: files, PageCount: pageCount, Health: health, Warnings: warnings}
 	data, err := json.MarshalIndent(cache, "", "  ")
 	if err != nil {
 		return err
