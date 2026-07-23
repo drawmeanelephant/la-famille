@@ -1,24 +1,30 @@
-# Plan: Build Correctness - Cache Invalidation Matrix
+# Plan: TUI Workflow Polish
 
 ## Goal
-Prove that the existing incremental build cache rebuilds when any meaningful input changes and removes stale generated output when source files disappear.
+Make build, serve, watch, diagnostics, and failure states easier to understand in the TUI without redesigning the current visual identity.
 
 ## Proposed Changes
-1. **Cache Validation Enhancement:**
-   - Modify `internal/generator/cache.go`: `cacheUsable` compares disk state (`generatedFiles(outputDir)`) with `cache.GeneratedFiles` to guarantee invalidation on missing or extraneous output files.
+1. **Failure Messages & Recovery Guidance (`cmd/la-famille/tui.go`)**:
+   - Provide actionable recovery instructions for build, server, and content errors (e.g. port conflict guidance, template/syntax error guidance).
+   - Display clear status messages and next-step actions in `screenWorking`, `screenServe`, and `screenDiagnostics`.
 
-2. **Cache Invalidation Regression Test Suite:**
-   - Create `internal/generator/cache_invalidation_test.go` with subtests covering:
-     1. Unchanged Markdown produces a cache hit.
-     2. Changed Markdown triggers a rebuild.
-     3. Deleted Markdown removes its generated page and search/graph metadata.
-     4. Changed templates trigger a rebuild.
-     5. Changed assets trigger expected output updates (add, modify, delete).
-     6. Changed configuration triggers a rebuild.
-     7. Removed generated artifacts and orphan files do not survive a later build.
+2. **Status Transitions & Server/Watch Modes (`cmd/la-famille/tui.go`)**:
+   - Improve `screenServe` to show active server URL, Watch mode status, Live Reload indicator, and exit guidance.
+   - Update `renderStatusPanel` dashboard display to cleanly show watch mode, server status, build phase, cache status, and diagnostics warnings with next-step tips.
 
-3. **Validation & Verification:**
-   - Run `go test ./...`, `go vet ./...`, and repeated test runs for timing sensitivity.
+3. **Keyboard Help & Command Discoverability (`cmd/la-famille/tui.go`)**:
+   - Standardize key help prompts across all active screens (`screenMenu`, `screenWorking`, `screenServe`, `screenStats`, `screenDiagnostics`, `screenHelp`, `screenRaoul`).
+   - Polish `screenHelp` to present categorized, easy-to-read keyboard shortcuts.
+
+4. **Diagnostics & Content Health Next Steps (`cmd/la-famille/tui.go`)**:
+   - Add content health next-step suggestions in `screenStats` (guidance for missing descriptions, orphaned pages, missing dates).
+   - Add actionable guidance per diagnostic item in `screenDiagnostics`.
+
+5. **Unit Tests (`cmd/la-famille/tui_test.go`)**:
+   - Add/update unit tests for failure recovery guidance, serve view details, content health recommendations, keyboard help rendering, and navigation return paths.
 
 ## Potential Breaking Changes
-- None. Build output contracts and cache schema (Version 1) remain intact.
+- None. Static site generation semantics and static output files are completely unaffected.
+
+## Static Output Impact
+- Static output is **explicitly unaffected** as all changes are contained within `cmd/la-famille/tui.go` and `cmd/la-famille/tui_test.go`.
