@@ -2,7 +2,6 @@
 title: "Meta & Development"
 author: "Jules"
 date: "2026-06-18"
-render: true
 ---
 
 # Meta: Development Process

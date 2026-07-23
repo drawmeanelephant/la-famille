@@ -2,7 +2,6 @@
 title: "La Famille SSG: Roadmap & Backlog"
 author: "Jules"
 date: "2026-06-19"
-render: true
 ---
 
 # Roadmap & Backlog
