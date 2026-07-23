@@ -265,6 +265,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
+			m.stopServing()
 			return m, tea.Quit
 		case "d":
 			if m.screen == screenDiagnostics {
@@ -294,6 +295,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if msg.String() == "q" && m.screen == screenMenu {
+				m.stopServing()
 				return m, tea.Quit
 			}
 			if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.workErr != nil || m.screen == screenServe {
@@ -361,19 +363,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return workResultMsg{err: err, msg: "RAG Export complete"}
 					}
 				case "Serve Site", "Serve Site with Watch":
-					m.screen = screenServe
-					m.frame = 0
-					port := m.cfg.Port
-					if port == 0 {
-						port = config.DefaultConfig().Port
-					}
-
+					isWatch := choice == "Serve Site with Watch" || m.cfg.WatchMode
 					if choice == "Serve Site with Watch" {
 						m.cfg.WatchMode = true
-						if _, err := generator.Build(m.cfg); err != nil {
-							slog.Error("Initial build failed", "error", err)
-						}
+					}
 
+					res, err := generator.Build(m.cfg)
+					if err != nil {
+						m.server = nil
+						m.watcherCancel = nil
+						m.addDiagnostic("error", err)
+						m.screen = screenWorking
+						m.workMsg = "Unable to start serve (initial build failed)"
+						m.workErr = err
+						return m, nil
+					}
+
+					m.stats = &res
+
+					if isWatch {
 						watchCtx, cancelWatch := context.WithCancel(context.Background())
 						m.watcherCancel = cancelWatch
 
@@ -386,6 +394,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 								slog.Error("Watcher thread exited", "error", err)
 							}
 						}(watchCtx, m.cfg)
+					}
+
+					port := m.cfg.Port
+					if port == 0 {
+						port = config.DefaultConfig().Port
 					}
 
 					mux := http.NewServeMux()
@@ -415,6 +428,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							}
 						})
 					}()
+					m.screen = screenServe
+					m.frame = 0
 					return m, tickCmd()
 				}
 			} else if m.screen == screenWorking {
