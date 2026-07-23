@@ -429,3 +429,170 @@ func TestTUIDashboardLayoutWidths(t *testing.T) {
 		t.Errorf("wide view missing page count stats: %s", wideView)
 	}
 }
+
+func TestTUIRecoveryGuidance(t *testing.T) {
+	tests := []struct {
+		err  error
+		want string
+	}{
+		{errors.New("listen tcp 127.0.0.1:8080: bind: address already in use"), "Port conflict"},
+		{errors.New("template: layout.html:12: unclosed tag"), "Template syntax error"},
+		{errors.New("yaml: unmarshal error in frontmatter"), "Content syntax error"},
+		{errors.New("open public/index.html: no such file or directory"), "Path missing"},
+		{errors.New("unknown error"), "Check configuration in config.yaml"},
+	}
+
+	for _, tt := range tests {
+		got := getRecoveryGuidance(tt.err)
+		if !strings.Contains(got, tt.want) {
+			t.Errorf("getRecoveryGuidance(%v) = %q, want substring %q", tt.err, got, tt.want)
+		}
+	}
+}
+
+func TestTUIServeScreenDetails(t *testing.T) {
+	m := initialModel(config.Config{
+		Port:      8088,
+		WatchMode: true,
+	})
+	m.screen = screenServe
+
+	view := m.View()
+	if !strings.Contains(view, "http://127.0.0.1:8088") {
+		t.Errorf("serve view missing server URL: %s", view)
+	}
+	if !strings.Contains(view, "Watch Mode: ENABLED (Live Reload active)") {
+		t.Errorf("serve view missing watch mode enabled badge: %s", view)
+	}
+	if !strings.Contains(view, "Server Status: RUNNING") {
+		t.Errorf("serve view missing server status badge: %s", view)
+	}
+
+	m.cfg.WatchMode = false
+	viewDisabled := m.View()
+	if !strings.Contains(viewDisabled, "Watch Mode: DISABLED") {
+		t.Errorf("serve view missing watch mode disabled badge: %s", viewDisabled)
+	}
+}
+
+func TestTUIWorkErrorRecoveryGuidanceRendering(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenWorking
+	m.workErr = errors.New("address already in use")
+	m.workMsg = "Unable to start server"
+
+	view := m.View()
+	if !strings.Contains(view, "Error: address already in use") {
+		t.Errorf("working view missing error: %s", view)
+	}
+	if !strings.Contains(view, "Recovery Guidance: Port conflict") {
+		t.Errorf("working view missing recovery guidance: %s", view)
+	}
+	if !strings.Contains(view, "Press Enter or Esc to return") {
+		t.Errorf("working view missing return path guidance: %s", view)
+	}
+}
+
+func TestTUIStatsNextStepGuidance(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenStats
+
+	// 1. With health issues
+	m.stats = &generator.BuildResult{
+		Duration:   10 * time.Millisecond,
+		PageCount:  2,
+		ErrorCount: 1,
+		Health: generator.ContentHealth{
+			OrphanedPages:       []string{"draft"},
+			MissingDescriptions: []string{"index"},
+			MissingDates:        []string{"about"},
+		},
+	}
+
+	viewWithIssues := m.View()
+	if !strings.Contains(viewWithIssues, "Next-Step Guidance") {
+		t.Errorf("stats view missing Next-Step Guidance header: %s", viewWithIssues)
+	}
+	if !strings.Contains(viewWithIssues, "Orphaned pages detected") {
+		t.Errorf("stats view missing orphaned guidance: %s", viewWithIssues)
+	}
+	if !strings.Contains(viewWithIssues, "Missing descriptions") {
+		t.Errorf("stats view missing description guidance: %s", viewWithIssues)
+	}
+	if !strings.Contains(viewWithIssues, "Missing dates") {
+		t.Errorf("stats view missing date guidance: %s", viewWithIssues)
+	}
+	if !strings.Contains(viewWithIssues, "Build warnings/errors") {
+		t.Errorf("stats view missing error guidance: %s", viewWithIssues)
+	}
+
+	// 2. Clean health
+	m.stats = &generator.BuildResult{
+		Duration:   10 * time.Millisecond,
+		PageCount:  2,
+		ErrorCount: 0,
+		Health:     generator.ContentHealth{},
+	}
+	viewClean := m.View()
+	if !strings.Contains(viewClean, "Content health is optimal") {
+		t.Errorf("stats view missing optimal health badge: %s", viewClean)
+	}
+}
+
+func TestTUIDiagnosticsRecoveryActionRendering(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenDiagnostics
+	m.diagnostics = []diagnostic{
+		{level: "error", message: "content/post.md:5: yaml error", source: "content/post.md:5"},
+	}
+
+	view := m.View()
+	if !strings.Contains(view, "Diagnostics & Recovery Guidance") {
+		t.Errorf("diagnostics view missing title: %s", view)
+	}
+	if !strings.Contains(view, "Source: content/post.md:5") {
+		t.Errorf("diagnostics view missing source line: %s", view)
+	}
+	if !strings.Contains(view, "Action: Content syntax error") {
+		t.Errorf("diagnostics view missing action guidance line: %s", view)
+	}
+}
+
+func TestTUIHelpScreenFormatting(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenHelp
+
+	view := m.View()
+	if !strings.Contains(view, "La Famille Help & Keybindings") {
+		t.Errorf("help view missing title: %s", view)
+	}
+	if !strings.Contains(view, "Navigation & Commands") {
+		t.Errorf("help view missing Navigation section: %s", view)
+	}
+	if !strings.Contains(view, "Global Shortcuts") {
+		t.Errorf("help view missing Global Shortcuts section: %s", view)
+	}
+	if !strings.Contains(view, "Workflow Hints") {
+		t.Errorf("help view missing Workflow Hints section: %s", view)
+	}
+}
+
+func TestTUIReturnPathFromFailedWork(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenWorking
+	m.workErr = errors.New("build error")
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	mRes := updated.(model)
+	if mRes.screen != screenMenu {
+		t.Fatalf("q key on failed work screen = %v, want screenMenu", mRes.screen)
+	}
+
+	m.screen = screenWorking
+	m.workErr = errors.New("build error")
+	updatedEsc, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	mResEsc := updatedEsc.(model)
+	if mResEsc.screen != screenMenu {
+		t.Fatalf("esc key on failed work screen = %v, want screenMenu", mResEsc.screen)
+	}
+}
