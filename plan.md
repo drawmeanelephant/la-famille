@@ -1,30 +1,20 @@
-# Plan: TUI Workflow Polish
+# Active roadmap
 
-## Goal
-Make build, serve, watch, diagnostics, and failure states easier to understand in the TUI without redesigning the current visual identity.
+This file is the shared, human-facing roadmap. It is not an agent scratchpad and must not be rewritten for individual tasks.
 
-## Proposed Changes
-1. **Failure Messages & Recovery Guidance (`cmd/la-famille/tui.go`)**:
-   - Provide actionable recovery instructions for build, server, and content errors (e.g. port conflict guidance, template/syntax error guidance).
-   - Display clear status messages and next-step actions in `screenWorking`, `screenServe`, and `screenDiagnostics`.
+## Task planning policy
 
-2. **Status Transitions & Server/Watch Modes (`cmd/la-famille/tui.go`)**:
-   - Improve `screenServe` to show active server URL, Watch mode status, Live Reload indicator, and exit guidance.
-   - Update `renderStatusPanel` dashboard display to cleanly show watch mode, server status, build phase, cache status, and diagnostics warnings with next-step tips.
+- Each agent task gets a unique plan under `.agents/plans/<task-id>.md`.
+- The task ID should include the PR number, issue number, or branch name when available.
+- Agents must not edit this file for routine implementation work.
+- Update this file only through an intentional roadmap-maintenance task.
+- A task plan records scope, potential static-output impact, tests, and handoff status.
 
-3. **Keyboard Help & Command Discoverability (`cmd/la-famille/tui.go`)**:
-   - Standardize key help prompts across all active screens (`screenMenu`, `screenWorking`, `screenServe`, `screenStats`, `screenDiagnostics`, `screenHelp`, `screenRaoul`).
-   - Polish `screenHelp` to present categorized, easy-to-read keyboard shortcuts.
+## Current priorities
 
-4. **Diagnostics & Content Health Next Steps (`cmd/la-famille/tui.go`)**:
-   - Add content health next-step suggestions in `screenStats` (guidance for missing descriptions, orphaned pages, missing dates).
-   - Add actionable guidance per diagnostic item in `screenDiagnostics`.
+1. Release readiness
+2. TUI workflow polish
+3. Build correctness and performance
+4. Content quality and publishing
 
-5. **Unit Tests (`cmd/la-famille/tui_test.go`)**:
-   - Add/update unit tests for failure recovery guidance, serve view details, content health recommendations, keyboard help rendering, and navigation return paths.
-
-## Potential Breaking Changes
-- None. Static site generation semantics and static output files are completely unaffected.
-
-## Static Output Impact
-- Static output is **explicitly unaffected** as all changes are contained within `cmd/la-famille/tui.go` and `cmd/la-famille/tui_test.go`.
+See `content/meta/roadmap.md` for the detailed backlog and shipped work.

@@ -68,15 +68,18 @@ func TestReleaseSmoke(t *testing.T) {
 		`Second Release Post`,
 	})
 
-	// 2. Verify graph.json
+	// 2. Verify graph.json (includes rendered pages and render:false pages)
 	graphPath := filepath.Join(outDir1, "graph.json")
 	graphData, err := os.ReadFile(graphPath)
 	if err != nil {
 		t.Fatalf("missing graph.json: %v", err)
 	}
 	var gStruct struct {
-		Nodes map[string]interface{} `json:"nodes"`
-		Edges [][2]string            `json:"edges"`
+		Nodes map[string]struct {
+			Type   string `json:"type"`
+			Render bool   `json:"render"`
+		} `json:"nodes"`
+		Edges [][2]string `json:"edges"`
 	}
 	if err := json.Unmarshal(graphData, &gStruct); err != nil {
 		t.Fatalf("invalid graph.json format: %v", err)
@@ -87,8 +90,14 @@ func TestReleaseSmoke(t *testing.T) {
 	if len(gStruct.Edges) == 0 {
 		t.Errorf("graph.json has empty edges")
 	}
+	rawNode, exists := gStruct.Nodes["unrendered.md"]
+	if !exists {
+		t.Errorf("graph.json missing 'unrendered.md' node")
+	} else if rawNode.Render {
+		t.Errorf("expected 'unrendered.md' node to have render: false in graph.json")
+	}
 
-	// 3. Verify backlinks.json
+	// 3. Verify backlinks.json (includes references to/from unrendered pages)
 	backlinksPath := filepath.Join(outDir1, "backlinks.json")
 	backlinksData, err := os.ReadFile(backlinksPath)
 	if err != nil {
@@ -101,8 +110,11 @@ func TestReleaseSmoke(t *testing.T) {
 	if len(backlinksMap) == 0 {
 		t.Errorf("backlinks.json is empty")
 	}
+	if refs, ok := backlinksMap["unrendered.md"]; !ok || len(refs) == 0 {
+		t.Errorf("expected backlinks.json to record reference to unrendered page, got: %v", refs)
+	}
 
-	// 4. Verify meta.json
+	// 4. Verify meta.json (includes metadata for render:false pages)
 	metaPath := filepath.Join(outDir1, "meta.json")
 	metaData, err := os.ReadFile(metaPath)
 	if err != nil {
@@ -115,17 +127,22 @@ func TestReleaseSmoke(t *testing.T) {
 	if _, ok := metaMap["index"]; !ok {
 		t.Errorf("meta.json missing 'index' entry")
 	}
+	if unrenderedMeta, ok := metaMap["unrendered.md"]; !ok {
+		t.Errorf("meta.json missing 'unrendered.md' entry")
+	} else if renderVal, ok := unrenderedMeta["render"].(bool); !ok || renderVal {
+		t.Errorf("meta.json 'unrendered.md' expected render: false, got: %v", unrenderedMeta["render"])
+	}
 
-	// 5. Verify search.json
+	// 5. Verify search.json (excludes render:false pages)
 	searchPath := filepath.Join(outDir1, "search.json")
 	searchData, err := os.ReadFile(searchPath)
 	if err != nil {
 		t.Fatalf("missing search.json: %v", err)
 	}
 	var searchItems []struct {
-		Title string   `json:"title"`
-		URL   string   `json:"url"`
-		Tags  []string `json:"tags"`
+		Title string   `json:"t"`
+		URL   string   `json:"u"`
+		Tags  []string `json:"g"`
 	}
 	if err := json.Unmarshal(searchData, &searchItems); err != nil {
 		t.Fatalf("invalid search.json format: %v", err)
@@ -133,14 +150,22 @@ func TestReleaseSmoke(t *testing.T) {
 	if len(searchItems) == 0 {
 		t.Errorf("search.json is empty")
 	}
+	for _, item := range searchItems {
+		if strings.Contains(item.URL, "unrendered") || item.Title == "Raw Data Notes" {
+			t.Errorf("search.json unexpectedly contains render:false page: %+v", item)
+		}
+	}
 
-	// 6. Verify taxonomy pages
+	// 6. Verify taxonomy pages (excludes render:false pages)
 	verifyHTMLPage(t, outDir1, filepath.Join("tags", "index.html"), []string{"Tags"})
 	verifyHTMLPage(t, outDir1, filepath.Join("tags", "release", "index.html"), []string{"release"})
 	verifyHTMLPage(t, outDir1, filepath.Join("categories", "index.html"), []string{"Categories"})
 	verifyHTMLPage(t, outDir1, filepath.Join("categories", "general", "index.html"), []string{"general"})
+	if _, err := os.Stat(filepath.Join(outDir1, "tags", "raw", "index.html")); !os.IsNotExist(err) {
+		t.Errorf("render:false tag page 'tags/raw/index.html' should not be generated")
+	}
 
-	// 7. Verify RSS feed (feed.xml)
+	// 7. Verify RSS feed (feed.xml, excludes render:false pages)
 	feedPath := filepath.Join(outDir1, "feed.xml")
 	feedData, err := os.ReadFile(feedPath)
 	if err != nil {
@@ -167,8 +192,13 @@ func TestReleaseSmoke(t *testing.T) {
 	if len(rssStruct.Channel.Items) == 0 {
 		t.Errorf("RSS feed has no items")
 	}
+	for _, item := range rssStruct.Channel.Items {
+		if strings.Contains(item.Link, "unrendered") || item.Title == "Raw Data Notes" {
+			t.Errorf("feed.xml unexpectedly contains render:false page: %+v", item)
+		}
+	}
 
-	// 8. Verify sitemap.xml
+	// 8. Verify sitemap.xml (excludes render:false pages)
 	sitemapPath := filepath.Join(outDir1, "sitemap.xml")
 	sitemapData, err := os.ReadFile(sitemapPath)
 	if err != nil {
@@ -190,7 +220,9 @@ func TestReleaseSmoke(t *testing.T) {
 	for _, u := range sitemapStruct.URLs {
 		if u.Loc == "https://example.com/" {
 			hasHomepageLoc = true
-			break
+		}
+		if strings.Contains(u.Loc, "unrendered") {
+			t.Errorf("sitemap.xml unexpectedly contains render:false location: %s", u.Loc)
 		}
 	}
 	if !hasHomepageLoc {
@@ -208,7 +240,17 @@ func TestReleaseSmoke(t *testing.T) {
 		t.Errorf("robots.txt missing expected content, got:\n%s", robotsStr)
 	}
 
-	// 10. Verify static asset copying
+	// 10. Verify unrendered file copied raw
+	unrenderedRawPath := filepath.Join(outDir1, "unrendered.md")
+	unrenderedData, err := os.ReadFile(unrenderedRawPath)
+	if err != nil {
+		t.Fatalf("missing unrendered raw output file %s: %v", unrenderedRawPath, err)
+	}
+	if !strings.Contains(string(unrenderedData), "render: false") || strings.Contains(string(unrenderedData), "<!DOCTYPE html>") {
+		t.Errorf("unrendered file was not copied raw: %s", string(unrenderedData))
+	}
+
+	// 11. Verify static asset copying
 	assetPath := filepath.Join(outDir1, "assets", "sample-image.png")
 	assetData, err := os.ReadFile(assetPath)
 	if err != nil {
@@ -218,7 +260,55 @@ func TestReleaseSmoke(t *testing.T) {
 		t.Errorf("copied asset content mismatch, got %q", string(assetData))
 	}
 
-	// 11. Determinism Check across repeated runs
+	// 12. Contract verification when SiteURL is omitted (empty)
+	outDirNoSiteURL := t.TempDir()
+	cfgNoSiteURL := cfg
+	cfgNoSiteURL.OutputDir = outDirNoSiteURL
+	cfgNoSiteURL.SiteURL = ""
+
+	if _, err := generator.Build(cfgNoSiteURL); err != nil {
+		t.Fatalf("generator.Build with empty SiteURL failed: %v", err)
+	}
+
+	// 12a. robots.txt should omit Sitemap directive
+	robotsNoURLData, err := os.ReadFile(filepath.Join(outDirNoSiteURL, "robots.txt"))
+	if err != nil {
+		t.Fatalf("missing robots.txt in no-SiteURL build: %v", err)
+	}
+	if strings.Contains(string(robotsNoURLData), "Sitemap:") {
+		t.Errorf("robots.txt should omit Sitemap directive when SiteURL is empty, got:\n%s", string(robotsNoURLData))
+	}
+
+	// 12b. sitemap.xml locations should be root-relative
+	sitemapNoURLData, err := os.ReadFile(filepath.Join(outDirNoSiteURL, "sitemap.xml"))
+	if err != nil {
+		t.Fatalf("missing sitemap.xml in no-SiteURL build: %v", err)
+	}
+	var sitemapNoURLStruct struct {
+		XMLName xml.Name `xml:"urlset"`
+		URLs    []struct {
+			Loc string `xml:"loc"`
+		} `xml:"url"`
+	}
+	if err := xml.Unmarshal(sitemapNoURLData, &sitemapNoURLStruct); err != nil {
+		t.Fatalf("invalid sitemap.xml in no-SiteURL build: %v", err)
+	}
+	if len(sitemapNoURLStruct.URLs) == 0 {
+		t.Errorf("sitemap.xml in no-SiteURL build is empty")
+	} else if !strings.HasPrefix(sitemapNoURLStruct.URLs[0].Loc, "/") {
+		t.Errorf("expected root-relative sitemap location, got: %q", sitemapNoURLStruct.URLs[0].Loc)
+	}
+
+	// 12c. HTML canonical URL tag omitted when SiteURL is empty
+	indexHTMLNoSiteURL, err := os.ReadFile(filepath.Join(outDirNoSiteURL, "index.html"))
+	if err != nil {
+		t.Fatalf("missing index.html in no-SiteURL build: %v", err)
+	}
+	if strings.Contains(string(indexHTMLNoSiteURL), "rel=\"canonical\"") {
+		t.Errorf("index.html should omit rel=\"canonical\" when SiteURL is empty")
+	}
+
+	// 13. Determinism Check across repeated runs
 	outDir2 := t.TempDir()
 	cfg2 := cfg
 	cfg2.OutputDir = outDir2
@@ -236,6 +326,7 @@ func TestReleaseSmoke(t *testing.T) {
 		"sitemap.xml",
 		"robots.txt",
 		"index.html",
+		"unrendered.md",
 	}
 
 	for _, rel := range filesToCompare {
