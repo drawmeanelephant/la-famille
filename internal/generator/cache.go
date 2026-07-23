@@ -104,12 +104,15 @@ func cacheUsable(cache buildCache, outputDir, fingerprint string) bool {
 	if cache.Fingerprint != fingerprint || len(cache.GeneratedFiles) == 0 {
 		return false
 	}
-	for _, rel := range cache.GeneratedFiles {
+	actualFiles, err := generatedFiles(outputDir)
+	if err != nil || len(actualFiles) != len(cache.GeneratedFiles) {
+		return false
+	}
+	for i, rel := range cache.GeneratedFiles {
 		if rel == cacheFileName || filepath.IsAbs(rel) || strings.Contains(rel, "..") {
 			return false
 		}
-		info, err := os.Stat(filepath.Join(outputDir, filepath.FromSlash(rel)))
-		if err != nil || info.IsDir() {
+		if actualFiles[i] != rel {
 			return false
 		}
 	}

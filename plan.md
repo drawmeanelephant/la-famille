@@ -1,30 +1,24 @@
-# Plan: Release Readiness End-to-End Smoke Test
+# Plan: Build Correctness - Cache Invalidation Matrix
 
 ## Goal
-Implement a deterministic integration smoke test fixture (`release-smoke`) that builds a representative La Famille site through the generator/CLI path and validates key generated artifacts without brittle full-file snapshots.
+Prove that the existing incremental build cache rebuilds when any meaningful input changes and removes stale generated output when source files disappear.
 
 ## Proposed Changes
-1. **Fixture Creation:**
-   - Create `assets/testdata/sites/release-smoke/content/` containing Markdown pages exercising frontmatter (title, author, date, tags, categories, description), internal links between pages, and static assets.
+1. **Cache Validation Enhancement:**
+   - Modify `internal/generator/cache.go`: `cacheUsable` compares disk state (`generatedFiles(outputDir)`) with `cache.GeneratedFiles` to guarantee invalidation on missing or extraneous output files.
 
-2. **Fixture Test Runner Guardrail:**
-   - Update `cmd/la-famille/fixture_test.go` to skip snapshot comparison if a site fixture directory does not contain an `expected/` subdirectory.
+2. **Cache Invalidation Regression Test Suite:**
+   - Create `internal/generator/cache_invalidation_test.go` with subtests covering:
+     1. Unchanged Markdown produces a cache hit.
+     2. Changed Markdown triggers a rebuild.
+     3. Deleted Markdown removes its generated page and search/graph metadata.
+     4. Changed templates trigger a rebuild.
+     5. Changed assets trigger expected output updates (add, modify, delete).
+     6. Changed configuration triggers a rebuild.
+     7. Removed generated artifacts and orphan files do not survive a later build.
 
-3. **Smoke Test Implementation:**
-   - Add `cmd/la-famille/release_smoke_test.go` with `TestReleaseSmoke`:
-     - Builds the `release-smoke` site using `generator.Build` with site configuration (`SiteURL: "https://example.com"`).
-     - Validates existence and valid schema/structure of:
-       - Rendered HTML pages (`index.html`, `about/index.html`, post pages)
-       - `graph.json` (nodes & edges)
-       - `backlinks.json` (backlink mappings)
-       - `meta.json` (page metadata)
-       - `search.json` (search index array)
-       - Taxonomy pages (`tags/index.html`, `tags/release/index.html`, `categories/tech/index.html`)
-       - RSS feed (`feed.xml`)
-       - `sitemap.xml`
-       - `robots.txt`
-       - Canonical URL & OpenGraph metadata (`<link rel="canonical">`, `<meta property="og:...">`)
-     - Validates determinism by re-building to a separate directory and comparing output files byte-for-byte.
+3. **Validation & Verification:**
+   - Run `go test ./...`, `go vet ./...`, and repeated test runs for timing sensitivity.
 
 ## Potential Breaking Changes
-- None. Static asset generation pipeline behavior remains unchanged.
+- None. Build output contracts and cache schema (Version 1) remain intact.

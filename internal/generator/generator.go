@@ -468,16 +468,16 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	}
 	result.Health = ComputeContentHealth(fileMap, g, backlinks)
 
+	if err := discovery.Write(cfg, renderedPaths); err != nil {
+		return result, err
+	}
+
 	files, err := generatedFiles(cfg.OutputDir)
 	if err != nil {
 		return result, fmt.Errorf("failed to collect generated files: %w", err)
 	}
 	if err := writeBuildCache(cachePath(cfg.OutputDir), fingerprint, files, result.PageCount, result.Health); err != nil {
 		return result, fmt.Errorf("failed to write build cache: %w", err)
-	}
-
-	if err := discovery.Write(cfg, renderedPaths); err != nil {
-		return result, err
 	}
 
 	result.Duration = time.Since(start)
