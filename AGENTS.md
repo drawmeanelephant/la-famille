@@ -20,8 +20,10 @@ Coding agents have full ownership to write code, debug issues, resolve merge con
 To ensure high-quality PRs and maintain codebase health, agents must adhere to the following steps for every task:
 
 ### Phase 1: Planning
-- Before modifying files, update or create a `plan.md` in the workspace root detailing the steps you intend to take.
-- List any potential breaking changes to the static asset generation pipeline.
+- Before modifying files, create or update a unique task plan under `.agents/plans/<task-id>.md`.
+- Use a GitHub PR number, issue number, or branch name in the task ID when available.
+- Do not modify the root `plan.md` for routine implementation work; it is the shared roadmap and planning-policy file.
+- List any potential breaking changes to the static asset generation pipeline in the task plan.
 
 ### Phase 2: Testing & Verification
 - **Test-Driven Delivery:** Every feature, parser modification, or bug fix *must* include corresponding unit tests within the same package directory.
