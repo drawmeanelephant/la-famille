@@ -1,40 +1,30 @@
-# Implementation Plan - Rendered Taxonomy (Tag & Category) Pages
+# Plan: Release Readiness End-to-End Smoke Test
 
-## Summary
-Implement and complete rendered tag and category pages using the existing `internal/taxonomy` package, wired directly into the site generator pipeline. Ensure deterministic ordering, correct relative output URLs, HTML label escaping, empty-tag/category filtering, `render: false` page exclusion, and full integration tests.
-
-## Potential Breaking Changes
-None. Static asset generation will now output rendered tag pages (under `tags/<tag>/index.html`), category pages (under `categories/<category>/index.html`), and taxonomy listing index pages (`tags/index.html`, `categories/index.html`).
+## Goal
+Implement a deterministic integration smoke test fixture (`release-smoke`) that builds a representative La Famille site through the generator/CLI path and validates key generated artifacts without brittle full-file snapshots.
 
 ## Proposed Changes
+1. **Fixture Creation:**
+   - Create `assets/testdata/sites/release-smoke/content/` containing Markdown pages exercising frontmatter (title, author, date, tags, categories, description), internal links between pages, and static assets.
 
-### 1. Content Metadata (`internal/content/metadata.go`)
-- Add `Categories []string` to `FileMeta`.
-- Support parsing `category` (string or slice) and `categories` (slice or string) in markdown frontmatter.
-- Normalize and deduplicate tags and categories per file.
+2. **Fixture Test Runner Guardrail:**
+   - Update `cmd/la-famille/fixture_test.go` to skip snapshot comparison if a site fixture directory does not contain an `expected/` subdirectory.
 
-### 2. Taxonomy Package (`internal/taxonomy/taxonomy.go`, `internal/taxonomy/taxonomy_test.go`)
-- Complete `GenerateTags` and implement `GenerateCategories` / `GenerateTaxonomies`.
-- Filter empty tag/category strings (`""` or whitespace) and ignore tags/categories with 0 rendered pages.
-- Exclude pages where `meta.Render != nil && !*meta.Render`.
-- Ensure deterministic sorting of tags/categories and page relative paths (`sort.Strings`).
-- Deduplicate page references per tag/category.
-- Generate main taxonomy index pages (`tags/index.html` and `categories/index.html`) when tags/categories exist.
-- Escaped labels (`html.EscapeString`) for titles, headings, and link attributes.
-- Return generated relative output paths.
-- Add comprehensive unit tests in `taxonomy_test.go`.
+3. **Smoke Test Implementation:**
+   - Add `cmd/la-famille/release_smoke_test.go` with `TestReleaseSmoke`:
+     - Builds the `release-smoke` site using `generator.Build` with site configuration (`SiteURL: "https://example.com"`).
+     - Validates existence and valid schema/structure of:
+       - Rendered HTML pages (`index.html`, `about/index.html`, post pages)
+       - `graph.json` (nodes & edges)
+       - `backlinks.json` (backlink mappings)
+       - `meta.json` (page metadata)
+       - `search.json` (search index array)
+       - Taxonomy pages (`tags/index.html`, `tags/release/index.html`, `categories/tech/index.html`)
+       - RSS feed (`feed.xml`)
+       - `sitemap.xml`
+       - `robots.txt`
+       - Canonical URL & OpenGraph metadata (`<link rel="canonical">`, `<meta property="og:...">`)
+     - Validates determinism by re-building to a separate directory and comparing output files byte-for-byte.
 
-### 3. Generator Wiring (`internal/generator/generator.go`, `internal/generator/generator_test.go`)
-- Wire taxonomy page generation into `build()`.
-- Append taxonomy output paths to `renderedPaths` (included in `sitemap.xml`) and update `result.PageCount`.
-- Maintain graph, search index, sitedata, and cache compatibility.
-- Add integration tests for rendered tag/category pages in `generator_test.go`.
-
-## Verification Plan
-
-### Automated Tests & Quality Checks
-- `gofmt -w internal/content internal/taxonomy internal/generator`
-- `gofmt -d .`
-- `go test ./...`
-- `go vet ./...`
-- `go run ./cmd/la-famille build`
+## Potential Breaking Changes
+- None. Static asset generation pipeline behavior remains unchanged.

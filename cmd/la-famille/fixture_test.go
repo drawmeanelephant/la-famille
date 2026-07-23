@@ -40,6 +40,10 @@ func TestFixtures(t *testing.T) {
 				t.Fatalf("run failed: %v", err)
 			}
 
+			if _, err := os.Stat(expectedDir); os.IsNotExist(err) {
+				return
+			}
+
 			// Check all files in expectedDir exist in outputDir and match
 			err = filepath.WalkDir(expectedDir, func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
