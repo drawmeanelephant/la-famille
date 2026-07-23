@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -15,17 +17,60 @@ import (
 )
 
 func getFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
+	for i := 0; i < 20; i++ {
+		l, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			continue
+		}
+		port := l.Addr().(*net.TCPAddr).Port
+		_ = l.Close()
+		time.Sleep(20 * time.Millisecond)
+
+		l2, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err == nil {
+			_ = l2.Close()
+			return port, nil
+		}
+	}
+	return 0, errors.New("failed to find free port")
+}
+
+func setupValidTestConfig(t *testing.T, port int) config.Config {
+	t.Helper()
+	tmpDir := t.TempDir()
+
+	contentDir := filepath.Join(tmpDir, "content")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("Failed to create content dir: %v", err)
+	}
+	mdContent := []byte("---\ntitle: Test Page\n---\n# Hello World\n")
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), mdContent, 0600); err != nil {
+		t.Fatalf("Failed to write index.md: %v", err)
 	}
 
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
+	templateDir := filepath.Join(tmpDir, "templates")
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatalf("Failed to create template dir: %v", err)
 	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
+	layoutPath := filepath.Join(templateDir, "layout.html")
+	htmlContent := []byte("<!DOCTYPE html><html><body>{{.Content}}</body></html>")
+	if err := os.WriteFile(layoutPath, htmlContent, 0600); err != nil {
+		t.Fatalf("Failed to write layout.html: %v", err)
+	}
+
+	outputDir := filepath.Join(tmpDir, "public")
+	assetDir := filepath.Join(tmpDir, "assets")
+	ragDir := filepath.Join(tmpDir, "rag-archive")
+	_ = os.MkdirAll(assetDir, 0755)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = layoutPath
+	cfg.AssetDir = assetDir
+	cfg.RagDir = ragDir
+	cfg.Port = port
+	return cfg
 }
 
 func TestTUIServeShutdownAndRestart(t *testing.T) {
@@ -34,14 +79,7 @@ func TestTUIServeShutdownAndRestart(t *testing.T) {
 		t.Fatalf("Failed to get free port: %v", err)
 	}
 
-	cfg := config.Config{
-		ContentDir: "content",
-		OutputDir:  "public",
-		Template:   "templates/layout.html",
-		AssetDir:   "assets",
-		RagDir:     "rag-archive",
-		Port:       port,
-	}
+	cfg := setupValidTestConfig(t, port)
 
 	m := initialModel(cfg)
 
@@ -61,21 +99,11 @@ func TestTUIServeShutdownAndRestart(t *testing.T) {
 		cmd()
 	}
 
-	serverURL := fmt.Sprintf("http://127.0.0.1:%d/", port)
-
-	up := false
-	for i := 0; i < 20; i++ {
-		resp, err := http.Get(serverURL) // #nosec G107 - Test URL is internal/local
-		if err == nil {
-			resp.Body.Close()
-			up = true
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
+	if m.screen != screenServe {
+		t.Fatalf("Expected screenServe, got %v (workErr=%v)", m.screen, m.workErr)
 	}
-
-	if !up {
-		t.Fatalf("Server never started listening on port %d", port)
+	if m.server == nil {
+		t.Fatalf("Expected m.server != nil")
 	}
 
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
@@ -84,17 +112,168 @@ func TestTUIServeShutdownAndRestart(t *testing.T) {
 	if m.screen != screenMenu {
 		t.Fatalf("Expected screenMenu after 'q', got %v", m.screen)
 	}
+	if m.server != nil {
+		t.Fatalf("Expected m.server == nil post-shutdown")
+	}
+}
 
-	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+func TestTUIServeInitialBuildFailure(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Template = "nonexistent/layout.html"
+
+	m := initialModel(cfg)
+	var serveIdx int
+	for i, choice := range m.choices {
+		if choice.label == "Serve Site" {
+			serveIdx = i
+			break
+		}
+	}
+	m.cursor = serveIdx
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	m = newModel.(model)
+
+	if cmd != nil {
+		t.Errorf("Expected nil tea.Cmd on initial build failure, got %v", cmd)
+	}
+	if m.screen != screenWorking {
+		t.Errorf("Expected screenWorking on initial build failure, got %v", m.screen)
+	}
+	if m.server != nil {
+		t.Errorf("Expected m.server == nil on initial build failure")
+	}
+	if m.watcherCancel != nil {
+		t.Errorf("Expected m.watcherCancel == nil on initial build failure")
+	}
+	if m.workErr == nil {
+		t.Errorf("Expected m.workErr != nil on initial build failure")
+	}
+}
+
+func TestTUIServeWatchModeEnabled(t *testing.T) {
+	port, err := getFreePort()
 	if err != nil {
-		t.Fatalf("Failed to resolve addr: %v", err)
+		t.Fatalf("Failed to get free port: %v", err)
 	}
 
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		t.Fatalf("Failed to bind to port %d, server probably didn't shutdown cleanly: %v", port, err)
+	cfg := setupValidTestConfig(t, port)
+	cfg.WatchMode = true
+
+	m := initialModel(cfg)
+	var serveIdx int
+	for i, choice := range m.choices {
+		if choice.label == "Serve Site" {
+			serveIdx = i
+			break
+		}
 	}
-	l.Close()
+	m.cursor = serveIdx
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	m = newModel.(model)
+
+	if cmd != nil {
+		cmd()
+	}
+
+	if m.screen != screenServe {
+		t.Fatalf("Expected screenServe, got %v (workErr: %v)", m.screen, m.workErr)
+	}
+	if m.server == nil {
+		t.Fatalf("Expected m.server != nil when watch mode enabled")
+	}
+	if m.watcherCancel == nil {
+		t.Fatalf("Expected m.watcherCancel != nil when watch mode enabled")
+	}
+
+	m.stopServing()
+	if m.server != nil || m.watcherCancel != nil || m.serverCancel != nil {
+		t.Fatalf("Expected lifecycle fields cleared after stopServing")
+	}
+}
+
+func TestTUIServeCancellationKeys(t *testing.T) {
+	testCases := []struct {
+		name       string
+		keyMsg     tea.KeyMsg
+		wantScreen screen
+	}{
+		{
+			name:       "quit via q key",
+			keyMsg:     tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}},
+			wantScreen: screenMenu,
+		},
+		{
+			name:       "exit via esc key",
+			keyMsg:     tea.KeyMsg{Type: tea.KeyEscape},
+			wantScreen: screenMenu,
+		},
+		{
+			name:       "force quit via ctrl+c key",
+			keyMsg:     tea.KeyMsg{Type: tea.KeyCtrlC},
+			wantScreen: screenServe,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			port, err := getFreePort()
+			if err != nil {
+				t.Fatalf("Failed to get free port: %v", err)
+			}
+
+			cfg := setupValidTestConfig(t, port)
+			cfg.WatchMode = true
+
+			m := initialModel(cfg)
+			var serveIdx int
+			for i, choice := range m.choices {
+				if choice.label == "Serve Site" {
+					serveIdx = i
+					break
+				}
+			}
+			m.cursor = serveIdx
+
+			newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+			m = newModel.(model)
+			if cmd != nil {
+				cmd()
+			}
+
+			if m.server == nil || m.watcherCancel == nil {
+				t.Fatalf("Failed to start server/watcher")
+			}
+			if m.screen != screenServe {
+				t.Fatalf("Expected screenServe, got %v", m.screen)
+			}
+
+			done := make(chan struct{})
+			go func() {
+				updated, _ := m.Update(tc.keyMsg)
+				m = updated.(model)
+				close(done)
+			}()
+
+			select {
+			case <-done:
+			case <-time.After(5 * time.Second):
+				t.Fatalf("Key handling/stopServing timed out")
+			}
+
+			if tc.keyMsg.Type != tea.KeyCtrlC && m.screen != tc.wantScreen {
+				t.Errorf("Screen = %v, want %v", m.screen, tc.wantScreen)
+			}
+
+			if m.server != nil {
+				t.Errorf("m.server != nil post-shutdown")
+			}
+			if m.watcherCancel != nil {
+				t.Errorf("m.watcherCancel != nil post-shutdown")
+			}
+		})
+	}
 }
 
 func TestRunServerReportsStartupError(t *testing.T) {
@@ -596,3 +775,62 @@ func TestTUIReturnPathFromFailedWork(t *testing.T) {
 		t.Fatalf("esc key on failed work screen = %v, want screenMenu", mResEsc.screen)
 	}
 }
+
+func TestTUI_FrontmatterWarning_SurfacedInDiagnostics(t *testing.T) {
+	tmpDir := t.TempDir()
+	contentDir := filepath.Join(tmpDir, "content")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("Failed to create content dir: %v", err)
+	}
+	// Write file with malformed YAML frontmatter
+	malformedContent := []byte("---\ntitle: [invalid yaml\n  key: : :\n---\n# Content\n")
+	if err := os.WriteFile(filepath.Join(contentDir, "broken.md"), malformedContent, 0600); err != nil {
+		t.Fatalf("Failed to write broken.md: %v", err)
+	}
+
+	templateDir := filepath.Join(tmpDir, "templates")
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatalf("Failed to create template dir: %v", err)
+	}
+	layoutPath := filepath.Join(templateDir, "layout.html")
+	if err := os.WriteFile(layoutPath, []byte("<html><body>{{.Content}}</body></html>"), 0600); err != nil {
+		t.Fatalf("Failed to write layout.html: %v", err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = filepath.Join(tmpDir, "public")
+	cfg.Template = layoutPath
+
+	res, err := generator.Build(cfg)
+	if err != nil {
+		t.Fatalf("generator.Build failed unexpectedly: %v", err)
+	}
+	if len(res.Warnings) == 0 {
+		t.Fatalf("expected frontmatter warning in BuildResult.Warnings, got none")
+	}
+
+	m := initialModel(cfg)
+
+	// Dispatch workResultMsg containing BuildResult with warnings
+	msg := workResultMsg{
+		msg: "Build complete",
+		res: &res,
+	}
+	updated, _ := m.Update(msg)
+	mUpdated := updated.(model)
+
+	// Press 'd' to open Diagnostics view
+	diagModel, _ := mUpdated.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	mDiag := diagModel.(model)
+
+	if mDiag.screen != screenDiagnostics {
+		t.Fatalf("expected screen to be screenDiagnostics after pressing 'd', got %v", mDiag.screen)
+	}
+
+	view := mDiag.View()
+	if !strings.Contains(view, "frontmatter parse warning") {
+		t.Errorf("expected diagnostics view to surface frontmatter warning, got view:\n%s", view)
+	}
+}
+
