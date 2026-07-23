@@ -1,30 +1,30 @@
-# Plan: Release Readiness End-to-End Smoke Test
+# Plan: TUI Workflow Polish
 
 ## Goal
-Implement a deterministic integration smoke test fixture (`release-smoke`) that builds a representative La Famille site through the generator/CLI path and validates key generated artifacts without brittle full-file snapshots.
+Make build, serve, watch, diagnostics, and failure states easier to understand in the TUI without redesigning the current visual identity.
 
 ## Proposed Changes
-1. **Fixture Creation:**
-   - Create `assets/testdata/sites/release-smoke/content/` containing Markdown pages exercising frontmatter (title, author, date, tags, categories, description), internal links between pages, and static assets.
+1. **Failure Messages & Recovery Guidance (`cmd/la-famille/tui.go`)**:
+   - Provide actionable recovery instructions for build, server, and content errors (e.g. port conflict guidance, template/syntax error guidance).
+   - Display clear status messages and next-step actions in `screenWorking`, `screenServe`, and `screenDiagnostics`.
 
-2. **Fixture Test Runner Guardrail:**
-   - Update `cmd/la-famille/fixture_test.go` to skip snapshot comparison if a site fixture directory does not contain an `expected/` subdirectory.
+2. **Status Transitions & Server/Watch Modes (`cmd/la-famille/tui.go`)**:
+   - Improve `screenServe` to show active server URL, Watch mode status, Live Reload indicator, and exit guidance.
+   - Update `renderStatusPanel` dashboard display to cleanly show watch mode, server status, build phase, cache status, and diagnostics warnings with next-step tips.
 
-3. **Smoke Test Implementation:**
-   - Add `cmd/la-famille/release_smoke_test.go` with `TestReleaseSmoke`:
-     - Builds the `release-smoke` site using `generator.Build` with site configuration (`SiteURL: "https://example.com"`).
-     - Validates existence and valid schema/structure of:
-       - Rendered HTML pages (`index.html`, `about/index.html`, post pages)
-       - `graph.json` (nodes & edges)
-       - `backlinks.json` (backlink mappings)
-       - `meta.json` (page metadata)
-       - `search.json` (search index array)
-       - Taxonomy pages (`tags/index.html`, `tags/release/index.html`, `categories/tech/index.html`)
-       - RSS feed (`feed.xml`)
-       - `sitemap.xml`
-       - `robots.txt`
-       - Canonical URL & OpenGraph metadata (`<link rel="canonical">`, `<meta property="og:...">`)
-     - Validates determinism by re-building to a separate directory and comparing output files byte-for-byte.
+3. **Keyboard Help & Command Discoverability (`cmd/la-famille/tui.go`)**:
+   - Standardize key help prompts across all active screens (`screenMenu`, `screenWorking`, `screenServe`, `screenStats`, `screenDiagnostics`, `screenHelp`, `screenRaoul`).
+   - Polish `screenHelp` to present categorized, easy-to-read keyboard shortcuts.
+
+4. **Diagnostics & Content Health Next Steps (`cmd/la-famille/tui.go`)**:
+   - Add content health next-step suggestions in `screenStats` (guidance for missing descriptions, orphaned pages, missing dates).
+   - Add actionable guidance per diagnostic item in `screenDiagnostics`.
+
+5. **Unit Tests (`cmd/la-famille/tui_test.go`)**:
+   - Add/update unit tests for failure recovery guidance, serve view details, content health recommendations, keyboard help rendering, and navigation return paths.
 
 ## Potential Breaking Changes
-- None. Static asset generation pipeline behavior remains unchanged.
+- None. Static site generation semantics and static output files are completely unaffected.
+
+## Static Output Impact
+- Static output is **explicitly unaffected** as all changes are contained within `cmd/la-famille/tui.go` and `cmd/la-famille/tui_test.go`.
