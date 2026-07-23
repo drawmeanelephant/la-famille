@@ -448,9 +448,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case statsUpdateMsg:
 		newRes := msg.res
 		m.stats = &newRes
-		for _, warn := range msg.res.Warnings {
-			m.diagnostics = append(m.diagnostics, diagnostic{level: "warning", message: warn})
-		}
 		return m, nil
 
 	case workResultMsg:
@@ -472,9 +469,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.stats = msg.res
 			if msg.res.ErrorCount > 0 {
 				m.workEvents = append(m.workEvents, fmt.Sprintf("Warning: %d build errors reported", msg.res.ErrorCount))
-			}
-			for _, warn := range msg.res.Warnings {
-				m.diagnostics = append(m.diagnostics, diagnostic{level: "warning", message: warn})
 			}
 		}
 
