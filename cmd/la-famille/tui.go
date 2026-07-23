@@ -146,9 +146,27 @@ func initialModel(cfg config.Config) model {
 			{"Diagnostics"},
 			{"RAG Export"},
 			{"Help"},
-			{"Quit"},
 		},
 		menuOpen: true,
+	}
+}
+
+func getRecoveryGuidance(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(msg, "address already in use") || strings.Contains(msg, "bind"):
+		return "Port conflict: update 'port' in config.yaml or stop the existing process using the port."
+	case strings.Contains(msg, "template") || strings.Contains(msg, "layout"):
+		return "Template syntax error: inspect layout templates for missing tags or invalid formatting."
+	case strings.Contains(msg, "frontmatter") || strings.Contains(msg, "yaml") || strings.Contains(msg, "markdown"):
+		return "Content syntax error: check YAML frontmatter formatting and key delimiters in content files."
+	case strings.Contains(msg, "no such file") || strings.Contains(msg, "not found"):
+		return "Path missing: ensure content, template, and asset directories exist as configured."
+	default:
+		return "Check configuration in config.yaml and inspect detailed logs in Diagnostics drawer (press 'd')."
 	}
 }
 
@@ -278,7 +296,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.String() == "q" && m.screen == screenMenu {
 				return m, tea.Quit
 			}
-			if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.screen == screenServe {
+			if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.workErr != nil || m.screen == screenServe {
 				m.stopServing()
 				m.screen = screenMenu
 				return m, nil
@@ -609,7 +627,7 @@ func (m model) View() string {
 		leftBuf.WriteString(headerStyle.Render("🍔 OCTOBURGER MENU") + "\n")
 
 		if !m.menuOpen {
-			leftBuf.WriteString("\nMenu closed. Press m to open commands, q to quit.")
+			leftBuf.WriteString("\nMenu closed. Press m to open commands, d for diagnostics, q to quit.")
 		} else {
 			for i, choice := range m.choices {
 				cursor := "  "
@@ -620,7 +638,7 @@ func (m model) View() string {
 				}
 				leftBuf.WriteString(fmt.Sprintf("%s %s\n", cursor, style.Render(choice.label)))
 			}
-			leftBuf.WriteString("\nPress q to quit.")
+			leftBuf.WriteString("\n↑/k, ↓/j: Navigate • Enter: Select • m: Toggle menu • d: Diagnostics • q: Quit")
 		}
 
 		if isWide {
@@ -645,7 +663,7 @@ func (m model) View() string {
 
 	case screenRaoul:
 		s := accentStyle.Render(animatedRaoul(m.frame))
-		s += "\n\nPress Esc or q to go back."
+		s += "\n\nJust Raoul doing mascot work.\n\nPress Esc or q to go back to main menu."
 		if m.width > 0 {
 			return lipgloss.NewStyle().MaxWidth(m.width).Render(s)
 		}
@@ -703,6 +721,25 @@ func (m model) View() string {
 			} else {
 				s += strings.Join(h.MissingDates, ", ") + "\n"
 			}
+
+			hasHealthIssues := len(h.OrphanedPages) > 0 || len(h.MissingDescriptions) > 0 || len(h.MissingDates) > 0 || m.stats.ErrorCount > 0
+			s += "\n" + headerStyle.Render("Next-Step Guidance") + "\n"
+			if hasHealthIssues {
+				if len(h.OrphanedPages) > 0 {
+					s += subtleStyle.Render("• Orphaned pages detected: Add internal links to connect them to the site graph.") + "\n"
+				}
+				if len(h.MissingDescriptions) > 0 {
+					s += subtleStyle.Render("• Missing descriptions: Add 'description:' frontmatter for better SEO.") + "\n"
+				}
+				if len(h.MissingDates) > 0 {
+					s += subtleStyle.Render("• Missing dates: Add 'date:' frontmatter for proper post ordering.") + "\n"
+				}
+				if m.stats.ErrorCount > 0 {
+					s += subtleStyle.Render("• Build warnings/errors: Press 'd' to open Diagnostics drawer for details.") + "\n"
+				}
+			} else {
+				s += successBadge.Render("• Content health is optimal! All pages have valid metadata and graph links.") + "\n"
+			}
 		}
 		s += "\nRAG Token Estimations:\n"
 		ragDir := m.cfg.RagDir
@@ -727,16 +764,21 @@ func (m model) View() string {
 		} else {
 			s += "RAG archive not found. Run 'RAG Export' to generate bundles.\n"
 		}
-		s += "\nPress Esc or q to go back."
+		s += "\nPress d for diagnostics • Press Esc or q to go back to main menu."
 		if m.width > 0 {
 			return boxBorder.MaxWidth(m.width).Render(s)
 		}
 		return s
 
 	case screenDiagnostics:
-		s := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render("Diagnostics") + "\n\n"
+		s := titleStyle.Render("Diagnostics & Recovery Guidance") + "\n\n"
 		if len(m.diagnostics) == 0 {
-			return s + "No diagnostics recorded.\n\nUse d, Esc, or q to return."
+			s += "No diagnostics recorded. All system checks passed cleanly.\n\n"
+			s += "Press d, Esc, or q to return."
+			if m.width > 0 {
+				return boxBorder.MaxWidth(m.width).Render(s)
+			}
+			return s
 		}
 		for i, item := range m.diagnostics {
 			cursor := "  "
@@ -752,7 +794,11 @@ func (m model) View() string {
 			label := lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(strings.ToUpper(item.level))
 			s += fmt.Sprintf("%s%s %s\n", cursor, label, style.Render(item.message))
 			if item.source != "" {
-				s += fmt.Sprintf("    %s\n", item.source)
+				s += fmt.Sprintf("    Source: %s\n", item.source)
+			}
+			guidance := getRecoveryGuidance(errors.New(item.message))
+			if guidance != "" {
+				s += fmt.Sprintf("    Action: %s\n", guidance)
 			}
 		}
 		s += "\nUse ↑/↓ to navigate, c to clear, d/Esc/q to return."
@@ -762,15 +808,31 @@ func (m model) View() string {
 		return s
 
 	case screenHelp:
-		s := titleStyle.Render("La Famille Help") +
-			"\n\n↑/k and ↓/j  Navigate\nEnter/Space  Select\nm             Toggle octoburger menu\nEsc           Close menu or go back\nq             Quit\n\nPress Esc or q to go back."
+		s := titleStyle.Render("La Famille Help & Keybindings") + "\n\n"
+		s += headerStyle.Render("Navigation & Commands") + "\n"
+		s += "  ↑ / k        Move selection up\n"
+		s += "  ↓ / j        Move selection down\n"
+		s += "  Enter / Space Select command\n"
+		s += "  m            Toggle octoburger menu open/closed\n\n"
+		s += headerStyle.Render("Global Shortcuts") + "\n"
+		s += "  d            Toggle Diagnostics drawer\n"
+		s += "  c            Clear diagnostics (in Diagnostics drawer)\n"
+		s += "  Esc / q      Go back to main menu / close menu / quit\n"
+		s += "  Ctrl+C       Force quit application\n\n"
+		s += headerStyle.Render("Workflow Hints") + "\n"
+		s += "  • Build Site: Compiles site content & static assets to public directory.\n"
+		s += "  • Serve Site: Runs HTTP web server on 127.0.0.1 (with live reload if Watch Mode is on).\n"
+		s += "  • Toggle Watch Mode: Automatically rebuilds site on content change.\n"
+		s += "  • Diagnostics: Inspect error logs, stack traces, and recovery actions.\n\n"
+		s += "Press Esc or q to go back to main menu."
 		if m.width > 0 {
 			return boxBorder.MaxWidth(m.width).Render(s)
 		}
 		return s
 
 	case screenWorking:
-		s := m.workMsg + "\n"
+		s := titleStyle.Render("Task Progress") + "\n\n"
+		s += m.workMsg + "\n"
 		if m.workPhase != "" && m.workTotal > 0 {
 			s += fmt.Sprintf("Phase: %s (%d/%d)\n", m.workPhase, m.workCompleted, m.workTotal)
 		}
@@ -781,11 +843,18 @@ func (m model) View() string {
 			}
 		}
 		if m.workErr != nil {
-			s += errorBadge.Render(fmt.Sprintf("Error: %v", m.workErr)) + "\n"
+			s += "\n" + errorBadge.Render(fmt.Sprintf("Error: %v", m.workErr)) + "\n"
+			guidance := getRecoveryGuidance(m.workErr)
+			if guidance != "" {
+				s += warningBadge.Render("Recovery Guidance: ") + guidance + "\n"
+			}
 		} else if strings.Contains(m.workMsg, "complete") {
-			s += successBadge.Render("Success!") + "\n"
+			s += "\n" + successBadge.Render("Success!") + "\n"
+			if m.stats != nil && m.stats.ErrorCount > 0 {
+				s += warningBadge.Render(fmt.Sprintf("Warning: Build completed with %d error(s). Press 'd' to view diagnostics.", m.stats.ErrorCount)) + "\n"
+			}
 		}
-		s += "\nPress Enter or Esc to return to the menu."
+		s += "\nPress d for diagnostics • Press Enter or Esc to return to the menu."
 		if m.width > 0 {
 			return boxBorder.MaxWidth(m.width).Render(s)
 		}
@@ -798,8 +867,14 @@ func (m model) View() string {
 		}
 		s := accentStyle.Render(animatedRaoul(m.frame))
 		s += "\n\n"
-		s += titleStyle.Render(fmt.Sprintf("Serving site on http://localhost:%d", port))
-		s += "\n\nPress Esc or q to stop serving and go back."
+		s += titleStyle.Render(fmt.Sprintf("Serving site on http://127.0.0.1:%d", port)) + "\n"
+		if m.cfg.WatchMode {
+			s += successBadge.Render("Watch Mode: ENABLED (Live Reload active)") + "\n"
+		} else {
+			s += subtleStyle.Render("Watch Mode: DISABLED") + "\n"
+		}
+		s += infoBadge.Render("Server Status: RUNNING") + "\n\n"
+		s += "Press d for diagnostics • Press Esc or q to stop serving and return to menu."
 		if m.width > 0 {
 			return lipgloss.NewStyle().MaxWidth(m.width).Render(s)
 		}
