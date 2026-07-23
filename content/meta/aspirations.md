@@ -2,7 +2,6 @@
 title: "Aspirational Goals"
 author: "Jules"
 date: "2026-06-18"
-render: true
 ---
 
 # Aspirational To-Do Recommendations for La Famille

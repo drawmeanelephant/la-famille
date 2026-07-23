@@ -2,7 +2,6 @@
 title: "Album: Routine Tasks Vol 1"
 author: "Jules"
 date: "2026-06-19"
-render: true
 ---
 
 # Routine Tasks Vol 1
