@@ -12,4 +12,4 @@ categories:
 
 We are validating static site generation end-to-end.
 
-Return to [Home Page](index.md) or see [First Post](posts/first-post.md).
+Return to [Home Page](index.md), see [First Post](posts/first-post.md), or inspect [Unrendered Notes](unrendered.md).
