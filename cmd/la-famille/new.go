@@ -50,7 +50,14 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 				contentDir = newContentDir
 			}
 
-			targetPath := filepath.Join(contentDir, inputPath)
+			cleanInput := inputPath
+			slashContent := filepath.ToSlash(contentDir)
+			slashInput := filepath.ToSlash(inputPath)
+			if strings.HasPrefix(slashInput, slashContent+"/") {
+				cleanInput = slashInput[len(slashContent)+1:]
+			}
+
+			targetPath := filepath.Join(contentDir, cleanInput)
 			if !pathutil.IsSafePath(contentDir, targetPath) {
 				return fmt.Errorf("target path %q escapes content directory %q", inputPath, contentDir)
 			}

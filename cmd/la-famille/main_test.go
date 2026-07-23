@@ -35,6 +35,10 @@ theme: "dark"
 	if err := os.Mkdir(contentDir, 0755); err != nil {
 		t.Fatalf("Failed to create content dir: %v", err)
 	}
+	defaultContentDir := filepath.Join(tmpDir, "default_content_from_config")
+	if err := os.Mkdir(defaultContentDir, 0755); err != nil {
+		t.Fatalf("Failed to create default content dir: %v", err)
+	}
 
 	// Write a test markdown file
 	mdContent := []byte(`---
@@ -45,6 +49,9 @@ title: Test Page
 `)
 	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), mdContent, 0600); err != nil {
 		t.Fatalf("Failed to write index.md: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(defaultContentDir, "index.md"), mdContent, 0600); err != nil {
+		t.Fatalf("Failed to write index.md in default content dir: %v", err)
 	}
 
 	// Create templates dir and layout
@@ -433,3 +440,62 @@ func TestCLISiteURLOverride(t *testing.T) {
 		t.Errorf("expected SiteURL validation error message, got: %v", err)
 	}
 }
+
+func TestInitCommand_CreatesTemplateLayout(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	cfg := config.DefaultConfig()
+	rootCmd := setupRootCmd(cfg)
+	rootCmd.SetArgs([]string{"init"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("expected init to succeed, got: %v", err)
+	}
+
+	if _, err := os.Stat("config.yaml"); os.IsNotExist(err) {
+		t.Errorf("expected config.yaml to exist")
+	}
+
+	tmplPath := filepath.Join("templates", "layout.html")
+	if _, err := os.Stat(tmplPath); os.IsNotExist(err) {
+		t.Errorf("expected templates/layout.html to be created by init")
+	}
+}
+
+func TestServeCommand_InitialBuildFailure_ReturnsError(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	// Clean directory with no template layout
+	cfg := config.DefaultConfig()
+	cfg.Template = filepath.Join(tmpDir, "templates", "layout.html")
+
+	rootCmd := setupRootCmd(cfg)
+	rootCmd.SetArgs([]string{"serve"})
+
+	err = rootCmd.Execute()
+	if err == nil {
+		t.Fatalf("expected serve command to fail on initial build failure in clean directory, got nil")
+	}
+	if !strings.Contains(err.Error(), "initial build failed") {
+		t.Errorf("expected error to contain 'initial build failed', got: %v", err)
+	}
+}
+
+
+

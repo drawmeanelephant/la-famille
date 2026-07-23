@@ -253,3 +253,36 @@ func TestNewCommand_UnsafePath(t *testing.T) {
 		t.Errorf("expected error to contain 'escapes content directory', got: %v", err)
 	}
 }
+
+func TestNewCommand_ContentPrefixTrimming(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+
+	rootCmd := setupRootCmd(cfg)
+	var outBuf, errBuf bytes.Buffer
+	rootCmd.SetOut(&outBuf)
+	rootCmd.SetErr(&errBuf)
+	rootCmd.SetArgs([]string{"new", filepath.Join(contentDir, "posts/my-post.md"), "--content", contentDir})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected new command to succeed with content prefix, got error: %v", err)
+	}
+
+	expectedPath := filepath.Join(contentDir, "posts/my-post.md")
+	if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
+		t.Fatalf("expected file at %s, but it was not created", expectedPath)
+	}
+
+	unexpectedPath := filepath.Join(contentDir, contentDir, "posts/my-post.md")
+	if _, err := os.Stat(unexpectedPath); !os.IsNotExist(err) {
+		t.Fatalf("file was incorrectly created with duplicated content dir at %s", unexpectedPath)
+	}
+}
+

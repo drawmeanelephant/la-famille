@@ -3,13 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/tbuddy/la-famille/internal/logger"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
+
+	"github.com/tbuddy/la-famille/internal/logger"
 
 	"github.com/spf13/cobra"
 
@@ -29,8 +31,9 @@ var (
 
 func setupRootCmd(cfg config.Config) *cobra.Command {
 	var rootCmd = &cobra.Command{
-		Use:   "la-famille",
-		Short: "La Famille is a static site generator",
+		Use:          "la-famille",
+		Short:        "La Famille is a static site generator",
+		SilenceUsage: true,
 		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 			if cmd.Name() != "tui" {
 				_, _ = logger.Setup(globalLogFile, false)
@@ -79,6 +82,38 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 				return fmt.Errorf("failed to write config.yaml: %w", err)
 			}
 			slog.Info("Created default config.yaml")
+
+			tmplDir := "templates"
+			tmplPath := filepath.Join(tmplDir, "layout.html")
+			if _, err := os.Stat(tmplPath); os.IsNotExist(err) {
+				if err := os.MkdirAll(tmplDir, 0755); err != nil {
+					return fmt.Errorf("failed to create templates directory: %w", err)
+				}
+				defaultTmplContent := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <meta name="description" content="{{.Description}}">
+</head>
+<body>
+    <header>
+        <h1>{{.Title}}</h1>
+    </header>
+    <main>
+        <article>
+            {{.Content}}
+        </article>
+    </main>
+</body>
+</html>
+`
+				if err := os.WriteFile(tmplPath, []byte(defaultTmplContent), 0644); err != nil {
+					return fmt.Errorf("failed to write default template: %w", err)
+				}
+				slog.Info("Created default templates/layout.html")
+			}
 			return nil
 		},
 	}
@@ -118,6 +153,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			slog.Info("Building site...")
 			if _, err := generator.Build(cfg); err != nil {
 				slog.Error("Initial build failed", "error", err)
+				return fmt.Errorf("initial build failed: %w", err)
 			}
 
 			if watchMode {
