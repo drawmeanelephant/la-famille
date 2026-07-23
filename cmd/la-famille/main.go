@@ -109,7 +109,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 </body>
 </html>
 `
-				if err := os.WriteFile(tmplPath, []byte(defaultTmplContent), 0644); err != nil {
+				if err := os.WriteFile(tmplPath, []byte(defaultTmplContent), 0600); err != nil {
 					return fmt.Errorf("failed to write default template: %w", err)
 				}
 				slog.Info("Created default templates/layout.html")
