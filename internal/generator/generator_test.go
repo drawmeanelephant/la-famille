@@ -1086,6 +1086,73 @@ func TestBuild_GraphExplorerDisabledSkipsPage(t *testing.T) {
 	}
 }
 
+// TestBuild_ContentCollidingWithGeneratedArtifactFails covers a page that
+// renders to a path the build generates for itself. The explorer is written
+// after the content render pass, so without this guard the author's page is
+// overwritten with no error, while search.json keeps advertising it.
+func TestBuild_ContentCollidingWithGeneratedArtifactFails(t *testing.T) {
+	newSite := func(t *testing.T, explorer bool, pageName string) (config.Config, string) {
+		t.Helper()
+		tempDir := t.TempDir()
+		contentDir := filepath.Join(tempDir, "content")
+		templateDir := filepath.Join(tempDir, "templates")
+		for _, d := range []string{contentDir, templateDir} {
+			if err := os.MkdirAll(d, 0755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		templatePath := filepath.Join(templateDir, "layout.html")
+		if err := os.WriteFile(templatePath, []byte("{{.Content}}"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("# Home"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		body := []byte("---\ntitle: My Graph Page\n---\n# Mine\nSENTINEL_CONTENT\n")
+		if err := os.WriteFile(filepath.Join(contentDir, pageName), body, 0600); err != nil {
+			t.Fatal(err)
+		}
+		cfg := config.DefaultConfig()
+		cfg.ContentDir = contentDir
+		cfg.OutputDir = filepath.Join(tempDir, "public")
+		cfg.Template = templatePath
+		cfg.GraphExplorer = explorer
+		return cfg, cfg.OutputDir
+	}
+
+	t.Run("collision is reported", func(t *testing.T) {
+		cfg, _ := newSite(t, true, "graph.md")
+		_, err := Build(cfg)
+		if err == nil {
+			t.Fatal("expected a build error when a page collides with the generated explorer page")
+		}
+		if !strings.Contains(err.Error(), "collision") {
+			t.Errorf("error should name the collision, got: %v", err)
+		}
+	})
+
+	t.Run("allowed when the explorer is disabled", func(t *testing.T) {
+		cfg, outputDir := newSite(t, false, "graph.md")
+		if _, err := Build(cfg); err != nil {
+			t.Fatalf("graph.md must build fine when the explorer is off: %v", err)
+		}
+		body, err := os.ReadFile(filepath.Join(outputDir, "graph", "index.html"))
+		if err != nil {
+			t.Fatalf("author's page should exist: %v", err)
+		}
+		if !strings.Contains(string(body), "SENTINEL_CONTENT") {
+			t.Error("author's page was overwritten even with the explorer disabled")
+		}
+	})
+
+	t.Run("unrelated pages still build", func(t *testing.T) {
+		cfg, _ := newSite(t, true, "graphs-explained.md")
+		if _, err := Build(cfg); err != nil {
+			t.Fatalf("a page that does not collide must still build: %v", err)
+		}
+	})
+}
+
 // TestBuild_GraphExplorerDisabledSkipsAssetBundle covers the other half of
 // disabling the explorer: its CSS/JS live in the normal asset tree, so without
 // an explicit skip the standard copy step ships them even though nothing links
