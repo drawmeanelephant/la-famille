@@ -23,6 +23,10 @@ func RunExport(cfg config.Config) error {
 	}
 	slog.Info(fmt.Sprintf("RAG archive directory created at %s", outDir))
 
+	contentDir := bundleDir(cfg.ContentDir, "content", cfg.ProjectRoot)
+	assetDir := bundleDir(cfg.AssetDir, "assets", cfg.ProjectRoot)
+	templateDir, templateFile := templateBundleTarget(cfg)
+
 	// 1. System Bundle
 	if err := writeBundle(
 		filepath.Join(outDir, "rag-system.md"),
@@ -68,8 +72,8 @@ func RunExport(cfg config.Config) error {
 	}
 	defer cfgFile.Close()
 
-	_, _ = cfgFile.WriteString("<file path=\"assets/\">\n<content>\n")
-	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "assets"), func(path string, d fs.DirEntry, err error) error {
+	_, _ = cfgFile.WriteString(fmt.Sprintf("<file path=\"%s/\">\n<content>\n", assetDir))
+	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, assetDir), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // ignore missing assets dir
 		}
@@ -95,31 +99,42 @@ func RunExport(cfg config.Config) error {
 	})
 	_, _ = cfgFile.WriteString("</content>\n</file>\n\n")
 
-	_, _ = cfgFile.WriteString("<file path=\"templates/\">\n<content>\n")
-	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "templates"), func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil // ignore missing templates dir
+	if templateFile != "" {
+		// The template sits at the project root, so there is no directory to
+		// walk — listing "." would dump the whole project.
+		_, _ = cfgFile.WriteString(fmt.Sprintf("<file path=\"%s\">\n<content>\n", templateFile))
+		size := int64(0)
+		if info, err := os.Stat(filepath.Join(cfg.ProjectRoot, filepath.FromSlash(templateFile))); err == nil {
+			size = info.Size()
 		}
-		if isWithinDir(path, outDir) {
+		_, _ = cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", templateFile, size))
+	} else {
+		_, _ = cfgFile.WriteString(fmt.Sprintf("<file path=\"%s/\">\n<content>\n", templateDir))
+		_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, templateDir), func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return nil // ignore missing templates dir
+			}
+			if isWithinDir(path, outDir) {
+				if d.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			// if it's a directory, just print the path with a trailing slash
 			if d.IsDir() {
-				return filepath.SkipDir
+				_, _ = cfgFile.WriteString(filepath.ToSlash(getRel(cfg.ProjectRoot, path)) + "/\n")
+			} else {
+				// for files, print size and name
+				info, err := d.Info()
+				size := int64(0)
+				if err == nil {
+					size = info.Size()
+				}
+				_, _ = cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(getRel(cfg.ProjectRoot, path)), size))
 			}
 			return nil
-		}
-		// if it's a directory, just print the path with a trailing slash
-		if d.IsDir() {
-			_, _ = cfgFile.WriteString(filepath.ToSlash(getRel(cfg.ProjectRoot, path)) + "/\n")
-		} else {
-			// for files, print size and name
-			info, err := d.Info()
-			size := int64(0)
-			if err == nil {
-				size = info.Size()
-			}
-			_, _ = cfgFile.WriteString(fmt.Sprintf("%s (size: %d bytes)\n", filepath.ToSlash(getRel(cfg.ProjectRoot, path)), size))
-		}
-		return nil
-	})
+		})
+	}
 	_, _ = cfgFile.WriteString("</content>\n</file>\n\n")
 
 	slog.Info("Created rag-config.md")
@@ -129,9 +144,9 @@ func RunExport(cfg config.Config) error {
 		writeBundle(
 			filepath.Join(outDir, "rag-content.md"),
 			[]string{
-				"content/**/*.md",
+				contentDir + "/**/*.md",
 			},
-			[]string{"content/jules"},
+			[]string{contentDir + "/jules"},
 			nil, // Default formatting is verbatim with XML tags, which preserves the YAML frontmatter
 			outDir,
 			cfg.ProjectRoot,
@@ -220,6 +235,52 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 	}
 
 	return nil
+}
+
+// templateBundleTarget decides what the config bundle should list for
+// templates. A template configured at the project root (template:
+// layout.html) has no directory of its own, and walking "." would dump the
+// entire project, so the single file is listed instead. Exactly one of the
+// two return values is non-empty.
+func templateBundleTarget(cfg config.Config) (dir string, singleFile string) {
+	tmpl := strings.TrimSpace(cfg.Template)
+	if tmpl == "" {
+		return "templates", ""
+	}
+	if d := bundleDir(filepath.Dir(tmpl), "", cfg.ProjectRoot); d != "" {
+		return d, ""
+	}
+	if f := bundleDir(tmpl, "", cfg.ProjectRoot); f != "" {
+		return "", f
+	}
+	return "templates", ""
+}
+
+// bundleDir normalises a configured directory for use in bundle patterns and
+// walks, falling back to the historical default when nothing usable is set.
+//
+// The patterns and walks below are all resolved against projectRoot, so an
+// absolute configured directory has to be brought back into that frame first —
+// filepath.Join(root, "/abs/dir") silently yields root + "/abs/dir" rather than
+// the directory the author configured. A directory outside projectRoot cannot
+// be expressed as a bundle pattern at all, so it falls back to the default.
+func bundleDir(configured, fallback, projectRoot string) string {
+	dir := strings.TrimSpace(configured)
+	if dir == "" {
+		return fallback
+	}
+	if filepath.IsAbs(dir) {
+		rel, err := filepath.Rel(projectRoot, dir)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return fallback
+		}
+		dir = rel
+	}
+	dir = filepath.ToSlash(filepath.Clean(dir))
+	if dir == "." || dir == "/" {
+		return fallback
+	}
+	return strings.TrimSuffix(dir, "/")
 }
 
 // isWithinDir reports whether path is dir itself or a descendant of dir.

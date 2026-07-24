@@ -9,6 +9,74 @@ import (
 	"github.com/tbuddy/la-famille/internal/config"
 )
 
+// TestBundleDir covers how a configured directory is normalised before it is
+// used in bundle patterns and walks, which are all resolved against
+// ProjectRoot. An absolute directory is the interesting case: passing one
+// straight to filepath.Join(root, dir) yields root+dir and silently exports
+// nothing.
+func TestBundleDir(t *testing.T) {
+	root := filepath.Join(string(filepath.Separator), "srv", "site")
+
+	cases := []struct {
+		name       string
+		configured string
+		fallback   string
+		want       string
+	}{
+		{"empty falls back", "", "content", "content"},
+		{"whitespace falls back", "   ", "content", "content"},
+		{"relative is kept", "docs", "content", "docs"},
+		{"nested relative is kept", "src/pages", "content", "src/pages"},
+		{"trailing slash trimmed", "docs/", "content", "docs"},
+		{"dot falls back", ".", "content", "content"},
+		{"absolute inside root becomes relative", filepath.Join(root, "docs"), "content", "docs"},
+		{"absolute nested inside root becomes relative", filepath.Join(root, "src", "pages"), "content", "src/pages"},
+		{"absolute equal to root falls back", root, "content", "content"},
+		{"absolute outside root falls back", filepath.Join(string(filepath.Separator), "elsewhere", "docs"), "content", "content"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := bundleDir(c.configured, c.fallback, root); got != c.want {
+				t.Errorf("bundleDir(%q, %q, %q) = %q, want %q", c.configured, c.fallback, root, got, c.want)
+			}
+		})
+	}
+}
+
+// TestTemplateBundleTarget covers a template configured at the project root.
+// filepath.Dir of "layout.html" is ".", and walking "." would list the whole
+// project, so that case must resolve to the single file instead of falling
+// back to an unrelated templates/ directory that the site does not use.
+func TestTemplateBundleTarget(t *testing.T) {
+	root := filepath.Join(string(filepath.Separator), "srv", "site")
+
+	cases := []struct {
+		name         string
+		template     string
+		wantDir      string
+		wantFileOnly string
+	}{
+		{"default nested template", "templates/layout.html", "templates", ""},
+		{"custom nested template", "layouts/base.html", "layouts", ""},
+		{"root-level template", "layout.html", "", "layout.html"},
+		{"absolute root-level template", filepath.Join(root, "layout.html"), "", "layout.html"},
+		{"absolute nested template", filepath.Join(root, "layouts", "base.html"), "layouts", ""},
+		{"unset falls back", "", "templates", ""},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			cfg := config.Config{Template: c.template, ProjectRoot: root}
+			dir, file := templateBundleTarget(cfg)
+			if dir != c.wantDir || file != c.wantFileOnly {
+				t.Errorf("templateBundleTarget(%q) = (%q, %q), want (%q, %q)",
+					c.template, dir, file, c.wantDir, c.wantFileOnly)
+			}
+		})
+	}
+}
+
 func TestRunExport_ProjectRoot(t *testing.T) {
 	// Create a temp directory to represent our project
 	tempDir := t.TempDir()
@@ -242,6 +310,52 @@ func TestRunExport_ExcludesConfiguredOutputDirectory_AssetsAndTemplates(t *testi
 			t.Errorf("content bundle included stale file from root RAG directory:\n%s", cntStr)
 		}
 	})
+}
+
+func TestRunExport_HonoursConfiguredDirectories(t *testing.T) {
+	projectRoot := t.TempDir()
+
+	writeExportTestFile(t, filepath.Join(projectRoot, "posts", "hello.md"), "# Hello")
+	writeExportTestFile(t, filepath.Join(projectRoot, "posts", "jules", "internal.md"), "# Internal")
+	writeExportTestFile(t, filepath.Join(projectRoot, "static", "logo.png"), "PNG")
+	writeExportTestFile(t, filepath.Join(projectRoot, "layouts", "base.html"), "<html></html>")
+
+	ragDir := filepath.Join(t.TempDir(), "my-rag")
+	cfg := config.Config{
+		ProjectRoot: projectRoot,
+		RagDir:      ragDir,
+		ContentDir:  "posts",
+		AssetDir:    "static",
+		Template:    "layouts/base.html",
+	}
+
+	if err := RunExport(cfg); err != nil {
+		t.Fatalf("RunExport failed: %v", err)
+	}
+
+	contentBundle, err := os.ReadFile(filepath.Join(ragDir, "rag-content.md"))
+	if err != nil {
+		t.Fatalf("read content bundle: %v", err)
+	}
+	contentStr := string(contentBundle)
+	if !strings.Contains(contentStr, "<file path=\"posts/hello.md\">") {
+		t.Errorf("content bundle missing the configured content directory:\n%s", contentStr)
+	}
+	if strings.Contains(contentStr, "posts/jules/internal.md") {
+		t.Errorf("content bundle included the jules directory of the configured content dir:\n%s", contentStr)
+	}
+
+	cfgBundle, err := os.ReadFile(filepath.Join(ragDir, "rag-config.md"))
+	if err != nil {
+		t.Fatalf("read config bundle: %v", err)
+	}
+	cfgStr := string(cfgBundle)
+	if !strings.Contains(cfgStr, "static/logo.png") {
+		t.Errorf("config bundle missing the configured asset directory:\n%s", cfgStr)
+	}
+	if !strings.Contains(cfgStr, "layouts/base.html") {
+		t.Errorf("config bundle missing the configured template directory:\n%s", cfgStr)
+	}
 }
 
 func writeExportTestFile(t *testing.T, path, content string) {
