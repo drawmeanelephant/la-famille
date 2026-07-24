@@ -2,8 +2,10 @@ package watcher
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sync"
+	"time"
 )
 
 var (
@@ -39,11 +41,28 @@ func LiveReloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The serve command sets a server-wide WriteTimeout, which covers this
+	// whole response. Left in place it kills an idle stream, and any reload
+	// broadcast during the browser's reconnect gap is lost.
+	if err := http.NewResponseController(w).SetWriteDeadline(time.Time{}); err != nil {
+		slog.Warn("Live reload stream keeps the server write deadline", "error", err)
+	}
+
+	// Commit the response head straight away: the browser only considers the
+	// EventSource open once the headers arrive, and an idle stream would
+	// otherwise send nothing at all.
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+
 	// Wait for a message or client disconnect
 	for {
 		select {
 		case <-clientChan:
-			fmt.Fprintf(w, "data: reload\n\n")
+			if _, err := fmt.Fprintf(w, "data: reload\n\n"); err != nil {
+				// The stream is broken; drop the client so the browser can
+				// reconnect instead of us swallowing further broadcasts.
+				return
+			}
 			flusher.Flush()
 		case <-r.Context().Done():
 			return
