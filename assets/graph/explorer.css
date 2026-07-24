@@ -376,3 +376,48 @@
 
 .kgx-svg .kgx-node.dim { opacity: 0.35; }
 .kgx-svg .kgx-edge.dim { opacity: 0.15; }
+
+/* Visually hidden, still announced by screen readers. */
+.kgx-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The skip link is hidden until it takes focus, then becomes visible so a
+   sighted keyboard user can see what they are about to activate. */
+.kgx-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10;
+  background: var(--kgx-card);
+  color: var(--kgx-fg);
+  border: 1px solid var(--kgx-accent);
+  border-radius: 0 0 0.5rem 0;
+  padding: 0.5rem 0.9rem;
+  text-decoration: none;
+}
+.kgx-skip-link:focus {
+  left: 0;
+  outline: 2px solid var(--kgx-focus);
+  outline-offset: 2px;
+}
+
+.kgx-detail-close {
+  float: right;
+  background: transparent;
+  border: 1px solid var(--kgx-border);
+  color: var(--kgx-muted);
+  border-radius: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+}
+.kgx-detail-close:hover { color: var(--kgx-fg); border-color: var(--kgx-accent); }
+.kgx-detail-close:focus-visible { outline: 2px solid var(--kgx-focus); outline-offset: 2px; }

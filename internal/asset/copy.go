@@ -13,6 +13,10 @@ import (
 	"github.com/tbuddy/la-famille/internal/pathutil"
 )
 
+// graphAssetDir is the asset subdirectory holding the knowledge graph
+// explorer's bundle. It mirrors the path in internal/graphexplorer.AssetRel.
+const graphAssetDir = "graph"
+
 func CopyAssets(cfg config.Config) error {
 	if cfg.AssetDir == "" {
 		return nil
@@ -50,6 +54,17 @@ func CopyAssets(cfg config.Config) error {
 		}
 
 		relSlash := filepath.ToSlash(relPath)
+
+		// The knowledge graph explorer's bundle is only reachable from the
+		// explorer page. When graph_explorer is off that page is never
+		// generated, so copying the bundle would ship dead CSS and JS.
+		if !cfg.GraphExplorer && (relSlash == graphAssetDir || strings.HasPrefix(relSlash, graphAssetDir+"/")) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
 		if IsIgnoredAsset(path, d.IsDir(), relSlash, cfg.ProjectRoot, ignoreRules) {
 			return nil
 		}

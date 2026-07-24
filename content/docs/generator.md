@@ -44,9 +44,11 @@ As part of the JSON Output step, the generator produces a few specialized files 
 
 ### Explorer Consumption Contract
 
-The Knowledge Graph Explorer is a static consumer of the existing graph artifacts. After `Build()` writes `graph.json`, `meta.json`, and `backlinks.json`, the generator invokes `internal/graphexplorer.Write()` which renders `<output>/graph/index.html` from an embedded HTML template (`internal/graphexplorer/assets/template.html`). The template references the companion client bundle (`<output>/assets/graph/explorer.{js,css}`) which the asset pipeline copies verbatim from `assets/graph/` in the project root.
+The Knowledge Graph Explorer renders a payload the generator assembles. After `Build()` writes `graph.json`, `meta.json`, and `backlinks.json`, the generator invokes `internal/graphexplorer.Write()`, which renders `<output>/graph/index.html` from an embedded HTML template (`internal/graphexplorer/assets/template.html`) and writes `<output>/graph/data.json` beside it. The template references the companion client bundle (`<output>/assets/graph/explorer.{js,css}`) which the asset pipeline copies verbatim from `assets/graph/` in the project root.
 
-The explorer's client runtime never queries the build-time `cfg.GraphExplorer` flag — it reads only the JSON files. That decoupling means you can regenerate the explorer page's bundle by editing `assets/graph/explorer.js` (or `explorer.css`) and re-running `la-famille build`; the page picks up the new bytes without any Go change. Conversely, you can drop the page entirely by setting `graph_explorer: false` and the generator will skip the `<output>/graph/` directory.
+`data.json` is built by `graphexplorer.BuildData`, which resolves link direction via `graph.Adjacency`, classifies each node (rendered / raw / stub / orphan), and computes each page's public URL from the output path it was written to. Doing this once in Go keeps the rules covered by tests and stops the browser and the generator from disagreeing about the same graph.
+
+The explorer's client runtime never queries the build-time `cfg.GraphExplorer` flag — it reads only its payload. That decoupling means you can restyle or re-script the page by editing `assets/graph/explorer.js` (or `explorer.css`) and re-running `la-famille build`; the page picks up the new bytes without any Go change. Changing what the graph *means*, however, belongs in `internal/graphexplorer`. Setting `graph_explorer: false` skips both the `<output>/graph/` directory and the `assets/graph/` bundle, so a disabled explorer ships nothing.
 
 ### Manual Navigation Snippet
 
