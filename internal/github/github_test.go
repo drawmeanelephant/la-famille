@@ -273,15 +273,15 @@ type redirectTransport struct {
 	baseURL string
 }
 
-func (t *redirectTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *redirectTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	// e.g. /repos/owner/repo/commits/... -> /commits/...
-	path := req.URL.Path[len("/repos/owner/repo"):]
+	path := r.URL.Path[len("/repos/owner/repo"):]
 	urlStr := t.baseURL + path
-	if req.URL.RawQuery != "" {
-		urlStr += "?" + req.URL.RawQuery
+	if r.URL.RawQuery != "" {
+		urlStr += "?" + r.URL.RawQuery
 	}
-	newReq, _ := http.NewRequest(req.Method, urlStr, req.Body)
-	newReq.Header = req.Header
+	newReq, _ := http.NewRequest(r.Method, urlStr, r.Body) //nolint:gosec // test helper
+	newReq.Header = r.Header
 
 	return http.DefaultTransport.RoundTrip(newReq)
 }
