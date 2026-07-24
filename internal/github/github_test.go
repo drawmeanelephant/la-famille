@@ -208,6 +208,37 @@ func TestAreChecksPassing_AllPagesSucceed(t *testing.T) {
 	}
 }
 
+// TestAreChecksPassing_PagingIsBounded guards the paging loop against a
+// server-reported total it can never satisfy. The loop is driven by
+// total_count, so without a ceiling an inflated count turns a single call into
+// thousands of sequential requests against the API.
+func TestAreChecksPassing_PagingIsBounded(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		// Always one more run, never reaching the advertised total.
+		_ = json.NewEncoder(w).Encode(CheckRunsResponse{
+			TotalCount: 1000000,
+			CheckRuns:  []CheckRun{{Status: "completed", Conclusion: "success"}},
+		})
+	}))
+	defer server.Close()
+
+	c := NewClient("token", "owner", "repo")
+	c.HTTPClient.Transport = &redirectTransport{baseURL: server.URL + "/repos/owner/repo"}
+
+	passing, err := c.AreChecksPassing("shaEndless")
+	if passing {
+		t.Error("expected passing=false when the reported total is never reached")
+	}
+	if err == nil {
+		t.Error("expected an error rather than an unbounded walk")
+	}
+	if requests > checkRunsMaxPages {
+		t.Errorf("made %d requests, want at most %d — the paging loop is unbounded", requests, checkRunsMaxPages)
+	}
+}
+
 func TestAreChecksPassing_TruncatedPagesAreNotPassing(t *testing.T) {
 	// A server that reports more runs than it ever returns must not yield a passing verdict.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

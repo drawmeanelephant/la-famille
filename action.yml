@@ -47,6 +47,11 @@ runs:
         # Build from the action's own checkout. The module is declared as
         # github.com/tbuddy/la-famille, so it cannot be fetched through the
         # module proxy under the repository path this action is published at.
+        # go build takes -o literally, so the .exe suffix Windows needs has to
+        # be supplied here; the action declares no OS restriction.
         BIN="${RUNNER_TEMP:-/tmp}/la-famille"
+        if [ "${RUNNER_OS:-}" = "Windows" ]; then
+          BIN="${BIN}.exe"
+        fi
         (cd "$GITHUB_ACTION_PATH" && go build -o "$BIN" ./cmd/la-famille)
         "$BIN" build "${ARGS[@]}"

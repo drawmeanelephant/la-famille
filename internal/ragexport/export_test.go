@@ -44,6 +44,39 @@ func TestBundleDir(t *testing.T) {
 	}
 }
 
+// TestTemplateBundleTarget covers a template configured at the project root.
+// filepath.Dir of "layout.html" is ".", and walking "." would list the whole
+// project, so that case must resolve to the single file instead of falling
+// back to an unrelated templates/ directory that the site does not use.
+func TestTemplateBundleTarget(t *testing.T) {
+	root := filepath.Join(string(filepath.Separator), "srv", "site")
+
+	cases := []struct {
+		name         string
+		template     string
+		wantDir      string
+		wantFileOnly string
+	}{
+		{"default nested template", "templates/layout.html", "templates", ""},
+		{"custom nested template", "layouts/base.html", "layouts", ""},
+		{"root-level template", "layout.html", "", "layout.html"},
+		{"absolute root-level template", filepath.Join(root, "layout.html"), "", "layout.html"},
+		{"absolute nested template", filepath.Join(root, "layouts", "base.html"), "layouts", ""},
+		{"unset falls back", "", "templates", ""},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			cfg := config.Config{Template: c.template, ProjectRoot: root}
+			dir, file := templateBundleTarget(cfg)
+			if dir != c.wantDir || file != c.wantFileOnly {
+				t.Errorf("templateBundleTarget(%q) = (%q, %q), want (%q, %q)",
+					c.template, dir, file, c.wantDir, c.wantFileOnly)
+			}
+		})
+	}
+}
+
 func TestRunExport_ProjectRoot(t *testing.T) {
 	// Create a temp directory to represent our project
 	tempDir := t.TempDir()

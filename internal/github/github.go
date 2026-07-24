@@ -143,13 +143,19 @@ type CheckRunsResponse struct {
 // checkRunsPageSize is the largest page the check-runs API will serve.
 const checkRunsPageSize = 100
 
+// checkRunsMaxPages bounds the paging loop. The loop otherwise trusts the
+// server-reported total_count to decide when it is done, so an inflated or
+// wrong count could turn one call into thousands of sequential requests
+// against the API. No real ref approaches this many check runs.
+const checkRunsMaxPages = 20
+
 // AreChecksPassing returns true if all check runs for the given ref are completed and successful/skipped.
 // Every page of check runs is inspected, so a run that lands beyond the first page cannot hide a failure.
 // A ref for which no check runs are reported is NOT passing: the runs may not have been created yet, or
 // the repository may report CI through commit statuses, which this endpoint never returns.
 func (c *Client) AreChecksPassing(ref string) (bool, error) {
 	inspected, total := 0, 0
-	for page := 1; ; page++ {
+	for page := 1; page <= checkRunsMaxPages; page++ {
 		var resp CheckRunsResponse
 		path := fmt.Sprintf("/commits/%s/check-runs?per_page=%d&page=%d", ref, checkRunsPageSize, page)
 		if err := c.doRequest("GET", path, nil, &resp); err != nil {
@@ -180,6 +186,7 @@ func (c *Client) AreChecksPassing(ref string) (bool, error) {
 			return false, fmt.Errorf("check runs for %s are truncated: inspected %d of %d", ref, inspected, total)
 		}
 	}
+	return false, fmt.Errorf("check runs for %s exceed %d pages: inspected %d of %d", ref, checkRunsMaxPages, inspected, total)
 }
 
 // ClosePR closes a pull request.
