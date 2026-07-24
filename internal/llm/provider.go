@@ -86,21 +86,21 @@ func SafeResponse(r Response, maxLen int) Response {
 	return out
 }
 
-// Truncate caps a string to at most max runes, adding an ellipsis when
+// Truncate caps a string to at most maxRunes, adding an ellipsis when
 // shortened. Inputs shorter than or equal to the cap (by rune count) are
 // returned unchanged.
-func Truncate(s string, max int) string {
-	if max <= 0 {
+func Truncate(s string, maxRunes int) string {
+	if maxRunes <= 0 {
 		return ""
 	}
 	runes := []rune(s)
-	if len(runes) <= max {
+	if len(runes) <= maxRunes {
 		return s
 	}
-	if max == 1 {
-		return string(runes[:1])
+	if maxRunes == 1 {
+		return "…"
 	}
-	return string(runes[:max-1]) + "…"
+	return string(runes[:maxRunes-1]) + "…"
 }
 
 // NormalizeWhitespace collapses runs of whitespace into single spaces. We use

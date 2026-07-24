@@ -88,11 +88,6 @@ func BuildAnswerPrompt(question string, retrieved []Scored, cites *Citations, bu
 		remaining -= len(block)
 	}
 	sb.WriteString("\nQuestion: " + strings.TrimSpace(question) + "\nAnswer:")
-	if cites == nil {
-		// Safety net: callers should always pass a non-nil Citations, but
-		// returning gracefully is better than panicking on the local server.
-		cites = NewCitations(nil)
-	}
 	return sb.String(), hints
 }
 

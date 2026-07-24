@@ -98,7 +98,7 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 
 		// Strong guard against accidental exposure.
 		if !askFlagBundle.expose && !ask.IsLoopbackHost(host) {
-			return fmt.Errorf("refusing to start: --host=%q is not loopback. Re-run with --expose-host if you understand the implications.", host)
+			return fmt.Errorf("refusing to start: --host=%q is not loopback (re-run with --expose-host if you understand the implications)", host)
 		}
 
 		ragDir := askFlagBundle.ragDir

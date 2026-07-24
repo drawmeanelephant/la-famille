@@ -36,16 +36,16 @@ type Chunk struct {
 // Excerpt returns a short, single-line preview of the chunk text suitable
 // for display in source cards. It trims aggressively because the UI renders
 // cards compactly.
-func (c Chunk) Excerpt(max int) string {
+func (c Chunk) Excerpt(maxRunes int) string {
 	text := strings.Join(strings.Fields(c.Text), " ")
-	if max <= 0 {
+	if maxRunes <= 0 {
 		return ""
 	}
 	runes := []rune(text)
-	if len(runes) <= max {
+	if len(runes) <= maxRunes {
 		return text
 	}
-	return string(runes[:max-1]) + "…"
+	return string(runes[:maxRunes-1]) + "…"
 }
 
 // HeadingLabel produces a human-readable heading trail: "Page > Foo > Bar".

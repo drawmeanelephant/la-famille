@@ -474,7 +474,7 @@ func (s *Server) Start(ctx context.Context) error {
 }
 
 // Shutdown stops the running server. It is safe to call multiple times.
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *Server) Shutdown(_ context.Context) error {
 	return nil // lifecycle owned by Start's context
 }
 

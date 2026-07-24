@@ -128,11 +128,6 @@ func parseRAGBundle(p string) (parsedBundle, error) {
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 1<<16), 1<<24) // 16 MB
 
-	const (
-		stateIdle = iota
-		stateInFile
-		stateInContent
-	)
 
 	var (
 		currentFile *parsedFile

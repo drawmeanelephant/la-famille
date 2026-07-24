@@ -399,9 +399,9 @@ func freePort() (int, error) {
 
 func waitForServer(port int, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
-	url := fmt.Sprintf("http://127.0.0.1:%d/api/status", port)
+	reqURL := fmt.Sprintf("http://127.0.0.1:%d/api/status", port)
 	for time.Now().Before(deadline) {
-		res, err := http.Get(url)
+		res, err := http.Get(reqURL) //nolint:gosec // test helper targeting local test server
 		if err == nil {
 			res.Body.Close()
 			if res.StatusCode == 200 {
