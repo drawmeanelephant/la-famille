@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -38,6 +39,12 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 			buildTimer.Stop()
 		}
 	}()
+
+	// Rebuilds run on the timer's own goroutine and Stop is a no-op once the
+	// timer has fired, so an event arriving mid-build schedules a second pass
+	// that would otherwise overlap the first. Concurrent builds race over the
+	// output directory swap and one of them loses its rendered output.
+	var buildMu sync.Mutex
 
 	// Orchestrate directories to monitor
 	dirsToWatch := []string{cfg.ContentDir}
@@ -124,6 +131,8 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 				}
 
 				buildTimer = time.AfterFunc(debounce, func() {
+					buildMu.Lock()
+					defer buildMu.Unlock()
 					select {
 					case <-ctx.Done():
 						return

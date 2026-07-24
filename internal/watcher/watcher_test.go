@@ -1,8 +1,11 @@
 package watcher
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -129,6 +132,130 @@ func TestLiveReloadBroadcastAndDisconnect(t *testing.T) {
 	}
 	if clientsSnapshot() != 0 {
 		t.Fatal("disconnected SSE client remained registered")
+	}
+}
+
+func TestWatchDoesNotOverlapBuilds(t *testing.T) {
+	cfg := testConfig(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var (
+		mu       sync.Mutex
+		inFlight int
+		maxSeen  int
+	)
+	finished := make(chan struct{}, 8)
+	done := make(chan error, 1)
+	debounce := 20 * time.Millisecond
+	buildDuration := 200 * time.Millisecond
+	go func() {
+		done <- watch(ctx, cfg, nil, func(config.Config) (generator.BuildResult, error) {
+			mu.Lock()
+			inFlight++
+			if inFlight > maxSeen {
+				maxSeen = inFlight
+			}
+			mu.Unlock()
+			time.Sleep(buildDuration)
+			mu.Lock()
+			inFlight--
+			mu.Unlock()
+			finished <- struct{}{}
+			return generator.BuildResult{}, nil
+		}, debounce)
+	}()
+	time.Sleep(2 * debounce)
+	if err := os.WriteFile(filepath.Join(cfg.ContentDir, "first.md"), []byte("a"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Change a second file while the first rebuild is still running; the
+	// debounce timer has already fired by then, so stopping it is a no-op.
+	time.Sleep(debounce + buildDuration/2)
+	if err := os.WriteFile(filepath.Join(cfg.ContentDir, "second.md"), []byte("b"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		select {
+		case <-finished:
+		case <-time.After(5 * time.Second):
+			t.Fatal("watch did not run both rebuilds")
+		}
+	}
+	mu.Lock()
+	got := maxSeen
+	mu.Unlock()
+	if got != 1 {
+		t.Fatalf("observed %d rebuilds running at once, want 1", got)
+	}
+	cancel()
+	<-done
+}
+
+func TestLiveReloadSurvivesServerWriteTimeout(t *testing.T) {
+	writeTimeout := 250 * time.Millisecond
+	mux := http.NewServeMux()
+	mux.HandleFunc("/livereload", LiveReloadHandler)
+	server := httptest.NewUnstartedServer(mux)
+	server.Config.WriteTimeout = writeTimeout
+	server.Start()
+	defer server.Close()
+
+	// A raw connection keeps the test in control of the stream: closing it is
+	// what releases the handler, so a failure never wedges server.Close.
+	conn, err := net.Dial("tcp", server.Listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	if _, err := fmt.Fprintf(conn, "GET /livereload HTTP/1.1\r\nHost: %s\r\nAccept: text/event-stream\r\n\r\n", server.Listener.Addr().String()); err != nil {
+		t.Fatal(err)
+	}
+
+	lines := make(chan string, 16)
+	readErr := make(chan error, 1)
+	go func() {
+		reader := bufio.NewReader(conn)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				readErr <- err
+				return
+			}
+			if trimmed := strings.TrimSpace(line); trimmed != "" {
+				lines <- trimmed
+			}
+		}
+	}()
+
+	select {
+	case line := <-lines:
+		if !strings.HasPrefix(line, "HTTP/1.1 200") {
+			t.Fatalf("live reload responded %q, want a 200 status line", line)
+		}
+	case err := <-readErr:
+		t.Fatalf("live reload stream ended at connect: %v", err)
+	case <-time.After(2 * time.Second):
+		t.Fatal("live reload response head was not flushed at connect time")
+	}
+
+	// Idle well past the server's WriteTimeout, as a browser does while the
+	// author edits, then rebuild.
+	time.Sleep(3 * writeTimeout)
+	BroadcastReload()
+
+	deadline := time.After(2 * time.Second)
+	for {
+		select {
+		case line := <-lines:
+			// Chunked framing puts chunk sizes between the payload lines.
+			if line == "data: reload" {
+				return
+			}
+		case err := <-readErr:
+			t.Fatalf("live reload stream ended before the reload arrived: %v", err)
+		case <-deadline:
+			t.Fatal("reload was not delivered after an idle period longer than the server WriteTimeout")
+		}
 	}
 }
 
