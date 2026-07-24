@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ask This Site — local assistant</title>
+  <meta name="description" content="A citation-grounded, local-first question answering assistant for La Famille sites.">
+  <link rel="stylesheet" href="./app.css">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <a class="skip-link" href="#question">Skip to question input</a>
+
+  <main class="ask-shell" aria-labelledby="ask-title">
+    <header class="ask-header">
+      <h1 id="ask-title">
+        <span aria-hidden="true">🐙</span>
+        Ask This Site
+        <span class="ask-badge" aria-label="Experimental local assistant">experimental</span>
+      </h1>
+      <p class="ask-tagline">
+        Local-first, citation-grounded answers powered by your site’s RAG archive.
+        Everything runs on this machine — nothing leaves it.
+      </p>
+    </header>
+
+    <section class="ask-form" aria-label="Ask a question">
+      <label for="question" class="visually-hidden">Your question</label>
+      <form id="ask-form" autocomplete="off">
+        <textarea
+          id="question"
+          name="question"
+          rows="3"
+          placeholder="Ask anything covered by the site. Press Enter to submit, Shift+Enter for a new line, Esc to clear."
+          aria-describedby="question-help question-status"
+          required></textarea>
+        <div class="ask-form-actions">
+          <p id="question-help" class="ask-help">
+            Enter submits · Shift+Enter newline · Esc clears · Cite sources shown inline as [1], [2]…
+          </p>
+          <div class="ask-form-buttons">
+            <button type="button" id="diagnostics-toggle" class="ask-button-secondary" aria-expanded="false" aria-controls="diagnostics-drawer">
+              Diagnostics
+            </button>
+            <button type="submit" id="ask-submit" class="ask-button-primary">
+              <span aria-hidden="true">▶</span>
+              <span>Ask</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <section id="status-bar" class="ask-status" aria-live="polite" aria-atomic="true">
+      <span class="ask-status-dot" id="status-dot" data-status="ready"></span>
+      <span id="status-label" class="ask-status-text">Ready</span>
+      <span id="timing-label" class="ask-timings" aria-hidden="false"></span>
+    </section>
+
+    <section id="answer-region" class="ask-answer" aria-live="polite" aria-atomic="false" aria-label="Answer">
+      <article id="answer-card" class="ask-answer-card" hidden>
+        <header class="ask-answer-header">
+          <h2 id="answer-heading">Answer</h2>
+          <button type="button" id="copy-answer" class="ask-button-secondary" aria-label="Copy answer with citations">
+            Copy
+          </button>
+        </header>
+        <div id="answer-content" class="ask-answer-content"></div>
+        <div id="answer-warning" class="ask-warning" hidden></div>
+      </article>
+
+      <section id="empty-state" class="ask-empty">
+        <p>
+          Ask a question about your site content. Answers include citations you can verify
+          against the underlying pages.
+        </p>
+      </section>
+    </section>
+
+    <section id="diagnostics-drawer" class="ask-diagnostics" aria-label="Diagnostics drawer" hidden>
+      <h2>Diagnostics</h2>
+      <dl class="ask-diagnostics-list">
+        <dt>Corpus version</dt><dd id="diag-corpus-version">—</dd>
+        <dt>Documents</dt><dd id="diag-docs">—</dd>
+        <dt>Chunks</dt><dd id="diag-chunks">—</dd>
+        <dt>Provider</dt><dd id="diag-provider">—</dd>
+        <dt>Model</dt><dd id="diag-model">—</dd>
+        <dt>Bind address</dt><dd id="diag-host">—</dd>
+        <dt>Last retrieval</dt><dd id="diag-retrieve-ms">—</dd>
+        <dt>Last generation</dt><dd id="diag-generate-ms">—</dd>
+      </dl>
+      <p class="ask-diagnostics-warning">
+        Diagnostics are intentionally public — they describe your machine, not your questions.
+      </p>
+    </section>
+
+    <footer class="ask-footer">
+      <p>
+        La Famille local assistant · runs only on this machine ·
+        <a href="https://github.com/drawmeanelephant/la-famille" rel="noopener">source</a>
+      </p>
+    </footer>
+  </main>
+
+  <div id="toast-region" class="ask-toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
