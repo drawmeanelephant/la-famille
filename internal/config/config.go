@@ -59,6 +59,14 @@ func DefaultConfig() Config {
 
 // Load reads a configuration file and parses it into a Config struct.
 // If the file does not exist, it returns the DefaultConfig and no error.
+//
+// Contract: whenever Load returns a non-nil error it returns the zero Config,
+// never a usable one. A config file that exists but cannot be read or parsed
+// is not the same as no config file at all: falling back to defaults there
+// silently drops settings the operator did supply (siteurl above all), and
+// returning the struct yaml.Unmarshal half-filled in mixes file values with
+// defaults. Callers must treat (Config{}, err) as "there is no configuration"
+// and refuse to do configured work, rather than warning and carrying on.
 func Load(filepath string) (Config, error) {
 	config := DefaultConfig()
 
@@ -68,12 +76,14 @@ func Load(filepath string) (Config, error) {
 			// It's perfectly fine if the config file doesn't exist
 			return config, nil
 		}
-		return config, err
+		return Config{}, err
 	}
 
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		return config, err
+		// yaml.v2 applies every key it read before the one that failed, so
+		// config is now a mix of file values and defaults. Discard it.
+		return Config{}, err
 	}
 
 	if config.SiteURL == "" {
@@ -185,12 +195,21 @@ func (c Config) publicURL() (*url.URL, bool) {
 		return nil, false
 	}
 	u, err := url.Parse(strings.TrimSpace(siteURL))
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" {
+		// ForceQuery is set for a URL ending in a bare "?"; RawQuery stays
+		// empty for it, but (*url.URL).String re-emits the "?" into every
+		// canonical URL we build from it.
 		return nil, false
 	}
-	for _, segment := range strings.Split(u.EscapedPath(), "/") {
-		if segment == ".." || segment == "." || strings.Contains(strings.ToLower(segment), "%2e") {
-			return nil, false
+	// Both spellings of the path have to be checked. Encoded dots (%2e%2e)
+	// only survive in the escaped form, while an encoded separator (..%2F)
+	// leaves the escaped form one opaque segment and only splits apart in the
+	// decoded form, which is the one URLForOutputPath actually emits.
+	for _, candidate := range []string{u.EscapedPath(), u.Path} {
+		for _, segment := range strings.Split(candidate, "/") {
+			if segment == ".." || segment == "." || strings.Contains(strings.ToLower(segment), "%2e") {
+				return nil, false
+			}
 		}
 	}
 	u.Path = strings.TrimRight(u.Path, "/")
