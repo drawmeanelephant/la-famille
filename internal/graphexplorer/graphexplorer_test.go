@@ -147,10 +147,6 @@ func TestExplorerAssetBundlePresent(t *testing.T) {
 	}
 }
 
-func dirRoot(dir string) string {
-	// helper kept for backward-compat with earlier tests
-	return dir
-}
 
 func TestWriteExplorerIsByteDeterministicForSameInputs(t *testing.T) {
 	dir1 := t.TempDir()
