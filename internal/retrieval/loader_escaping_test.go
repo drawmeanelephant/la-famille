@@ -43,7 +43,7 @@ func TestParseBundleWithEmbeddedArchiveMarkers(t *testing.T) {
 	b.WriteString("\n</content>\n</file>\n\n")
 	b.WriteString("<file path=\"internal/second.go\">\n<content>\npackage second\n</content>\n</file>\n\n")
 
-	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(b.String()), 0o600); err != nil {
 		t.Fatalf("write bundle: %v", err)
 	}
 
@@ -75,7 +75,7 @@ func TestParseBundleUnescapedMarkersStillFailLoudly(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "rag-system.md")
 	legacy := "<file path=\"a.go\">\n<content>\n</content>\n</file>\n<content>\n</content>\n</file>\n"
-	if err := os.WriteFile(path, []byte(legacy), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(legacy), 0o600); err != nil {
 		t.Fatalf("write bundle: %v", err)
 	}
 	if _, err := parseRAGBundle(path); err == nil {
