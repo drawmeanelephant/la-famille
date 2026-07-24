@@ -2,6 +2,7 @@ package ragexport
 
 import (
 	"fmt"
+	"github.com/tbuddy/la-famille/internal/ragfmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -227,7 +228,10 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 		if formatFunc != nil {
 			output = formatFunc(path, content)
 		} else {
-			output = fmt.Sprintf("<file path=\"%s\">\n<content>\n%s\n</content>\n</file>\n\n", filepath.ToSlash(getRel(projectRoot, path)), string(content))
+			// Escape any line of the file body that would otherwise read as
+			// archive structure, so a source file or Markdown page that
+			// documents this format cannot corrupt the bundle.
+			output = fmt.Sprintf("<file path=\"%s\">\n<content>\n%s\n</content>\n</file>\n\n", filepath.ToSlash(getRel(projectRoot, path)), ragfmt.EscapeContent(string(content)))
 		}
 		if _, err := f.WriteString(output); err != nil {
 			return err

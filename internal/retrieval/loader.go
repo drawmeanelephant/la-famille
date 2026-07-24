@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/tbuddy/la-famille/internal/ragfmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -128,7 +129,6 @@ func parseRAGBundle(p string) (parsedBundle, error) {
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 1<<16), 1<<24) // 16 MB
 
-
 	var (
 		currentFile *parsedFile
 		buf         bytes.Buffer
@@ -176,7 +176,9 @@ func parseRAGBundle(p string) (parsedBundle, error) {
 			if buf.Len() > 0 {
 				buf.WriteByte('\n')
 			}
-			buf.WriteString(line)
+			// Undo the write-time escaping so a body line that looks like
+			// archive structure is restored verbatim.
+			buf.WriteString(ragfmt.UnescapeLine(line))
 		}
 	}
 	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
