@@ -214,7 +214,7 @@ func TestAreChecksPassing_AllPagesSucceed(t *testing.T) {
 // thousands of sequential requests against the API.
 func TestAreChecksPassing_PagingIsBounded(t *testing.T) {
 	requests := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		requests++
 		// Always one more run, never reaching the advertised total.
 		_ = json.NewEncoder(w).Encode(CheckRunsResponse{
