@@ -55,8 +55,11 @@ go run ./cmd/la-famille build [flags]
     *   `--content`, `-c` (string): The path to the directory containing your Markdown source files. Defaults to `content`.
     *   `--output`, `-o` (string): The path to the directory where the generated HTML should be placed. Defaults to `public`.
     *   `--template`, `-t` (string): The path to the default HTML layout template to use. Defaults to `templates/layout.html`.
+    *   `--site-url` / `--siteurl` (`-s`) (string): The public base URL of the site. Used for canonical links, `og:url`, and absolute URLs in the sitemap, feed, and Knowledge Graph page. Defaults to unset (root-relative URLs only).
 
 *Example:* `go run ./cmd/la-famille build -c my_docs -o dist -t templates/custom.html`
+
+After the build, a static Knowledge Graph Explorer page is also written to `<output>/graph/index.html` (default enabled). The explorer page is self-contained — opening it directly in a browser, or serving the `public/` directory with any static file server, works without any runtime backend. To opt out, set `graph_explorer: false` in `config.yaml`.
 
 ### `serve`
 

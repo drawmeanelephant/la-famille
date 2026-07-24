@@ -41,3 +41,19 @@ As part of the JSON Output step, the generator produces a few specialized files 
 *   **`meta.json`**: Provides global site metadata mapped to page IDs, such as page titles, word counts, and tags.
 *   **`search.json`**: Contains a minified array of `SearchItem` structs, providing a compressed plaintext snippet of each page's content for client-side search discovery.
 *   **`feed.xml`**: An RSS 2.0 feed of dated rendered pages, ordered newest first and then by URL. It is omitted when no rendered page has a date.
+
+### Explorer Consumption Contract
+
+The Knowledge Graph Explorer is a static consumer of the existing graph artifacts. After `Build()` writes `graph.json`, `meta.json`, and `backlinks.json`, the generator invokes `internal/graphexplorer.Write()` which renders `<output>/graph/index.html` from an embedded HTML template (`internal/graphexplorer/assets/template.html`). The template references the companion client bundle (`<output>/assets/graph/explorer.{js,css}`) which the asset pipeline copies verbatim from `assets/graph/` in the project root.
+
+The explorer's client runtime never queries the build-time `cfg.GraphExplorer` flag — it reads only the JSON files. That decoupling means you can regenerate the explorer page's bundle by editing `assets/graph/explorer.js` (or `explorer.css`) and re-running `la-famille build`; the page picks up the new bytes without any Go change. Conversely, you can drop the page entirely by setting `graph_explorer: false` and the generator will skip the `<output>/graph/` directory.
+
+### Manual Navigation Snippet
+
+Adding a global nav link to every bundled template would break custom-template compatibility, so the explorer does not auto-inject one. Drop this anywhere inside a layout you control:
+
+```html
+<a href="/graph/" rel="nofollow">Knowledge Graph</a>
+```
+
+Root-relative, so it works with or without `siteurl`.

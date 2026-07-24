@@ -23,6 +23,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/discovery"
 	"github.com/tbuddy/la-famille/internal/feed"
 	"github.com/tbuddy/la-famille/internal/graph"
+	"github.com/tbuddy/la-famille/internal/graphexplorer"
 	"github.com/tbuddy/la-famille/internal/markdown"
 	"github.com/tbuddy/la-famille/internal/page"
 	"github.com/tbuddy/la-famille/internal/pathutil"
@@ -241,8 +242,11 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 					if meta.Date != "" {
 						m["date"] = meta.Date
 					}
-					if meta.Tags != nil {
+					if len(meta.Tags) > 0 {
 						m["tags"] = meta.Tags
+					}
+					if len(meta.Categories) > 0 {
+						m["categories"] = meta.Categories
 					}
 					m["word_count"] = len(strings.Fields(string(meta.Rest)))
 					m["render"] = shouldRender
@@ -460,6 +464,11 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	}
 
 	if err := sitedata.Write(cfg.OutputDir, metaData); err != nil {
+		return result, err
+	}
+
+	// 5b. Knowledge Graph Explorer page (static, no extra deps).
+	if _, err := graphexplorer.Write(cfg, len(g.Nodes)); err != nil {
 		return result, err
 	}
 

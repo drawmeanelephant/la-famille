@@ -986,6 +986,193 @@ render: false
 	}
 }
 
+func TestBuild_GraphExplorerEnabledEmitsPage(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatePath := filepath.Join(templateDir, "layout.html")
+	if err := os.WriteFile(templatePath, []byte("{{.Content}}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("# Home"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "about.md"), []byte("# About\nSee [home](index.md)."), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = templatePath
+	cfg.GraphExplorer = true
+
+	if _, err := Build(cfg); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+
+	explorerPath := filepath.Join(outputDir, "graph", "index.html")
+	data, err := os.ReadFile(explorerPath)
+	if err != nil {
+		t.Fatalf("explorer page missing: %v", err)
+	}
+	html := string(data)
+	for _, want := range []string{
+		"kgx-search-input",
+		`href="../assets/graph/explorer.css"`,
+		`src="../assets/graph/explorer.js"`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("explorer page missing %q", want)
+		}
+	}
+	// The three JSON contracts already exist on disk; the explorer loads
+	// them client-side via the JS bundle.
+	for _, fname := range []string{"graph.json", "meta.json", "backlinks.json"} {
+		if _, err := os.Stat(filepath.Join(outputDir, fname)); err != nil {
+			t.Errorf("expected JSON contract file missing: %s: %v", fname, err)
+		}
+	}
+	// The JS bundle is copied by the asset pipeline at build time. Setting
+	// ProjectRoot to the fixture root ensures the asset pipeline walks the
+	// fixture's <root>/assets/ tree rather than the test cwd. The asset
+	// pipeline itself is exercised in the asset package's own tests; here
+	// we only verify the explorer page wires up its references correctly.
+}
+
+func TestBuild_GraphExplorerDisabledSkipsPage(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	outputDir := filepath.Join(tempDir, "public")
+	templateDir := filepath.Join(tempDir, "templates")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatePath := filepath.Join(templateDir, "layout.html")
+	if err := os.WriteFile(templatePath, []byte("{{.Content}}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("# Home"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = templatePath
+	cfg.GraphExplorer = false
+
+	if _, err := Build(cfg); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+
+	explorerPath := filepath.Join(outputDir, "graph", "index.html")
+	if _, err := os.Stat(explorerPath); err == nil {
+		t.Errorf("explorer page should not exist when disabled; found it")
+	} else if !os.IsNotExist(err) {
+		t.Errorf("unexpected stat error: %v", err)
+	}
+}
+
+func TestBuild_GraphExplorerDeterministicAcrossDirectories(t *testing.T) {
+	tempDir := t.TempDir()
+	dirs := []string{filepath.Join(tempDir, "a"), filepath.Join(tempDir, "b")}
+	for i, d := range dirs {
+		if err := os.MkdirAll(filepath.Join(d, "content"), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(filepath.Join(d, "templates"), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(d, "templates", "layout.html"),
+			[]byte("{{.Content}}"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(d, "content", "index.md"),
+			[]byte("# Home\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(d, "content", "about.md"),
+			[]byte("# About\nSee [home](index.md)."), 0600); err != nil {
+			t.Fatal(err)
+		}
+		cfg := config.DefaultConfig()
+		cfg.ContentDir = filepath.Join(d, "content")
+		cfg.OutputDir = filepath.Join(d, "public")
+		cfg.Template = filepath.Join(d, "templates", "layout.html")
+		cfg.GraphExplorer = true
+		if _, err := Build(cfg); err != nil {
+			t.Fatalf("Build %d: %v", i, err)
+		}
+	}
+
+	g1, err := os.ReadFile(filepath.Join(dirs[0], "public", "graph", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b1, err := os.ReadFile(filepath.Join(dirs[0], "public", "graph.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m1, err := os.ReadFile(filepath.Join(dirs[0], "public", "meta.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	bl1, err := os.ReadFile(filepath.Join(dirs[0], "public", "backlinks.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	g2, err := os.ReadFile(filepath.Join(dirs[1], "public", "graph", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b2, err := os.ReadFile(filepath.Join(dirs[1], "public", "graph.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m2, err := os.ReadFile(filepath.Join(dirs[1], "public", "meta.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	bl2, err := os.ReadFile(filepath.Join(dirs[1], "public", "backlinks.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Existing JSON contracts must be byte-identical across separate output
+	// directories given identical sources.
+	if string(b1) != string(b2) {
+		t.Errorf("graph.json differs across identical builds")
+	}
+	if string(m1) != string(m2) {
+		t.Errorf("meta.json differs across identical builds")
+	}
+	if string(bl1) != string(bl2) {
+		t.Errorf("backlinks.json differs across identical builds")
+	}
+
+	// PageTitle and FooterNote are conditioned only on cfg+nodeCount, so for
+	// identical inputs the explorer index.html must be byte-stable. The CSS
+	// and JS ship as external assets copied via the asset pipeline, so
+	// their bytes are sourced from the (identical) input files rather than
+	// the template.
+	h1 := string(g1)
+	h2 := string(g2)
+	if h1 != h2 {
+		t.Errorf("explorer index.html differs across identical builds")
+	}
+}
+
 func TestBuild_EmptyTaxonomySearchIndex(t *testing.T) {
 	tempDir := t.TempDir()
 	contentDir := filepath.Join(tempDir, "content")
