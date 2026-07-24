@@ -44,4 +44,9 @@ runs:
         if [ -n "$INPUT_SITE_URL" ]; then
           ARGS+=("--site-url" "$INPUT_SITE_URL")
         fi
-        go run github.com/drawmeanelephant/la-famille/cmd/la-famille@latest build "${ARGS[@]}"
+        # Build from the action's own checkout. The module is declared as
+        # github.com/tbuddy/la-famille, so it cannot be fetched through the
+        # module proxy under the repository path this action is published at.
+        BIN="${RUNNER_TEMP:-/tmp}/la-famille"
+        (cd "$GITHUB_ACTION_PATH" && go build -o "$BIN" ./cmd/la-famille)
+        "$BIN" build "${ARGS[@]}"

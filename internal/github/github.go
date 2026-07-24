@@ -140,30 +140,46 @@ type CheckRunsResponse struct {
 	CheckRuns  []CheckRun `json:"check_runs"`
 }
 
+// checkRunsPageSize is the largest page the check-runs API will serve.
+const checkRunsPageSize = 100
+
 // AreChecksPassing returns true if all check runs for the given ref are completed and successful/skipped.
+// Every page of check runs is inspected, so a run that lands beyond the first page cannot hide a failure.
+// A ref for which no check runs are reported is NOT passing: the runs may not have been created yet, or
+// the repository may report CI through commit statuses, which this endpoint never returns.
 func (c *Client) AreChecksPassing(ref string) (bool, error) {
-	var resp CheckRunsResponse
-	err := c.doRequest("GET", fmt.Sprintf("/commits/%s/check-runs", ref), nil, &resp)
-	if err != nil {
-		return false, err
-	}
-
-	if resp.TotalCount == 0 {
-		// No checks defined means they technically didn't fail.
-		// Depending on strictness, this might be considered passing.
-		// For our purposes, we'll consider it true.
-		return true, nil
-	}
-
-	for _, check := range resp.CheckRuns {
-		if check.Status != "completed" {
-			return false, nil
+	inspected, total := 0, 0
+	for page := 1; ; page++ {
+		var resp CheckRunsResponse
+		path := fmt.Sprintf("/commits/%s/check-runs?per_page=%d&page=%d", ref, checkRunsPageSize, page)
+		if err := c.doRequest("GET", path, nil, &resp); err != nil {
+			return false, err
 		}
-		if check.Conclusion != "success" && check.Conclusion != "skipped" && check.Conclusion != "neutral" {
-			return false, nil
+
+		if page == 1 {
+			total = resp.TotalCount
+			if total == 0 {
+				return false, nil
+			}
+		}
+
+		for _, check := range resp.CheckRuns {
+			if check.Status != "completed" {
+				return false, nil
+			}
+			if check.Conclusion != "success" && check.Conclusion != "skipped" && check.Conclusion != "neutral" {
+				return false, nil
+			}
+		}
+
+		inspected += len(resp.CheckRuns)
+		if inspected >= total {
+			return true, nil
+		}
+		if len(resp.CheckRuns) == 0 {
+			return false, fmt.Errorf("check runs for %s are truncated: inspected %d of %d", ref, inspected, total)
 		}
 	}
-	return true, nil
 }
 
 // ClosePR closes a pull request.

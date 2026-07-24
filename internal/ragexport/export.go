@@ -23,6 +23,10 @@ func RunExport(cfg config.Config) error {
 	}
 	slog.Info(fmt.Sprintf("RAG archive directory created at %s", outDir))
 
+	contentDir := bundleDir(cfg.ContentDir, "content", cfg.ProjectRoot)
+	assetDir := bundleDir(cfg.AssetDir, "assets", cfg.ProjectRoot)
+	templateDir := bundleDir(filepath.Dir(cfg.Template), "templates", cfg.ProjectRoot)
+
 	// 1. System Bundle
 	if err := writeBundle(
 		filepath.Join(outDir, "rag-system.md"),
@@ -68,8 +72,8 @@ func RunExport(cfg config.Config) error {
 	}
 	defer cfgFile.Close()
 
-	_, _ = cfgFile.WriteString("<file path=\"assets/\">\n<content>\n")
-	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "assets"), func(path string, d fs.DirEntry, err error) error {
+	_, _ = cfgFile.WriteString(fmt.Sprintf("<file path=\"%s/\">\n<content>\n", assetDir))
+	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, assetDir), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // ignore missing assets dir
 		}
@@ -95,8 +99,8 @@ func RunExport(cfg config.Config) error {
 	})
 	_, _ = cfgFile.WriteString("</content>\n</file>\n\n")
 
-	_, _ = cfgFile.WriteString("<file path=\"templates/\">\n<content>\n")
-	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, "templates"), func(path string, d fs.DirEntry, err error) error {
+	_, _ = cfgFile.WriteString(fmt.Sprintf("<file path=\"%s/\">\n<content>\n", templateDir))
+	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, templateDir), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // ignore missing templates dir
 		}
@@ -129,9 +133,9 @@ func RunExport(cfg config.Config) error {
 		writeBundle(
 			filepath.Join(outDir, "rag-content.md"),
 			[]string{
-				"content/**/*.md",
+				contentDir + "/**/*.md",
 			},
-			[]string{"content/jules"},
+			[]string{contentDir + "/jules"},
 			nil, // Default formatting is verbatim with XML tags, which preserves the YAML frontmatter
 			outDir,
 			cfg.ProjectRoot,
@@ -220,6 +224,33 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 	}
 
 	return nil
+}
+
+// bundleDir normalises a configured directory for use in bundle patterns and
+// walks, falling back to the historical default when nothing usable is set.
+//
+// The patterns and walks below are all resolved against projectRoot, so an
+// absolute configured directory has to be brought back into that frame first —
+// filepath.Join(root, "/abs/dir") silently yields root + "/abs/dir" rather than
+// the directory the author configured. A directory outside projectRoot cannot
+// be expressed as a bundle pattern at all, so it falls back to the default.
+func bundleDir(configured, fallback, projectRoot string) string {
+	dir := strings.TrimSpace(configured)
+	if dir == "" {
+		return fallback
+	}
+	if filepath.IsAbs(dir) {
+		rel, err := filepath.Rel(projectRoot, dir)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return fallback
+		}
+		dir = rel
+	}
+	dir = filepath.ToSlash(filepath.Clean(dir))
+	if dir == "." || dir == "/" {
+		return fallback
+	}
+	return strings.TrimSuffix(dir, "/")
 }
 
 // isWithinDir reports whether path is dir itself or a descendant of dir.
