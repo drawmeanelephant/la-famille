@@ -11,12 +11,17 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/adrg/frontmatter"
 )
 
 var validTagRegex = regexp.MustCompile(`^[a-z0-9-]+$`)
+
+// MaxTaxonomyValueLen bounds the length of a normalized tag or category.
+// A taxonomy value becomes a single path component in the output tree
+// (<output>/tags/<tag>/index.html) and common filesystems reject a component
+// longer than 255 bytes with ENAMETOOLONG, which aborts the entire build and
+// leaves no output at all. Anything longer is dropped with a warning instead.
+const MaxTaxonomyValueLen = 255
 
 type FileMeta struct {
 	Content         []byte
@@ -95,25 +100,17 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			Layout          string      `yaml:"layout"`
 			ComplianceModal string      `yaml:"compliance_modal"`
 			Slug            string      `yaml:"slug"`
-			Tags            []string    `yaml:"tags"`
+			Tags            StringList  `yaml:"tags"`
 			Categories      interface{} `yaml:"categories"`
 			Category        interface{} `yaml:"category"`
 			Description     string      `yaml:"description"`
 			Image           string      `yaml:"image"`
 		}
 
-		if rawMatter != nil {
-			// Lowercase keys
-			normalizedMatter := make(map[string]interface{})
-			for k, v := range rawMatter {
-				// Convert to lower case, but preserve underscores for things like video_script
-				normalizedMatter[strings.ToLower(k)] = v
-			}
-
-			yamlBytes, err := yaml.Marshal(normalizedMatter)
-			if err == nil {
-				_ = yaml.Unmarshal(yamlBytes, &matter)
-			}
+		for _, detail := range DecodeFrontmatter(rawMatter, &matter) {
+			warnMsg := fmt.Sprintf("frontmatter warning in %s: %s", relPath, detail)
+			warnings = append(warnings, warnMsg)
+			slog.Warn("Frontmatter warning", "file", relPath, "detail", detail)
 		}
 
 		// Date validation
@@ -193,6 +190,36 @@ func extractStringSlice(val interface{}) []string {
 	return nil
 }
 
+// NormalizeTaxonomyValue reduces one raw tag or category to the [a-z0-9-] form
+// used for output paths. The second return value reports whether the result is
+// usable: an empty result, or one longer than MaxTaxonomyValueLen, is not.
+//
+// Exported so internal/checker can validate against the same rules the
+// generator publishes with, instead of its own copy of them.
+func NormalizeTaxonomyValue(item string) (string, bool) {
+	item = strings.TrimSpace(item)
+	if item == "" {
+		return "", false
+	}
+
+	norm := item
+	if !validTagRegex.MatchString(item) {
+		lower := strings.ToLower(item)
+		var sb strings.Builder
+		for _, r := range lower {
+			if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+				sb.WriteRune(r)
+			}
+		}
+		norm = sb.String()
+	}
+
+	if norm == "" || len(norm) > MaxTaxonomyValueLen {
+		return norm, false
+	}
+	return norm, true
+}
+
 func normalizeTaxonomyList(items []string, relPath, kind string) []string {
 	var normalizedList []string
 	seen := make(map[string]bool)
@@ -202,21 +229,17 @@ func normalizeTaxonomyList(items []string, relPath, kind string) []string {
 		if item == "" {
 			continue
 		}
-		norm := item
-		if !validTagRegex.MatchString(item) {
-			lower := strings.ToLower(item)
-			var sb strings.Builder
-			for _, r := range lower {
-				if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
-					sb.WriteRune(r)
-				}
-			}
-			norm = sb.String()
-			if norm != item {
-				slog.Warn("Normalized "+kind, "original", item, "normalized", norm, "file", relPath)
-			}
+		norm, usable := NormalizeTaxonomyValue(item)
+		if norm != item {
+			slog.Warn("Normalized "+kind, "original", item, "normalized", norm, "file", relPath)
 		}
-		if norm != "" && !seen[norm] {
+		if !usable {
+			if len(norm) > MaxTaxonomyValueLen {
+				slog.Warn("Dropped over-long "+kind, "length", len(norm), "limit", MaxTaxonomyValueLen, "file", relPath)
+			}
+			continue
+		}
+		if !seen[norm] {
 			seen[norm] = true
 			normalizedList = append(normalizedList, norm)
 		}
