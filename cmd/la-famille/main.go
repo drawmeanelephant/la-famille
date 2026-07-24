@@ -208,6 +208,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(setupCheckCmd(cfg))
 	rootCmd.AddCommand(setupNewCmd(cfg))
+	rootCmd.AddCommand(setupAskCmd(cfg))
 
 	return rootCmd
 }

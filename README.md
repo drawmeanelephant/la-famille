@@ -12,6 +12,7 @@ This project is built and maintained primarily by **Jules** (AI assistant) along
 *   **Interactive TUI:** A sleek Bubbletea-powered terminal interface for managing builds, serving the site locally, and viewing project stats.
 *   **Robust CLI:** A powerful command-line interface built with `cobra` for tasks like initialization, building, serving, and RAG generation.
 *   **RAG Export:** Native tools to extract your site's content and metadata into clean archives optimized for LLM context windows (`rag-system.md`, `rag-content.md`, etc.).
+*   **Ask This Site (experimental):** A local, citation-grounded Q&A assistant that runs entirely on your machine. Binds only to loopback, never sends content off-device, and supports the Ollama daemon out of the box.
 *   **Flexible Templating:** Support for multiple HTML layouts (e.g., standard, cyberpunk, minimal) easily overridden via YAML frontmatter.
 *   **Built-in Local Server:** Instantly preview your site with `go run ./cmd/la-famille serve`.
 *   **Smart Graphing:** Automatically generates `graph.json`, `backlinks.json`, and handles non-existent internal links by generating helpful stub pages.
@@ -53,6 +54,14 @@ To serve the generated site locally (defaults to port 8080):
 go run ./cmd/la-famille serve
 ```
 
+To launch the local-first **Ask This Site** assistant against your corpus:
+```bash
+go run ./cmd/la-famille rag                # refresh the corpus first
+go run ./cmd/la-famille ask --model llama3.2  # then serve the assistant on 127.0.0.1:8090
+```
+
+> **Note:** `ask` is opt-in and experimental. It binds only to your loopback address, never sends your content off the machine, and never logs prompts or answers by default. See [content/docs/ask.md](content/docs/ask.md) for the full privacy and architecture notes.
+
 ## Documentation 📚
 
 The commands above will get you started, but La Famille has a lot more to offer. For deep-dive guides on how to use all the features, please explore our documentation:
@@ -62,6 +71,7 @@ The commands above will get you started, but La Famille has a lot more to offer.
 *   **[Using the TUI](content/docs/tui.md)**
 *   **[Templating Guide](content/docs/templates.md)**
 *   **[RAG Export Guide](content/docs/rag.md)**
+*   **[Ask This Site Guide](content/docs/ask.md)**
 *   **[How the Generator Works](content/docs/generator.md)**
 
 ---
