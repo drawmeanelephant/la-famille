@@ -25,6 +25,7 @@ When `la-famille build` executes, it processes Markdown source files in `content
 | **Link Graph** | `graph.json` | Generated on every build | Page node and wikilink edge dataset |
 | **Backlinks** | `backlinks.json` | Generated on every build | Map of target page IDs to referencing parent page IDs |
 | **Site Metadata** | `meta.json` | Generated on every build | Page metadata dictionary |
+| **Knowledge Graph Explorer** | `graph/index.html` | Generated on every build when `graph_explorer: true` (default) | Self-contained interactive visualization of the site's wikilink relationships |
 
 ---
 
@@ -84,7 +85,32 @@ When `la-famille build` executes, it processes Markdown source files in `content
 
 - **`graph.json`**: Contains `nodes` map (keyed by page ID) and `edges` list of directed wikilink pairs `[source, target]`. Nodes include `"type": "page"` and `"render": true|false`.
 - **`backlinks.json`**: Map of target page ID -> sorted array of referencing parent page IDs.
-- **`meta.json`**: Map of page ID -> metadata object (`title`, `author`, `date`, `tags`, `word_count`, `render`).
+- **`meta.json`**: Map of page ID -> metadata object (`title`, `author`, `date`, `tags`, `word_count`, `render`, `categories`). Unknown fields are forward-compatible additions.
+
+### 8. Knowledge Graph Explorer (`graph/index.html`)
+
+- **Generation:** Written to `<output_dir>/graph/index.html` when the `graph_explorer` config option is true (default). When disabled, neither the page nor its companion assets directory are emitted and no nav link is injected into layouts.
+- **Companion assets:** `assets/graph/explorer.js` and `assets/graph/explorer.css` are copied into `<output_dir>/assets/graph/` by the established asset pipeline. Both files ship under the user-owned `assets/` directory and reach the explorer page via root-relative URLs.
+- **Runtime semantics:** The page is fully static — it loads `../graph.json`, `../meta.json`, and `../backlinks.json` via relative fetches and never contacts a remote host. A `<link rel="canonical">` is emitted only when `siteurl` is configured; without it the page works the same when opened directly via `file://`.
+- **No meta.json contract change:** The explorer's writer does NOT extend `meta.json` — public URLs are derived client-side from the page id (`/<id>/`). Sites that use front-matter `slug:` overrides will see unslugged links in the detail panel; this is a known limitation.
+
+### Manual Navigation Snippet
+
+Adding a global nav link to every bundled template would break custom-template compatibility, so the explorer does not auto-inject one. Drop this anywhere inside a layout that you control:
+
+```html
+<a href="/graph/" rel="nofollow">Knowledge Graph</a>
+```
+
+The link is root-relative so it works with or without `siteurl`, mirroring the explorer's own URL construction.
+
+### Explorer Orphan Rule
+
+The explorer flags a page as **orphan** when it has zero inbound links unless the page id is `index` (the rendered homepage). Rendered pages named `about`, `posts/2026/welcome`, etc. follow the standard zero-inbound rule. Raw `render: false` pages never appear as orphan candidates because their IDs carry the `.md` suffix and the rule is not applied to them. Sites that use `render: false` for their homepage must provide inbound links from somewhere else.
+
+### Large-Site Threshold
+
+Sites with **≥ 500 nodes** default to a search-first view; the graph visualization is suppressed until the user clicks a search suggestion. The threshold is exposed in the page footer so future tuning can be done without code changes.
 
 ---
 
@@ -132,7 +158,38 @@ All files and subdirectories created in `outputDir` are intended for public web 
 - `feed.xml`, `sitemap.xml`, `robots.txt`
 - `search.json`
 - `graph.json`, `backlinks.json`, `meta.json`
+- `graph/index.html` (Knowledge Graph Explorer) and `assets/graph/explorer.{js,css}`
 
 ### Do Not Publish / Internal Only
 - `.buildcache.json`: Stored inside `outputDir` for incremental build change detection. Safe to host if published, but intended strictly as generator build cache state.
 - `.staging-*` directories: Temporary build staging folders created during atomic build execution. Cleaned up automatically upon build completion.
+
+---
+
+## Knowledge Graph Explorer
+
+| Aspect | Detail |
+| :--- | :--- |
+| **Page path** | `<output_dir>/graph/index.html` (controlled by `graph_explorer: true` config, **default: true**) |
+| **Companion bundle** | `<output_dir>/assets/graph/explorer.{js,css}` copied from user-owned `assets/graph/` by the asset pipeline |
+| **Data sources** | `../graph.json`, `../meta.json`, `../backlinks.json` (loaded at runtime via relative fetches) |
+| **Runtime network calls** | None. The page is fully static; no remote scripts, fonts, or APIs are loaded. |
+| **Canonical URL** | Emitted only when `siteurl` is configured. Otherwise the page works the same when opened directly via `file://`. |
+| **Slug handling** | Public URLs are computed client-side from the page id (`/<id>/`). Custom frontmatter `slug:` overrides appear as unslugged links in the detail panel — a documented limitation. |
+| **Disabled behavior** | With `graph_explorer: false`, neither `/graph/` nor `/assets/graph/*` are emitted and no nav link is auto-injected. |
+
+### Threshold for large sites
+
+Sites with **≥ 500 nodes** open in search-first mode; the graph visualization stays suppressed until the user clicks a search suggestion. The threshold is exposed in the page footer so future tuning can be done without code changes.
+
+### Manual Navigation Anchor
+
+```html
+<a href="/graph/" rel="nofollow">Knowledge Graph</a>
+```
+
+Root-relative, so it works with or without `siteurl` — mirroring the explorer's own URL construction.
+
+### Orphan Rule (Explorer)
+
+A page is treated as **orphan** when its inbound list is empty, with one carve-out: the rendered homepage (page id `index`) is exempt so a freshly-seeded site that links out from `index.md` doesn't flag `index` as orphan. Rendered sub-pages, raw `render: false` pages (whose IDs carry the `.md` suffix), and sites that use `render: false` for the homepage follow the standard zero-inbound rule.

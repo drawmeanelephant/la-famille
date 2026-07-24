@@ -36,6 +36,7 @@ type Config struct {
 	WatchMode          bool       `yaml:"-"`
 	CheckAssetHealth   bool       `yaml:"check_asset_health"`
 	MaxAssetSizeBytes  int64      `yaml:"max_asset_size_bytes"`
+	GraphExplorer      bool       `yaml:"graph_explorer"`
 }
 
 // DefaultConfig returns a Config with sensible default values.
@@ -52,6 +53,7 @@ func DefaultConfig() Config {
 		ProjectRoot:       ".",
 		CheckAssetHealth:  false,
 		MaxAssetSizeBytes: 5 * 1024 * 1024,
+		GraphExplorer:     true,
 	}
 }
 
@@ -126,6 +128,11 @@ theme: "retro"
 
 # port: The port on which the local development server will run.
 port: 8080
+
+# graph_explorer: Controls generation of the interactive Knowledge Graph page
+# at /graph/index.html. Defaults to true; set to false to skip emission (no
+# /graph/ output, no nav link).
+# graph_explorer: true
 `
 	return os.WriteFile(filepath, []byte(defaultYaml), 0600)
 }

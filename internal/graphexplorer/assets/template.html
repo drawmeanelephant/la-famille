@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{.Title}}</title>
+<meta name="description" content="{{.Description}}">
+<meta property="og:title" content="{{.Title}}">
+<meta property="og:description" content="{{.Description}}">
+<meta property="og:type" content="website">
+{{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+<meta property="og:url" content="{{.CanonicalURL}}">{{end}}
+<meta name="generator" content="La Famille Knowledge Graph Explorer">
+<link rel="stylesheet" href="{{.AssetCSSURL}}">
+</head>
+<body class="kgx-root">
+<a href="#kgx-main" class="sr-only focus:not-sr-only" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">Skip to graph</a>
+<header class="kgx-header" role="banner">
+  <div class="kgx-header-row">
+    <h1 id="kgx-title" class="kgx-title">{{.PageTitle}}</h1>
+    <div class="kgx-search">
+      <label for="kgx-search-input" class="sr-only" style="position:absolute;left:-9999px;">Search the graph</label>
+      <input id="kgx-search-input" type="search" placeholder="Search by title, page ID, tag:foo, category:bar, author" autocomplete="off" spellcheck="false" aria-label="Search pages in the graph by title, page ID, tag, category, or author">
+      <div id="kgx-suggestions" class="kgx-suggestions" role="listbox" aria-label="Search suggestions"></div>
+    </div>
+    <span id="kgx-status" aria-live="polite" style="font-size:0.8rem;color:var(--kgx-muted);"></span>
+  </div>
+  <div class="kgx-header-row" role="group" aria-label="Graph filters">
+    <button id="kgx-toggle-render" class="kgx-toggle" type="button" data-filter="render" aria-pressed="true"><span class="dot" aria-hidden="true"></span>Rendered pages</button>
+    <button id="kgx-toggle-raw" class="kgx-toggle" type="button" data-filter="raw" aria-pressed="true"><span class="dot" aria-hidden="true"></span>Raw markdown <small>(render: false)</small></button>
+    <button id="kgx-toggle-stub" class="kgx-toggle" type="button" data-filter="stub" aria-pressed="true"><span class="dot" aria-hidden="true"></span>Missing-link stubs</button>
+    <button id="kgx-toggle-orphan" class="kgx-toggle" type="button" data-filter="orphan" aria-pressed="true"><span class="dot" aria-hidden="true"></span>Orphans</button>
+    <button id="kgx-toggle-focus-mode" class="kgx-toggle" type="button" aria-pressed="false" disabled aria-label="Toggle focus mode showing only the selected page and its direct neighbors"><span class="dot" aria-hidden="true"></span>Focus selection</button>
+    <button id="kgx-toggle-help" class="kgx-toggle" type="button" aria-pressed="false" aria-label="Toggle keyboard help"><span class="dot" aria-hidden="true"></span>?</button>
+  </div>
+  <div id="kgx-help" class="kgx-help" hidden style="font-size:0.8rem;color:var(--kgx-muted);line-height:1.4;background:var(--kgx-card);padding:0.5rem 0.75rem;border:1px solid var(--kgx-border);border-radius:0.5rem;">
+    <strong>Keyboard:</strong>
+    <kbd>Tab</kbd> focuses nodes, <kbd>Enter</kbd>/<kbd>Space</kbd> selects, <kbd>Esc</kbd> clears the search, <kbd>↑</kbd>/<kbd>↓</kbd> move between suggestions,
+    drag a node to reposition, scroll to zoom is disabled in this build to keep the layout stable. URL hash like <code>?node=foo</code> deep-links a node.
+  </div>
+</header>
+
+<main id="kgx-main" class="kgx-main" role="main">
+  <div id="kgx-canvas-wrap" class="kgx-canvas-wrap">
+    <div id="kgx-loading" class="kgx-loading" role="status"><span class="kgx-spinner" aria-hidden="true"></span>Loading graph data…</div>
+    <div id="kgx-error" class="kgx-error" role="alert" hidden>Error loading graph.</div>
+    <div id="kgx-empty" class="kgx-empty" hidden role="status">No pages found in the graph data.</div>
+    <div id="kgx-no-results" class="kgx-no-results" hidden role="status"></div>
+    <svg id="kgx-svg" class="kgx-svg" role="img" aria-label="Interactive graph of all site pages and their connections" hidden>
+      <g id="kgx-viewport">
+        <g id="kgx-edges" aria-hidden="true" focusable="false"></g>
+        <g id="kgx-nodes"></g>
+      </g>
+    </svg>
+    <div id="kgx-legend" class="kgx-legend" aria-hidden="true">
+      <span><span class="swatch" style="background:var(--kgx-render)"></span>Rendered</span>
+      <span><span class="swatch" style="background:var(--kgx-raw)"></span>Raw <code>render:false</code></span>
+      <span><span class="swatch" style="background:var(--kgx-stub)"></span>Missing-link stub</span>
+      <span><span class="swatch" style="background:var(--kgx-orphan)"></span>Orphan</span>
+    </div>
+    <div id="kgx-counts" style="position:absolute;right:0.75rem;bottom:0.75rem;font-size:0.78rem;color:var(--kgx-muted);background:rgba(15,17,21,0.78);padding:0.35rem 0.65rem;border:1px solid var(--kgx-border);border-radius:0.5rem;"></div>
+  </div>
+  <aside id="kgx-detail" class="kgx-detail" role="complementary" aria-label="Selected node details" hidden>
+    <button id="kgx-detail-close" type="button" style="float:right;background:transparent;border:1px solid var(--kgx-border);color:var(--kgx-muted);border-radius:0.35rem;padding:0.2rem 0.5rem;cursor:pointer;" aria-label="Close details panel">×</button>
+  </aside>
+</main>
+<footer class="kgx-footer" role="contentinfo">
+  <span id="kgx-footer-note">{{.FooterNote}}</span>
+  <span><a href="../" aria-label="Back to home">Back to site</a></span>
+</footer>
+
+<script src="{{.AssetJSURL}}" defer></script>
+</body>
+</html>

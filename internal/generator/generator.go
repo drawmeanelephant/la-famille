@@ -23,6 +23,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/discovery"
 	"github.com/tbuddy/la-famille/internal/feed"
 	"github.com/tbuddy/la-famille/internal/graph"
+	"github.com/tbuddy/la-famille/internal/graphexplorer"
 	"github.com/tbuddy/la-famille/internal/markdown"
 	"github.com/tbuddy/la-famille/internal/page"
 	"github.com/tbuddy/la-famille/internal/pathutil"
@@ -61,6 +62,7 @@ type BuildResult struct {
 	ErrorCount int
 	CacheHit   bool
 	Health     ContentHealth
+	Warnings   []string
 }
 
 // Build generates the static site based on the given configuration.
@@ -93,6 +95,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 			PageCount: cache.PageCount,
 			CacheHit:  true,
 			Health:    cache.Health,
+			Warnings:  cache.Warnings,
 		}, nil
 	}
 
@@ -123,6 +126,13 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	if err != nil {
 		return result, fmt.Errorf("failed to gather metadata: %w", err)
 	}
+
+	for _, meta := range fileMap {
+		if len(meta.Warnings) > 0 {
+			result.Warnings = append(result.Warnings, meta.Warnings...)
+		}
+	}
+	sort.Strings(result.Warnings)
 
 	// Track missing files that need stubs. map[missingPath][]parentFiles
 	missingFiles := make(map[string][]string)
@@ -232,8 +242,11 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 					if meta.Date != "" {
 						m["date"] = meta.Date
 					}
-					if meta.Tags != nil {
+					if len(meta.Tags) > 0 {
 						m["tags"] = meta.Tags
+					}
+					if len(meta.Categories) > 0 {
+						m["categories"] = meta.Categories
 					}
 					m["word_count"] = len(strings.Fields(string(meta.Rest)))
 					m["render"] = shouldRender
@@ -454,6 +467,11 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 		return result, err
 	}
 
+	// 5b. Knowledge Graph Explorer page (static, no extra deps).
+	if _, err := graphexplorer.Write(cfg, len(g.Nodes)); err != nil {
+		return result, err
+	}
+
 	if err := search.WriteMinifiedJSON(filepath.Join(cfg.OutputDir, "search.json"), searchIndex); err != nil {
 		return result, err
 	}
@@ -476,7 +494,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	if err != nil {
 		return result, fmt.Errorf("failed to collect generated files: %w", err)
 	}
-	if err := writeBuildCache(cachePath(cfg.OutputDir), fingerprint, files, result.PageCount, result.Health); err != nil {
+	if err := writeBuildCache(cachePath(cfg.OutputDir), fingerprint, files, result.PageCount, result.Health, result.Warnings); err != nil {
 		return result, fmt.Errorf("failed to write build cache: %w", err)
 	}
 
