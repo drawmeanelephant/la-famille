@@ -162,9 +162,17 @@
 
   // Leaves search-first mode and draws the graph for real. Safe to call when
   // the graph is already visible.
+  //
+  // The search query that got the reader here is cleared on the way out.
+  // Keeping it would filter the freshly revealed graph down to the handful of
+  // matching pages, so picking a result would replace "nothing drawn" with
+  // "two disconnected dots" — the opposite of the exploring the mode promises.
   function revealGraph() {
     if (!state.suppressed) return;
     state.suppressed = false;
+    state.filter.query = '';
+    if (els.searchInput) els.searchInput.value = '';
+    hideSuggestions();
     updateStatus('');
     startLayout();
   }
