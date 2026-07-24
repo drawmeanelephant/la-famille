@@ -201,7 +201,9 @@ func newGateSite(t *testing.T, exe, configYAML string) gateSite {
 
 func (s gateSite) run(t *testing.T, args ...string) (int, string) {
 	t.Helper()
-	cmd := exec.Command(s.exe, args...)
+	// The binary under test is one this test compiled itself into t.TempDir,
+	// and the arguments are fixed literals from the cases below.
+	cmd := exec.Command(s.exe, args...) // #nosec G204
 	cmd.Dir = s.dir
 	out, err := cmd.CombinedOutput()
 	code := 0
