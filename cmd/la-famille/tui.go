@@ -40,16 +40,12 @@ var tuiCmd = &cobra.Command{
 			}
 		}()
 
+		// No defaults fallback here: config.Load only errors when config.yaml
+		// exists but is unreadable or unparsable, and substituting defaults
+		// for it would silently discard the operator's real settings.
 		cfg, err := config.Load("config.yaml")
 		if err != nil {
-			// use defaults if config fails
-			cfg = config.Config{
-				ContentDir: "content",
-				OutputDir:  "public",
-				Template:   "templates/layout.html",
-				AssetDir:   "assets",
-				RagDir:     "rag-archive",
-			}
+			return fmt.Errorf("failed to load config.yaml: %w", err)
 		}
 		if err := cfg.Validate(); err != nil {
 			return fmt.Errorf("configuration validation failed: %w", err)

@@ -34,10 +34,11 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		Use:          "la-famille",
 		Short:        "La Famille is a static site generator",
 		SilenceUsage: true,
-		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if cmd.Name() != "tui" {
 				_, _ = logger.Setup(globalLogFile, false)
 			}
+			return nil
 		},
 	}
 
@@ -213,19 +214,81 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	return rootCmd
 }
 
-func main() {
+// configIndependentCommands lists the top-level commands that stay available
+// when config.yaml is unusable. "init" is how a broken config.yaml gets
+// regenerated, so blocking it would block the repair path; "pr" never reads
+// the site configuration at all. The rest are cobra's own built-ins.
+var configIndependentCommands = map[string]bool{
+	"init":             true,
+	"pr":               true,
+	"help":             true,
+	"completion":       true,
+	"__complete":       true,
+	"__completeNoDesc": true,
+}
 
-	// Load config first to set defaults for flags
-	cfg, err := config.Load("config.yaml")
+func requiresSiteConfig(cmd *cobra.Command) bool {
+	for c := cmd; c != nil && c.HasParent(); c = c.Parent() {
+		if configIndependentCommands[c.Name()] {
+			return false
+		}
+	}
+	return true
+}
+
+// loadSiteConfig resolves config.yaml into a configuration that is safe to
+// build with. A missing file is not an error (defaults apply), but a file that
+// cannot be read, cannot be parsed, or does not validate yields the zero
+// Config and a reason. It never substitutes defaults for a config file that
+// exists: that is precisely how a malformed config.yaml used to produce a
+// silently mis-configured but exit-0 build.
+func loadSiteConfig(path string) (config.Config, error) {
+	cfg, err := config.Load(path)
 	if err != nil {
-		slog.Warn("Failed to load config.yaml", "error", err)
+		return config.Config{}, fmt.Errorf("failed to load %s: %w", path, err)
 	}
 	if err := cfg.Validate(); err != nil {
-		slog.Error("Configuration validation failed", "error", err)
-		os.Exit(1)
+		return config.Config{}, fmt.Errorf("invalid %s: %w", path, err)
+	}
+	return cfg, nil
+}
+
+// guardUnusableConfig makes every command that consumes the site configuration
+// fail loudly when configErr is non-nil, while leaving the commands that
+// repair or do not need config.yaml reachable. Cobra handles --help and a bare
+// invocation before persistent hooks run, so help output stays available too.
+func guardUnusableConfig(rootCmd *cobra.Command, configErr error) {
+	if configErr == nil {
+		return
+	}
+	inner := rootCmd.PersistentPreRunE
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if inner != nil {
+			if err := inner(cmd, args); err != nil {
+				return err
+			}
+		}
+		if requiresSiteConfig(cmd) {
+			return fmt.Errorf("%w (run `la-famille init` to regenerate config.yaml, or fix it by hand)", configErr)
+		}
+		return nil
+	}
+}
+
+func main() {
+
+	// Load config first to set defaults for flags. On failure cfg is the zero
+	// Config, and guardUnusableConfig below stops anything that would consume
+	// it from running -- deliberately without falling back to DefaultConfig,
+	// so a hole in the guard surfaces as an obvious failure rather than a
+	// build that quietly loses siteurl and friends.
+	cfg, configErr := loadSiteConfig("config.yaml")
+	if configErr != nil {
+		slog.Error("config.yaml is unusable; only `la-famille init` and help remain available", "error", configErr)
 	}
 
 	rootCmd := setupRootCmd(cfg)
+	guardUnusableConfig(rootCmd, configErr)
 
 	if err := rootCmd.Execute(); err != nil {
 		slog.Error("Application error", "error", err)
