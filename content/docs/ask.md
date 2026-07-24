@@ -54,6 +54,13 @@ expose the service by accident.
 In its default configuration:
 
 - The HTTP listener binds only to loopback addresses.
+- Requests whose `Host` header does not name that loopback address are
+  rejected with `403`. Binding to `127.0.0.1` keeps other *machines* out but
+  not other *origins*: a web page can point a hostname it controls at
+  `127.0.0.1` (DNS rebinding) and would otherwise be treated as same-origin,
+  able to query the assistant and read the answers. Checking `Host` closes
+  that path. The check is skipped when you pass `--expose-host`, since an
+  intentionally exposed deployment is reached under other hostnames.
 - No external network calls are made. Ollama is contacted at
   `http://127.0.0.1:11434` when configured.
 - Prompts, answers, and the corpus text are never logged. Only the

@@ -439,7 +439,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 	httpSrv := &http.Server{
 		Addr:              addr,
-		Handler:           mux,
+		Handler:           s.guardHost(mux),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      60 * time.Second,
@@ -476,6 +476,53 @@ func (s *Server) Start(ctx context.Context) error {
 // Shutdown stops the running server. It is safe to call multiple times.
 func (s *Server) Shutdown(_ context.Context) error {
 	return nil // lifecycle owned by Start's context
+}
+
+// hostAllowed reports whether a request's Host header names the loopback
+// interface this server is bound to.
+//
+// An empty Host is refused: HTTP/1.1 requires one, and no browser we serve
+// omits it.
+func (s *Server) hostAllowed(hostHeader string) bool {
+	if strings.TrimSpace(hostHeader) == "" {
+		return false
+	}
+	bare := hostHeader
+	if h, _, err := net.SplitHostPort(hostHeader); err == nil {
+		bare = h
+	}
+	bare = strings.Trim(strings.TrimSpace(bare), "[]")
+	if bare == "" {
+		return false
+	}
+	if strings.EqualFold(bare, strings.Trim(s.cfg.Host, "[]")) {
+		return true
+	}
+	return IsLoopbackHost(bare)
+}
+
+// guardHost rejects requests whose Host header does not name this server's
+// loopback address.
+//
+// Binding to 127.0.0.1 keeps other machines out, but it does not keep other
+// *origins* out. A page on any site can point a hostname it controls at
+// 127.0.0.1 (DNS rebinding); the browser then treats this server as
+// same-origin, so it can both POST /api/ask and read the answers — which
+// defeats the promise that site content never leaves the machine. The Host
+// header is the signal that survives rebinding, because the browser keeps
+// sending the attacker's hostname.
+//
+// Skipped when the operator passed --expose-host: a deliberately exposed
+// deployment is legitimately reached under arbitrary hostnames and proxies,
+// and that opt-in already carries a startup warning.
+func (s *Server) guardHost(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.cfg.LoopbackOnly && !s.hostAllowed(r.Host) {
+			http.Error(w, "forbidden: unexpected Host header", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // registerRoutes wires the URL handlers onto mux.
