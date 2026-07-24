@@ -13,13 +13,13 @@
 <meta name="generator" content="La Famille Knowledge Graph Explorer">
 <link rel="stylesheet" href="{{.AssetCSSURL}}">
 </head>
-<body class="kgx-root">
-<a href="#kgx-main" class="sr-only focus:not-sr-only" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">Skip to graph</a>
+<body class="kgx-root" data-graph-data="{{.DataURL}}">
+<a href="#kgx-main" class="kgx-skip-link">Skip to graph</a>
 <header class="kgx-header" role="banner">
   <div class="kgx-header-row">
     <h1 id="kgx-title" class="kgx-title">{{.PageTitle}}</h1>
     <div class="kgx-search">
-      <label for="kgx-search-input" class="sr-only" style="position:absolute;left:-9999px;">Search the graph</label>
+      <label for="kgx-search-input" class="kgx-sr-only">Search the graph</label>
       <input id="kgx-search-input" type="search" placeholder="Search by title, page ID, tag:foo, category:bar, author" autocomplete="off" spellcheck="false" aria-label="Search pages in the graph by title, page ID, tag, category, or author">
       <div id="kgx-suggestions" class="kgx-suggestions" role="listbox" aria-label="Search suggestions"></div>
     </div>
@@ -36,7 +36,7 @@
   <div id="kgx-help" class="kgx-help" hidden style="font-size:0.8rem;color:var(--kgx-muted);line-height:1.4;background:var(--kgx-card);padding:0.5rem 0.75rem;border:1px solid var(--kgx-border);border-radius:0.5rem;">
     <strong>Keyboard:</strong>
     <kbd>Tab</kbd> focuses nodes, <kbd>Enter</kbd>/<kbd>Space</kbd> selects, <kbd>Esc</kbd> clears the search, <kbd>↑</kbd>/<kbd>↓</kbd> move between suggestions,
-    drag a node to reposition, scroll to zoom is disabled in this build to keep the layout stable. URL hash like <code>?node=foo</code> deep-links a node.
+    drag a node to reposition, scroll to zoom is disabled in this build to keep the layout stable. A query string like <code>?node=foo</code> deep-links a node.
   </div>
 </header>
 
@@ -46,7 +46,10 @@
     <div id="kgx-error" class="kgx-error" role="alert" hidden>Error loading graph.</div>
     <div id="kgx-empty" class="kgx-empty" hidden role="status">No pages found in the graph data.</div>
     <div id="kgx-no-results" class="kgx-no-results" hidden role="status"></div>
-    <svg id="kgx-svg" class="kgx-svg" role="img" aria-label="Interactive graph of all site pages and their connections" hidden>
+    <!-- Uses the group role, not the image role: the nodes inside are
+         focusable buttons, and an image role prunes them from the
+         accessibility tree entirely. -->
+    <svg id="kgx-svg" class="kgx-svg" role="group" aria-label="Interactive graph of all site pages and their connections" hidden>
       <g id="kgx-viewport">
         <g id="kgx-edges" aria-hidden="true" focusable="false"></g>
         <g id="kgx-nodes"></g>
@@ -61,7 +64,8 @@
     <div id="kgx-counts" style="position:absolute;right:0.75rem;bottom:0.75rem;font-size:0.78rem;color:var(--kgx-muted);background:rgba(15,17,21,0.78);padding:0.35rem 0.65rem;border:1px solid var(--kgx-border);border-radius:0.5rem;"></div>
   </div>
   <aside id="kgx-detail" class="kgx-detail" role="complementary" aria-label="Selected node details" hidden>
-    <button id="kgx-detail-close" type="button" style="float:right;background:transparent;border:1px solid var(--kgx-border);color:var(--kgx-muted);border-radius:0.35rem;padding:0.2rem 0.5rem;cursor:pointer;" aria-label="Close details panel">×</button>
+    <button id="kgx-detail-close" class="kgx-detail-close" type="button" aria-label="Close details panel">×</button>
+    <div id="kgx-detail-body"></div>
   </aside>
 </main>
 <footer class="kgx-footer" role="contentinfo">

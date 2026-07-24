@@ -1076,12 +1076,86 @@ func TestBuild_GraphExplorerDisabledSkipsPage(t *testing.T) {
 		t.Fatalf("Build: %v", err)
 	}
 
-	explorerPath := filepath.Join(outputDir, "graph", "index.html")
-	if _, err := os.Stat(explorerPath); err == nil {
-		t.Errorf("explorer page should not exist when disabled; found it")
-	} else if !os.IsNotExist(err) {
-		t.Errorf("unexpected stat error: %v", err)
+	for _, name := range []string{"index.html", "data.json"} {
+		p := filepath.Join(outputDir, "graph", name)
+		if _, err := os.Stat(p); err == nil {
+			t.Errorf("graph/%s should not exist when the explorer is disabled; found it", name)
+		} else if !os.IsNotExist(err) {
+			t.Errorf("unexpected stat error for %s: %v", name, err)
+		}
 	}
+}
+
+// TestBuild_GraphExplorerDisabledSkipsAssetBundle covers the other half of
+// disabling the explorer: its CSS/JS live in the normal asset tree, so without
+// an explicit skip the standard copy step ships them even though nothing links
+// to them.
+func TestBuild_GraphExplorerDisabledSkipsAssetBundle(t *testing.T) {
+	setup := func(t *testing.T, enabled bool) string {
+		t.Helper()
+		tempDir := t.TempDir()
+		contentDir := filepath.Join(tempDir, "content")
+		outputDir := filepath.Join(tempDir, "public")
+		templateDir := filepath.Join(tempDir, "templates")
+		graphAssets := filepath.Join(tempDir, "assets", "graph")
+		for _, d := range []string{contentDir, templateDir, graphAssets} {
+			if err := os.MkdirAll(d, 0755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		templatePath := filepath.Join(templateDir, "layout.html")
+		if err := os.WriteFile(templatePath, []byte("{{.Content}}"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("# Home"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		for _, name := range []string{"explorer.js", "explorer.css"} {
+			if err := os.WriteFile(filepath.Join(graphAssets, name), []byte("/* bundle */"), 0600); err != nil {
+				t.Fatal(err)
+			}
+		}
+		// A non-explorer asset, to prove the skip is targeted rather than
+		// disabling asset copying wholesale.
+		if err := os.WriteFile(filepath.Join(tempDir, "assets", "site.css"), []byte("body{}"), 0600); err != nil {
+			t.Fatal(err)
+		}
+
+		cfg := config.DefaultConfig()
+		cfg.ContentDir = contentDir
+		cfg.OutputDir = outputDir
+		cfg.Template = templatePath
+		cfg.AssetDir = filepath.Join(tempDir, "assets")
+		cfg.ProjectRoot = tempDir
+		cfg.GraphExplorer = enabled
+		if _, err := Build(cfg); err != nil {
+			t.Fatalf("Build: %v", err)
+		}
+		return outputDir
+	}
+
+	t.Run("disabled", func(t *testing.T) {
+		outputDir := setup(t, false)
+		for _, name := range []string{"explorer.js", "explorer.css"} {
+			p := filepath.Join(outputDir, "assets", "graph", name)
+			if _, err := os.Stat(p); err == nil {
+				t.Errorf("assets/graph/%s should not ship when the explorer is disabled", name)
+			}
+		}
+		if _, err := os.Stat(filepath.Join(outputDir, "assets", "site.css")); err != nil {
+			t.Errorf("unrelated assets must still be copied: %v", err)
+		}
+	})
+
+	t.Run("enabled", func(t *testing.T) {
+		outputDir := setup(t, true)
+		for _, name := range []string{"explorer.js", "explorer.css"} {
+			p := filepath.Join(outputDir, "assets", "graph", name)
+			if _, err := os.Stat(p); err != nil {
+				t.Errorf("assets/graph/%s must ship when the explorer is enabled: %v", name, err)
+			}
+		}
+	})
 }
 
 func TestBuild_GraphExplorerDeterministicAcrossDirectories(t *testing.T) {

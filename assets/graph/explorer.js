@@ -1,26 +1,30 @@
 /* Knowledge Graph Explorer — vanilla-JS controller. No external deps.
-   Loads ../graph.json, ../meta.json, ../backlinks.json and renders an
+   Loads the data.json payload emitted next to this page and renders an
    interactive directed graph with search, filter toggles, focus mode,
-   and keyboard accessibility. */
+   and keyboard accessibility.
+
+   Link direction, node classification (rendered / raw / stub / orphan),
+   display titles and public URLs are all resolved by the generator in
+   internal/graphexplorer and arrive ready to render. This file deliberately
+   does not re-derive any of them: doing that in two places is how the
+   inbound and outbound lists drifted apart in the first place. */
 (function () {
   'use strict';
 
-  var LARGE_THRESHOLD = 500;
-  // Orphan rule: a page is considered orphan when it has zero inbound
-  // links. The homepage (page id "index") is deliberately excluded so a
-  // freshly-seeded site that links out from index does not flag index as
-  // orphan. The rule is documented once here and surfaced via the
-  // toggle "Orphans" filter for users.
-  var HOMEPAGE_ORPHAN_EXEMPT = 'index';
   var NS = 'http://www.w3.org/2000/svg';
+  var DATA_URL = 'data.json';
 
   var state = {
-    graph: null,
-    backlinks: null,
-    meta: null,
+    data: null,
     nodes: [],
     nodeIndex: {},
     edges: [],
+    // Overridden from the payload; the generator owns the threshold.
+    largeThreshold: 500,
+    // Search-first mode for large sites: the visualization stays undrawn
+    // until the reader picks a page, so opening the explorer never pays to
+    // render thousands of nodes nobody asked to see.
+    suppressed: false,
     selected: null,
     palette: { w: 800, h: 600 },
     filter: {
@@ -49,6 +53,9 @@
     els.nodesLayer = $('kgx-nodes');
     els.detail = $('kgx-detail');
     els.detailClose = $('kgx-detail-close');
+    // Detail content is rendered into its own container so rebuilding it
+    // never destroys the close button (and its bound listener) alongside it.
+    els.detailBody = $('kgx-detail-body');
     els.main = $('kgx-main');
     els.loading = $('kgx-loading');
     els.error = $('kgx-error');
@@ -60,20 +67,14 @@
     loadData();
   }
 
-  function assetURL(rel) { return rel; }
-
   function loadData() {
-    var urls = [
-      assetURL('../graph.json'),
-      assetURL('../backlinks.json'),
-      assetURL('../meta.json')
-    ];
     show(els.loading); hide(els.svg); hide(els.detail);
-    Promise.all(urls.map(fetchJSON))
-      .then(function (parts) {
-        state.graph = parts[0];
-        state.backlinks = parts[1];
-        state.meta = parts[2] || {};
+    // The generator stamps the payload location onto <body>, so the path
+    // stays owned by Go rather than duplicated as a constant here.
+    var url = (document.body && document.body.getAttribute('data-graph-data')) || DATA_URL;
+    fetchJSON(url)
+      .then(function (data) {
+        state.data = data || {};
         buildIndex();
         afterLoad();
       })
@@ -88,67 +89,50 @@
       });
   }
 
+  // The payload arrives fully resolved, so indexing only wires up the
+  // per-node view state this controller mutates (position and visibility).
   function buildIndex() {
-    var nodesRaw = (state.graph && state.graph.nodes) || {};
+    var incoming = (state.data && state.data.nodes) || [];
+    if (typeof state.data.large_site_threshold === 'number') {
+      state.largeThreshold = state.data.large_site_threshold;
+    }
     state.nodes = [];
     state.nodeIndex = {};
-    var keys = Object.keys(nodesRaw).sort();
-    for (var i = 0; i < keys.length; i++) {
-      var id = keys[i];
-      var n = nodesRaw[id] || {};
-      var md = state.meta[id] || {};
-      var isRender = n.render !== false;
-      var isStub = (n.type === 'stub') || n.missing === true;
-      var tags = (md && md.tags) || [];
-      var categories = (md && md.categories) || [];
-      var inbound = (state.backlinks && state.backlinks[id]) || [];
-      var isOrphan = inbound.length === 0 && id !== HOMEPAGE_ORPHAN_EXEMPT;
-      state.nodes.push({
-        id: id,
+    for (var i = 0; i < incoming.length; i++) {
+      var n = incoming[i];
+      if (!n || !n.id) continue;
+      var node = {
+        id: n.id,
         type: n.type || 'page',
-        render: isRender,
-        missing: !!isStub,
-        raw: !isRender,
-        stub: !!isStub,
-        orphan: isOrphan,
-        title: md.title || deriveTitle(id),
-        tags: tags,
-        categories: categories,
-        author: md.author || '',
-        date: md.date || '',
-        word_count: md.word_count || 0,
-        url: isRender ? deriveUrl(id) : '',
-        inbound: inbound,
-        outbound: [],
+        render: !!n.render,
+        // "raw" means a real page carrying render:false. A missing-link stub
+        // is also unrendered but is its own category, so the two filters do
+        // not silently hide each other's nodes.
+        raw: !n.render && !n.stub,
+        stub: !!n.stub,
+        orphan: !!n.orphan,
+        title: n.title || n.id,
+        tags: n.tags || [],
+        categories: n.categories || [],
+        author: n.author || '',
+        date: n.date || '',
+        word_count: n.word_count || 0,
+        url: n.url || '',
+        inbound: n.inbound || [],
+        outbound: n.outbound || [],
         x: 0, y: 0, vx: 0, vy: 0
-      });
-      state.nodeIndex[id] = state.nodes[state.nodes.length - 1];
+      };
+      state.nodes.push(node);
+      state.nodeIndex[node.id] = node;
     }
-    var edges = (state.graph && state.graph.edges) || [];
+    var edges = (state.data && state.data.edges) || [];
     state.edges = [];
     for (var j = 0; j < edges.length; j++) {
       var e = edges[j];
       if (!e || e.length < 2) continue;
+      if (!state.nodeIndex[e[0]] || !state.nodeIndex[e[1]]) continue;
       state.edges.push([e[0], e[1]]);
-      var node = state.nodeIndex[e[1]];
-      if (node) node.outbound.push(e[0]);
     }
-  }
-
-  function deriveTitle(id) {
-    var base = id.split('/').pop().replace(/\.md$/, '');
-    return base.replace(/[-_]+/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
-  }
-
-  // Compute a root-relative public URL from the page id only. Slug-aware
-  // linking would have required extending meta.json; we keep the JSON
-  // contracts stable by computing the URL from the id. Sites using
-  // front-matter slug overrides show the unslugged link in the detail
-  // panel; this is documented as a known limitation in publishing.md.
-  function deriveUrl(id) {
-    if (!id) return '';
-    if (id === HOMEPAGE_ORPHAN_EXEMPT) return '/';
-    return '/' + id + '/';
   }
 
   function afterLoad() {
@@ -159,13 +143,30 @@
     applyFilter();
     renderControls();
     reseedLayout();
-    if (state.nodes.length >= LARGE_THRESHOLD) {
+
+    // Search-first mode: hold the visualization back entirely rather than
+    // drawing every node and merely skipping the animation. A deep link to a
+    // specific node still renders immediately — the reader has already said
+    // what they want to look at.
+    if (state.nodes.length >= state.largeThreshold && !state.selected) {
+      state.suppressed = true;
+      hide(els.svg);
       focusSearch();
       updateStatus('Large site (' + state.nodes.length + ' nodes). Search to explore.');
-    } else {
-      startLayout();
+      return;
     }
+
+    startLayout();
     renderGraph();
+  }
+
+  // Leaves search-first mode and draws the graph for real. Safe to call when
+  // the graph is already visible.
+  function revealGraph() {
+    if (!state.suppressed) return;
+    state.suppressed = false;
+    updateStatus('');
+    startLayout();
   }
 
   function focusSearch() {
@@ -343,6 +344,13 @@
   function setAria(el, p) { if (el) el.setAttribute('aria-pressed', p ? 'true' : 'false'); }
 
   function renderGraph() {
+    // In search-first mode nothing is drawn at all — that is the whole point
+    // of the mode, so bail before touching the DOM.
+    if (state.suppressed) {
+      hide(els.svg);
+      hide(els.noResults);
+      return;
+    }
     show(els.svg);
     if (countVisible() === 0) { show(els.noResults); els.noResults.textContent = 'No pages match the current filters.'; }
     else { hide(els.noResults); }
@@ -505,8 +513,8 @@
       html += '</ul>';
     } else { html += '<p>No inbound links.</p>'; }
     html += '</section>';
-    els.detail.innerHTML = html;
-    var links = els.detail.querySelectorAll('[data-node-link]');
+    els.detailBody.innerHTML = html;
+    var links = els.detailBody.querySelectorAll('[data-node-link]');
     for (var i = 0; i < links.length; i++) {
       links[i].addEventListener('click', function (e) {
         e.preventDefault();
@@ -635,7 +643,12 @@
 
   function selectNode(id, push) {
     state.selected = id;
-    if (state.filter.focus) {
+    // Picking a page is the signal that leaves search-first mode. When it
+    // does, the graph has never been drawn, so it needs a full render rather
+    // than the incremental highlight path below.
+    var wasSuppressed = state.suppressed;
+    revealGraph();
+    if (wasSuppressed || state.filter.focus) {
       applyFilter();
       renderControls();
       renderGraph();

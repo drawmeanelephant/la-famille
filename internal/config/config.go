@@ -150,6 +150,32 @@ func (c Config) URLForOutputPath(outputPath string) string {
 	return base.String()
 }
 
+// PublicPathForOutput returns the site-root-relative URL path for a generated
+// output file, including the base path when siteurl points at a subdirectory
+// (for example a GitHub Pages project site at https://user.github.io/project).
+//
+// Unlike URLForOutputPath this never returns an absolute URL and does not
+// require siteurl to be set, so it is safe for links that must work in both
+// local and published builds.
+func (c Config) PublicPathForOutput(outputPath string) string {
+	base := ""
+	if u, ok := c.publicURL(); ok {
+		base = u.Path
+	}
+	return base + publicPathForOutput(outputPath)
+}
+
+// BasePath returns the URL path prefix the site is served under, derived from
+// siteurl. It is empty when siteurl is unset or the site is served from the
+// root of its host.
+func (c Config) BasePath() string {
+	u, ok := c.publicURL()
+	if !ok {
+		return ""
+	}
+	return u.Path
+}
+
 func (c Config) publicURL() (*url.URL, bool) {
 	siteURL := c.SiteURL
 	if strings.TrimSpace(siteURL) == "" {

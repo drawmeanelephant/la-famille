@@ -133,6 +133,10 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 		Edges: [][2]string{},
 	}
 	metaData := make(map[string]map[string]interface{})
+	// pageOutputs maps a page id to the output-relative path its HTML was
+	// written to, so downstream consumers can build slug-aware public URLs
+	// instead of guessing them back from the id.
+	pageOutputs := make(map[string]string)
 	var searchIndex []search.Item
 
 	// 2. Pass 2: Process files in deterministic order
@@ -197,6 +201,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 					type jobUpdate struct {
 						node      graph.Node
 						meta      map[string]interface{}
+						outputRel string
 						errs      []error
 						errCount  int
 						pageCount int
@@ -248,6 +253,9 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						mu.Lock()
 						g.Nodes[id] = update.node
 						metaData[id] = update.meta
+						if update.outputRel != "" {
+							pageOutputs[id] = update.outputRel
+						}
 						if update.errCount > 0 {
 							result.ErrorCount += update.errCount
 						}
@@ -373,6 +381,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						return
 					}
 					renderedPaths[idx] = relOut
+					update.outputRel = relOut
 					if meta.Date != "" {
 						itemURL := cfg.URLForOutputPath(relOut)
 						if itemURL == "" {
@@ -458,8 +467,13 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 		return result, err
 	}
 
-	// 5b. Knowledge Graph Explorer page (static, no extra deps).
-	if _, err := graphexplorer.Write(cfg, len(g.Nodes)); err != nil {
+	// 5b. Knowledge Graph Explorer page and payload (static, no extra deps).
+	if _, err := graphexplorer.Write(graphexplorer.Input{
+		Config:      cfg,
+		Graph:       g,
+		Meta:        metaData,
+		PageOutputs: pageOutputs,
+	}); err != nil {
 		return result, err
 	}
 
