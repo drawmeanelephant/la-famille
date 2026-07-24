@@ -516,7 +516,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	// last and write with os.Create, so without claiming their paths a dangling
 	// link such as [all tags](tags.md) would overwrite the generated taxonomy
 	// listing at exit 0.
-	if err := stub.GenerateStubs(cfg, siteCfg, missingFiles, &g, p, fileMap, claims.stubClaimer(cfg.OutputDir)); err != nil {
+	if err := stub.GenerateStubs(cfg, siteCfg, missingFiles, &g, p, fileMap, claims.stubClaimer()); err != nil {
 		return result, err
 	}
 
@@ -648,8 +648,9 @@ func (c *outputClaims) claim(source, relOut string) (outputOwner, bool) {
 }
 
 // stubClaimer adapts the registry to the reservation callback internal/stub
-// uses. outputDir is the same directory the stubs write into.
-func (c *outputClaims) stubClaimer(outputDir string) stub.ClaimOutput {
+// uses. Paths are claimed by their output-relative form, so the output
+// directory itself is not needed here.
+func (c *outputClaims) stubClaimer() stub.ClaimOutput {
 	return func(missingRelPath, relOut string) (string, bool) {
 		source := fmt.Sprintf("the generated stub for %q", missingRelPath)
 		previous, ok := c.claim(source, relOut)

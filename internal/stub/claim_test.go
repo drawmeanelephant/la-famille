@@ -44,7 +44,7 @@ func TestGenerateStubs_SkipsClaimedPaths(t *testing.T) {
 	p := bluemonday.UGCPolicy()
 
 	var asked []string
-	claim := func(missingRelPath, relOut string) (string, bool) {
+	claim := func(_, relOut string) (string, bool) {
 		asked = append(asked, relOut)
 		if relOut == "taken/index.html" {
 			return "the generated taxonomy page", false
