@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -20,7 +21,17 @@ import (
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
-func GenerateStubs(cfg, siteCfg config.Config, missingFiles map[string][]string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta) error {
+// ClaimOutput reserves the output-relative path a stub is about to write.
+// Stubs are generated last and write with os.Create, so without a reservation a
+// single dangling link is enough to overwrite a taxonomy listing, a rendered
+// page or another stub at exit 0.
+//
+// It returns ("", true) when the path was free and is now the stub's, or the
+// description of the writer that already owns it and false. A nil ClaimOutput
+// means "nothing else writes here" and every stub is written.
+type ClaimOutput func(missingRelPath, relOut string) (owner string, ok bool)
+
+func GenerateStubs(cfg, siteCfg config.Config, missingFiles map[string][]string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, claim ClaimOutput) error {
 	missingKeys := make([]string, 0, len(missingFiles))
 	for k := range missingFiles {
 		missingKeys = append(missingKeys, k)
@@ -30,14 +41,14 @@ func GenerateStubs(cfg, siteCfg config.Config, missingFiles map[string][]string,
 	partials, _ := render.DiscoverPartials(filepath.Dir(cfg.Template))
 
 	for _, missingRelPath := range missingKeys {
-		if err := generateSingleStub(cfg, siteCfg, missingRelPath, missingFiles[missingRelPath], g, p, fileMap, partials); err != nil {
+		if err := generateSingleStub(cfg, siteCfg, missingRelPath, missingFiles[missingRelPath], g, p, fileMap, partials, claim); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, parents []string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, partials map[string]string) error {
+func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, parents []string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, partials map[string]string, claim ClaimOutput) error {
 	outDirClean := filepath.Clean(cfg.OutputDir)
 	relOut := transform.GetOutputURL(missingRelPath, "", true)
 	outPath := filepath.Join(outDirClean, filepath.FromSlash(relOut))
@@ -46,17 +57,33 @@ func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, paren
 		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-		return err
-	}
-
 	sort.Strings(parents)
+
+	// The node is recorded either way: the link that produced it is already an
+	// edge in the graph, and dropping the node would leave that edge dangling.
+	writeStub := true
+	if claim != nil {
+		owner, ok := claim(missingRelPath, relOut)
+		if !ok {
+			slog.Warn("Not writing a stub over generated output",
+				"missing", missingRelPath, "path", relOut, "owner", owner)
+			writeStub = false
+		}
+	}
 	id := strings.TrimSuffix(missingRelPath, ".md")
 	g.Nodes[id] = graph.Node{
 		Type:         "stub",
 		Render:       true,
 		Missing:      true,
 		ReferencedBy: parents,
+	}
+
+	if !writeStub {
+		return nil
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+		return err
 	}
 
 	var htmlContent strings.Builder
@@ -68,7 +95,9 @@ func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, paren
 
 	for _, parent := range parents {
 		parentSlug := ""
-		if meta, ok := fileMap[parent]; ok && meta != nil {
+		if meta, ok := fileMap[parent]; ok && meta != nil && usableSlug(meta.Slug) {
+			// An unusable slug is discarded when the parent is rendered, so
+			// honouring it here would link to a page that does not exist.
 			parentSlug = meta.Slug
 		}
 
@@ -136,6 +165,20 @@ func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, paren
 	}
 
 	return defaultTmpl.ExecuteTemplate(outFile, filepath.Base(cfg.Template), pageStruct)
+}
+
+// usableSlug mirrors the check the render worker applies before it computes a
+// page's output path: a slug that fails it is discarded, so any code predicting
+// where that page landed has to discard it too. The durable home for this rule
+// is transform.GetOutputURL, which every predictor already calls.
+func usableSlug(slug string) bool {
+	if slug == "" {
+		return false
+	}
+	return filepath.IsLocal(slug) &&
+		!strings.Contains(slug, ".") &&
+		!strings.Contains(slug, string(filepath.Separator)) &&
+		!strings.Contains(slug, "/")
 }
 
 func RelPathFromTo(base, target string) (string, error) {

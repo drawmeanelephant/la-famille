@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -43,6 +44,40 @@ var (
 	}
 )
 
+// checkboxInputType limits the <input> elements the sanitizer keeps to the
+// disabled checkboxes goldmark emits for GFM task lists.
+var checkboxInputType = regexp.MustCompile(`^checkbox$`)
+
+// buildLocks serializes builds publishing into the same output directory.
+// replaceOutputDirectory renames directories in several steps, and the watcher
+// starts rebuilds on a timer that cannot cancel a build already in progress, so
+// two Build calls can otherwise interleave inside that window.
+var (
+	buildLocksMu sync.Mutex
+	buildLocks   = make(map[string]*sync.Mutex)
+)
+
+// lockOutputDir blocks until this process owns the given output directory and
+// returns the release function. The lock is process-local: it does not
+// serialize two separate la-famille processes writing the same directory.
+func lockOutputDir(outputDir string) func() {
+	key := filepath.Clean(outputDir)
+	if abs, err := filepath.Abs(key); err == nil {
+		key = abs
+	}
+
+	buildLocksMu.Lock()
+	lock, ok := buildLocks[key]
+	if !ok {
+		lock = &sync.Mutex{}
+		buildLocks[key] = lock
+	}
+	buildLocksMu.Unlock()
+
+	lock.Lock()
+	return lock.Unlock
+}
+
 func getConvertMarkdown() func(goldmark.Markdown, []byte, *bytes.Buffer) error {
 	convertMu.RLock()
 	defer convertMu.RUnlock()
@@ -68,6 +103,8 @@ type BuildResult struct {
 // Build generates the static site based on the given configuration.
 func Build(cfg config.Config) (BuildResult, error) {
 	start := time.Now()
+	defer lockOutputDir(cfg.OutputDir)()
+
 	outputDir, stagingDir, err := createStagingOutput(cfg.OutputDir)
 	if err != nil {
 		return BuildResult{}, err
@@ -149,9 +186,6 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	var searchIndex []search.Item
 
 	// 2. Pass 2: Process files in deterministic order
-	if err := validateOutputPaths(fileMap, cfg.OutputDir, reservedOutputPaths(cfg)); err != nil {
-		return result, err
-	}
 	keys := make([]string, 0, len(fileMap))
 	for k := range fileMap {
 		keys = append(keys, k)
@@ -171,8 +205,21 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	p.AllowAttrs("class").Globally()
 	p.AllowElements("svg", "path")
 	p.AllowAttrs("xmlns", "fill", "viewBox", "stroke-linecap", "stroke-linejoin", "stroke-width", "d", "stroke", "class").OnElements("svg", "path")
+	// GFM task lists carry their state in a disabled checkbox input. Stripping
+	// it makes a completed item render exactly like a pending one, so allow
+	// precisely that element and nothing else about <input>.
+	p.AllowAttrs("type").Matching(checkboxInputType).OnElements("input")
+	p.AllowAttrs("checked", "disabled").OnElements("input")
 
 	taxPaths, taxSearchItems, err := taxonomy.GenerateTaxonomies(cfg, siteCfg, fileMap, renderer, p)
+	if err != nil {
+		return result, err
+	}
+
+	// Taxonomy listings share the output tree with content pages, so the guard
+	// can only see the whole picture once their paths are known. claims keeps
+	// the ownership map alive for the writers that run later in the build.
+	claims, err := validateOutputPaths(fileMap, cfg.OutputDir, reservedOutputPaths(cfg), taxPaths)
 	if err != nil {
 		return result, err
 	}
@@ -285,11 +332,9 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 
 					if shouldRender {
 						slug := meta.Slug
-						if slug != "" {
-							if !filepath.IsLocal(slug) || strings.Contains(slug, ".") || strings.Contains(slug, string(filepath.Separator)) || strings.Contains(slug, "/") {
-								slog.Warn("Invalid slug. Ignoring.", "slug", slug, "file", relPath)
-								slug = ""
-							}
+						if slug != "" && !usableSlug(slug) {
+							slog.Warn("Invalid slug. Ignoring.", "slug", slug, "file", relPath)
+							slug = ""
 						}
 						relOut = transform.GetOutputURL(relPath, slug, shouldRender)
 						outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
@@ -331,15 +376,10 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						return
 					}
 
-					if !shouldRender {
-						// Just copy the file
-						if err := os.WriteFile(outPath, meta.Content, 0600); err != nil {
-							update.errs = append(update.errs, err)
-						}
-						return
-					}
-
-					// Set up goldmark with AST transformer
+					// Set up goldmark with AST transformer. Unrendered pages are
+					// converted too: the conversion is what walks their links
+					// into the graph, the backlinks and the missing-file list.
+					// Their generated HTML is then discarded.
 					transformer := &transform.LinkTransformer{
 						CurrentFile:  relPath,
 						FileMap:      fileMap,
@@ -352,9 +392,25 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 					md := markdown.NewEngine(transformer)
 
 					buf.Reset()
-					if err := getConvertMarkdown()(md, meta.Rest, &buf); err != nil {
+					convertErr := getConvertMarkdown()(md, meta.Rest, &buf)
+
+					if !shouldRender {
+						// The verbatim copy does not depend on the conversion,
+						// so a conversion failure here costs graph edges, not
+						// output, and must not fail a build that previously
+						// succeeded.
+						if convertErr != nil {
+							slog.Warn("Failed to scan links in unrendered page", "file", relPath, "error", convertErr)
+						}
+						if err := os.WriteFile(outPath, meta.Content, 0600); err != nil {
+							update.errs = append(update.errs, err)
+						}
+						return
+					}
+
+					if convertErr != nil {
 						update.errCount++
-						update.errs = append(update.errs, fmt.Errorf("error converting %s: %w", relPath, err))
+						update.errs = append(update.errs, fmt.Errorf("error converting %s: %w", relPath, convertErr))
 						return
 					}
 
@@ -456,8 +512,11 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 		}
 		return result, errors.Join(joinErrs...)
 	}
-	// 3. Generate stubs for missing files in deterministic order
-	if err := stub.GenerateStubs(cfg, siteCfg, missingFiles, &g, p, fileMap); err != nil {
+	// 3. Generate stubs for missing files in deterministic order. Stubs run
+	// last and write with os.Create, so without claiming their paths a dangling
+	// link such as [all tags](tags.md) would overwrite the generated taxonomy
+	// listing at exit 0.
+	if err := stub.GenerateStubs(cfg, siteCfg, missingFiles, &g, p, fileMap, claims.stubClaimer()); err != nil {
 		return result, err
 	}
 
@@ -531,9 +590,95 @@ func reservedOutputPaths(cfg config.Config) map[string]string {
 	return reserved
 }
 
-func validateOutputPaths(fileMap map[string]*content.FileMeta, outputDir string, reserved map[string]string) error {
-	owners := make(map[string]string, len(fileMap))
+// usableSlug reports whether a frontmatter slug can name an output directory.
+// A slug that fails this check is discarded when the page is rendered, so every
+// caller that predicts an output path has to discard it the same way, or the
+// prediction names a file the generator never writes.
+func usableSlug(slug string) bool {
+	return filepath.IsLocal(slug) &&
+		!strings.Contains(slug, ".") &&
+		!strings.Contains(slug, string(filepath.Separator)) &&
+		!strings.Contains(slug, "/")
+}
 
+// outputOwner is a single writer's claim on a path in the output tree.
+type outputOwner struct {
+	// source describes the writer, ready to drop into an error message.
+	source string
+	// relOut is the output-relative path as that writer spells it. Errors
+	// report this rather than the absolute target, which during a build is a
+	// throwaway staging path that tells the author nothing about their site.
+	relOut string
+}
+
+// outputClaims records which writer owns each path in the output tree. Every
+// writer that emits into that tree - content pages, taxonomy listings, the
+// knowledge graph explorer and the missing-page stubs - claims its paths here,
+// so a second writer aiming at the same file is caught rather than silently
+// overwriting the first.
+//
+// Keys are case-folded, because macOS and Windows collapse paths differing only
+// in case onto one file.
+type outputClaims struct {
+	mu        sync.Mutex
+	outputDir string
+	owners    map[string]outputOwner
+}
+
+func newOutputClaims(outputDir string, size int) *outputClaims {
+	return &outputClaims{outputDir: outputDir, owners: make(map[string]outputOwner, size)}
+}
+
+func (c *outputClaims) key(relOut string) string {
+	return strings.ToLower(filepath.Clean(filepath.Join(c.outputDir, filepath.FromSlash(relOut))))
+}
+
+// claim reserves relOut for source. It returns the writer that already holds
+// the path, and false, when the path is taken.
+func (c *outputClaims) claim(source, relOut string) (outputOwner, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	key := c.key(relOut)
+	if previous, exists := c.owners[key]; exists {
+		return previous, false
+	}
+	c.owners[key] = outputOwner{source: source, relOut: relOut}
+	return outputOwner{}, true
+}
+
+// stubClaimer adapts the registry to the reservation callback internal/stub
+// uses. Paths are claimed by their output-relative form, so the output
+// directory itself is not needed here.
+func (c *outputClaims) stubClaimer() stub.ClaimOutput {
+	return func(missingRelPath, relOut string) (string, bool) {
+		source := fmt.Sprintf("the generated stub for %q", missingRelPath)
+		previous, ok := c.claim(source, relOut)
+		if ok {
+			return "", true
+		}
+		return previous.source, false
+	}
+}
+
+func collisionError(previous outputOwner, source, relOut string) error {
+	if previous.relOut == relOut {
+		return fmt.Errorf("output path collision: %s and %s both map to %q", previous.source, source, relOut)
+	}
+	return fmt.Errorf(
+		"output path collision: %s maps to %q and %s maps to %q, which are the same file on case-insensitive filesystems",
+		previous.source, previous.relOut, source, relOut,
+	)
+}
+
+// validateOutputPaths claims every output path known before the render pass and
+// returns the registry so later writers can claim theirs too.
+func validateOutputPaths(fileMap map[string]*content.FileMeta, outputDir string, reserved map[string]string, taxonomyPaths []string) (*outputClaims, error) {
+	claims := newOutputClaims(outputDir, len(fileMap)+len(taxonomyPaths)+len(reserved))
+
+	// Content pages claim first so that an author's own file is the first party
+	// named in any error and the generated owner that follows explains itself.
+	//
 	// Sort so a site with several collisions always reports the same one,
 	// rather than whichever the map happened to yield first.
 	relPaths := make([]string, 0, len(fileMap))
@@ -545,28 +690,59 @@ func validateOutputPaths(fileMap map[string]*content.FileMeta, outputDir string,
 	for _, relPath := range relPaths {
 		meta := fileMap[relPath]
 		if meta.Render != nil && !*meta.Render {
+			// Unrendered pages are copied verbatim to their own .md path, which
+			// no renderer can reach: GatherMetadata only walks .md files while
+			// every rendered output is .html.
 			continue
 		}
 
-		relOut := transform.GetOutputURL(relPath, meta.Slug, true)
-		target := filepath.Clean(filepath.Join(
-			outputDir,
-			filepath.FromSlash(relOut),
-		))
+		// The worker discards an unusable slug before computing the real output
+		// path, so predicting with the raw slug names a file that is never
+		// written - and misses the collision that really happens.
+		slug := meta.Slug
+		if slug != "" && !usableSlug(slug) {
+			slug = ""
+		}
 
-		// Report relOut rather than target: during a build the latter is a
-		// temporary staging path, which tells the author nothing about their
-		// own site.
-		if owner, isReserved := reserved[target]; isReserved {
-			return fmt.Errorf("output path collision: %q maps to %q, which is generated by %s", relPath, relOut, owner)
+		relOut := transform.GetOutputURL(relPath, slug, true)
+		source := fmt.Sprintf("%q", relPath)
+		if previous, ok := claims.claim(source, relOut); !ok {
+			return nil, collisionError(previous, source, relOut)
 		}
-		if previous, exists := owners[target]; exists {
-			return fmt.Errorf("output path collision: %q and %q both map to %q", previous, relPath, relOut)
-		}
-		owners[target] = relPath
 	}
 
-	return nil
+	// Paths the build reserves for itself, such as the knowledge graph explorer.
+	reservedTargets := make([]string, 0, len(reserved))
+	for target := range reserved {
+		reservedTargets = append(reservedTargets, target)
+	}
+	sort.Strings(reservedTargets)
+	for _, target := range reservedTargets {
+		rel, err := filepath.Rel(filepath.Clean(outputDir), target)
+		if err != nil {
+			return nil, fmt.Errorf("resolve reserved output path %q: %w", target, err)
+		}
+		relOut := filepath.ToSlash(rel)
+		if previous, ok := claims.claim(reserved[target], relOut); !ok {
+			return nil, collisionError(previous, reserved[target], relOut)
+		}
+	}
+
+	// Taxonomy listings are written before the content workers start, so a
+	// content page mapping onto one of them overwrites it without a warning.
+	seen := make(map[string]bool, len(taxonomyPaths))
+	for _, relOut := range taxonomyPaths {
+		if relOut == "" || seen[relOut] {
+			continue
+		}
+		seen[relOut] = true
+		const source = "the generated taxonomy page"
+		if previous, ok := claims.claim(source, relOut); !ok {
+			return nil, collisionError(previous, source, relOut)
+		}
+	}
+
+	return claims, nil
 }
 
 // createStagingOutput creates an empty sibling directory for a build. Keeping the
