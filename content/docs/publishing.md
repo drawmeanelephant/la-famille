@@ -26,6 +26,7 @@ When `la-famille build` executes, it processes Markdown source files in `content
 | **Backlinks** | `backlinks.json` | Generated on every build | Map of target page IDs to referencing parent page IDs |
 | **Site Metadata** | `meta.json` | Generated on every build | Page metadata dictionary |
 | **Knowledge Graph Explorer** | `graph/index.html` | Generated on every build when `graph_explorer: true` (default) | Self-contained interactive visualization of the site's wikilink relationships |
+| **Explorer Payload** | `graph/data.json` | Generated alongside `graph/index.html` | Resolved node list the explorer page renders: link direction, classification, titles, and public URLs |
 
 ---
 
@@ -92,7 +93,7 @@ When `la-famille build` executes, it processes Markdown source files in `content
 - **Generation:** Written to `<output_dir>/graph/index.html` when the `graph_explorer` config option is true (default). When disabled, neither the page nor its companion assets directory are emitted and no nav link is injected into layouts.
 - **Companion assets:** `assets/graph/explorer.js` and `assets/graph/explorer.css` are copied into `<output_dir>/assets/graph/` by the established asset pipeline. Both files ship under the user-owned `assets/` directory and reach the explorer page via root-relative URLs.
 - **Runtime semantics:** The page is fully static — it loads `../graph.json`, `../meta.json`, and `../backlinks.json` via relative fetches and never contacts a remote host. A `<link rel="canonical">` is emitted only when `siteurl` is configured; without it the page works the same when opened directly via `file://`.
-- **No meta.json contract change:** The explorer's writer does NOT extend `meta.json` — public URLs are derived client-side from the page id (`/<id>/`). Sites that use front-matter `slug:` overrides will see unslugged links in the detail panel; this is a known limitation.
+- **No change to existing contracts:** The explorer's writer does NOT extend `graph.json`, `meta.json`, or `backlinks.json`. It emits its own `graph/data.json` payload, assembled in Go from the same graph the build already computed. Public URLs there follow the path each page was actually written to, so front-matter `slug:` overrides and sub-path deployments (for example a GitHub Pages project site) both produce correct links.
 
 ### Manual Navigation Snippet
 
@@ -175,7 +176,9 @@ All files and subdirectories created in `outputDir` are intended for public web 
 | **Data sources** | `../graph.json`, `../meta.json`, `../backlinks.json` (loaded at runtime via relative fetches) |
 | **Runtime network calls** | None. The page is fully static; no remote scripts, fonts, or APIs are loaded. |
 | **Canonical URL** | Emitted only when `siteurl` is configured. Otherwise the page works the same when opened directly via `file://`. |
-| **Slug handling** | Public URLs are computed client-side from the page id (`/<id>/`). Custom frontmatter `slug:` overrides appear as unslugged links in the detail panel — a documented limitation. |
+| **Slug handling** | Public URLs are resolved by the generator from the output path each page was written to, so frontmatter `slug:` overrides link correctly. |
+| **Sub-path deploys** | URLs include the base path from `siteurl`, so a project site such as `https://user.github.io/project` links to `/project/...` rather than `/...`. |
+| **Link direction** | Inbound and outbound neighbours are computed once in `internal/graph.Adjacency` from the `[source, target]` edge list, deduplicated and sorted. The client renders them; it does not re-derive them. |
 | **Disabled behavior** | With `graph_explorer: false`, neither `/graph/` nor `/assets/graph/*` are emitted and no nav link is auto-injected. |
 
 ### Threshold for large sites
