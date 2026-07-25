@@ -72,7 +72,11 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 			if onBuild != nil {
 				onBuild(res)
 			}
-			BroadcastReload()
+			// Deliberately no BroadcastReload here. The build failed, so the
+			// output directory still holds the previous site; telling the
+			// browser to reload made it refresh unchanged bytes and look as
+			// though the edit had landed. The page now stays as it was and the
+			// error is what the author sees.
 			slog.Error("Pipeline compilation failed", "error", err)
 			return
 		}

@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"sync"
@@ -136,4 +137,58 @@ func TestWatchReturnsOnStartupErrorWithoutHanging(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("watch did not return on a startup error; it is blocked waiting for the builder goroutine")
 	}
+}
+
+// TestWatchDoesNotReloadAfterAFailedBuild covers what the browser is told when
+// a rebuild fails. The output directory still holds the previous site, so
+// broadcasting a reload made the page refresh unchanged bytes and look as
+// though the edit had landed — the most misleading thing live reload can do.
+func TestWatchDoesNotReloadAfterAFailedBuild(t *testing.T) {
+	cfg := testConfig(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Subscribe the way the live-reload handler does, so a broadcast is visible.
+	client := make(chan struct{}, 4)
+	clientsMu.Lock()
+	clients[client] = true
+	clientsMu.Unlock()
+	t.Cleanup(func() {
+		clientsMu.Lock()
+		delete(clients, client)
+		clientsMu.Unlock()
+	})
+
+	built := make(chan struct{}, 4)
+	done := make(chan error, 1)
+	debounce := 20 * time.Millisecond
+
+	go func() {
+		done <- watch(ctx, cfg, nil, func(config.Config) (generator.BuildResult, error) {
+			built <- struct{}{}
+			return generator.BuildResult{}, errors.New("synthetic build failure")
+		}, debounce)
+	}()
+
+	time.Sleep(2 * debounce)
+	if err := os.WriteFile(filepath.Join(cfg.ContentDir, "first.md"), []byte("a"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case <-built:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the rebuild never ran")
+	}
+
+	// Give a stray broadcast time to arrive before concluding there was none.
+	time.Sleep(5 * debounce)
+	select {
+	case <-client:
+		t.Error("a live reload was broadcast after the build failed; the browser would refresh stale output as though the edit landed")
+	default:
+	}
+
+	cancel()
+	<-done
 }
