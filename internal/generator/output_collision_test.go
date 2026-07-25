@@ -275,29 +275,6 @@ func TestBuild_AssetDoesNotOverwriteRenderedPage(t *testing.T) {
 	}
 }
 
-// TestOutputClaimsCaseFoldingFollowsTheFilesystem covers a guard that fired
-// where nothing was wrong. Keys were folded unconditionally, so two paths
-// differing only in case were reported as a collision — true on macOS and
-// Windows, false on a case-sensitive volume, where they are distinct files that
-// had built and published correctly until the guard was extended to assets.
-func TestOutputClaimsCaseFoldingFollowsTheFilesystem(t *testing.T) {
-	dir := t.TempDir()
-	claims := newOutputClaims(dir, 4)
-
-	if _, ok := claims.claim("the page \"a.md\"", "css/site.css"); !ok {
-		t.Fatal("first claim should succeed")
-	}
-	_, ok := claims.claim("the page \"b.md\"", "CSS/site.css")
-
-	if claims.caseInsensitive {
-		if ok {
-			t.Error("on a case-insensitive filesystem the two paths are one file and must collide")
-		}
-	} else if !ok {
-		t.Error("on a case-sensitive filesystem the two paths are distinct files and must both be allowed")
-	}
-}
-
 // TestOutputClaimsStillRejectsAnExactDuplicate keeps the relaxation narrow: the
 // case rule changed, the collision rule did not.
 func TestOutputClaimsStillRejectsAnExactDuplicate(t *testing.T) {
@@ -312,13 +289,5 @@ func TestOutputClaimsStillRejectsAnExactDuplicate(t *testing.T) {
 	}
 	if previous.source == "" {
 		t.Error("the collision should name the previous owner")
-	}
-}
-
-// TestDirIsCaseInsensitiveErrsStrict pins the fallback: an undecidable probe
-// must choose the stricter behaviour rather than silently disabling the guard.
-func TestDirIsCaseInsensitiveErrsStrict(t *testing.T) {
-	if !dirIsCaseInsensitive(filepath.Join(t.TempDir(), "does-not-exist")) {
-		t.Error("an unprobeable directory must be treated as case-insensitive")
 	}
 }

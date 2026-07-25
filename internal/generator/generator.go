@@ -618,47 +618,18 @@ type outputOwner struct {
 // so a second writer aiming at the same file is caught rather than silently
 // overwriting the first.
 //
-// Keys are case-folded only when the output filesystem actually collapses
-// names differing in case, which macOS and Windows do and Linux does not.
-// Folding unconditionally reported a collision between two files that coexist
-// perfectly well on a case-sensitive volume, and refused to build a tree that
-// had built correctly.
+// Keys are case-folded, because macOS and Windows collapse paths differing only
+// in case onto one file. The fold is deliberately unconditional: the build host
+// and the deploy target need not agree, so two outputs that differ only in case
+// are refused even where the local filesystem could hold both.
 type outputClaims struct {
-	mu              sync.Mutex
-	outputDir       string
-	caseInsensitive bool
-	owners          map[string]outputOwner
-	// folded tracks case-folded keys purely so a case-only clash can still be
-	// reported as a portability hazard where it is not an outright collision.
-	folded map[string]outputOwner
+	mu        sync.Mutex
+	outputDir string
+	owners    map[string]outputOwner
 }
 
 func newOutputClaims(outputDir string, size int) *outputClaims {
-	return &outputClaims{
-		outputDir:       outputDir,
-		caseInsensitive: dirIsCaseInsensitive(outputDir),
-		owners:          make(map[string]outputOwner, size),
-		folded:          make(map[string]outputOwner, size),
-	}
-}
-
-// dirIsCaseInsensitive probes the filesystem behind dir. It errs towards true,
-// the stricter behaviour, when it cannot tell.
-func dirIsCaseInsensitive(dir string) bool {
-	f, err := os.CreateTemp(dir, "lf-case-probe-")
-	if err != nil {
-		return true
-	}
-	name := f.Name()
-	_ = f.Close()
-	defer func() { _ = os.Remove(name) }()
-
-	upper := filepath.Join(filepath.Dir(name), strings.ToUpper(filepath.Base(name)))
-	if upper == name {
-		return true
-	}
-	_, statErr := os.Stat(upper)
-	return statErr == nil
+	return &outputClaims{outputDir: outputDir, owners: make(map[string]outputOwner, size)}
 }
 
 func (c *outputClaims) absPath(relOut string) string {
@@ -666,11 +637,7 @@ func (c *outputClaims) absPath(relOut string) string {
 }
 
 func (c *outputClaims) key(relOut string) string {
-	path := c.absPath(relOut)
-	if c.caseInsensitive {
-		return strings.ToLower(path)
-	}
-	return path
+	return strings.ToLower(c.absPath(relOut))
 }
 
 // claim reserves relOut for source. It returns the writer that already holds
@@ -683,21 +650,7 @@ func (c *outputClaims) claim(source, relOut string) (outputOwner, bool) {
 	if previous, exists := c.owners[key]; exists {
 		return previous, false
 	}
-	owner := outputOwner{source: source, relOut: relOut}
-	c.owners[key] = owner
-
-	// On a case-sensitive filesystem the two paths are genuinely different
-	// files, so the build proceeds — but the site will not survive being
-	// deployed onto a case-insensitive host, and that is worth saying once.
-	if !c.caseInsensitive {
-		foldKey := strings.ToLower(c.absPath(relOut))
-		if previous, clash := c.folded[foldKey]; clash && previous.relOut != relOut {
-			slog.Warn("Output paths differ only in case; they will collide on a case-insensitive filesystem",
-				"first", previous.relOut, "second", relOut)
-		} else if !clash {
-			c.folded[foldKey] = owner
-		}
-	}
+	c.owners[key] = outputOwner{source: source, relOut: relOut}
 	return outputOwner{}, true
 }
 
