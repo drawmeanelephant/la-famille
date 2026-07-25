@@ -619,7 +619,9 @@ type outputOwner struct {
 // overwriting the first.
 //
 // Keys are case-folded, because macOS and Windows collapse paths differing only
-// in case onto one file.
+// in case onto one file. The fold is deliberately unconditional: the build host
+// and the deploy target need not agree, so two outputs that differ only in case
+// are refused even where the local filesystem could hold both.
 type outputClaims struct {
 	mu        sync.Mutex
 	outputDir string
@@ -630,8 +632,12 @@ func newOutputClaims(outputDir string, size int) *outputClaims {
 	return &outputClaims{outputDir: outputDir, owners: make(map[string]outputOwner, size)}
 }
 
+func (c *outputClaims) absPath(relOut string) string {
+	return filepath.Clean(filepath.Join(c.outputDir, filepath.FromSlash(relOut)))
+}
+
 func (c *outputClaims) key(relOut string) string {
-	return strings.ToLower(filepath.Clean(filepath.Join(c.outputDir, filepath.FromSlash(relOut))))
+	return strings.ToLower(c.absPath(relOut))
 }
 
 // claim reserves relOut for source. It returns the writer that already holds
@@ -655,12 +661,16 @@ func (c *outputClaims) claim(source, relOut string) (outputOwner, bool) {
 // registry the pages use. Assets are copied after rendering, so without this an
 // asset quietly replaces a page that renders to the same path.
 func (c *outputClaims) assetClaimer() asset.ClaimOutput {
-	return func(relOut string) (string, bool) {
-		previous, ok := c.claim(fmt.Sprintf("the asset %q", relOut), relOut)
+	return func(relOut string) error {
+		source := fmt.Sprintf("the asset %q", relOut)
+		previous, ok := c.claim(source, relOut)
 		if ok {
-			return "", true
+			return nil
 		}
-		return previous.source, false
+		// The shared builder, so an asset clash is described the same way a
+		// page clash is — including the case-only wording, which the asset
+		// path used to get wrong by claiming both wrote the same file.
+		return collisionError(previous, source, relOut)
 	}
 }
 

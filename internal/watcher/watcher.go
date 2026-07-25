@@ -52,9 +52,16 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 	trigger := make(chan struct{}, 1)
 	buildDone := make(chan struct{})
 
+	// The builder is stopped through its own context rather than the caller's.
+	// watch() returns on several paths that never cancel ctx — a failed
+	// watcher.Add, a closed event channel, a WalkDir error — and waiting for a
+	// builder that only exits on ctx.Done() would hang every one of them,
+	// holding all registered watch descriptors open.
+	buildCtx, stopBuilder := context.WithCancel(ctx)
+
 	runBuild := func() {
 		select {
-		case <-ctx.Done():
+		case <-buildCtx.Done():
 			return
 		default:
 		}
@@ -80,16 +87,20 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 		defer close(buildDone)
 		for {
 			select {
-			case <-ctx.Done():
+			case <-buildCtx.Done():
 				return
 			case <-trigger:
 				runBuild()
 			}
 		}
 	}()
-	// Let the builder finish the pass it is on before the watcher returns,
-	// so a cancelled watch cannot leave a half-written output directory.
-	defer func() { <-buildDone }()
+	// Stop the builder first, then let it finish the pass it is on, so a watch
+	// that ends for any reason still leaves a complete output directory and
+	// still returns.
+	defer func() {
+		stopBuilder()
+		<-buildDone
+	}()
 
 	// Orchestrate directories to monitor
 	dirsToWatch := []string{cfg.ContentDir}

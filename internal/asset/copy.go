@@ -40,11 +40,12 @@ func resolveDir(dir string) string {
 	return abs
 }
 
-// ClaimOutput reserves an output-relative path for the asset copier. It returns
-// the existing owner and false when another producer has already claimed that
-// path. A nil ClaimOutput disables ownership tracking, which is what the
-// package's own tests want; the generator always supplies one.
-type ClaimOutput func(relOut string) (owner string, ok bool)
+// ClaimOutput reserves an output-relative path for the asset copier, returning
+// a non-nil error when another producer already owns it. The caller builds the
+// message, so an asset collision reads exactly like a page collision. A nil
+// ClaimOutput disables ownership tracking, which is what the package's own
+// tests want; the generator always supplies one.
+type ClaimOutput func(relOut string) error
 
 func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 	if cfg.AssetDir == "" {
@@ -147,9 +148,8 @@ func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 		// same path — the site publishes the asset bytes while search, graph and
 		// meta all still describe the page.
 		if claim != nil {
-			relOut := "assets/" + relSlash
-			if owner, ok := claim(relOut); !ok {
-				return fmt.Errorf("output path collision: the asset %q and %s both write %q", relSlash, owner, relOut)
+			if claimErr := claim("assets/" + relSlash); claimErr != nil {
+				return claimErr
 			}
 		}
 

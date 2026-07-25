@@ -115,3 +115,52 @@ func TestValidateAllowsSiblingDirectories(t *testing.T) {
 		t.Errorf("sibling directories sharing a prefix must be allowed, got: %v", err)
 	}
 }
+
+// TestValidateAllowsInputsThatAreTheProjectRoot covers two ordinary layouts the
+// overlap rule rejected outright. Any input that IS the project root contains
+// the output directory by definition — the same reason ProjectRoot itself is
+// treated separately — so applying "output inside an input" to them made
+// working sites unbuildable with no legal escape.
+func TestValidateAllowsInputsThatAreTheProjectRoot(t *testing.T) {
+	cases := []struct {
+		name   string
+		mutate func(*Config)
+	}{
+		{
+			// A single layout.html beside config.yaml: filepath.Dir gives ".".
+			name:   "template at the project root",
+			mutate: func(c *Config) { c.Template = "layout.html" },
+		},
+		{
+			// A flat site with its markdown at the repository root.
+			name:   "content directory is the project root",
+			mutate: func(c *Config) { c.ContentDir = "." },
+		},
+		{
+			name:   "asset directory is the project root",
+			mutate: func(c *Config) { c.AssetDir = "." },
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			cfg := baseValidConfig()
+			c.mutate(&cfg)
+			if err := cfg.Validate(); err != nil {
+				t.Errorf("this layout must build, got: %v", err)
+			}
+		})
+	}
+}
+
+// TestValidateStillRejectsOutputEqualToARootInput keeps the relaxation narrow:
+// an input at the project root may contain the output, but may not BE it.
+func TestValidateStillRejectsOutputEqualToARootInput(t *testing.T) {
+	cfg := baseValidConfig()
+	cfg.ContentDir = "."
+	cfg.OutputDir = "."
+
+	if err := cfg.Validate(); err == nil {
+		t.Error("output equal to a content directory at the project root must still be refused")
+	}
+}

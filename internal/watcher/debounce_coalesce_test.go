@@ -103,3 +103,37 @@ func TestWatchCoalescesChangesDuringABuild(t *testing.T) {
 	cancel()
 	<-done
 }
+
+// TestWatchReturnsOnStartupErrorWithoutHanging guards the interaction between
+// the builder goroutine and watch()'s early returns. The builder is waited on
+// in a defer; if it only stopped when the CALLER's context was cancelled, every
+// path that returns without cancelling — a missing content directory, a failed
+// watcher.Add, a closed event channel — would block there forever, holding all
+// registered watch descriptors and never reporting the error.
+func TestWatchReturnsOnStartupErrorWithoutHanging(t *testing.T) {
+	cfg := testConfig(t)
+	// A content directory that does not exist makes registration fail, which is
+	// one of the non-context return paths.
+	cfg.ContentDir = filepath.Join(t.TempDir(), "definitely-not-here")
+
+	// The caller's context stays ALIVE for the whole test: that is the point.
+	// If watch() needs it cancelled in order to return, this fails.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- watch(ctx, cfg, nil, func(config.Config) (generator.BuildResult, error) {
+			return generator.BuildResult{}, nil
+		}, 20*time.Millisecond)
+	}()
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Error("expected watch to report the registration failure")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("watch did not return on a startup error; it is blocked waiting for the builder goroutine")
+	}
+}

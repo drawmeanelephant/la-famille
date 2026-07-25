@@ -274,3 +274,20 @@ func TestBuild_AssetDoesNotOverwriteRenderedPage(t *testing.T) {
 		}
 	}
 }
+
+// TestOutputClaimsStillRejectsAnExactDuplicate keeps the relaxation narrow: the
+// case rule changed, the collision rule did not.
+func TestOutputClaimsStillRejectsAnExactDuplicate(t *testing.T) {
+	claims := newOutputClaims(t.TempDir(), 2)
+
+	if _, ok := claims.claim("the page \"a.md\"", "docs/index.html"); !ok {
+		t.Fatal("first claim should succeed")
+	}
+	previous, ok := claims.claim("the asset \"docs/index.html\"", "docs/index.html")
+	if ok {
+		t.Fatal("an exact duplicate path must always collide")
+	}
+	if previous.source == "" {
+		t.Error("the collision should name the previous owner")
+	}
+}

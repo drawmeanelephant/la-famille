@@ -37,6 +37,14 @@ var (
 
 	tagNameRe = regexp.MustCompile(`^</?([a-zA-Z][a-zA-Z0-9-]*)`)
 
+	// attributeRe matches a quoted HTML attribute. Prose that merely looks like
+	// a tag ("x < 5 and y > 3", "Vec<String>") never carries one, so a span
+	// that does is markup whether or not its element name is one we know.
+	// Without this the element list has to be exhaustive, and it never is —
+	// inline SVG shipped <rect>, <text>, <line> and <circle> straight into the
+	// snippets because only <svg> and <path> were listed.
+	attributeRe = regexp.MustCompile(`\s[a-zA-Z_:][-a-zA-Z0-9_:.]*\s*=\s*"[^"]*"`)
+
 	// leadingQuoteRe strips the blockquote marker at the start of a line. The
 	// same character mid-sentence is a greater-than sign and belongs to the
 	// prose.
@@ -67,10 +75,20 @@ var htmlElements = map[string]bool{
 	"ruby": true, "s": true, "samp": true, "script": true, "section": true,
 	"select": true, "slot": true, "small": true, "source": true, "span": true,
 	"strong": true, "style": true, "sub": true, "summary": true, "sup": true,
-	"svg": true, "path": true, "table": true, "tbody": true, "td": true,
+	"table": true, "tbody": true, "td": true,
 	"template": true, "textarea": true, "tfoot": true, "th": true,
 	"thead": true, "time": true, "title": true, "tr": true, "track": true,
 	"u": true, "ul": true, "var": true, "video": true, "wbr": true,
+
+	// Inline SVG. The children matter as much as <svg> itself: a diagram's
+	// <rect>/<text>/<line> elements are markup, and left in place they fill the
+	// whole snippet with geometry and push the article's prose out of it.
+	"svg": true, "path": true, "circle": true, "ellipse": true, "line": true,
+	"polygon": true, "polyline": true, "rect": true, "text": true, "tspan": true,
+	"g": true, "defs": true, "use": true, "symbol": true, "marker": true,
+	"mask": true, "clippath": true, "lineargradient": true, "radialgradient": true,
+	"stop": true, "pattern": true, "desc": true, "foreignobject": true,
+	"animate": true, "animatetransform": true, "textpath": true,
 }
 
 // stripHTMLTags removes markup while leaving prose that merely looks like it.
@@ -82,6 +100,11 @@ func stripHTMLTags(s string) string {
 			return match
 		}
 		if htmlElements[strings.ToLower(name[1])] {
+			return ""
+		}
+		// An unlisted name still goes if the span carries a quoted attribute:
+		// that is markup we simply had not enumerated, not prose.
+		if attributeRe.MatchString(match) {
 			return ""
 		}
 		return match
