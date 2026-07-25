@@ -19,8 +19,74 @@ type Item struct {
 var (
 	linkRe      = regexp.MustCompile(`!?\[([^\]]*)\]\([^\)]+\)`)
 	codeBlockRe = regexp.MustCompile("(?s)```[^\\n]*\\n(.*?)```")
-	htmlTagRe   = regexp.MustCompile(`<[^>]*>`)
+
+	// htmlMarkupRe covers comments, declarations and processing instructions —
+	// never prose, always safe to drop.
+	htmlMarkupRe = regexp.MustCompile(`(?s)<!--.*?-->|<![^<>]*>|<\?[^<>]*>`)
+
+	// htmlTagCandidateRe matches something *shaped* like a tag. Shape alone is
+	// not enough to delete it: this input is raw Markdown, so "x<y and y>z" and
+	// "Vec<String>" match this too. The element name decides — see htmlElements.
+	//
+	// The body excludes newlines deliberately. Without that, "a<b then swap."
+	// runs on to the next '>' anywhere later in the document — a blockquote
+	// marker two lines down will do — and swallows every word in between. The
+	// cost is that a tag written across several lines is left in the snippet,
+	// which is the safer direction: text survives, markup leaks.
+	htmlTagCandidateRe = regexp.MustCompile(`</?[a-zA-Z][a-zA-Z0-9-]*[^<>\n]*>`)
+
+	tagNameRe = regexp.MustCompile(`^</?([a-zA-Z][a-zA-Z0-9-]*)`)
+
+	// leadingQuoteRe strips the blockquote marker at the start of a line. The
+	// same character mid-sentence is a greater-than sign and belongs to the
+	// prose.
+	leadingQuoteRe = regexp.MustCompile(`(?m)^[ \t]*>+[ \t]?`)
 )
+
+// htmlElements is the set of names treated as real markup. Anything else
+// keeps its angle brackets and stays in the snippet, so a comparison or a
+// generic type is indexed as written rather than silently deleted along with
+// the words between the brackets.
+var htmlElements = map[string]bool{
+	"a": true, "abbr": true, "address": true, "area": true, "article": true,
+	"aside": true, "audio": true, "b": true, "base": true, "bdi": true,
+	"bdo": true, "blockquote": true, "body": true, "br": true, "button": true,
+	"canvas": true, "caption": true, "cite": true, "code": true, "col": true,
+	"colgroup": true, "data": true, "datalist": true, "dd": true, "del": true,
+	"details": true, "dfn": true, "dialog": true, "div": true, "dl": true,
+	"dt": true, "em": true, "embed": true, "fieldset": true, "figcaption": true,
+	"figure": true, "footer": true, "form": true, "h1": true, "h2": true,
+	"h3": true, "h4": true, "h5": true, "h6": true, "head": true, "header": true,
+	"hgroup": true, "hr": true, "html": true, "i": true, "iframe": true,
+	"img": true, "input": true, "ins": true, "kbd": true, "label": true,
+	"legend": true, "li": true, "link": true, "main": true, "map": true,
+	"mark": true, "menu": true, "meta": true, "meter": true, "nav": true,
+	"noscript": true, "object": true, "ol": true, "optgroup": true,
+	"option": true, "output": true, "p": true, "param": true, "picture": true,
+	"pre": true, "progress": true, "q": true, "rp": true, "rt": true,
+	"ruby": true, "s": true, "samp": true, "script": true, "section": true,
+	"select": true, "slot": true, "small": true, "source": true, "span": true,
+	"strong": true, "style": true, "sub": true, "summary": true, "sup": true,
+	"svg": true, "path": true, "table": true, "tbody": true, "td": true,
+	"template": true, "textarea": true, "tfoot": true, "th": true,
+	"thead": true, "time": true, "title": true, "tr": true, "track": true,
+	"u": true, "ul": true, "var": true, "video": true, "wbr": true,
+}
+
+// stripHTMLTags removes markup while leaving prose that merely looks like it.
+func stripHTMLTags(s string) string {
+	s = htmlMarkupRe.ReplaceAllString(s, "")
+	return htmlTagCandidateRe.ReplaceAllStringFunc(s, func(match string) string {
+		name := tagNameRe.FindStringSubmatch(match)
+		if name == nil {
+			return match
+		}
+		if htmlElements[strings.ToLower(name[1])] {
+			return ""
+		}
+		return match
+	})
+}
 
 // ExtractSnippet cleans up Markdown and HTML content to produce a clean text snippet.
 // It explicitly filters out code blocks, tags, and formatting markers to keep search data lightweight and clean.
@@ -34,13 +100,17 @@ func ExtractSnippet(rest []byte) string {
 	s = linkRe.ReplaceAllString(s, "$1")
 
 	// 3. Strip raw HTML tags to prevent indexing styling classes or scripts
-	s = htmlTagRe.ReplaceAllString(s, "")
+	s = stripHTMLTags(s)
+
+	// 4. Strip blockquote markers, which are only markers at the start of a
+	//    line. Removing every '>' would take the operator out of "y > 3".
+	s = leadingQuoteRe.ReplaceAllString(s, "")
 
 	var sb strings.Builder
 	sb.Grow(len(s))
 	for _, r := range s {
 		// Strip common Markdown syntactic noise
-		if r == '#' || r == '*' || r == '[' || r == ']' || r == '`' || r == '>' || r == '_' || r == '~' {
+		if r == '#' || r == '*' || r == '[' || r == ']' || r == '`' || r == '_' || r == '~' {
 			continue
 		}
 		if unicode.IsSpace(r) {
@@ -113,11 +183,13 @@ func ExtractHeadings(rest []byte) []string {
 
 func cleanHeadingText(s string) string {
 	s = linkRe.ReplaceAllString(s, "$1")
-	s = htmlTagRe.ReplaceAllString(s, "")
+	s = stripHTMLTags(s)
 	var sb strings.Builder
 	sb.Grow(len(s))
 	for _, r := range s {
-		if r == '#' || r == '*' || r == '[' || r == ']' || r == '`' || r == '>' || r == '_' || r == '~' {
+		// '>' is kept: a heading has no blockquote marker, so it is a
+		// greater-than sign and part of the text.
+		if r == '#' || r == '*' || r == '[' || r == ']' || r == '`' || r == '_' || r == '~' {
 			continue
 		}
 		if unicode.IsSpace(r) {
