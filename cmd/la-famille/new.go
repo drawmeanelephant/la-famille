@@ -15,16 +15,18 @@ import (
 )
 
 type frontmatterData struct {
-	Title  string   `yaml:"title"`
-	Date   string   `yaml:"date"`
-	Tags   []string `yaml:"tags,omitempty"`
-	Layout string   `yaml:"layout,omitempty"`
+	Title      string   `yaml:"title"`
+	Date       string   `yaml:"date"`
+	Tags       []string `yaml:"tags,omitempty"`
+	Categories []string `yaml:"categories,omitempty"`
+	Layout     string   `yaml:"layout,omitempty"`
 }
 
 func setupNewCmd(cfg config.Config) *cobra.Command {
 	var (
 		newTitle      string
 		newTags       []string
+		newCategories []string
 		newLayout     string
 		newDate       string
 		newForce      bool
@@ -87,10 +89,11 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 			}
 
 			fm := frontmatterData{
-				Title:  titleStr,
-				Date:   dateStr,
-				Tags:   newTags,
-				Layout: newLayout,
+				Title:      titleStr,
+				Date:       dateStr,
+				Tags:       newTags,
+				Categories: newCategories,
+				Layout:     newLayout,
 			}
 
 			yamlBytes, err := yaml.Marshal(fm)
@@ -119,7 +122,11 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 			fmt.Fprintf(out, "Created content file: %s\n\n", targetPath)
 			fmt.Fprintln(out, "Next steps:")
 			fmt.Fprintf(out, "  1. Edit the file: %s\n", targetPath)
-			fmt.Fprintln(out, "  2. Validate content: la-famille check")
+			if contentDir == "content" {
+				fmt.Fprintln(out, "  2. Validate content: la-famille check")
+			} else {
+				fmt.Fprintf(out, "  2. Validate content: la-famille check --content %s\n", contentDir)
+			}
 			fmt.Fprintln(out, "  3. Preview your site: la-famille serve --watch")
 
 			return nil
@@ -128,6 +135,7 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 
 	newCmd.Flags().StringVarP(&newTitle, "title", "t", "", "Title of the content file")
 	newCmd.Flags().StringSliceVar(&newTags, "tags", nil, "Tags for the content file (comma-separated or multiple flags)")
+	newCmd.Flags().StringSliceVar(&newCategories, "categories", nil, "Categories for the content file (comma-separated or multiple flags)")
 	newCmd.Flags().StringVar(&newLayout, "layout", "", "Custom layout template for the content file")
 	newCmd.Flags().StringVar(&newDate, "date", "", "Publication date in YYYY-MM-DD format (defaults to today)")
 	newCmd.Flags().BoolVarP(&newForce, "force", "f", false, "Overwrite existing file if it already exists")

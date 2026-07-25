@@ -133,6 +133,23 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 				}
 				slog.Info("Created default templates/layout.html")
 			}
+
+			cDir := cfg.ContentDir
+			if cDir == "" {
+				cDir = "content"
+			}
+			if err := os.MkdirAll(cDir, 0755); err != nil {
+				return fmt.Errorf("failed to create content directory: %w", err)
+			}
+
+			aDir := cfg.AssetDir
+			if aDir == "" {
+				aDir = "assets"
+			}
+			if err := os.MkdirAll(aDir, 0755); err != nil {
+				return fmt.Errorf("failed to create assets directory: %w", err)
+			}
+
 			return nil
 		},
 	}
