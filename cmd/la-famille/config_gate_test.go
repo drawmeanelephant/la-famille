@@ -247,20 +247,42 @@ func TestBrokenConfigFailsTheBuildInsteadOfSilentlyMisconfiguringIt(t *testing.T
 func TestBrokenConfigStillAllowsTheCommandsThatRepairIt(t *testing.T) {
 	exe := buildGateBinary(t)
 
-	t.Run("init regenerates config.yaml", func(t *testing.T) {
+	// `init` no longer overwrites an existing config.yaml, because doing so
+	// silently replaced customized settings with defaults. The repair path is
+	// still reachable, but it has to be asked for — and the error has to say
+	// how, or the file being broken still traps the user.
+	t.Run("init names the repair path instead of overwriting", func(t *testing.T) {
 		site := newGateSite(t, exe, brokenYAML)
-		if code, out := site.run(t, "init"); code != 0 {
-			t.Fatalf("`init` exited %d on a broken config.yaml; the repair path is blocked by the thing it repairs:\n%s", code, out)
+		code, out := site.run(t, "init")
+		if code == 0 {
+			t.Fatalf("`init` overwrote an existing config.yaml:\n%s", out)
+		}
+		if !strings.Contains(out, "--force") {
+			t.Errorf("the refusal must tell the user how to repair a broken config.yaml:\n%s", out)
+		}
+	})
+
+	t.Run("init --force regenerates config.yaml and keeps a backup", func(t *testing.T) {
+		site := newGateSite(t, exe, brokenYAML)
+		if code, out := site.run(t, "init", "--force"); code != 0 {
+			t.Fatalf("`init --force` exited %d on a broken config.yaml; the repair path is blocked by the thing it repairs:\n%s", code, out)
 		}
 		cfg, err := config.Load(filepath.Join(site.dir, "config.yaml"))
 		if err != nil {
-			t.Fatalf("config.yaml is still unloadable after `init`: %v", err)
+			t.Fatalf("config.yaml is still unloadable after `init --force`: %v", err)
 		}
 		if err := cfg.Validate(); err != nil {
-			t.Fatalf("config.yaml is still invalid after `init`: %v", err)
+			t.Fatalf("config.yaml is still invalid after `init --force`: %v", err)
+		}
+		backup, err := os.ReadFile(filepath.Join(site.dir, "config.yaml.bak"))
+		if err != nil {
+			t.Fatalf("the replaced config.yaml was not kept as a backup: %v", err)
+		}
+		if string(backup) != brokenYAML {
+			t.Errorf("the backup does not hold the original file:\n%s", backup)
 		}
 		if code, out := site.run(t, "build"); code != 0 {
-			t.Fatalf("build after `init` exited %d:\n%s", code, out)
+			t.Fatalf("build after `init --force` exited %d:\n%s", code, out)
 		}
 	})
 
@@ -277,11 +299,11 @@ func TestBrokenConfigStillAllowsTheCommandsThatRepairIt(t *testing.T) {
 
 	t.Run("an invalid but parsable config also leaves init reachable", func(t *testing.T) {
 		site := newGateSite(t, exe, "port: 0\n")
-		if code, out := site.run(t, "init"); code != 0 {
-			t.Fatalf("`init` exited %d on an invalid config.yaml:\n%s", code, out)
+		if code, out := site.run(t, "init", "--force"); code != 0 {
+			t.Fatalf("`init --force` exited %d on an invalid config.yaml:\n%s", code, out)
 		}
 		if code, out := site.run(t, "build"); code != 0 {
-			t.Fatalf("build after `init` exited %d:\n%s", code, out)
+			t.Fatalf("build after `init --force` exited %d:\n%s", code, out)
 		}
 	})
 }

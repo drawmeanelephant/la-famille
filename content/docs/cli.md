@@ -40,7 +40,9 @@ Initializes a new La Famille workspace.
 go run ./cmd/la-famille init
 ```
 
-*   **Description:** Creates a default `config.yaml` file in the current directory if one does not already exist. This is the first step when setting up a new site.
+*   **Description:** Creates a default `config.yaml` file in the current directory. This is the first step when setting up a new site.
+*   **Existing configuration:** If `config.yaml` is already there, `init` refuses rather than replacing it, so a second run cannot discard your `siteurl`, `output_dir` or theme.
+*   **`--force` / `-f`:** Replaces an existing `config.yaml`, keeping the current one as `config.yaml.bak`. This is also how a `config.yaml` too broken to parse gets regenerated — the backup means the original is still there to read afterwards.
 
 ### `build`
 
