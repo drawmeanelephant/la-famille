@@ -496,6 +496,3 @@ func TestServeCommand_InitialBuildFailure_ReturnsError(t *testing.T) {
 		t.Errorf("expected error to contain 'initial build failed', got: %v", err)
 	}
 }
-
-
-

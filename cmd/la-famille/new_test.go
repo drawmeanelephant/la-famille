@@ -285,4 +285,3 @@ func TestNewCommand_ContentPrefixTrimming(t *testing.T) {
 		t.Fatalf("file was incorrectly created with duplicated content dir at %s", unexpectedPath)
 	}
 }
-
