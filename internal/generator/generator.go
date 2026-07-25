@@ -595,10 +595,7 @@ func reservedOutputPaths(cfg config.Config) map[string]string {
 // caller that predicts an output path has to discard it the same way, or the
 // prediction names a file the generator never writes.
 func usableSlug(slug string) bool {
-	return filepath.IsLocal(slug) &&
-		!strings.Contains(slug, ".") &&
-		!strings.Contains(slug, string(filepath.Separator)) &&
-		!strings.Contains(slug, "/")
+	return transform.IsUsableSlug(slug)
 }
 
 // outputOwner is a single writer's claim on a path in the output tree.
