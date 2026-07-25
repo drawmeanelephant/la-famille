@@ -6,6 +6,11 @@ on:
     - cron: '0 8 * * *'
   workflow_dispatch:
 
+concurrency:
+  # One litterbox operator at a time; do not cancel an in-flight scoop.
+  group: pr-litterbox
+  cancel-in-progress: false
+
 jobs:
   sync:
     name: Clear the Litterbox
@@ -13,20 +18,29 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      checks: read
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # Needed for branch checkouts
+          fetch-depth: 0 # Needed for branch checkouts if local publishing is ever re-enabled
 
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
 
+      # Single merge authority for automation PRs.
+      # Intentionally omitted (safe defaults):
+      #   --close-conflicts        # conflicts are reported, not closed
+      #   --allow-no-checks        # zero checks are not treated as passing
+      #   --publish-local-changes  # never stage/push the workflow working tree
       - name: Run PR Sync
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          go run ./cmd/la-famille pr sync --base master
+          go run ./cmd/la-famille pr sync \
+            --base master \
+            --required-label litterbox-approved \
+            --apply

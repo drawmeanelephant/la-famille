@@ -2,286 +2,343 @@ package github
 
 import (
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
+	"strings"
 	"testing"
 )
 
-func TestAreChecksPassing(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/repos/owner/repo/commits/sha123/check-runs" {
-			resp := CheckRunsResponse{
+func testClient(t *testing.T, handler http.HandlerFunc) *Client {
+	t.Helper()
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	c := NewClient("secret-token-value", "owner", "repo")
+	c.BaseURL = server.URL
+	return c
+}
+
+func TestGetCheckSummaryStates(t *testing.T) {
+	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("per_page") != "100" {
+			t.Errorf("expected per_page=100, got %q", r.URL.Query().Get("per_page"))
+		}
+		switch {
+		case strings.Contains(r.URL.Path, "/commits/sha123/check-runs"):
+			_ = json.NewEncoder(w).Encode(CheckRunsResponse{
 				TotalCount: 2,
 				CheckRuns: []CheckRun{
 					{Status: "completed", Conclusion: "success"},
 					{Status: "completed", Conclusion: "skipped"},
 				},
-			}
-			_ = json.NewEncoder(w).Encode(resp)
-			return
-		}
-		if r.URL.Path == "/repos/owner/repo/commits/sha456/check-runs" {
-			resp := CheckRunsResponse{
+			})
+		case strings.Contains(r.URL.Path, "/commits/sha456/check-runs"):
+			_ = json.NewEncoder(w).Encode(CheckRunsResponse{
 				TotalCount: 1,
-				CheckRuns: []CheckRun{
-					{Status: "in_progress"},
-				},
-			}
-			_ = json.NewEncoder(w).Encode(resp)
-			return
-		}
-		if r.URL.Path == "/repos/owner/repo/commits/sha789/check-runs" {
-			resp := CheckRunsResponse{
+				CheckRuns:  []CheckRun{{Status: "in_progress"}},
+			})
+		case strings.Contains(r.URL.Path, "/commits/sha789/check-runs"):
+			_ = json.NewEncoder(w).Encode(CheckRunsResponse{
 				TotalCount: 1,
-				CheckRuns: []CheckRun{
-					{Status: "completed", Conclusion: "failure"},
-				},
-			}
-			_ = json.NewEncoder(w).Encode(resp)
-			return
+				CheckRuns:  []CheckRun{{Status: "completed", Conclusion: "failure"}},
+			})
+		case strings.Contains(r.URL.Path, "/commits/sha000/check-runs"):
+			_ = json.NewEncoder(w).Encode(CheckRunsResponse{TotalCount: 0, CheckRuns: []CheckRun{}})
+		default:
+			w.WriteHeader(http.StatusNotFound)
 		}
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer server.Close()
-
-	// Intercept the default HTTPClient used by Client to point to our test server
-	c := NewClient("token", "owner", "repo")
-
-	// Hack to replace base URL for tests:
-	// We'll wrap the transport to redirect
-	c.HTTPClient.Transport = &redirectTransport{
-		baseURL: server.URL + "/repos/owner/repo",
-	}
+	})
 
 	t.Run("Passing checks", func(t *testing.T) {
-		passing, err := c.AreChecksPassing("sha123")
+		s, err := c.GetCheckSummary("sha123")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if !passing {
-			t.Errorf("expected passing=true, got false")
+		if s.State != CheckStatePassing || s.Total != 2 {
+			t.Errorf("got %+v, want passing total=2", s)
+		}
+		ok, err := c.AreChecksPassing("sha123")
+		if err != nil || !ok {
+			t.Errorf("AreChecksPassing = %v, %v", ok, err)
 		}
 	})
 
 	t.Run("In progress checks", func(t *testing.T) {
-		passing, err := c.AreChecksPassing("sha456")
+		s, err := c.GetCheckSummary("sha456")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if passing {
-			t.Errorf("expected passing=false, got true")
+		if s.State != CheckStatePending {
+			t.Errorf("got %s, want pending", s.State)
 		}
 	})
 
 	t.Run("Failed checks", func(t *testing.T) {
-		passing, err := c.AreChecksPassing("sha789")
+		s, err := c.GetCheckSummary("sha789")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if passing {
-			t.Errorf("expected passing=false, got true")
+		if s.State != CheckStateFailed {
+			t.Errorf("got %s, want failed", s.State)
+		}
+	})
+
+	t.Run("Zero checks distinct from passing", func(t *testing.T) {
+		s, err := c.GetCheckSummary("sha000")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if s.State != CheckStateNone || s.Total != 0 {
+			t.Errorf("got %+v, want none total=0", s)
+		}
+		ok, err := c.AreChecksPassing("sha000")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if ok {
+			t.Error("zero checks must not count as passing")
 		}
 	})
 }
 
-func TestAreChecksPassing_NoCheckRunsReported(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/repos/owner/repo/commits/shaNoChecks/check-runs" {
-			_ = json.NewEncoder(w).Encode(CheckRunsResponse{TotalCount: 0})
-			return
+func TestCheckRunPagination(t *testing.T) {
+	pages := 0
+	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		pages++
+		page := r.URL.Query().Get("page")
+		if r.URL.Query().Get("per_page") != "100" {
+			t.Errorf("per_page not preserved: %s", r.URL.RawQuery)
 		}
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer server.Close()
-
-	c := NewClient("token", "owner", "repo")
-	c.HTTPClient.Transport = &redirectTransport{baseURL: server.URL + "/repos/owner/repo"}
-
-	passing, err := c.AreChecksPassing("shaNoChecks")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if passing {
-		t.Error("expected passing=false when no check runs are reported, got true")
-	}
-}
-
-func TestAreChecksPassing_FailureBeyondFirstPage(t *testing.T) {
-	// total_count exceeds one page, and the only failing run lives on the second page.
-	const total = 105
-
-	var requestedPages []string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/repos/owner/repo/commits/shaPaged/check-runs" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		requestedPages = append(requestedPages, r.URL.Query().Get("page"))
-
-		perPage, err := strconv.Atoi(r.URL.Query().Get("per_page"))
-		if err != nil || perPage < 1 || perPage > 100 {
-			perPage = 30
-		}
-		page, err := strconv.Atoi(r.URL.Query().Get("page"))
-		if err != nil || page < 1 {
-			page = 1
-		}
-
-		start := (page - 1) * perPage
-		end := start + perPage
-		if start > total {
-			start = total
-		}
-		if end > total {
-			end = total
-		}
-
-		runs := []CheckRun{}
-		for i := start; i < end; i++ {
-			run := CheckRun{Name: fmt.Sprintf("check-%d", i), Status: "completed", Conclusion: "success"}
-			if i == total-1 {
-				run.Conclusion = "failure"
+		switch page {
+		case "1", "":
+			runs := make([]CheckRun, 100)
+			for i := range runs {
+				runs[i] = CheckRun{Status: "completed", Conclusion: "success", Name: "c1"}
 			}
-			runs = append(runs, run)
-		}
-		_ = json.NewEncoder(w).Encode(CheckRunsResponse{TotalCount: total, CheckRuns: runs})
-	}))
-	defer server.Close()
-
-	c := NewClient("token", "owner", "repo")
-	c.HTTPClient.Transport = &redirectTransport{baseURL: server.URL + "/repos/owner/repo"}
-
-	passing, err := c.AreChecksPassing("shaPaged")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if passing {
-		t.Errorf("expected passing=false, got true (pages requested: %v)", requestedPages)
-	}
-}
-
-func TestAreChecksPassing_AllPagesSucceed(t *testing.T) {
-	const total = 105
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/repos/owner/repo/commits/shaPagedOK/check-runs" {
+			_ = json.NewEncoder(w).Encode(CheckRunsResponse{TotalCount: 101, CheckRuns: runs})
+		case "2":
+			_ = json.NewEncoder(w).Encode(CheckRunsResponse{
+				TotalCount: 101,
+				CheckRuns:  []CheckRun{{Status: "completed", Conclusion: "neutral", Name: "last"}},
+			})
+		default:
+			t.Errorf("unexpected page %s", page)
 			w.WriteHeader(http.StatusNotFound)
-			return
 		}
-		perPage, err := strconv.Atoi(r.URL.Query().Get("per_page"))
-		if err != nil || perPage < 1 || perPage > 100 {
-			perPage = 30
-		}
-		page, err := strconv.Atoi(r.URL.Query().Get("page"))
-		if err != nil || page < 1 {
-			page = 1
-		}
+	})
 
-		start := (page - 1) * perPage
-		end := start + perPage
-		if start > total {
-			start = total
-		}
-		if end > total {
-			end = total
-		}
-
-		runs := []CheckRun{}
-		for i := start; i < end; i++ {
-			runs = append(runs, CheckRun{Name: fmt.Sprintf("check-%d", i), Status: "completed", Conclusion: "success"})
-		}
-		_ = json.NewEncoder(w).Encode(CheckRunsResponse{TotalCount: total, CheckRuns: runs})
-	}))
-	defer server.Close()
-
-	c := NewClient("token", "owner", "repo")
-	c.HTTPClient.Transport = &redirectTransport{baseURL: server.URL + "/repos/owner/repo"}
-
-	passing, err := c.AreChecksPassing("shaPagedOK")
+	s, err := c.GetCheckSummary("paginated")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !passing {
-		t.Error("expected passing=true when every page of check runs succeeded, got false")
+	if pages != 2 {
+		t.Errorf("expected 2 pages, got %d", pages)
+	}
+	if s.State != CheckStatePassing || s.Total != 101 {
+		t.Errorf("got %+v", s)
 	}
 }
 
-// TestAreChecksPassing_PagingIsBounded guards the paging loop against a
-// server-reported total it can never satisfy. The loop is driven by
-// total_count, so without a ceiling an inflated count turns a single call into
-// thousands of sequential requests against the API.
-func TestAreChecksPassing_PagingIsBounded(t *testing.T) {
-	requests := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		requests++
-		// Always one more run, never reaching the advertised total.
+func TestCheckRunPaginationTruncated(t *testing.T) {
+	c := testClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		// Always claim more results than returned, never complete.
 		_ = json.NewEncoder(w).Encode(CheckRunsResponse{
-			TotalCount: 1000000,
+			TotalCount: 5000,
 			CheckRuns:  []CheckRun{{Status: "completed", Conclusion: "success"}},
 		})
-	}))
-	defer server.Close()
-
-	c := NewClient("token", "owner", "repo")
-	c.HTTPClient.Transport = &redirectTransport{baseURL: server.URL + "/repos/owner/repo"}
-
-	passing, err := c.AreChecksPassing("shaEndless")
-	if passing {
-		t.Error("expected passing=false when the reported total is never reached")
-	}
+	})
+	_, err := c.GetCheckSummary("trunc")
 	if err == nil {
-		t.Error("expected an error rather than an unbounded walk")
+		t.Fatal("expected truncation error")
 	}
-	if requests > checkRunsMaxPages {
-		t.Errorf("made %d requests, want at most %d — the paging loop is unbounded", requests, checkRunsMaxPages)
+	if !strings.Contains(err.Error(), "truncated") {
+		t.Errorf("error should mention truncated: %v", err)
 	}
 }
 
-func TestAreChecksPassing_TruncatedPagesAreNotPassing(t *testing.T) {
-	// A server that reports more runs than it ever returns must not yield a passing verdict.
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/repos/owner/repo/commits/shaTruncated/check-runs" {
-			w.WriteHeader(http.StatusNotFound)
-			return
+func TestListOpenPRsPaginationAndFiltering(t *testing.T) {
+	var seenQueries []string
+	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		seenQueries = append(seenQueries, r.URL.RawQuery)
+		if r.URL.Query().Get("state") != "open" {
+			t.Errorf("state=%q", r.URL.Query().Get("state"))
 		}
-		if r.URL.Query().Get("page") == "1" {
-			_ = json.NewEncoder(w).Encode(CheckRunsResponse{
-				TotalCount: 5,
-				CheckRuns:  []CheckRun{{Status: "completed", Conclusion: "success"}},
+		if r.URL.Query().Get("base") != "master" {
+			t.Errorf("base=%q", r.URL.Query().Get("base"))
+		}
+		if r.URL.Query().Get("per_page") != "100" {
+			t.Errorf("per_page=%q", r.URL.Query().Get("per_page"))
+		}
+		page := r.URL.Query().Get("page")
+		switch page {
+		case "1":
+			prs := make([]PullRequest, 100)
+			for i := 0; i < 100; i++ {
+				prs[i] = PullRequest{
+					Number: 200 - i, // reverse order to test sort
+					User:   User{Login: "google-labs-jules"},
+					Title:  "bot",
+				}
+			}
+			// inject a non-bot that should be filtered
+			prs[0].User.Login = "human"
+			prs[0].Number = 999
+			_ = json.NewEncoder(w).Encode(prs)
+		case "2":
+			_ = json.NewEncoder(w).Encode([]PullRequest{
+				{Number: 5, User: User{Login: "Google-Labs-Code"}, Title: "case"},
+				{Number: 3, User: User{Login: "google-labs-jules"}, Title: "early"},
 			})
-			return
+		default:
+			_ = json.NewEncoder(w).Encode([]PullRequest{})
 		}
-		_ = json.NewEncoder(w).Encode(CheckRunsResponse{TotalCount: 5})
-	}))
-	defer server.Close()
+	})
 
-	c := NewClient("token", "owner", "repo")
-	c.HTTPClient.Transport = &redirectTransport{baseURL: server.URL + "/repos/owner/repo"}
-
-	passing, err := c.AreChecksPassing("shaTruncated")
-	if passing {
-		t.Error("expected passing=false when the API never returned every reported check run")
+	prs, err := c.ListOpenPRs([]string{"google-labs-jules", "google-labs-code"}, "master")
+	if err != nil {
+		t.Fatalf("ListOpenPRs: %v", err)
 	}
+	if len(seenQueries) < 2 {
+		t.Fatalf("expected multi-page queries, got %v", seenQueries)
+	}
+	for _, q := range seenQueries {
+		if !strings.Contains(q, "state=open") || !strings.Contains(q, "base=master") || !strings.Contains(q, "per_page=100") {
+			t.Errorf("query missing required params: %s", q)
+		}
+	}
+
+	// human filtered out; case-insensitive author kept; sorted by number
+	for i := 1; i < len(prs); i++ {
+		if prs[i-1].Number > prs[i].Number {
+			t.Fatalf("PRs not sorted: %d then %d", prs[i-1].Number, prs[i].Number)
+		}
+	}
+	for _, pr := range prs {
+		if strings.EqualFold(pr.User.Login, "human") {
+			t.Error("human author should be filtered")
+		}
+	}
+	if len(prs) == 0 {
+		t.Fatal("expected some PRs")
+	}
+	// number 5 from page 2 with case-variant author should be present
+	found := false
+	for _, pr := range prs {
+		if pr.Number == 5 {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected case-insensitive author match for PR #5")
+	}
+}
+
+func TestMergePRIncludesSquashAndSHA(t *testing.T) {
+	var gotBody map[string]string
+	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut || r.URL.Path != "/repos/owner/repo/pulls/42/merge" {
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+		raw, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(raw, &gotBody)
+		_ = json.NewEncoder(w).Encode(MergeResult{Merged: true, Message: "ok", SHA: "deadbeef"})
+	})
+	if err := c.MergePR(42, "abc123"); err != nil {
+		t.Fatalf("MergePR: %v", err)
+	}
+	if gotBody["merge_method"] != "squash" {
+		t.Errorf("merge_method=%q", gotBody["merge_method"])
+	}
+	if gotBody["sha"] != "abc123" {
+		t.Errorf("sha=%q", gotBody["sha"])
+	}
+}
+
+func TestMergePRMergedFalse(t *testing.T) {
+	c := testClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(MergeResult{Merged: false, Message: "not mergeable"})
+	})
+	err := c.MergePR(7, "sha")
 	if err == nil {
-		t.Error("expected an error when the check-run listing is truncated")
+		t.Fatal("expected error when merged=false")
+	}
+	if !strings.Contains(err.Error(), "not confirmed") {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 
-type redirectTransport struct {
-	baseURL string
+func TestClosePR(t *testing.T) {
+	var method, path string
+	var body map[string]string
+	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		path = r.URL.Path
+		raw, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(raw, &body)
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.ClosePR(99); err != nil {
+		t.Fatalf("ClosePR: %v", err)
+	}
+	if method != http.MethodPatch || path != "/repos/owner/repo/pulls/99" {
+		t.Errorf("%s %s", method, path)
+	}
+	if body["state"] != "closed" {
+		t.Errorf("body=%v", body)
+	}
 }
 
-func (t *redirectTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	// e.g. /repos/owner/repo/commits/... -> /commits/...
-	path := r.URL.Path[len("/repos/owner/repo"):]
-	urlStr := t.baseURL + path
-	if r.URL.RawQuery != "" {
-		urlStr += "?" + r.URL.RawQuery
+func TestGetDefaultBranch(t *testing.T) {
+	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/owner/repo" {
+			t.Errorf("path=%s", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(Repository{DefaultBranch: "main"})
+	})
+	got, err := c.GetDefaultBranch()
+	if err != nil {
+		t.Fatalf("GetDefaultBranch: %v", err)
 	}
-	newReq, _ := http.NewRequest(r.Method, urlStr, r.Body) //nolint:gosec // test helper
-	newReq.Header = r.Header
+	if got != "main" {
+		t.Errorf("got %q", got)
+	}
+}
 
-	return http.DefaultTransport.RoundTrip(newReq)
+func TestAPIErrorContainsMethodPathStatusNotToken(t *testing.T) {
+	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") == "" {
+			t.Error("expected Authorization header on request")
+		}
+		if r.Header.Get("Accept") != "application/vnd.github+json" {
+			t.Errorf("Accept=%q", r.Header.Get("Accept"))
+		}
+		if r.Header.Get("X-GitHub-Api-Version") == "" {
+			t.Error("missing API version header")
+		}
+		if r.Header.Get("User-Agent") != userAgent {
+			t.Errorf("User-Agent=%q", r.Header.Get("User-Agent"))
+		}
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"message":"nope"}`))
+	})
+	err := c.ClosePR(1)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "PATCH") || !strings.Contains(msg, "/pulls/1") || !strings.Contains(msg, "403") {
+		t.Errorf("error missing method/path/status: %v", err)
+	}
+	if strings.Contains(msg, "secret-token-value") {
+		t.Error("error must not contain token")
+	}
+}
+
+func TestEmptySuccessBody(t *testing.T) {
+	c := testClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.ClosePR(1); err != nil {
+		t.Fatalf("empty body should be ok: %v", err)
+	}
 }

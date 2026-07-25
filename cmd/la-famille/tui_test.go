@@ -775,4 +775,3 @@ func TestTUIReturnPathFromFailedWork(t *testing.T) {
 		t.Fatalf("esc key on failed work screen = %v, want screenMenu", mResEsc.screen)
 	}
 }
-

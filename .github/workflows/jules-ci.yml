@@ -5,11 +5,16 @@ on:
     branches: [ master ]
 
 jobs:
-  verify-and-merge:
+  # Verification only — this workflow is not a merge authority.
+  # Merges of labeled bot PRs are performed exclusively by the nightly
+  # "Clear the Litterbox" job (cron-sync.yml).
+  verify-jules-pr:
     # Only run this if the PR was created by the Jules bot / integration
-    if: github.actor == 'google-labs-code' || contains(github.head_ref, 'jules')
+    if: github.actor == 'google-labs-code' || github.actor == 'google-labs-jules' || startsWith(github.head_ref, 'jules')
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -31,11 +36,3 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.64.5
-
-      - name: Auto-Merge Green PRs
-        if: success()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          gh pr merge --auto --squash "$PR_URL"

@@ -68,9 +68,37 @@ func ParseOwnerRepo(url string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
+// CurrentBranch returns the name of the currently checked-out branch.
+func CurrentBranch() (string, error) {
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to get current branch: %s: %w", stderr.String(), err)
+	}
+	branch := strings.TrimSpace(out.String())
+	if branch == "" || branch == "HEAD" {
+		return "", fmt.Errorf("not on a named branch (detached HEAD)")
+	}
+	return branch, nil
+}
+
 // CheckoutBranch creates and checks out a new branch.
 func CheckoutBranch(branchName string) error {
 	cmd := exec.Command("git", "checkout", "-b", branchName)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to checkout branch %s: %s: %w", branchName, stderr.String(), err)
+	}
+	return nil
+}
+
+// Checkout switches to an existing branch.
+func Checkout(branchName string) error {
+	cmd := exec.Command("git", "checkout", branchName)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {

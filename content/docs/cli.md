@@ -88,14 +88,24 @@ go run ./cmd/la-famille rag
 
 ### `pr`
 
-Manages GitHub Pull Requests.
+Manages GitHub Pull Requests (Clear the Litterbox).
 
 ```bash
 go run ./cmd/la-famille pr [command]
 ```
 
-*   **Description:** A suite of tools for managing PRs, particularly useful for clearing out stale PRs created by automation agents via the `sync` subcommand.
-*   **See Also:** [Pull Request Management Guide](pr.md) for full details and configuration requirements.
+*   **Description:** Tools for managing automation PRs. The `sync` subcommand inspects open bot-authored pull requests and applies an explicit merge policy.
+*   **`pr sync`:** Dry-run by default. Requires `GITHUB_TOKEN`. Mutations require `--apply`. Merges require the `litterbox-approved` label (configurable via `--required-label`). Zero checks are not accepted by default. Conflicts are not closed by default (`--close-conflicts`). Local working-tree publishing is off by default (`--publish-local-changes`). When `--base` is omitted, the repository `default_branch` is resolved via the GitHub API. This repository’s nightly workflow targets `master` explicitly. Jules CI verifies but does not merge.
+*   **Flags (`pr sync`):**
+    *   `--base` (string): Target base branch (empty → API default branch).
+    *   `--apply` (bool): Perform mutations (default false / dry-run).
+    *   `--required-label` (string): Label required to merge or close (default `litterbox-approved`).
+    *   `--close-conflicts` (bool): Authorize closing conflicting PRs that pass identity gates.
+    *   `--allow-no-checks` (bool): Allow merge when no check runs are reported.
+    *   `--publish-local-changes` (bool): Authorize staging all local changes and opening a PR.
+    *   `--bot-author` (strings): Bot author allowlist (defaults include Jules bots).
+    *   `--head-prefix` (strings): Optional head ref prefix restrictions.
+*   **See Also:** [Pull Request Management Guide](pr.md) for the full policy contract.
 
 ### `new`
 

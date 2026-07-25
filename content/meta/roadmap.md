@@ -1,38 +1,62 @@
 ---
-title: "La Famille SSG: Roadmap & Backlog"
+title: "La Famille SSG: Roadmap"
 author: "Jules"
-date: "2026-06-19"
+date: "2026-07-23"
+render: true
 ---
 
-# Roadmap & Backlog
+# Roadmap
 
-This document outlines the active roadmap, development milestones, and ready-to-hand tasks for La Famille.
+This is the short, current list of work worth doing next. Completed projects are recorded below so the backlog stays honest.
 
-## Milestones
+## Current priority
 
-- **Milestone 1: Foundation cleanup** — docs reconciliation, package refactor, test hardening, and output contracts for `graph.json`, `backlinks.json`, and `meta.json`.
-- **Milestone 2: Creator workflow** — asset pipeline, multi-template architecture, serve/watch flow, and better stub-page UX.
-- **Milestone 3: Publish and discover** — CI/CD deploy, search UI powered by existing metadata, and taxonomy/tag generation from frontmatter.
+### 1. Release readiness
 
-## Backlog
+Make the project easier to consume and safer to ship:
 
-- Extract generator, graph, and stub logic into `internal/` packages with tests kept green.
-- Add static asset sync from `assets/` to `public/`, which matters now that we already have logo and image material in `assets/img/favorites/`.
-- Add template partials support, since the repo already has layout selection via frontmatter.
-- Add local dev server plus file watching for markdown and template changes.
-- Add GitHub Actions build/test/generate/deploy workflow and later layer on client-side search using `meta.json` plus frontmatter-based taxonomy pages.
+- Add a clear version/build-info command and expose the version in generated diagnostics.
+- Add a small end-to-end smoke test that builds a representative site and checks the key generated artifacts.
+- Document the supported build, serve, watch, check, new, and RAG workflows in one concise getting-started path.
+- Decide on a release/changelog convention and keep it automated where practical.
 
-## Ready-to-hand TODO
+### 2. TUI workflow polish
 
-*These are punchy tasks ready to be picked up in the next development cycle:*
+Improve the useful parts of the TUI without expanding its visual theme system:
 
-- [x] Refactor generation logic out of `cmd/la-famille/main.go` into `internal/` packages without changing behavior.
-- [x] Implement asset copying from `assets/` into build output.
-- [x] Support template partials.
-- [x] Add `serve` plus file watching for local authoring.
-- [x] Add CI/CD deploy workflow, then client-side search and taxonomy generation.
+- Make build, serve, watch, and failure states easier to understand at a glance.
+- Improve keyboard help and command discoverability.
+- Make diagnostics and content-health findings link clearly to the next CLI action.
+- Keep the current mascot and visual language stable.
 
-## TUI Improvements
-- Track build time stats and show them in the Stats screen.
-- Track RAG sizes and represent them in terms of LLM context windows in the Stats screen.
-- Better graphics and more options for the mascot Jules (e.g. Jules themes, different animations).
+### 3. Build correctness and performance
+
+Turn the existing transactional build and cache work into a dependable production path:
+
+- Add regression coverage for cache invalidation when content, templates, assets, configuration, or deleted files change.
+- Measure cold versus incremental builds on representative sites.
+- Audit generated-output cleanup, concurrent builds, and watcher-triggered rebuilds.
+
+### 4. Content quality and publishing
+
+Use the existing checks and generated metadata to help authors before deployment:
+
+- Add a concise validation summary for broken links, missing metadata, asset health, and orphaned pages.
+- Verify RSS, sitemap, robots, canonical URLs, search data, and taxonomy pages together in an integration fixture.
+- Document the output contract for these generated publishing artifacts.
+
+## Explicitly deferred
+
+- Jules mascot themes, alternate animations, and broader visual customization. The current TUI is good enough; revisit this only after the workflow and release work above is complete.
+- Large template/theme redesigns. Prefer targeted accessibility, layout, and interaction fixes.
+
+## Shipped
+
+- Generator, graph, and stub logic extracted into tested `internal/` packages.
+- Static asset copying, template partials, multiple layouts, and shared style foundations.
+- Local `serve` and watch workflows with lifecycle and debounce coverage.
+- GitHub Actions build, test, generate, and deploy workflow.
+- Client-side search, taxonomy/tag/category generation, RSS, sitemap, robots, and canonical publishing metadata.
+- Transactional output and incremental build cache with observable TUI status.
+- `la-famille new` content scaffolding and `la-famille check` asset-health diagnostics.
+- Template contract/accessibility regression coverage and TUI content-health metrics.
