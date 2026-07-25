@@ -864,18 +864,18 @@ Draft content should not be indexed.
 	}
 
 	// Verify valid custom slug URL
-	if !strings.Contains(searchJSON, `"u":"/custom-alpha/index.html"`) {
+	if !strings.Contains(searchJSON, `"u":"/custom-alpha/"`) {
 		t.Errorf("search.json missing valid custom slug URL: %s", searchJSON)
 	}
 
 	// Verify invalid slug fell back to standard output URL matching relOut
-	if !strings.Contains(searchJSON, `"u":"/beta/index.html"`) {
+	if !strings.Contains(searchJSON, `"u":"/beta/"`) {
 		t.Errorf("search.json missing fallback URL for invalid slug: %s", searchJSON)
 	}
 
 	// Verify deterministic URL ordering: /beta/index.html should come before /custom-alpha/index.html
-	alphaIdx := strings.Index(searchJSON, "/custom-alpha/index.html")
-	betaIdx := strings.Index(searchJSON, "/beta/index.html")
+	alphaIdx := strings.Index(searchJSON, "/custom-alpha/")
+	betaIdx := strings.Index(searchJSON, "/beta/")
 	if alphaIdx == -1 || betaIdx == -1 || betaIdx > alphaIdx {
 		t.Errorf("search.json items are not deterministically sorted by URL: %s", searchJSON)
 	}
@@ -967,12 +967,12 @@ render: false
 	searchJSON := string(searchJSONBytes)
 
 	expectedTaxonomySearchItems := []string{
-		`"t":"Tags","u":"/tags/index.html"`,
-		`"t":"Tag: go","u":"/tags/go/index.html","g":["go"]`,
-		`"t":"Tag: web","u":"/tags/web/index.html","g":["web"]`,
-		`"t":"Categories","u":"/categories/index.html"`,
-		`"t":"Category: news","u":"/categories/news/index.html","g":["news"]`,
-		`"t":"Category: tech","u":"/categories/tech/index.html","g":["tech"]`,
+		`"t":"Tags","u":"/tags/"`,
+		`"t":"Tag: go","u":"/tags/go/","g":["go"]`,
+		`"t":"Tag: web","u":"/tags/web/","g":["web"]`,
+		`"t":"Categories","u":"/categories/"`,
+		`"t":"Category: news","u":"/categories/news/","g":["news"]`,
+		`"t":"Category: tech","u":"/categories/tech/","g":["tech"]`,
 	}
 	for _, expectedSub := range expectedTaxonomySearchItems {
 		if !strings.Contains(searchJSON, expectedSub) {

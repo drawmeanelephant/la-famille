@@ -152,7 +152,7 @@ func generateTaxonomyGroup(cfg, siteCfg config.Config, fileMap map[string]*conte
 	generatedPaths = append(generatedPaths, indexOut)
 	searchItems = append(searchItems, search.Item{
 		Title: spec.plural,
-		URL:   "/" + filepath.ToSlash(indexOut),
+		URL:   siteCfg.PublicPathForOutput(indexOut),
 	})
 
 	// Render individual taxonomy item pages (e.g., tags/go/index.html)
@@ -229,7 +229,7 @@ func generateTaxonomyGroup(cfg, siteCfg config.Config, fileMap map[string]*conte
 		generatedPaths = append(generatedPaths, itemOut)
 		searchItems = append(searchItems, search.Item{
 			Title: fmt.Sprintf("%s: %s", spec.singular, item),
-			URL:   "/" + filepath.ToSlash(itemOut),
+			URL:   siteCfg.PublicPathForOutput(itemOut),
 			Tags:  []string{item},
 		})
 	}
