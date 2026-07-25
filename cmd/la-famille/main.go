@@ -75,14 +75,18 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	buildCmd.Flags().StringVarP(&siteURL, "site-url", "s", cfg.SiteURL, "Public base URL of the site")
 	buildCmd.Flags().StringVar(&siteURL, "siteurl", cfg.SiteURL, "Public base URL of the site (alias for --site-url)")
 
+	var initForce bool
 	var initCmd = &cobra.Command{
 		Use:   "init",
 		Short: "Initialize default configuration",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := config.WriteDefault("config.yaml"); err != nil {
-				return fmt.Errorf("failed to write config.yaml: %w", err)
+			// Writing unconditionally replaced a customized config.yaml with
+			// defaults and reported success, losing siteurl, output_dir and
+			// every other setting the operator had chosen. Overwriting is now
+			// something you ask for.
+			if err := writeInitialConfig("config.yaml", initForce); err != nil {
+				return err
 			}
-			slog.Info("Created default config.yaml")
 
 			tmplDir := "templates"
 			tmplPath := filepath.Join(tmplDir, "layout.html")
@@ -199,6 +203,8 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	serveCmd.Flags().IntVarP(&servePort, "port", "p", 0, "Port to run the server on (overrides config)")
 	serveCmd.Flags().BoolVarP(&watchMode, "watch", "w", false, "Watch for file changes and auto-rebuild")
 
+	initCmd.Flags().BoolVarP(&initForce, "force", "f", false, "Replace an existing config.yaml, keeping the current one as config.yaml.bak")
+
 	rootCmd.AddCommand(buildCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(ragCmd)
@@ -294,4 +300,45 @@ func main() {
 		slog.Error("Application error", "error", err)
 		os.Exit(1)
 	}
+}
+
+// initConfigBackup is where `init --force` moves an existing config.yaml. The
+// name is fixed rather than timestamped so repeated runs stay predictable and
+// the workspace does not accumulate copies.
+const initConfigBackup = "config.yaml.bak"
+
+// writeInitialConfig writes the default configuration, refusing by default to
+// replace one that is already there.
+//
+// `init` used to write unconditionally, so running it a second time replaced a
+// customized config.yaml with defaults and reported success — siteurl,
+// output_dir and theme silently gone, and the next build publishing to the
+// wrong place. The CLI guide had always described it as creating the file only
+// when absent; this makes the behaviour match.
+//
+// The recovery path stays open: a config.yaml too broken to parse is repaired
+// with `init --force`, which keeps the old file as config.yaml.bak so even a
+// broken one can still be read back by hand.
+func writeInitialConfig(path string, force bool) error {
+	_, statErr := os.Stat(path)
+	switch {
+	case statErr == nil && !force:
+		return fmt.Errorf("%s already exists; refusing to overwrite it. Edit it directly, or run `la-famille init --force` to replace it (the current file is kept as %s)", path, initConfigBackup)
+	case statErr == nil:
+		existing, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read existing %s before replacing it: %w", path, err)
+		}
+		if err := os.WriteFile(initConfigBackup, existing, 0600); err != nil {
+			return fmt.Errorf("failed to back up %s to %s: %w", path, initConfigBackup, err)
+		}
+		slog.Info("Backed up existing configuration", "from", path, "to", initConfigBackup)
+	case !os.IsNotExist(statErr):
+		return fmt.Errorf("failed to inspect %s: %w", path, statErr)
+	}
+
+	if err := config.WriteDefault(path); err != nil {
+		return fmt.Errorf("failed to write %s: %w", path, err)
+	}
+	return nil
 }
