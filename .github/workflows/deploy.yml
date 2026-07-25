@@ -4,6 +4,11 @@ on:
   push:
     branches: [ "main", "master" ]
   workflow_dispatch: # Allows manual trigger
+    inputs:
+      site_url:
+        description: 'Public base URL of the deployed site'
+        required: false
+        type: string
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -30,20 +35,27 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
       - name: Build Static Site
+        env:
+          SITE_URL: ${{ inputs.site_url || vars.SITE_URL || steps.pages.outputs.base_url }}
         run: |
           # Executes the La Famille compiler
-          go run ./cmd/la-famille build
+          if [ -n "$SITE_URL" ]; then
+            go run ./cmd/la-famille build --site-url "$SITE_URL"
+          else
+            go run ./cmd/la-famille build
+          fi
 
       - name: Generate RAG Export
         run: |
           go run ./cmd/la-famille rag
           cp -r rag-archive public/rag-archive
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v6
-        with:
-          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5

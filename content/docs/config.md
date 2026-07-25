@@ -58,9 +58,9 @@ Here is a breakdown of each available field:
 *   **`port`** (integer): The local network port used by the built-in HTTP server (`go run ./cmd/la-famille serve`). *Default: 8080*
 *   **`graph_explorer`** (bool): When `true` (default), every build also emits a self-contained Knowledge Graph Explorer page at `<output_dir>/graph/index.html`. The page is fully static, loads its prebuilt `graph/data.json` payload via a relative fetch, and supports search, filter toggles, focus mode, and `?node=` deep-linking. Sites at or above 500 nodes open in search-first mode, where the visualization is not drawn until a page is selected. Set to `false` to skip generation entirely; the legacy config keys `graphExplorer` and `Graph Explorer` are not accepted. The associated client bundle is at `assets/graph/explorer.{js,css}` and ships under the user-owned `assets/` directory. **Note:** the YAML tag is snake_case `graph_explorer` to match neighboring keys like `check_asset_health`; the camelCase `graphExplorer` form documented in the original task spec is intentionally not accepted.
 
-## CLI Flag Overrides
+## CLI Flag & Environment Overrides
 
-While `config.yaml` sets the baseline, you can temporarily override several of these settings using Command Line Flags when running the `build` command.
+While `config.yaml` sets the baseline, you can temporarily override settings using Command Line Flags or environment variables when running the `build` command.
 
 For example, if you want to build an alternative content directory into a different output folder, you can run:
 
@@ -68,4 +68,10 @@ For example, if you want to build an alternative content directory into a differ
 go run ./cmd/la-famille build -c my_docs -o dist
 ```
 
-Any flags provided at runtime will take precedence over the values defined in `config.yaml`. See the [CLI Reference](cli.md) for more details.
+To supply the public site URL without modifying `config.yaml`, pass `--site-url` or set the `SITE_URL` (or `LA_FAMILLE_SITE_URL`) environment variable:
+
+```bash
+SITE_URL="https://example.com" go run ./cmd/la-famille build
+```
+
+Any flags provided at runtime take precedence over environment variables and `config.yaml`. See the [CLI Reference](cli.md) for more details.
