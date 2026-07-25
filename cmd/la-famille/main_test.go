@@ -541,3 +541,98 @@ func TestServeCommand_InitialBuildFailure_ReturnsError(t *testing.T) {
 		t.Errorf("expected error to contain 'initial build failed', got: %v", err)
 	}
 }
+
+func TestBuildSiteURLEnvironmentVariables(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	if err := os.MkdirAll("content", 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join("content", "index.md"), []byte("---\ntitle: Home\n---\n# Home"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll("templates", 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join("templates", "layout.html"), []byte("<html><body>{{.Content}}</body></html>"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("SITE_URL env variable sets SiteURL when flag is absent", func(t *testing.T) {
+		t.Setenv("SITE_URL", "https://env.example.com")
+		cfg := config.DefaultConfig()
+		rootCmd := setupRootCmd(cfg)
+		rootCmd.SetArgs([]string{"build"})
+		if err := rootCmd.Execute(); err != nil {
+			t.Fatalf("build failed: %v", err)
+		}
+
+		sitemap, err := os.ReadFile(filepath.Join("public", "sitemap.xml"))
+		if err != nil {
+			t.Fatalf("read sitemap.xml: %v", err)
+		}
+		if !strings.Contains(string(sitemap), "https://env.example.com/") {
+			t.Errorf("expected sitemap to contain env SITE_URL, got:\n%s", sitemap)
+		}
+	})
+
+	t.Run("CLI flag overrides SITE_URL env variable", func(t *testing.T) {
+		t.Setenv("SITE_URL", "https://env.example.com")
+		cfg := config.DefaultConfig()
+		rootCmd := setupRootCmd(cfg)
+		rootCmd.SetArgs([]string{"build", "--site-url", "https://flag.example.com"})
+		if err := rootCmd.Execute(); err != nil {
+			t.Fatalf("build failed: %v", err)
+		}
+
+		sitemap, err := os.ReadFile(filepath.Join("public", "sitemap.xml"))
+		if err != nil {
+			t.Fatalf("read sitemap.xml: %v", err)
+		}
+		if !strings.Contains(string(sitemap), "https://flag.example.com/") {
+			t.Errorf("expected sitemap to contain CLI flag siteurl, got:\n%s", sitemap)
+		}
+	})
+}
+
+func TestGitHubPagesWorkflowAudit(t *testing.T) {
+	// Root of repo is 2 directories up from cmd/la-famille
+	workflowPath := filepath.Join("..", "..", ".github", "workflows", "deploy.yml")
+	content, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("failed to read GitHub Pages deploy workflow at %s: %v", workflowPath, err)
+	}
+
+	sContent := string(content)
+
+	// Regression check: configure-pages must run before build static site
+	configurePagesIdx := strings.Index(sContent, "actions/configure-pages")
+	buildSiteIdx := strings.Index(sContent, "go run ./cmd/la-famille build")
+
+	if configurePagesIdx == -1 {
+		t.Fatalf("deploy.yml missing actions/configure-pages step")
+	}
+	if buildSiteIdx == -1 {
+		t.Fatalf("deploy.yml missing la-famille build step")
+	}
+	if configurePagesIdx >= buildSiteIdx {
+		t.Errorf("deploy.yml must run actions/configure-pages BEFORE building static site so base_url is available")
+	}
+
+	// Regression check: build step must reference SITE_URL / base_url / site-url flag
+	if !strings.Contains(sContent, "steps.pages.outputs.base_url") {
+		t.Errorf("deploy.yml must reference steps.pages.outputs.base_url for public site URL")
+	}
+	if !strings.Contains(sContent, "--site-url") {
+		t.Errorf("deploy.yml build step must pass --site-url flag")
+	}
+}
+

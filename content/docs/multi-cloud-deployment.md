@@ -22,7 +22,27 @@ Cloudflare Pages provides global edge distribution with fast deployment turnarou
 *   **Root Directory:** *(Leave as project root)*
 
 ### 2. GitHub Pages (Actions Workflow)
-To deploy natively using GitHub Actions, ensure your repository contains a deployment execution file within `.github/workflows/deploy.yml`. The workflow should trigger on push events, compile the project, and pass the standard artifact back to the static routing bucket.
+To deploy natively using GitHub Actions, ensure your repository contains a deployment execution file within `.github/workflows/deploy.yml`.
+
+Run `actions/configure-pages@v6` prior to building so `steps.pages.outputs.base_url` provides the public site URL to `la-famille build`:
+
+```yaml
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
+      - name: Build Static Site
+        env:
+          SITE_URL: ${{ inputs.site_url || vars.SITE_URL || steps.pages.outputs.base_url }}
+        run: |
+          if [ -n "$SITE_URL" ]; then
+            go run ./cmd/la-famille build --site-url "$SITE_URL"
+          else
+            go run ./cmd/la-famille build
+          fi
+```
 
 ### 3. Bitbucket Pipelines & Generic Web Buckets
 Because the output contains no server-side execution routines, any traditional container or static pipeline can handle the build loop:

@@ -56,6 +56,18 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 				if err := cfg.ValidateSiteURL(); err != nil {
 					return fmt.Errorf("invalid configuration: %w", err)
 				}
+			} else if cfg.SiteURL == "" {
+				if envURL := os.Getenv("SITE_URL"); envURL != "" {
+					cfg.SiteURL = envURL
+					if err := cfg.ValidateSiteURL(); err != nil {
+						return fmt.Errorf("invalid configuration: %w", err)
+					}
+				} else if envURL := os.Getenv("LA_FAMILLE_SITE_URL"); envURL != "" {
+					cfg.SiteURL = envURL
+					if err := cfg.ValidateSiteURL(); err != nil {
+						return fmt.Errorf("invalid configuration: %w", err)
+					}
+				}
 			}
 			res, err := generator.Build(cfg)
 			if err != nil {

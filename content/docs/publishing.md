@@ -127,6 +127,15 @@ The `siteurl` configuration option defines the public canonical base URL (e.g. `
 | **Sitemap Location** | `<loc>https://example.com/about/</loc>` | `<loc>/about/</loc>` |
 | **Robots Sitemap** | Includes `Sitemap: https://example.com/sitemap.xml` | Omitted from `robots.txt` |
 
+### Public URL Resolution Order
+
+During `la-famille build`, the public site URL is resolved in the following priority:
+1. `--site-url` / `--siteurl` CLI flag (explicit runtime override)
+2. `siteurl` (or `site_url`) field in `config.yaml`
+3. Environment variables `SITE_URL` or `LA_FAMILLE_SITE_URL` (ideal for GitHub Pages & CI/CD runners)
+
+In GitHub Pages deployments (`deploy.yml`), `actions/configure-pages@v6` provides `steps.pages.outputs.base_url`, which is automatically passed to `--site-url` or `SITE_URL`.
+
 ---
 
 ## Unrendered Pages (`render: false`)
