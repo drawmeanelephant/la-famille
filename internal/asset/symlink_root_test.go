@@ -85,7 +85,7 @@ func TestCopyAssets_SymlinkedRootIsCopied(t *testing.T) {
 
 	out := filepath.Join(root, "public")
 	cfg := config.Config{AssetDir: link, OutputDir: out, ProjectRoot: root}
-	if err := CopyAssets(cfg); err != nil {
+	if err := CopyAssets(cfg, nil); err != nil {
 		t.Fatalf("CopyAssets: %v", err)
 	}
 
@@ -115,7 +115,7 @@ func TestCopyAssets_SymlinkedRootContainingOutputIsRefused(t *testing.T) {
 	out := filepath.Join(site, "public")
 	cfg := config.Config{AssetDir: link, OutputDir: out, ProjectRoot: site}
 
-	err := CopyAssets(cfg)
+	err := CopyAssets(cfg, nil)
 	if err == nil {
 		t.Fatal("expected an error when the asset root resolves to a directory containing the output")
 	}
@@ -136,7 +136,7 @@ func TestCopyAssets_OrdinaryRootUnchanged(t *testing.T) {
 
 	out := filepath.Join(root, "public")
 	cfg := config.Config{AssetDir: assets, OutputDir: out, ProjectRoot: root}
-	if err := CopyAssets(cfg); err != nil {
+	if err := CopyAssets(cfg, nil); err != nil {
 		t.Fatalf("CopyAssets: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(out, "assets", "css", "main.css")); err != nil {
@@ -158,7 +158,7 @@ func TestCopyAssets_SymlinkInsideTreeStillSkipped(t *testing.T) {
 
 	out := filepath.Join(root, "public")
 	cfg := config.Config{AssetDir: assets, OutputDir: out, ProjectRoot: root}
-	if err := CopyAssets(cfg); err != nil {
+	if err := CopyAssets(cfg, nil); err != nil {
 		t.Fatalf("CopyAssets: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(out, "assets", "linked.txt")); err == nil {
