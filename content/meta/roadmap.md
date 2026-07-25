@@ -2,7 +2,6 @@
 title: "La Famille SSG: Roadmap"
 author: "Jules"
 date: "2026-07-23"
-render: true
 ---
 
 # Roadmap
