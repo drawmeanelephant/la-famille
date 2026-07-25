@@ -618,20 +618,59 @@ type outputOwner struct {
 // so a second writer aiming at the same file is caught rather than silently
 // overwriting the first.
 //
-// Keys are case-folded, because macOS and Windows collapse paths differing only
-// in case onto one file.
+// Keys are case-folded only when the output filesystem actually collapses
+// names differing in case, which macOS and Windows do and Linux does not.
+// Folding unconditionally reported a collision between two files that coexist
+// perfectly well on a case-sensitive volume, and refused to build a tree that
+// had built correctly.
 type outputClaims struct {
-	mu        sync.Mutex
-	outputDir string
-	owners    map[string]outputOwner
+	mu              sync.Mutex
+	outputDir       string
+	caseInsensitive bool
+	owners          map[string]outputOwner
+	// folded tracks case-folded keys purely so a case-only clash can still be
+	// reported as a portability hazard where it is not an outright collision.
+	folded map[string]outputOwner
 }
 
 func newOutputClaims(outputDir string, size int) *outputClaims {
-	return &outputClaims{outputDir: outputDir, owners: make(map[string]outputOwner, size)}
+	return &outputClaims{
+		outputDir:       outputDir,
+		caseInsensitive: dirIsCaseInsensitive(outputDir),
+		owners:          make(map[string]outputOwner, size),
+		folded:          make(map[string]outputOwner, size),
+	}
+}
+
+// dirIsCaseInsensitive probes the filesystem behind dir. It errs towards true,
+// the stricter behaviour, when it cannot tell.
+func dirIsCaseInsensitive(dir string) bool {
+	f, err := os.CreateTemp(dir, "lf-case-probe-")
+	if err != nil {
+		return true
+	}
+	name := f.Name()
+	_ = f.Close()
+	defer func() { _ = os.Remove(name) }()
+
+	upper := filepath.Join(filepath.Dir(name), strings.ToUpper(filepath.Base(name)))
+	if upper == name {
+		return true
+	}
+	_, statErr := os.Stat(upper)
+	return statErr == nil
+}
+
+func (c *outputClaims) absPath(relOut string) string {
+	return filepath.Clean(filepath.Join(c.outputDir, filepath.FromSlash(relOut)))
 }
 
 func (c *outputClaims) key(relOut string) string {
-	return strings.ToLower(filepath.Clean(filepath.Join(c.outputDir, filepath.FromSlash(relOut))))
+	path := c.absPath(relOut)
+	if c.caseInsensitive {
+		return strings.ToLower(path)
+	}
+	return path
 }
 
 // claim reserves relOut for source. It returns the writer that already holds
@@ -644,7 +683,21 @@ func (c *outputClaims) claim(source, relOut string) (outputOwner, bool) {
 	if previous, exists := c.owners[key]; exists {
 		return previous, false
 	}
-	c.owners[key] = outputOwner{source: source, relOut: relOut}
+	owner := outputOwner{source: source, relOut: relOut}
+	c.owners[key] = owner
+
+	// On a case-sensitive filesystem the two paths are genuinely different
+	// files, so the build proceeds — but the site will not survive being
+	// deployed onto a case-insensitive host, and that is worth saying once.
+	if !c.caseInsensitive {
+		foldKey := strings.ToLower(c.absPath(relOut))
+		if previous, clash := c.folded[foldKey]; clash && previous.relOut != relOut {
+			slog.Warn("Output paths differ only in case; they will collide on a case-insensitive filesystem",
+				"first", previous.relOut, "second", relOut)
+		} else if !clash {
+			c.folded[foldKey] = owner
+		}
+	}
 	return outputOwner{}, true
 }
 
@@ -655,12 +708,16 @@ func (c *outputClaims) claim(source, relOut string) (outputOwner, bool) {
 // registry the pages use. Assets are copied after rendering, so without this an
 // asset quietly replaces a page that renders to the same path.
 func (c *outputClaims) assetClaimer() asset.ClaimOutput {
-	return func(relOut string) (string, bool) {
-		previous, ok := c.claim(fmt.Sprintf("the asset %q", relOut), relOut)
+	return func(relOut string) error {
+		source := fmt.Sprintf("the asset %q", relOut)
+		previous, ok := c.claim(source, relOut)
 		if ok {
-			return "", true
+			return nil
 		}
-		return previous.source, false
+		// The shared builder, so an asset clash is described the same way a
+		// page clash is — including the case-only wording, which the asset
+		// path used to get wrong by claiming both wrote the same file.
+		return collisionError(previous, source, relOut)
 	}
 }
 

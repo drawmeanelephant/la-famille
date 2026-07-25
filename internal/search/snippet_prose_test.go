@@ -1,6 +1,9 @@
 package search
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // TestExtractSnippetKeepsProseAroundAngleBrackets covers the difference between
 // markup and prose that merely looks like it. ExtractSnippet reads raw Markdown,
@@ -91,6 +94,62 @@ func TestCleanHeadingTextKeepsProse(t *testing.T) {
 	for i := range want {
 		if headings[i] != want[i] {
 			t.Errorf("heading %d = %q, want %q", i, headings[i], want[i])
+		}
+	}
+}
+
+// TestExtractSnippetStripsInlineSVG covers the gap an element allowlist is
+// prone to: only <svg> and <path> were listed, so a diagram's children survived
+// as "prose" and their geometry attributes consumed the whole snippet budget,
+// leaving none of the article's text indexed.
+func TestExtractSnippetStripsInlineSVG(t *testing.T) {
+	in := `# Pipeline
+
+<svg viewBox="0 0 320 80" role="img">
+  <rect x="4" y="20" width="90" height="40" fill="#eee" />
+  <text x="20" y="45">ingest</text>
+  <line x1="94" y1="40" x2="130" y2="40" stroke="#333" />
+  <circle cx="150" cy="40" r="16" />
+</svg>
+
+Events arrive on a Kafka topic and land in the warehouse.`
+
+	got := ExtractSnippet([]byte(in))
+	for _, leaked := range []string{"<rect", "<line", "<circle", "viewBox", "stroke", "x1="} {
+		if strings.Contains(got, leaked) {
+			t.Errorf("SVG markup %q leaked into the snippet: %q", leaked, got)
+		}
+	}
+	if !strings.Contains(got, "Events arrive on a Kafka topic") {
+		t.Errorf("the article prose was pushed out of the snippet: %q", got)
+	}
+}
+
+// TestExtractSnippetStripsUnlistedMarkupWithAttributes keeps the allowlist from
+// having to be exhaustive: a span carrying a quoted attribute is markup even
+// when its element name is not one we enumerated.
+func TestExtractSnippetStripsUnlistedMarkupWithAttributes(t *testing.T) {
+	got := ExtractSnippet([]byte(`Before <my-widget data-id="7" class="x"> after.`))
+	if strings.Contains(got, "my-widget") || strings.Contains(got, "data-id") {
+		t.Errorf("custom element with attributes should be treated as markup: %q", got)
+	}
+	if !strings.Contains(got, "Before") || !strings.Contains(got, "after") {
+		t.Errorf("surrounding prose was lost: %q", got)
+	}
+}
+
+// TestExtractSnippetAttributeHeuristicSparesProse is the other half: the
+// heuristic must not fire on ordinary text that happens to contain quotes.
+func TestExtractSnippetAttributeHeuristicSparesProse(t *testing.T) {
+	cases := []string{
+		`Compare a<b for ordering.`,
+		`Use Vec<String> and List<int> here.`,
+		`Swap when x < 5 and y > 3 holds.`,
+	}
+	for _, in := range cases {
+		got := ExtractSnippet([]byte(in))
+		if got != in {
+			t.Errorf("prose was altered\n in   %q\n got  %q", in, got)
 		}
 	}
 }
