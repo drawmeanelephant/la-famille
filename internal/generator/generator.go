@@ -354,7 +354,11 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 							}
 						}
 
-						urlPath := "/" + filepath.ToSlash(relOut)
+						// siteCfg, not cfg: cfg is the staging configuration.
+						// PublicPathForOutput applies the siteurl base path and
+						// drops index.html, so a search hit navigates to the
+						// same URL the canonical link and sitemap advertise.
+						urlPath := siteCfg.PublicPathForOutput(relOut)
 						searchIndexItems[idx] = search.Item{
 							Title:    title,
 							URL:      urlPath,

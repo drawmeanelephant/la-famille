@@ -125,13 +125,16 @@ func TestGenerateTaxonomies_TagsAndCategories(t *testing.T) {
 	for _, it := range items {
 		itemByURL[it.URL] = it.Title
 	}
+	// Clean public paths, matching what the canonical link, sitemap and feed
+	// advertise for the same pages. Search results used to carry the raw output
+	// filename instead, which also dropped any siteurl base path.
 	expectedSearchURLs := map[string]string{
-		"/tags/index.html":            "Tags",
-		"/tags/go/index.html":         "Tag: go",
-		"/tags/web/index.html":        "Tag: web",
-		"/categories/index.html":      "Categories",
-		"/categories/news/index.html": "Category: news",
-		"/categories/tech/index.html": "Category: tech",
+		"/tags/":            "Tags",
+		"/tags/go/":         "Tag: go",
+		"/tags/web/":        "Tag: web",
+		"/categories/":      "Categories",
+		"/categories/news/": "Category: news",
+		"/categories/tech/": "Category: tech",
 	}
 	for url, expectedTitle := range expectedSearchURLs {
 		if title, ok := itemByURL[url]; !ok {
