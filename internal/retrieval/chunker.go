@@ -30,8 +30,8 @@ var pageHeadingRE = regexp.MustCompile(`(?m)^(#{2,4})\s+(.+?)\s*#*\s*$`)
 // `render: false` in frontmatter is documented as "exclude from the
 // published site", which means "exclude from the assistant corpus"
 // — same intent. We treat it as out-of-scope and return nil.
-func chunkFile(text, sourcePath string) []Chunk {
-	pageID := derivePageID(sourcePath)
+func chunkFile(text, sourcePath, contentDir string) []Chunk {
+	pageID := derivePageID(sourcePath, contentDir)
 	renderedURL := pageIDToURL(pageID)
 	kind := sourceKind(sourcePath)
 	title, body, render := stripFrontmatter(text)
@@ -44,7 +44,7 @@ func chunkFile(text, sourcePath string) []Chunk {
 
 	// If the file is short and has no headings, produce a single chunk.
 	if !pageHeadingRE.MatchString(body) {
-		id := chunkID(sourcePath, 0, "")
+		id := chunkID(sourcePath, contentDir, 0, "")
 		return []Chunk{{
 			ID:          id,
 			PageID:      pageID,
@@ -69,7 +69,7 @@ func chunkFile(text, sourcePath string) []Chunk {
 	// not lose opening prose (frontmatter, lede paragraphs).
 	prelude := body[:matches[0][0]]
 	if strings.TrimSpace(prelude) != "" {
-		id := chunkID(sourcePath, position, "")
+		id := chunkID(sourcePath, contentDir, position, "")
 		out = append(out, Chunk{
 			ID:         id,
 			PageID:     pageID,
@@ -102,7 +102,7 @@ func chunkFile(text, sourcePath string) []Chunk {
 			headingTrail = append(headingTrail, headingFromMatch(body, matches[i-1]))
 		}
 
-		id := chunkID(sourcePath, position, heading)
+		id := chunkID(sourcePath, contentDir, position, heading)
 		out = append(out, Chunk{
 			ID:          id,
 			PageID:      pageID,
@@ -180,11 +180,20 @@ func parseFrontmatter(fm string) (title string, render bool) {
 	return title, render
 }
 
-func derivePageID(sourcePath string) string {
+// derivePageID turns an archive source path into the page id the generator
+// uses. contentDir is the configured content directory; the archive records
+// paths relative to the project root, so a site with content_dir "pages"
+// produces "pages/index.md" and must have "pages/" stripped, not "content/".
+// Assuming the default silently produced page ids that matched nothing in
+// meta.json, so every lookup keyed on them missed.
+func derivePageID(sourcePath, contentDir string) string {
 	base := filepath.ToSlash(sourcePath)
 	base = strings.TrimPrefix(base, "./")
-	// drop leading "content/"
-	base = strings.TrimPrefix(base, "content/")
+	prefix := "content/"
+	if trimmed := strings.Trim(filepath.ToSlash(contentDir), "/"); trimmed != "" && trimmed != "." {
+		prefix = trimmed + "/"
+	}
+	base = strings.TrimPrefix(base, prefix)
 	// drop extension
 	if ext := filepath.Ext(base); ext != "" {
 		base = strings.TrimSuffix(base, ext)
@@ -224,8 +233,8 @@ func sourceKind(path string) string {
 // chunkID produces a deterministic chunk identifier. The same input always
 // yields the same ID so reruns (including across Ask sessions) compare
 // cleanly. The slug is computed from the heading text only if non-empty.
-func chunkID(sourcePath string, position int, heading string) string {
-	page := derivePageID(sourcePath)
+func chunkID(sourcePath, contentDir string, position int, heading string) string {
+	page := derivePageID(sourcePath, contentDir)
 	slug := "h0"
 	if heading != "" {
 		slug = "h" + fmt.Sprintf("%d", position+1) + "-" + slugify(heading)

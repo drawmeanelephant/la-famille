@@ -2,11 +2,13 @@
   "index": {
     "render": true,
     "title": "index.md",
+    "url": "/",
     "word_count": 64
   },
   "page": {
     "render": true,
     "title": "page.md",
+    "url": "/page/",
     "word_count": 6
   }
 }

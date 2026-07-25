@@ -53,6 +53,7 @@ func launchAskServer(cfg config.Config) tea.Cmd {
 			Port:         port,
 			RagDir:       firstNonEmpty(askFlagBundle.ragDir, cfg.RagDir, "rag-archive"),
 			OutputDir:    firstNonEmpty(askFlagBundle.outputDir, cfg.OutputDir, "public"),
+			ContentDir:   cfg.ContentDir,
 			LoopbackOnly: true,
 		}
 

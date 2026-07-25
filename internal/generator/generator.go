@@ -535,6 +535,20 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 		return result, err
 	}
 
+	// Record each rendered page's public URL alongside its other metadata.
+	// Consumers previously had to reconstruct it from the page id, which cannot
+	// know about a frontmatter slug or a siteurl base path and so produced links
+	// to pages that were never published there. This is the same pair the graph
+	// explorer already uses, and it is additive: a new key inside an existing
+	// object, leaving every reader of title/date/tags untouched. Raw
+	// render:false pages and stubs get none, which is correct — they have no
+	// published URL to cite.
+	for id, out := range pageOutputs {
+		if m := metaData[id]; m != nil && out != "" {
+			m["url"] = siteCfg.PublicPathForOutput(out)
+		}
+	}
+
 	if err := sitedata.Write(cfg.OutputDir, metaData); err != nil {
 		return result, err
 	}

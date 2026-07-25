@@ -27,6 +27,10 @@ type LoadResult struct {
 type LoadOptions struct {
 	RagDir    string // directory containing rag-{system,config,content}.md
 	OutputDir string // directory containing meta.json/graph.json/search.json (optional)
+	// ContentDir is the configured content directory. Archive paths are
+	// project-root relative, so this is what tells a page id apart from its
+	// containing directory; empty means the "content" default.
+	ContentDir string
 }
 
 // Load reads the RAG archive and any optional generated-site metadata,
@@ -75,18 +79,28 @@ func Load(opts LoadOptions) (LoadResult, error) {
 		bundles = append(bundles, b)
 	}
 
-	// Optional: enrich from generated-site metadata
+	for _, b := range bundles {
+		for _, f := range b.files {
+			// The archive records directory inventories as <file path="assets/">
+			// blocks whose body is a listing of names and sizes. They are not
+			// documents: chunked as prose they answered questions about the site
+			// with a file listing, ranked ahead of real pages, and carried a
+			// fabricated citation URL like "/assets//" and no title.
+			if strings.HasSuffix(f.path, "/") {
+				result.Corpus.DocumentCount--
+				continue
+			}
+			chunks := chunkFile(f.text, f.path, opts.ContentDir)
+			result.Corpus.Chunks = append(result.Corpus.Chunks, chunks...)
+		}
+	}
+
+	// Enrichment runs AFTER chunking. It rewrites chunks, so running it first —
+	// as it used to — iterated an empty slice and did nothing at all.
 	if opts.OutputDir != "" {
 		if err := enrichCorpusWithSiteMeta(&result.Corpus, opts.OutputDir); err != nil {
 			// Non-fatal: log via returned warning but keep the corpus usable
 			result.MalformedArtifact = "meta.json"
-		}
-	}
-
-	for _, b := range bundles {
-		for _, f := range b.files {
-			chunks := chunkFile(f.text, f.path)
-			result.Corpus.Chunks = append(result.Corpus.Chunks, chunks...)
 		}
 	}
 
@@ -229,30 +243,33 @@ type searchIndexEntry struct {
 }
 
 func enrichCorpusWithSiteMeta(c *Corpus, outputDir string) error {
-	// meta.json: {pages:[{id,url,title}]} – apply URL/title back to chunks.
+	// meta.json is a map keyed by page id — {"docs/index": {"title":…, "url":…}}
+	// — which is what internal/sitedata has always written. This used to decode
+	// {"pages":[{id,url,title}]}, a shape the generator never produced; that
+	// unmarshals successfully with Pages nil, so the enrichment silently did
+	// nothing even once it ran in the right order.
 	metaPath := filepath.Join(outputDir, "meta.json")
 	if data, err := os.ReadFile(metaPath); err == nil {
-		var doc struct {
-			Pages []metaEntry `json:"pages"`
-		}
+		var doc map[string]metaEntry
 		if err := json.Unmarshal(data, &doc); err == nil {
-			urlByID := map[string]string{}
-			titleByID := map[string]string{}
-			for _, p := range doc.Pages {
-				if p.ID != "" {
-					urlByID[p.ID] = p.URL
-					titleByID[p.ID] = p.Title
-				}
-			}
 			for i, ch := range c.Chunks {
 				if ch.PageID == "" {
 					continue
 				}
-				if u, ok := urlByID[ch.PageID]; ok && ch.URL == "" {
-					ch.URL = u
+				entry, ok := doc[ch.PageID]
+				if !ok {
+					continue
 				}
-				if t, ok := titleByID[ch.PageID]; ok && ch.Title == "" {
-					ch.Title = t
+				// Authoritative, not a backfill. chunkFile always sets a URL
+				// derived from the source filename, so a "only fill when empty"
+				// merge could never fire — the generator's value has to win, as
+				// it is the only one that knows about slugs and the siteurl
+				// base path.
+				if entry.URL != "" {
+					ch.URL = entry.URL
+				}
+				if entry.Title != "" && ch.Title == "" {
+					ch.Title = entry.Title
 				}
 				c.Chunks[i] = ch
 			}

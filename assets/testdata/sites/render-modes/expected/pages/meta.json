@@ -7,11 +7,13 @@
   "index": {
     "render": true,
     "title": "Home",
+    "url": "/",
     "word_count": 1
   },
   "links": {
     "render": true,
     "title": "Links",
+    "url": "/links/",
     "word_count": 5
   },
   "raw.md": {

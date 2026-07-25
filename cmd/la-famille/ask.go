@@ -131,6 +131,7 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 			Port:         port,
 			RagDir:       ragDir,
 			OutputDir:    outputDir,
+			ContentDir:   cfg.ContentDir,
 			Rebuild:      askFlagBundle.rebuild,
 			NoBrowser:    askFlagBundle.noBrowser,
 			MaxContext:   askFlagBundle.maxCtx,
