@@ -21,8 +21,17 @@ This project is built and maintained primarily by **Jules** (AI assistant) along
 ## Quickstart 🚀
 
 ### Prerequisites
-*   [Go 1.24 or newer](https://go.dev/doc/install). The module declares `go 1.24.0`, so an older toolchain refuses to build it. Check with `go version`.
-*   A clone of this repository. The commands below run the generator from source (`go run ./cmd/la-famille`); there is no published binary or module path to install from yet, so `go install` and `go run <module>@latest` will not work.
+*   **Go Toolchain:** [Go 1.24 or newer](https://go.dev/doc/install) (the project `go.mod` specifies `go 1.24.0` with `toolchain go1.24.3`). Verify your installed version with `go version`.
+*   **Go Installation & Binary Path:** Ensure `go` is in your `PATH`. When installing binaries via Go (e.g. `go install`), binaries are placed in `$(go env GOPATH)/bin` (typically `~/go/bin`). Ensure `$(go env GOPATH)/bin` is added to your shell's `PATH`:
+    ```bash
+    export PATH="$PATH:$(go env GOPATH)/bin"
+    ```
+*   **Source Code:** Clone this repository to your local machine:
+    ```bash
+    git clone https://github.com/drawmeanelephant/la-famille.git
+    cd la-famille
+    ```
+    *Note for users who downloaded a release archive or source tarball instead of cloning:* Extract the source archive, navigate into the extracted root directory, and run the commands below. `go run ./cmd/la-famille` executes directly against the local module tree.
 
 ### Build & Run
 To run the static site generator using the CLI:
