@@ -89,7 +89,7 @@ func TestLoad_MissingArtifactsReportedNotFatal(t *testing.T) {
 
 func TestChunkFileSplitsAtHeadings(t *testing.T) {
 	body := "---\ntitle: T\n---\n# Top\n\nPre-body.\n\n## Section A\n\nA prose here.\n\n## Section B\n\nB prose here.\n\n### Sub\n\nSub prose here.\n"
-	chunks := chunkFile(body, "content/docs/x.md", "")
+	chunks := chunkFile(body, "content/docs/x.md", "", "rag-content.md")
 	if len(chunks) < 3 {
 		t.Fatalf("expected at least 3 chunks, got %d", len(chunks))
 	}
@@ -123,7 +123,7 @@ func TestChunkFileSplitsAtHeadings(t *testing.T) {
 
 func TestChunkFileSingleChunkWhenNoHeadings(t *testing.T) {
 	body := "# No headings here\n\nJust plain prose.\n"
-	chunks := chunkFile(body, "content/docs/y.md", "")
+	chunks := chunkFile(body, "content/docs/y.md", "", "rag-content.md")
 	if len(chunks) != 1 {
 		t.Fatalf("expected 1 chunk, got %d", len(chunks))
 	}

@@ -75,6 +75,7 @@ func Load(opts LoadOptions) (LoadResult, error) {
 			result.MalformedArtifact = name
 			return result, fmt.Errorf("retrieval: parse %s: %w", name, err)
 		}
+		b.name = name
 		result.Corpus.DocumentCount += len(b.files)
 		bundles = append(bundles, b)
 	}
@@ -90,7 +91,7 @@ func Load(opts LoadOptions) (LoadResult, error) {
 				result.Corpus.DocumentCount--
 				continue
 			}
-			chunks := chunkFile(f.text, f.path, opts.ContentDir)
+			chunks := chunkFile(f.text, f.path, opts.ContentDir, b.name)
 			result.Corpus.Chunks = append(result.Corpus.Chunks, chunks...)
 		}
 	}
@@ -119,6 +120,12 @@ func Load(opts LoadOptions) (LoadResult, error) {
 
 // parsedBundle is the in-memory representation of a single RAG file.
 type parsedBundle struct {
+	// name is the archive file the blocks came from (rag-content.md and so
+	// on). Chunks are categorised from this, not from the inner file path:
+	// sourceKind used to be handed "content/index.md" and matched none of its
+	// rag-* prefixes, so every chunk was labelled "content" and the valve that
+	// keeps non-site material out of the corpus never closed.
+	name  string
 	files []parsedFile
 }
 
