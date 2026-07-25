@@ -266,5 +266,95 @@ func (c Config) Validate() error {
 		}
 	}
 
+	return c.validateOutputIsolation()
+}
+
+// validateOutputIsolation rejects an output directory that overlaps an input.
+//
+// A successful build renames the output directory aside, installs the staged
+// tree in its place and deletes the backup. That is safe only while the output
+// directory holds nothing but generated files: point it at the content
+// directory and a single build deletes every source file, reporting success.
+// The overlap is the thing to catch, because by the time the swap runs the
+// source is already gone.
+func (c Config) validateOutputIsolation() error {
+	output := canonicalDir(c.OutputDir)
+	if output == "" {
+		return nil
+	}
+
+	// Checked before the individual inputs: building over the project root
+	// would replace everything, and saying so plainly beats reporting whichever
+	// input happened to be compared first.
+	if root := canonicalDir(c.ProjectRoot); root != "" {
+		if root == output {
+			return fmt.Errorf("OutputDir (%s) is the project root; a build would replace the entire project directory", c.OutputDir)
+		}
+		if isWithin(output, root) {
+			return fmt.Errorf("ProjectRoot (%s) is inside OutputDir (%s); a build would delete it when it replaces the output directory", c.ProjectRoot, c.OutputDir)
+		}
+	}
+
+	inputs := []struct{ name, path string }{
+		{"ContentDir", c.ContentDir},
+		{"AssetDir", c.AssetDir},
+		{"the template directory", filepath.Dir(c.Template)},
+		{"RagDir", c.RagDir},
+	}
+
+	for _, in := range inputs {
+		other := canonicalDir(in.path)
+		if other == "" {
+			continue
+		}
+		switch {
+		case other == output:
+			return fmt.Errorf("OutputDir (%s) is the same directory as %s (%s); a build would replace it and delete its contents", c.OutputDir, in.name, in.path)
+		case isWithin(output, other):
+			// The input lives inside the output directory, so the swap takes
+			// it with the rest of the replaced tree.
+			return fmt.Errorf("%s (%s) is inside OutputDir (%s); a build would delete it when it replaces the output directory", in.name, in.path, c.OutputDir)
+		case isWithin(other, output):
+			// The output lives inside an input. The swap only replaces the
+			// output subtree, so nothing is deleted, but generated files land
+			// among the sources and the next build reads them back as input.
+			return fmt.Errorf("OutputDir (%s) is inside %s (%s); generated files would be written among your sources", c.OutputDir, in.name, in.path)
+		}
+	}
+
+	// Note ProjectRoot deliberately gets no "output inside input" rule: it
+	// contains the output directory in every ordinary layout (public/ inside
+	// .), so that check would reject the default configuration.
 	return nil
+}
+
+// canonicalDir resolves a configured directory for comparison. Symlinks are
+// resolved where the path exists, so two names for one directory are not
+// mistaken for two directories; a path that does not exist yet is still
+// compared lexically rather than skipped.
+func canonicalDir(dir string) string {
+	if strings.TrimSpace(dir) == "" {
+		return ""
+	}
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return filepath.Clean(dir)
+	}
+	if resolved, resolveErr := filepath.EvalSymlinks(abs); resolveErr == nil {
+		return resolved
+	}
+	return abs
+}
+
+// isWithin reports whether target sits inside base. Equal paths are not
+// "within" — the caller reports that case separately.
+func isWithin(base, target string) bool {
+	if base == "" || target == "" || base == target {
+		return false
+	}
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
 }
