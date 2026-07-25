@@ -90,12 +90,9 @@ func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.
 			} else {
 				slug := ""
 				if exists && meta != nil {
+					// GetOutputURL applies IsUsableSlug itself, so the raw
+					// frontmatter value can go straight through.
 					slug = meta.Slug
-					if slug != "" {
-						if !filepath.IsLocal(slug) || strings.Contains(slug, ".") || strings.Contains(slug, string(filepath.Separator)) || strings.Contains(slug, "/") {
-							slug = ""
-						}
-					}
 				}
 
 				currRender := true
