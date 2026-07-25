@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -175,7 +176,15 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			}
 
 			if watchMode {
-				go func() { _ = watcher.Watch(ctx, cfg, nil) }()
+				go func() {
+					// The error was discarded, so a watcher that stopped —
+					// failing to register a directory, say — left the server
+					// running and serving while silently no longer rebuilding
+					// anything. Losing the watch is worth saying out loud.
+					if err := watcher.Watch(ctx, cfg, nil); err != nil && !errors.Is(err, context.Canceled) {
+						slog.Error("File watcher stopped; edits will no longer rebuild the site", "error", err)
+					}
+				}()
 			}
 
 			slog.Info(fmt.Sprintf("Serving %s on http://localhost:%d", dir, port))
