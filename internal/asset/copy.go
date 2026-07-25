@@ -17,6 +17,29 @@ import (
 // explorer's bundle. It mirrors the path in internal/graphexplorer.AssetRel.
 const graphAssetDir = "graph"
 
+// resolveDir returns dir with symlinks resolved, falling back to the cleaned
+// path when it cannot be resolved (it may not exist yet). Paths that are
+// compared with or relativized against each other must all pass through this,
+// or a platform where a parent directory is itself a symlink will produce
+// paths that never match.
+func resolveDir(dir string) string {
+	if dir == "" {
+		return ""
+	}
+	// Absolute first: EvalSymlinks keeps a relative path relative, and a
+	// relative result later made absolute against the working directory would
+	// not have its parents resolved — so a resolved path and an unresolved one
+	// get compared and never match.
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		abs = filepath.Clean(dir)
+	}
+	if resolved, resolveErr := filepath.EvalSymlinks(abs); resolveErr == nil {
+		return resolved
+	}
+	return abs
+}
+
 func CopyAssets(cfg config.Config) error {
 	if cfg.AssetDir == "" {
 		return nil
@@ -39,16 +62,47 @@ func CopyAssets(cfg config.Config) error {
 		return err
 	}
 
-	return filepath.WalkDir(cfg.AssetDir, func(path string, d os.DirEntry, err error) error {
+	// WalkDir lstats its root, so a symlinked asset directory matches the
+	// inner-symlink skip below on the very first callback and the walk ends
+	// having copied nothing — a silently unstyled site. Resolve the root once
+	// so a symlinked asset directory behaves like a real one. Symlinks *inside*
+	// the tree are still skipped.
+	//
+	// Every path compared against the walk root, or made relative to it, has to
+	// be resolved the same way: on macOS /var is itself a symlink to
+	// /private/var, so mixing resolved and unresolved paths silently breaks
+	// both the containment check below and the ignore rules.
+	walkRoot := resolveDir(cfg.AssetDir)
+	outputResolved := resolveDir(cfg.OutputDir)
+	projectRootResolved := cfg.ProjectRoot
+	if projectRootResolved != "" {
+		projectRootResolved = resolveDir(projectRootResolved)
+	}
+
+	// Refuse a resolved root that contains the output directory — `assets`
+	// pointing at the project root, say. Walking it would copy the previous
+	// build, and everything sitting beside it, into the new one and grow
+	// without bound. Failing here beats publishing the whole project.
+	if pathutil.IsSafePath(walkRoot, outputResolved) {
+		return fmt.Errorf("asset directory %q resolves to %q, which contains the output directory; copying it would publish the output into itself", cfg.AssetDir, walkRoot)
+	}
+
+	return filepath.WalkDir(walkRoot, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+
+		// Belt and braces: never descend into the output directory even if the
+		// containment check above was somehow satisfied.
+		if d.IsDir() && path == outputResolved {
+			return filepath.SkipDir
 		}
 
 		if d.Type()&os.ModeSymlink != 0 {
 			slog.Warn("Skipping symlink in assets", "path", path)
 			return nil
 		}
-		relPath, err := filepath.Rel(cfg.AssetDir, path)
+		relPath, err := filepath.Rel(walkRoot, path)
 		if err != nil {
 			return err
 		}
@@ -65,7 +119,10 @@ func CopyAssets(cfg config.Config) error {
 			return nil
 		}
 
-		if IsIgnoredAsset(path, d.IsDir(), relSlash, cfg.ProjectRoot, ignoreRules) {
+		// projectRootResolved, not cfg.ProjectRoot: walk paths are resolved, and
+		// mixing the two makes every path non-local, which silently turns
+		// .gitignore filtering into a no-op and publishes ignored files.
+		if IsIgnoredAsset(path, d.IsDir(), relSlash, projectRootResolved, ignoreRules) {
 			return nil
 		}
 
