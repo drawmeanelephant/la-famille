@@ -441,7 +441,7 @@ func TestCLISiteURLOverride(t *testing.T) {
 	}
 }
 
-func TestInitCommand_CreatesTemplateLayout(t *testing.T) {
+func TestInitCommand_FreshProject(t *testing.T) {
 	tmpDir := t.TempDir()
 	origDir, err := os.Getwd()
 	if err != nil {
@@ -467,6 +467,51 @@ func TestInitCommand_CreatesTemplateLayout(t *testing.T) {
 	tmplPath := filepath.Join("templates", "layout.html")
 	if _, err := os.Stat(tmplPath); os.IsNotExist(err) {
 		t.Errorf("expected templates/layout.html to be created by init")
+	}
+
+	contentDir := "content"
+	if info, err := os.Stat(contentDir); os.IsNotExist(err) || !info.IsDir() {
+		t.Errorf("expected content directory to be created by init")
+	}
+
+	assetDir := "assets"
+	if info, err := os.Stat(assetDir); os.IsNotExist(err) || !info.IsDir() {
+		t.Errorf("expected assets directory to be created by init")
+	}
+}
+
+func TestInitCommand_ExistingConfigRefusalAndForce(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	if err := os.WriteFile("config.yaml", []byte("site_name: Custom Site\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// 1. Existing init without --force should fail
+	cfg := config.DefaultConfig()
+	rootCmd1 := setupRootCmd(cfg)
+	rootCmd1.SetArgs([]string{"init"})
+	if err := rootCmd1.Execute(); err == nil {
+		t.Fatalf("expected init without --force to fail on existing config.yaml, got nil")
+	}
+
+	// 2. Existing init with --force should succeed and backup existing config
+	rootCmd2 := setupRootCmd(cfg)
+	rootCmd2.SetArgs([]string{"init", "--force"})
+	if err := rootCmd2.Execute(); err != nil {
+		t.Fatalf("expected init --force to succeed on existing config.yaml, got: %v", err)
+	}
+
+	if _, err := os.Stat("config.yaml.bak"); os.IsNotExist(err) {
+		t.Errorf("expected config.yaml.bak backup file to exist after init --force")
 	}
 }
 

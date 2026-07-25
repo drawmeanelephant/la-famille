@@ -121,10 +121,11 @@ go run ./cmd/la-famille new <slug-or-filename> [flags]
 *   **Flags:**
     *   `--title`, `-t` (string): Title of the page. Defaults to title-cased filename if omitted.
     *   `--tags` (strings): Comma-separated list or multiple instances of tags.
+    *   `--categories` (strings): Comma-separated list or multiple instances of categories.
     *   `--layout` (string): Layout template name for the page.
     *   `--date` (string): Publication date in `YYYY-MM-DD` format. Defaults to today's date.
     *   `--force`, `-f` (bool): Force overwrite an existing file.
     *   `--content`, `-c` (string): Override target content directory.
 
-*Example:* `go run ./cmd/la-famille new blog/my-first-post --title "My First Post" --tags "tech,go"`
+*Example:* `go run ./cmd/la-famille new blog/my-first-post --title "My First Post" --tags "tech,go" --categories "news"`
 

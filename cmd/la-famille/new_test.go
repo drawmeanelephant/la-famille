@@ -99,6 +99,7 @@ func TestNewCommand_CustomFlags(t *testing.T) {
 		"--content", contentDir,
 		"--title", "Custom Post Title",
 		"--tags", "go,scaffold",
+		"--categories", "news,updates",
 		"--layout", "custom-layout",
 		"--date", "2026-05-20",
 	})
@@ -124,6 +125,9 @@ func TestNewCommand_CustomFlags(t *testing.T) {
 	if !strings.Contains(contentStr, "custom-layout") {
 		t.Errorf("expected custom layout in frontmatter, got:\n%s", contentStr)
 	}
+	if !strings.Contains(contentStr, "categories:") {
+		t.Errorf("expected categories in frontmatter, got:\n%s", contentStr)
+	}
 
 	metaMap, err := content.GatherMetadata(contentDir)
 	if err != nil {
@@ -139,6 +143,9 @@ func TestNewCommand_CustomFlags(t *testing.T) {
 	if len(meta.Tags) != 2 || meta.Tags[0] != "go" || meta.Tags[1] != "scaffold" {
 		t.Errorf("expected tags [go scaffold], got %v", meta.Tags)
 	}
+	if len(meta.Categories) != 2 || meta.Categories[0] != "news" || meta.Categories[1] != "updates" {
+		t.Errorf("expected categories [news updates], got %v", meta.Categories)
+	}
 
 	checkRes, err := checker.Validate(cfg)
 	if err != nil {
@@ -146,6 +153,33 @@ func TestNewCommand_CustomFlags(t *testing.T) {
 	}
 	if checkRes.ErrorCount() > 0 {
 		t.Errorf("expected 0 checker errors for custom scaffolded file, got %d", checkRes.ErrorCount())
+	}
+}
+
+func TestNewCommand_CustomContentDirHint(t *testing.T) {
+	tempDir := t.TempDir()
+	customContentDir := filepath.Join(tempDir, "custom_docs")
+	if err := os.MkdirAll(customContentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+
+	rootCmd := setupRootCmd(cfg)
+	var outBuf, errBuf bytes.Buffer
+	rootCmd.SetOut(&outBuf)
+	rootCmd.SetErr(&errBuf)
+	rootCmd.SetArgs([]string{"new", "guide", "--content", customContentDir})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected new command to succeed with custom content dir, got: %v", err)
+	}
+
+	outStr := outBuf.String()
+	expectedHint := "la-famille check --content " + customContentDir
+	if !strings.Contains(outStr, expectedHint) {
+		t.Errorf("expected stdout to contain check hint with custom content dir %q, got: %s", expectedHint, outStr)
 	}
 }
 
