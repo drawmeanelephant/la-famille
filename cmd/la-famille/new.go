@@ -61,8 +61,14 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 			if !pathutil.IsSafePath(contentDir, targetPath) {
 				return fmt.Errorf("target path %q escapes content directory %q", inputPath, contentDir)
 			}
+			// IsSafePath is lexical: it compares path strings and does not
+			// resolve symlinks. A link inside the content tree therefore passes
+			// it while redirecting the write outside the tree entirely.
+			if err := refuseSymlinkedComponents(contentDir, targetPath); err != nil {
+				return err
+			}
 
-			if _, err := os.Stat(targetPath); err == nil && !newForce {
+			if _, err := os.Lstat(targetPath); err == nil && !newForce {
 				return fmt.Errorf("file already exists: %s (use --force to overwrite)", targetPath)
 			}
 
@@ -98,8 +104,15 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 				return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(targetPath), err)
 			}
 
-			if err := os.WriteFile(targetPath, []byte(content), 0600); err != nil {
-				return fmt.Errorf("failed to write content file %s: %w", targetPath, err)
+			// Re-check containment against the canonical paths now that the
+			// parents exist, so nothing that appeared between the check above
+			// and this write can redirect it.
+			if err := refuseEscapeAfterResolution(contentDir, targetPath); err != nil {
+				return err
+			}
+
+			if err := writeNewContentFile(targetPath, content, newForce); err != nil {
+				return err
 			}
 
 			out := cmd.OutOrStdout()
@@ -135,4 +148,85 @@ func deriveTitle(input string) string {
 		}
 	}
 	return strings.Join(words, " ")
+}
+
+// refuseSymlinkedComponents walks the destination one component at a time and
+// rejects any existing component that is a symlink.
+//
+// pathutil.IsSafePath compares path strings only. A symlinked directory inside
+// the content tree satisfies it while sending the write wherever the link
+// points, so `new link/page` could create a file outside the content root
+// entirely. Components that do not exist yet are fine: MkdirAll creates real
+// directories, never links.
+func refuseSymlinkedComponents(root, target string) error {
+	rel, err := filepath.Rel(root, target)
+	if err != nil {
+		return fmt.Errorf("target path %q escapes content directory %q", target, root)
+	}
+
+	current := root
+	for _, part := range strings.Split(filepath.ToSlash(rel), "/") {
+		if part == "" || part == "." {
+			continue
+		}
+		current = filepath.Join(current, part)
+
+		info, statErr := os.Lstat(current)
+		if statErr != nil {
+			if os.IsNotExist(statErr) {
+				continue
+			}
+			return fmt.Errorf("failed to inspect %s: %w", current, statErr)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing to write through symlink %s: a link inside the content directory can redirect the write outside it", current)
+		}
+	}
+	return nil
+}
+
+// refuseEscapeAfterResolution re-checks containment using canonical paths, so a
+// destination is confirmed inside the content root as it exists on disk rather
+// than as it was spelled on the command line.
+func refuseEscapeAfterResolution(root, target string) error {
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return fmt.Errorf("failed to resolve content directory %s: %w", root, err)
+	}
+	resolvedParent, err := filepath.EvalSymlinks(filepath.Dir(target))
+	if err != nil {
+		return fmt.Errorf("failed to resolve destination directory for %s: %w", target, err)
+	}
+
+	resolvedTarget := filepath.Join(resolvedParent, filepath.Base(target))
+	if !pathutil.IsSafePath(resolvedRoot, resolvedTarget) {
+		return fmt.Errorf("target path %q resolves to %q, outside content directory %q", target, resolvedTarget, resolvedRoot)
+	}
+	return nil
+}
+
+// writeNewContentFile creates the file without following a symlink at the
+// destination. Without O_EXCL a pre-existing link would be followed and the
+// file it points at truncated, which is exactly what --force must not be
+// allowed to mean.
+func writeNewContentFile(target, content string, force bool) error {
+	if force {
+		if info, err := os.Lstat(target); err == nil && info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing to overwrite symlink %s even with --force: it points outside the file you named", target)
+		}
+		if err := os.Remove(target); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to replace %s: %w", target, err)
+		}
+	}
+
+	file, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		return fmt.Errorf("failed to write content file %s: %w", target, err)
+	}
+	defer file.Close()
+
+	if _, err := file.WriteString(content); err != nil {
+		return fmt.Errorf("failed to write content file %s: %w", target, err)
+	}
+	return nil
 }
