@@ -220,3 +220,57 @@ func TestBuild_StubDoesNotOverwriteAnotherStub(t *testing.T) {
 		t.Errorf("ghost/index.html = %q, want it not replaced by the later stub for ghost/index.md", got)
 	}
 }
+
+// TestBuild_AssetDoesNotOverwriteRenderedPage covers the last writer into the
+// output tree that had no ownership check. Assets are copied after the pages
+// are rendered, so an asset whose destination matches a rendered page silently
+// replaced it: the site published the asset bytes while search.json, graph.json
+// and meta.json all still described the page.
+func TestBuild_AssetDoesNotOverwriteRenderedPage(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	assetDir := filepath.Join(tempDir, "assets")
+	templateDir := filepath.Join(tempDir, "templates")
+	outputDir := filepath.Join(tempDir, "public")
+
+	for _, d := range []string{filepath.Join(contentDir, "assets", "help"), filepath.Join(assetDir, "help"), templateDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(templateDir, "layout.html"), []byte("{{.Content}}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Renders to assets/help/index.html.
+	page := []byte("---\ntitle: Help Page\n---\n# AUTHORED_PAGE_CONTENT\n")
+	if err := os.WriteFile(filepath.Join(contentDir, "assets", "help", "index.md"), page, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Copies to the very same place.
+	if err := os.WriteFile(filepath.Join(assetDir, "help", "index.html"), []byte("ASSET_BYTES"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.AssetDir = assetDir
+	cfg.OutputDir = outputDir
+	cfg.Template = filepath.Join(templateDir, "layout.html")
+	cfg.ProjectRoot = tempDir
+
+	_, err := Build(cfg)
+	if err == nil {
+		t.Fatal("expected a collision between an asset and a rendered page to fail the build")
+	}
+	if !strings.Contains(err.Error(), "collision") {
+		t.Errorf("error should name the collision, got: %v", err)
+	}
+
+	// The build stages its output, so a failure must leave nothing published
+	// rather than a tree where the asset won.
+	if body, readErr := os.ReadFile(filepath.Join(outputDir, "assets", "help", "index.html")); readErr == nil {
+		if strings.Contains(string(body), "ASSET_BYTES") {
+			t.Error("the asset was published over the rendered page")
+		}
+	}
+}

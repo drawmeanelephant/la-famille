@@ -40,7 +40,13 @@ func resolveDir(dir string) string {
 	return abs
 }
 
-func CopyAssets(cfg config.Config) error {
+// ClaimOutput reserves an output-relative path for the asset copier. It returns
+// the existing owner and false when another producer has already claimed that
+// path. A nil ClaimOutput disables ownership tracking, which is what the
+// package's own tests want; the generator always supplies one.
+type ClaimOutput func(relOut string) (owner string, ok bool)
+
+func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 	if cfg.AssetDir == "" {
 		return nil
 	}
@@ -134,6 +140,17 @@ func CopyAssets(cfg config.Config) error {
 		if !pathutil.IsSafePath(outDirClean, destPath) {
 			slog.Warn("Static asset sync boundary intervention blocked layout breakout", "path", relPath)
 			return nil
+		}
+
+		// Assets are copied after the pages are rendered, so without an
+		// ownership check an asset silently replaces a page that renders to the
+		// same path — the site publishes the asset bytes while search, graph and
+		// meta all still describe the page.
+		if claim != nil {
+			relOut := "assets/" + relSlash
+			if owner, ok := claim(relOut); !ok {
+				return fmt.Errorf("output path collision: the asset %q and %s both write %q", relSlash, owner, relOut)
+			}
 		}
 
 		// Ensure directory structure is built first

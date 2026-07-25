@@ -29,7 +29,7 @@ func TestCopyAssets(t *testing.T) {
 		OutputDir: outputDir,
 	}
 
-	err := CopyAssets(cfg)
+	err := CopyAssets(cfg, nil)
 	if err != nil {
 		t.Fatalf("CopyAssets failed: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestCopyAssets_EmptyAssetDir(t *testing.T) {
 		AssetDir:  "",
 		OutputDir: t.TempDir(),
 	}
-	err := CopyAssets(cfg)
+	err := CopyAssets(cfg, nil)
 	if err != nil {
 		t.Errorf("Expected nil error for empty AssetDir, got: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestCopyAssets_SkipGoAndGitignore(t *testing.T) {
 		OutputDir: outputDir,
 	}
 
-	err := CopyAssets(cfg)
+	err := CopyAssets(cfg, nil)
 	if err != nil {
 		t.Fatalf("CopyAssets failed: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestCopyAssets_Incremental(t *testing.T) {
 		OutputDir: outputDir,
 	}
 
-	err := CopyAssets(cfg)
+	err := CopyAssets(cfg, nil)
 	if err != nil {
 		t.Fatalf("CopyAssets initial failed: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestCopyAssets_Incremental(t *testing.T) {
 		t.Errorf("Expected mod time %v, got %v", initialTime, destStat1.ModTime())
 	}
 
-	err = CopyAssets(cfg)
+	err = CopyAssets(cfg, nil)
 	if err != nil {
 		t.Fatalf("CopyAssets unchanged failed: %v", err)
 	}
@@ -139,7 +139,7 @@ func TestCopyAssets_Incremental(t *testing.T) {
 	updatedTime := time.Date(2023, 1, 2, 12, 0, 0, 0, time.UTC)
 	_ = os.Chtimes(mockAssetPath, updatedTime, updatedTime)
 
-	err = CopyAssets(cfg)
+	err = CopyAssets(cfg, nil)
 	if err != nil {
 		t.Fatalf("CopyAssets updated failed: %v", err)
 	}
@@ -183,7 +183,7 @@ node_modules/
 		OutputDir:   outputDir,
 	}
 
-	err := CopyAssets(cfg)
+	err := CopyAssets(cfg, nil)
 	if err != nil {
 		t.Fatalf("CopyAssets with native ignores failed: %v", err)
 	}
@@ -231,7 +231,7 @@ func TestCopyAssets_GitignorePathsAreProjectRelative(t *testing.T) {
 		ProjectRoot: tempDir,
 		AssetDir:    assetDir,
 		OutputDir:   outputDir,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("CopyAssets failed: %v", err)
 	}
@@ -316,7 +316,7 @@ func TestCopyAssets_IgnoreDirectoryPruning(t *testing.T) {
 		OutputDir:   outputDir,
 	}
 
-	err := CopyAssets(cfg)
+	err := CopyAssets(cfg, nil)
 	if err != nil {
 		t.Fatalf("CopyAssets failed: %v", err)
 	}
@@ -348,7 +348,7 @@ func TestCopyAssets_SkipSymlink(t *testing.T) {
 		OutputDir: outputDir,
 	}
 
-	err = CopyAssets(cfg)
+	err = CopyAssets(cfg, nil)
 	if err != nil {
 		t.Fatalf("CopyAssets failed: %v", err)
 	}

@@ -525,7 +525,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	}
 
 	// 4. Verbatim Asset Copy Step
-	if err := asset.CopyAssets(cfg); err != nil {
+	if err := asset.CopyAssets(cfg, claims.assetClaimer()); err != nil {
 		return result, err
 	}
 
@@ -651,6 +651,19 @@ func (c *outputClaims) claim(source, relOut string) (outputOwner, bool) {
 // stubClaimer adapts the registry to the reservation callback internal/stub
 // uses. Paths are claimed by their output-relative form, so the output
 // directory itself is not needed here.
+// assetClaimer lets the asset copier reserve its destinations in the same
+// registry the pages use. Assets are copied after rendering, so without this an
+// asset quietly replaces a page that renders to the same path.
+func (c *outputClaims) assetClaimer() asset.ClaimOutput {
+	return func(relOut string) (string, bool) {
+		previous, ok := c.claim(fmt.Sprintf("the asset %q", relOut), relOut)
+		if ok {
+			return "", true
+		}
+		return previous.source, false
+	}
+}
+
 func (c *outputClaims) stubClaimer() stub.ClaimOutput {
 	return func(missingRelPath, relOut string) (string, bool) {
 		source := fmt.Sprintf("the generated stub for %q", missingRelPath)
