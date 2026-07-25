@@ -302,9 +302,23 @@ func (c Config) validateOutputIsolation() error {
 		{"RagDir", c.RagDir},
 	}
 
+	root := canonicalDir(c.ProjectRoot)
+
 	for _, in := range inputs {
 		other := canonicalDir(in.path)
 		if other == "" {
+			continue
+		}
+		// An input that IS the project root contains the output directory in
+		// every ordinary layout, exactly as ProjectRoot itself does: a flat
+		// site with content_dir "." and its markdown at the repo root, or a
+		// single layout.html beside config.yaml, whose template directory is
+		// therefore ".". Applying the "output inside an input" rule to those
+		// rejected working sites outright.
+		if other == root {
+			if other == output {
+				return fmt.Errorf("OutputDir (%s) is the same directory as %s (%s); a build would replace it and delete its contents", c.OutputDir, in.name, in.path)
+			}
 			continue
 		}
 		switch {
