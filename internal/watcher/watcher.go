@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -40,11 +39,57 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 		}
 	}()
 
-	// Rebuilds run on the timer's own goroutine and Stop is a no-op once the
-	// timer has fired, so an event arriving mid-build schedules a second pass
-	// that would otherwise overlap the first. Concurrent builds race over the
-	// output directory swap and one of them loses its rendered output.
-	var buildMu sync.Mutex
+	// Timer.Stop is a no-op once the timer has fired, so debouncing alone
+	// cannot cancel a pass that is already underway: every further event
+	// scheduled another AfterFunc, and a burst arriving around a build boundary
+	// produced several rebuilds where one was wanted.
+	//
+	// The timer therefore only signals, and a single builder goroutine does the
+	// work. The channel holds one slot: signals raised while a build is running
+	// collapse into exactly one follow-up pass, which is enough to pick up
+	// every change that landed during the build. One goroutine also means two
+	// builds can never overlap and race over the output directory swap.
+	trigger := make(chan struct{}, 1)
+	buildDone := make(chan struct{})
+
+	runBuild := func() {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		slog.Info("Executing pipeline rebuild...")
+		start := time.Now()
+		res, err := build(cfg)
+		if err != nil {
+			if onBuild != nil {
+				onBuild(res)
+			}
+			BroadcastReload()
+			slog.Error("Pipeline compilation failed", "error", err)
+			return
+		}
+		slog.Info("Rebuild complete", "duration", time.Since(start))
+		if onBuild != nil {
+			onBuild(res)
+		}
+		BroadcastReload()
+	}
+
+	go func() {
+		defer close(buildDone)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-trigger:
+				runBuild()
+			}
+		}
+	}()
+	// Let the builder finish the pass it is on before the watcher returns,
+	// so a cancelled watch cannot leave a half-written output directory.
+	defer func() { <-buildDone }()
 
 	// Orchestrate directories to monitor
 	dirsToWatch := []string{cfg.ContentDir}
@@ -131,27 +176,11 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 				}
 
 				buildTimer = time.AfterFunc(debounce, func() {
-					buildMu.Lock()
-					defer buildMu.Unlock()
+					// Non-blocking: if a pass is already queued it will pick up
+					// this change too, so there is nothing to add.
 					select {
-					case <-ctx.Done():
-						return
+					case trigger <- struct{}{}:
 					default:
-					}
-					slog.Info("Executing pipeline rebuild...")
-					start := time.Now()
-					if res, err := build(cfg); err != nil {
-						if onBuild != nil {
-							onBuild(res)
-						}
-						BroadcastReload()
-						slog.Error("Pipeline compilation failed", "error", err)
-					} else {
-						slog.Info("Rebuild complete", "duration", time.Since(start))
-						if onBuild != nil {
-							onBuild(res)
-						}
-						BroadcastReload()
 					}
 				})
 			}
