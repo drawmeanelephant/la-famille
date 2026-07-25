@@ -12,8 +12,11 @@ Welcome to La Famille! This guide will walk you through the process of setting u
 
 La Famille is written in Go. Before you can build or run the project, you need to have Go installed on your system.
 
-*   **Install Go:** Head over to the official [Go Installation Guide](https://go.dev/doc/install) and download the appropriate installer for your operating system.
-*   **Verify Installation:** Once installed, open your terminal and run `go version` to ensure it is correctly installed and in your PATH.
+*   **Install Go:** Head over to the official [Go Installation Guide](https://go.dev/doc/install) and download Go 1.24 or newer (the project requires `go 1.24.0` / toolchain `go1.24.3`).
+*   **Verify Installation & PATH:** Open your terminal and run `go version` to ensure it is correctly installed. Additionally, ensure your Go binary directory (`GOPATH/bin`) is included in your shell's `PATH`:
+    ```bash
+    export PATH="$PATH:$(go env GOPATH)/bin"
+    ```
 
 ## 2. Clone the Repository
 
