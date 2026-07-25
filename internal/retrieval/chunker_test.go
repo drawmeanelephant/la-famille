@@ -9,7 +9,7 @@ import (
 
 func TestChunkFileRespectsRenderFalse(t *testing.T) {
 	body := "---\ntitle: Hidden\nrender: false\n---\n# Hidden\n\nThis page should not appear in the corpus.\n"
-	if got := chunkFile(body, "content/_draft.md", ""); len(got) != 0 {
+	if got := chunkFile(body, "content/_draft.md", "", "rag-content.md"); len(got) != 0 {
 		t.Fatalf("render:false must yield zero chunks, got %d: %+v", len(got), got)
 	}
 }
@@ -19,14 +19,14 @@ func TestChunkFileRespectsRenderFalse(t *testing.T) {
 // commonly produce for booleans.
 func TestChunkFileRespectsRenderFalseQuoted(t *testing.T) {
 	body := "---\ntitle: Hidden\nrender: \"false\"\n---\n# Hidden\n\nThis page should not appear in the corpus.\n"
-	if got := chunkFile(body, "content/h.md", ""); len(got) != 0 {
+	if got := chunkFile(body, "content/h.md", "", "rag-content.md"); len(got) != 0 {
 		t.Fatalf("render:\"false\" must yield zero chunks, got %d", len(got))
 	}
 }
 
 func TestChunkFileRenderDefaultsTrue(t *testing.T) {
 	body := "---\ntitle: Public\n---\n# Public\n\nThis page should appear.\n"
-	got := chunkFile(body, "content/x.md", "")
+	got := chunkFile(body, "content/x.md", "", "rag-content.md")
 	if len(got) != 1 {
 		t.Fatalf("missing render key should treat page as renderable, got %d chunks", len(got))
 	}
@@ -37,7 +37,7 @@ func TestChunkFileRenderDefaultsTrue(t *testing.T) {
 
 func TestChunkFileRenderTruthyForm(t *testing.T) {
 	body := "---\ntitle: Public\nrender: \"true\"\n---\n# Public\n\nText.\n"
-	got := chunkFile(body, "content/x.md", "")
+	got := chunkFile(body, "content/x.md", "", "rag-content.md")
 	if len(got) != 1 {
 		t.Fatalf("render:true should yield 1 chunk, got %d", len(got))
 	}
@@ -45,7 +45,7 @@ func TestChunkFileRenderTruthyForm(t *testing.T) {
 
 func TestChunkFileIDsAreSortedDeterministically(t *testing.T) {
 	body := "---\ntitle: Multi\n---\n# Multi\n\n## Alpha\n\nfoo.\n\n## Beta\n\nbar.\n\n## Gamma\n\nbaz.\n"
-	chunks := chunkFile(body, "content/multi.md", "")
+	chunks := chunkFile(body, "content/multi.md", "", "rag-content.md")
 	if len(chunks) < 3 {
 		t.Fatalf("expected at least 3 chunks, got %d", len(chunks))
 	}

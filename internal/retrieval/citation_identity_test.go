@@ -163,3 +163,69 @@ Real prose that should be indexed.
 		t.Errorf("DocumentCount = %d, want 1 (the listing is not a document)", res.Corpus.DocumentCount)
 	}
 }
+
+// TestOnlySiteContentEntersTheCorpus covers the valve that never closed.
+// sourceKind was handed the inner file path — "internal/foo.go" — which matches
+// none of its rag-* prefixes, so every chunk came back labelled "content" and
+// rag-system.md and rag-config.md were indexed alongside the site. The
+// assistant could then answer questions from the repository's Go source,
+// workflows and internal notes, and cite them as if they were pages.
+func TestOnlySiteContentEntersTheCorpus(t *testing.T) {
+	root := t.TempDir()
+	ragDir := filepath.Join(root, "rag-archive")
+	if err := os.MkdirAll(ragDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	write := func(name, body string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(ragDir, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	write("rag-content.md", `<file path="content/index.md">
+<content>
+---
+title: Home
+---
+# Home
+The vacation policy grants twenty days.
+</content>
+</file>
+`)
+	write("rag-system.md", `<file path="internal/generator/generator.go">
+<content>
+package generator
+
+// SECRET_INTERNAL_MARKER describes the vacation policy of the build pipeline.
+func Build() {}
+</content>
+</file>
+`)
+	write("rag-config.md", `<file path="internal/config/config.go">
+<content>
+package config
+
+// ANOTHER_INTERNAL_MARKER about vacation policy defaults.
+</content>
+</file>
+`)
+
+	res, err := Load(LoadOptions{RagDir: ragDir})
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+
+	for _, c := range res.Corpus.Chunks {
+		if strings.Contains(c.Text, "SECRET_INTERNAL_MARKER") || strings.Contains(c.Text, "ANOTHER_INTERNAL_MARKER") {
+			t.Errorf("repository material entered the corpus: source=%q kind=%q", c.SourcePath, c.SourceKind)
+		}
+		if c.SourceKind != "rag-content" {
+			t.Errorf("chunk %q has kind %q; only site content should be indexed", c.ID, c.SourceKind)
+		}
+	}
+	if len(res.Corpus.Chunks) == 0 {
+		t.Fatal("the site's own page should still be indexed")
+	}
+}

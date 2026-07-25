@@ -30,10 +30,16 @@ var pageHeadingRE = regexp.MustCompile(`(?m)^(#{2,4})\s+(.+?)\s*#*\s*$`)
 // `render: false` in frontmatter is documented as "exclude from the
 // published site", which means "exclude from the assistant corpus"
 // — same intent. We treat it as out-of-scope and return nil.
-func chunkFile(text, sourcePath, contentDir string) []Chunk {
+func chunkFile(text, sourcePath, contentDir, bundleName string) []Chunk {
 	pageID := derivePageID(sourcePath, contentDir)
 	renderedURL := pageIDToURL(pageID)
-	kind := sourceKind(sourcePath)
+	kind := sourceKind(bundleName)
+	if !kindIsSiteContent(kind) {
+		// rag-system and rag-config carry Go source, workflows and internal
+		// notes. "Ask this site" means the site: indexing them let the
+		// assistant answer from the repository's own plumbing and cite it.
+		return nil
+	}
 	title, body, render := stripFrontmatter(text)
 
 	if !render {
@@ -211,6 +217,12 @@ func pageIDToURL(id string) string {
 		return "/"
 	}
 	return "/" + strings.TrimLeft(id, "/") + "/"
+}
+
+// kindIsSiteContent reports whether a bundle holds the published site rather
+// than the repository around it. Only rag-content.md does.
+func kindIsSiteContent(kind string) bool {
+	return kind == "rag-content"
 }
 
 // sourceKind categorises a RAG bundle path so the corpus can later reject
