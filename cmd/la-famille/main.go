@@ -64,7 +64,20 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			if res.CacheHit {
 				cacheStatus = "hit"
 			}
-			slog.Info("Build complete", "pages", res.PageCount, "duration", res.Duration, "cache", cacheStatus)
+			// Content warnings are collected into BuildResult and cached, but
+			// nothing reported them: a page whose frontmatter failed to parse
+			// was published with its metadata cleared and its YAML showing as
+			// body text, and the build said only "Build complete". On a cache
+			// hit not even the per-file parse warning was re-emitted, so the
+			// problem became invisible after the first run.
+			for _, w := range res.Warnings {
+				slog.Warn("Content warning", "detail", w)
+			}
+			slog.Info("Build complete", "pages", res.PageCount, "duration", res.Duration,
+				"cache", cacheStatus, "warnings", len(res.Warnings))
+			if len(res.Warnings) > 0 {
+				slog.Info("Run `la-famille check` to see these as validation errors")
+			}
 			return nil
 		},
 	}

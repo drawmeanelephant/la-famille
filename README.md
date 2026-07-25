@@ -21,7 +21,8 @@ This project is built and maintained primarily by **Jules** (AI assistant) along
 ## Quickstart 🚀
 
 ### Prerequisites
-*   [Go](https://go.dev/doc/install) installed on your machine.
+*   [Go 1.24 or newer](https://go.dev/doc/install). The module declares `go 1.24.0`, so an older toolchain refuses to build it. Check with `go version`.
+*   A clone of this repository. The commands below run the generator from source (`go run ./cmd/la-famille`); there is no published binary or module path to install from yet, so `go install` and `go run <module>@latest` will not work.
 
 ### Build & Run
 To run the static site generator using the CLI:

@@ -358,3 +358,42 @@ func TestUsableConfigsStillBuild(t *testing.T) {
 		}
 	})
 }
+
+// TestBuildReportsContentWarnings covers a page whose frontmatter fails to
+// parse. The build treats the whole file as Markdown, so the page is published
+// with its metadata cleared and its YAML visible as body text — and `check`
+// calls the same file an error. That divergence is defensible, but the build
+// used to report only "Build complete", and on a cache hit not even the
+// per-file parse warning was re-emitted, so nothing told the author.
+func TestBuildReportsContentWarnings(t *testing.T) {
+	exe := buildGateBinary(t)
+	site := newGateSite(t, exe, "")
+
+	broken := "---\ntitle: [unclosed\nbroken yaml here\n---\n# Broken\nBody.\n"
+	if err := os.WriteFile(filepath.Join(site.dir, "content", "broken.md"), []byte(broken), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	code, out := site.run(t, "build")
+	if code != 0 {
+		t.Fatalf("build exited %d; malformed frontmatter is a warning, not a failure:\n%s", code, out)
+	}
+	if !strings.Contains(out, "warnings=1") {
+		t.Errorf("the build summary must report the warning count:\n%s", out)
+	}
+	if !strings.Contains(out, "check") {
+		t.Errorf("the build should point at `check` for the details:\n%s", out)
+	}
+
+	// The second build is served from cache; the warning must survive that.
+	code, out = site.run(t, "build")
+	if code != 0 {
+		t.Fatalf("cached build exited %d:\n%s", code, out)
+	}
+	if !strings.Contains(out, "cache=hit") {
+		t.Fatalf("expected the second build to hit the cache:\n%s", out)
+	}
+	if !strings.Contains(out, "warnings=1") {
+		t.Errorf("a cache hit must still report the warning, or it becomes invisible after the first run:\n%s", out)
+	}
+}
