@@ -2,11 +2,13 @@
   "about": {
     "render": true,
     "title": "About",
+    "url": "/about/",
     "word_count": 3
   },
   "index": {
     "render": true,
     "title": "Home",
+    "url": "/",
     "word_count": 3
   }
 }

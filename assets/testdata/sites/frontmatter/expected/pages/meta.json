@@ -3,6 +3,7 @@
     "author": "Bob",
     "render": true,
     "title": "fallback-title.md",
+    "url": "/fallback-title/",
     "word_count": 2
   },
   "post": {
@@ -14,6 +15,7 @@
       "test"
     ],
     "title": "My Post",
+    "url": "/post/",
     "word_count": 2
   }
 }

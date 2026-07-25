@@ -40,6 +40,7 @@ type Config struct {
 	Model        string
 	RagDir       string
 	OutputDir    string
+	ContentDir   string
 	Rebuild      bool
 	Verbose      bool
 	NoBrowser    bool
@@ -110,7 +111,7 @@ func NewServer(cfg Config) (*Server, error) {
 		return nil, err
 	}
 
-	loadOpts := retrieval.LoadOptions{RagDir: cfg.RagDir, OutputDir: cfg.OutputDir}
+	loadOpts := retrieval.LoadOptions{RagDir: cfg.RagDir, OutputDir: cfg.OutputDir, ContentDir: cfg.ContentDir}
 	if cfg.Rebuild {
 		loadOpts.RagDir = cfg.RagDir // future: could call ragexport.RunExport here
 	}

@@ -2,11 +2,13 @@
   "index": {
     "render": true,
     "title": "index.md",
+    "url": "/",
     "word_count": 15
   },
   "other": {
     "render": true,
     "title": "other.md",
+    "url": "/other/",
     "word_count": 11
   }
 }

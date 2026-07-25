@@ -2,21 +2,25 @@
   "a": {
     "render": true,
     "title": "a.md",
+    "url": "/a/",
     "word_count": 3
   },
   "b": {
     "render": true,
     "title": "b.md",
+    "url": "/b/",
     "word_count": 2
   },
   "c": {
     "render": true,
     "title": "c.md",
+    "url": "/c/",
     "word_count": 2
   },
   "index": {
     "render": true,
     "title": "index.md",
+    "url": "/",
     "word_count": 6
   }
 }
