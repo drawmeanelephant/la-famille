@@ -2,39 +2,35 @@
 
 ## Part 1: Component Identification
 
-*   `internal/generator`: Orchestrates the static site generation process (parsing, building graphs, rendering HTML) and manages the build cache.
-*   `internal/render`: Handles parsing and execution of HTML templates, utilizing a double-checked locking mechanism for safe concurrent template compilation.
-*   `internal/transform`: Parses and modifies Markdown ASTs (using Goldmark) to rewrite relative file links to final HTML URLs and builds the backlink/dependency graph.
-*   `internal/asset`: Manages copying static assets to the output directory, securely enforcing file scope and honoring `.gitignore` rules locally.
-*   `internal/search`: Generates clean text snippets, heading arrays, and minified JSON representations for client-side search indexing.
-*   `internal/taxonomy`: Processes taxonomy structures (tags and categories) from frontmatter, generating localized taxonomy pages and search indices.
-*   `internal/graph`: Provides a lightweight data structure to store nodes and edges, modeling the internal link network of the content.
-*   `internal/ragexport`: Packages the repository markdown contents into an optimized text format suitable for Large Language Model Retrieval-Augmented Generation (RAG).
-*   `internal/config`: Loads, parses, and validates the global site configuration from YAML or JSON.
-*   `internal/content`: Discovers and parses Markdown files, extracting both raw frontmatter data and body content, normalizing taxonomy lists.
-*   `internal/stub`: Generates placeholder markdown files for links that point to non-existent internal targets based on the backlink graph.
-*   `internal/page`: Defines structural data models representing content views passed into HTML templates for rendering.
-*   `internal/sitedata`: Aggregates dynamic JSON files and generates `sitemap.xml` files for web crawlers.
-*   `internal/markdown`: Configures and initializes the customized Goldmark parser (with various syntax extensions) used across the project.
-*   `internal/git`: Provides basic filesystem-level Git utilities (e.g. checking local branch names or finding remotes) without executing the git binary.
-*   `internal/github`: Integrates with the GitHub API to list PRs, fetch commit check runs, and fetch remote repository states for sync operations.
-*   `internal/watcher`: Implements live-reloading logic by monitoring the filesystem for changes and broadcasting Server-Sent Events to connected browsers.
+- **`internal/generator`**: Build orchestration, coordinating content parsing, rendering, taxonomy generation, search index building, and RSS feed generation.
+- **`internal/render`**: HTML template parsing, caching, and rendering using standard `html/template`. Contains logic for WatchMode live-reloading injection.
+- **`internal/transform`**: Markdown link transformation (AST manipulation), URL generation, and emoji kitchen logic.
+- **`internal/asset`**: Static asset copying with local `.gitignore` pattern matching to exclude specific files from the output.
+- **`internal/search`**: Extraction of snippets and headings from Markdown, stripping HTML tags, and generating minified JSON for client-side search.
+- **`internal/taxonomy`**: Extraction and grouping of taxonomy terms (tags, categories) from content metadata.
+- **`internal/graph`**: Constructing directed graphs of content relationships (backlinks), writing adjacency lists for the graph explorer UI.
+- **`internal/ragexport`**: Exporting site content into clean, aggregated Markdown formats suitable for RAG (Retrieval-Augmented Generation).
+- **`internal/config`**: Configuration loading and validation, providing defaults for site-wide settings.
+- **`internal/content`**: Parsing Markdown files, extracting YAML frontmatter, and handling file metadata.
+- **`internal/stub`**: Generating missing or stub files (e.g., taxonomy term pages) dynamically.
+- **`internal/page`**: Template models, preparing data structures passed to HTML templates during rendering.
+- **`internal/sitedata`**: Writing site-wide metadata and discovery files like sitemaps.
+- **`internal/markdown`**: Goldmark initialization and Markdown-to-HTML conversion configuration.
+- **`internal/git`**: Local git repository status checks.
+- **`internal/github`**: GitHub API interactions, syncing data and checking PR statuses.
+- **`internal/watcher`**: File system watching for development mode and SSE (Server-Sent Events) based live-reloading.
 
 ## Part 2: Micro-Improvements
 
-Here are 5 high-ROI micro-improvements that provide localized enhancements focused on memory efficiency, deterministic execution, and improved logging context.
+### 1. Optimizing search heading extraction pre-allocation (`internal/search/search.go`)
+In `ExtractHeadings` (`internal/search/search.go`), the `headings` slice is appended to inside a loop that iterates over all lines in the file. Since the number of headings is typically a fraction of the total lines, pre-allocating this slice with a reasonable heuristic (e.g., `make([]string, 0, len(lines)/10)` or a small constant) reduces dynamic array resizing and GC pressure during the build phase.
 
-1.  **Avoid Unnecessary Slice Reallocations by Pre-allocating Capacity:**
-    In `internal/checker/checker.go` and `internal/generator/generator.go`, the loops that extract map keys to sort deterministically use `append` starting with a zero-length slice. Since the map size is known (`len(fileMap)`), allocating the exact capacity (`keys := make([]string, len(fileMap))`) and using index assignment avoids reallocation overhead.
+### 2. Struct memory packing in search index structs (`internal/retrieval/loader.go` & `internal/search/search.go`)
+Structures like `searchIndexEntry` and `search.Item` map to JSON output and currently have fields like `Title string`, `URL string`, `Tags []string`, etc. While Go aligns these sequentially, reviewing struct definitions across the internal packages (like `retrieval/loader.go`'s `metaEntry`) to ensure 8-byte primitives (like `int` or `float64`) are grouped tightly together rather than interleaved with boolean flags or smaller types can save padding overhead across thousands of indexed documents.
 
-2.  **Struct Field Alignment for Better Memory Packing:**
-    In `internal/content/metadata.go`, the `FileMeta` struct could be optimized for 64-bit alignment by reordering fields. Grouping slices (e.g., `Tags`, `Categories`, `Warnings`), pointers (`Render`), strings, and other types sequentially can reduce memory padding and footprint, especially when caching many files.
+### 3. Refactoring taxonomy items grouping array scans to map lookups (`internal/taxonomy/taxonomy.go`)
+When collecting unique taxonomy items (like tags or categories) during the generation phase, the current implementation iterates to ensure uniqueness before appending (`if cat != "" && !taxonomySeen[cat] { ... taxonomyTerms = append(...) }`). By relying entirely on map sets and converting them to slices once at the end, we can slightly reduce complexity and potential linear search debt when combining taxonomy paths.
 
-3.  **Refactor Linear Slice Scans to Map Lookups:**
-    In `internal/transform/link_transformer.go`, checking if a file is already a recorded parent for missing links involves a linear slice scan (`for _, p := range parents`). Switching the internal structure of `MissingFiles` to `map[string]map[string]struct{}` would convert this to an O(1) map lookup.
+### 4. Better context wrapping for path errors in build generation (`internal/generator/generator.go`)
+Many path resolution errors in the output directory logic use `fmt.Errorf("output path collision: %s and %s...", ...)`. While some use `%w` for `err` wrapping, others return raw strings. Wrapping all nested filesystem errors (like `os.MkdirAll` or `os.WriteFile` errors in `generator.go`) explicitly with `%w` using contextual messages (e.g. `fmt.Errorf("failed to create output dir %q: %w", filepath.Dir(outPath), err)`) will drastically improve build debugging.
 
-4.  **Improve Error Wrapping Context with `%w`:**
-    Several error return paths (such as reading the cache in `internal/generator/cache.go`) return raw errors or strings using `fmt.Errorf` without `%w`. Wrapping the root errors with `%w` provides a better error trace for debugging build or initialization failures.
-
-5.  **Expand `strings.Builder` Pre-allocation Strategy:**
-    In `internal/search/search.go`, `ExtractSnippet` utilizes `sb.Grow(len(s))` nicely to avoid intermediate string allocations. This pattern should be extended to other string-heavy functions like XML generation in `internal/discovery/write.go` and link processing in `internal/transform/link_transformer.go`.
