@@ -72,6 +72,11 @@ func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
 		}, debounce)
 	}()
 	time.Sleep(2 * debounce)
+	// Creating the directory is itself an event on the already-watched asset
+	// directory, so reaching the rebuild below does not on its own prove that
+	// the new directory became watched -- disabling dynamic tracking entirely
+	// leaves this test passing. TestWatchTracksNestedNewDirectories is what
+	// pins that behaviour; keep it in mind before trusting this one for it.
 	nested := filepath.Join(cfg.AssetDir, "new-theme")
 	if err := os.Mkdir(nested, 0o755); err != nil {
 		t.Fatal(err)
@@ -85,8 +90,23 @@ func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
 		t.Fatal("watch did not rebuild for a file in a newly-created directory")
 	}
 	time.Sleep(2 * debounce)
-	// A burst of events should result in one debounced build, not one per event.
-	for i := 0; i < 4; i++ {
+	afterFirstBurst := builds.Load()
+
+	// A burst of edits must not produce one build per event.
+	//
+	// The exact number is deliberately not pinned. fsnotify reports a single
+	// write as more than one event, and how many of them land inside one
+	// debounce window is a property of the platform and of the machine's load,
+	// not of this package: four writes to one file arrive as four events through
+	// kqueue and seven through inotify. A burst whose events straddle a window
+	// boundary then builds twice, correctly -- debouncing promises a build once
+	// the changes go quiet, not one build per burst. Asserting an exact total
+	// made this test fail on a loaded CI runner for behaviour that is right.
+	//
+	// TestWatchCoalescesChangesDuringABuild pins the coalescing count exactly,
+	// by gating on build entry instead of on elapsed time.
+	const writes = 4
+	for i := 0; i < writes; i++ {
 		if err := os.WriteFile(filepath.Join(cfg.ContentDir, "page.md"), []byte(strings.Repeat("x", i+1)), 0o600); err != nil {
 			t.Fatal(err)
 		}
@@ -97,8 +117,8 @@ func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
 		t.Fatal("watch did not rebuild after content changes")
 	}
 	time.Sleep(2 * debounce)
-	if got := builds.Load(); got != 2 {
-		t.Fatalf("debounce produced %d builds for two change bursts, want 2", got)
+	if got := builds.Load() - afterFirstBurst; got < 1 || got >= writes {
+		t.Fatalf("a burst of %d edits produced %d builds, want at least one and fewer than one per edit", writes, got)
 	}
 	cancel()
 	<-done
