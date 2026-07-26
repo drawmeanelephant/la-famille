@@ -147,6 +147,7 @@ func initialModel(cfg config.Config) model {
 			{"Diagnostics"},
 			{"RAG Export"},
 			{"Ask This Site"},
+			{"Just Raoul"},
 			{"Help"},
 		},
 		menuOpen: true,
@@ -968,25 +969,61 @@ func (m model) View() string {
 	return "Unknown screen"
 }
 
+var raoulFrames = []string{
+	`          .---.
+       .-( o o )-.
+        \   ^   /
+      .--\_-_/--.
+     /  /  |  \  \
+    /  /   |   \  \
+       /  / \  \
+      /__/   \__\`,
+	`          .---.
+      .--( o o )--.
+       \    ^    /
+     .---\_-_/---.
+    / \   / | \   / \
+   /   \ /  |  \ /   \
+        \  |  /
+       __\_|_/__`,
+	`         .---.
+      .-( - o )-.
+       \   ^   /
+    .---\_-_/---.
+   /  /  / | \  \  \
+  /  /  /  |  \  \  \
+      /   |   \
+     /___/ \___\`,
+	`          .---.
+       .-( o o )-.
+        \   ^   /
+      .--\_-_/--.
+     /   / | \   \
+    /   /  |  \   \
+       /  |  \
+      /__/ \__\`,
+	`         .---.
+      .--( o o )--.
+       \    ^    /
+     .---\_-_/---.
+    / \  /  |  \  / \
+   /   \/   |   \/   \
+        \  |  /
+       __\_|_/__`,
+	`          .---.
+       .-( o - )-.
+        \   ^   /
+    .----\_-_/----.
+   /  /   / | \   \  \
+  /  /   /  |  \   \  \
+      /   |   \
+     /___/ \___\`,
+}
+
 func staticRaoul() string {
-	return `       .---.
-      ( o o )
-       \_-_/
-      / | | \
-     / / \ \ \`
+	return raoulFrames[0]
 }
 
 func animatedRaoul(frame int) string {
-	if frame == 0 {
-		return `       .---.
-      ( o o )
-       \_-_/
-      / | | \
-     / / \ \ \`
-	}
-	return `       .---.
-      ( - - )
-       \_-_/
-      \ \ / /
-       \ | | /`
+	return raoulFrames[frame%len(raoulFrames)]
 }

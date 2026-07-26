@@ -84,7 +84,7 @@ The main menu allows you to navigate through the core features of the applicatio
 
 <div class="card bg-base-200 shadow-sm border border-base-300">
   <div class="card-body p-4">
-    <h3 class="card-title text-lg mb-2">6. Just Raoul</h3>
+    <h3 class="card-title text-lg mb-2">7. Just Raoul</h3>
     <p class="text-sm">Displays an animation of the project mascot.</p>
     <ul class="text-sm list-disc pl-4 mt-2">
       <li>This option simply shows a screen featuring an ASCII animation of Jules, the project mascot.</li>

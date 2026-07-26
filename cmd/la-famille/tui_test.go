@@ -469,6 +469,38 @@ func TestTUICommandMenuToggleWatch(t *testing.T) {
 	}
 }
 
+func TestTUICommandMenuJustRaoul(t *testing.T) {
+	m := initialModel(config.Config{})
+	for i, choice := range m.choices {
+		if choice.label == "Just Raoul" {
+			m.cursor = i
+			break
+		}
+	}
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = newModel.(model)
+	if m.screen != screenRaoul {
+		t.Fatalf("screen = %v, want mascot screen", m.screen)
+	}
+	if cmd == nil {
+		t.Fatal("selecting Just Raoul should schedule animation ticks")
+	}
+}
+
+func TestAnimatedRaoulHasDistinctFrames(t *testing.T) {
+	seen := make(map[string]bool)
+	for i := range raoulFrames {
+		seen[animatedRaoul(i)] = true
+	}
+	if len(seen) < 4 {
+		t.Fatalf("animation has %d distinct frames, want at least 4", len(seen))
+	}
+	if animatedRaoul(len(raoulFrames)) != animatedRaoul(0) {
+		t.Fatal("animation should wrap back to its first frame")
+	}
+}
+
 func TestTUIBuildProgressTransitions(t *testing.T) {
 	m := initialModel(config.Config{})
 	m.screen = screenWorking
