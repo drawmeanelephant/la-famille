@@ -19,6 +19,7 @@ Welcome to the documentation for La Famille! Below you'll find guides on how to 
 *   **[Pull Request Management](pr.md)** - Learn how to use the automated PR sync command.
 *   [**Search Implementation Guide**](search.md) - Learn how to integrate the client-side search.
 *   [**How the Generator Works**](generator.md) - A deep dive into the Go parsing and rendering pipeline.
+*   [**Command Architecture**](cmd/index.md) - How the CLI, TUI, contract tests, and release fixtures fit together.
 *   [**Publishing Output Contract**](publishing.md) - Specifications for all generated site artifacts, URLs, feeds, and discovery files.
 *   [**Using Frontmatter**](frontmatter.md) - Explains supported YAML keys and the `render: false` flag.
 
