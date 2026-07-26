@@ -18,6 +18,4 @@ This document tracks the features, fixes, and improvements that have been shippe
 - **Core Engine:** Implemented Markdown link resolution and render control.
 - **Accessibility:** Added "skip to content" link and semantic navigation (Palette persona).
 - **Core Engine:** Simplified extension removal logic and added unit tests for `relPathFromTo`.
-- **Infrastructure:** Established automated release strategy and soundtrack integration.
-- **Content:** Added soundtrack entries and lore (e.g., filename extension fixes).
 - **CLI/Configuration:** Migrated to `spf13/cobra` with a `build` subcommand for better CLI configuration and flags.

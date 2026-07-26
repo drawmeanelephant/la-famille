@@ -38,9 +38,6 @@ The `GEMINI.md` file specifies `internal/` and `pkg/` directories, but core logi
 The generated output is currently raw HTML.
 - **Action:** Create a CSS stylesheet (Vanilla CSS or a micro-framework) to give the generated site a modern, readable, and responsive aesthetic. Update `layout.html` to include it.
 
-### 7. Soundtrack & Lore Expansion (In Progress)
-The soundtrack files have been moved to the `content/` directory and expanded with new track listings (e.g., "go.mod (The Ledger)" and "Unit Test Blues").
-- **Next Step:** Further expand the lore and lyrics within these files to bridge the engineering and musical narratives.
 
 ### 8. CI/CD Deployment
 To make the project accessible to the world:

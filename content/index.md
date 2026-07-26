@@ -28,11 +28,6 @@ Information about Jules.
 
 [View Jules](jules/index.md)
 
-## Soundtrack
-The official soundtrack of La Famille.
-
-[View Soundtrack](soundtrack/index.md)
-
 ## Meta
 Meta information about the project.
 

@@ -49,7 +49,6 @@ Verify focus-ring visibility against dark background layers by checking this act
 ### Unordered Augments
 * **Keyboard Tracking:** Fixed focus rings bound directly to custom interaction states.
 * **Zero Overhead:** Compiles down to lightweight, raw HTML Footprints.
-* **Sonified Lore:** Electro-synth ambient loops mapped straight to the audio assets.
 
 ---
 

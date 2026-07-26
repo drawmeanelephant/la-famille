@@ -34,7 +34,6 @@ type FileMeta struct {
 	Date            string
 	VideoScript     string
 	AnimationCues   string
-	SoundtrackTheme string
 	Layout          string
 	ComplianceModal string
 	Slug            string
@@ -96,7 +95,6 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			Render          *bool       `yaml:"render"`
 			VideoScript     string      `yaml:"video_script"`
 			AnimationCues   string      `yaml:"animation_cues"`
-			SoundtrackTheme string      `yaml:"soundtrack_theme"`
 			Layout          string      `yaml:"layout"`
 			ComplianceModal string      `yaml:"compliance_modal"`
 			Slug            string      `yaml:"slug"`
@@ -138,7 +136,6 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			Render:          matter.Render,
 			VideoScript:     matter.VideoScript,
 			AnimationCues:   matter.AnimationCues,
-			SoundtrackTheme: matter.SoundtrackTheme,
 			Layout:          matter.Layout,
 			ComplianceModal: matter.ComplianceModal,
 			Slug:            matter.Slug,

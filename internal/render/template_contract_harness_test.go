@@ -132,17 +132,16 @@ func TestBundledLayoutsRegressionHarness(t *testing.T) {
 				},
 			}
 			fullPageFixture := page.Page{
-				Site:            cfg,
-				Title:           "Representative Fixture Title",
-				Author:          "Harness Tester",
-				Date:            "2026-07-22",
-				Description:     "A comprehensive test page fixture.",
-				Image:           "/assets/img/og-test.png",
-				CanonicalURL:    "https://example.com/test-fixture.html",
-				Content:         template.HTML(`<h2>Section 1 Header</h2><p>Here is content with Emoji Kitchen blend: <img src="/assets/img/emoji-kitchen.png" class="emoji-kitchen" alt="Emoji Kitchen blend" />.</p><h3>Subsection 1.1 Header</h3><p>Subsection text.</p><h2>Section 2 Header</h2><p>Final paragraph.</p>`),
-				VideoScript:     "console.log('test video');",
-				AnimationCues:   "fade-in",
-				SoundtrackTheme: "ambient",
+				Site:          cfg,
+				Title:         "Representative Fixture Title",
+				Author:        "Harness Tester",
+				Date:          "2026-07-22",
+				Description:   "A comprehensive test page fixture.",
+				Image:         "/assets/img/og-test.png",
+				CanonicalURL:  "https://example.com/test-fixture.html",
+				Content:       template.HTML(`<h2>Section 1 Header</h2><p>Here is content with Emoji Kitchen blend: <img src="/assets/img/emoji-kitchen.png" class="emoji-kitchen" alt="Emoji Kitchen blend" />.</p><h3>Subsection 1.1 Header</h3><p>Subsection text.</p><h2>Section 2 Header</h2><p>Final paragraph.</p>`),
+				VideoScript:   "console.log('test video');",
+				AnimationCues: "fade-in",
 			}
 
 			renderedHTML := renderLayoutToBuffer(t, renderer, templatesDir, layoutName, fullPageFixture, cfg)

@@ -14,7 +14,6 @@ type Page struct {
 	Date            string
 	VideoScript     string
 	AnimationCues   string
-	SoundtrackTheme string
 	Layout          string
 	ComplianceModal string
 	Description     string

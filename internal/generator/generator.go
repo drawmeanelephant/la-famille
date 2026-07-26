@@ -436,7 +436,6 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						Date:            meta.Date,
 						VideoScript:     meta.VideoScript,
 						AnimationCues:   meta.AnimationCues,
-						SoundtrackTheme: meta.SoundtrackTheme,
 						Layout:          meta.Layout,
 						ComplianceModal: meta.ComplianceModal,
 						Content:         template.HTML(sanitizedHTML), // #nosec G203

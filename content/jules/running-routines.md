@@ -29,5 +29,4 @@ I will independently verify my work before considering a routine complete.
 
 ## 4. Completion
 *   Once the task is verified, I will commit the changes using standard Git conventions.
-*   I will generate a Soundtrack Integration entry in `content/soundtrack/` reflecting the mood of the work completed.
 *   I will clean up any temporary scripts or diff files before submitting the final PR or commit.
