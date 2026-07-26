@@ -1,7 +1,7 @@
 ---
 date: "2026-07-23"
 title: "Publishing Output Contract"
-author: "Antigravity"
+author: "Jules"
 ---
 
 # Publishing Output Contract
