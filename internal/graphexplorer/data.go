@@ -18,28 +18,28 @@ const HomepageID = "index"
 // needs is resolved here — classification, title, public URL, and both link
 // directions — so the client renders the payload rather than re-deriving it.
 type NodeData struct {
+	Author     string   `json:"author,omitempty"`
+	URL        string   `json:"url,omitempty"`
+	Type       string   `json:"type"`
+	Date       string   `json:"date,omitempty"`
 	ID         string   `json:"id"`
 	Title      string   `json:"title"`
-	Type       string   `json:"type"`
-	Render     bool     `json:"render"`
-	Stub       bool     `json:"stub"`
-	Orphan     bool     `json:"orphan"`
-	URL        string   `json:"url,omitempty"`
-	Tags       []string `json:"tags,omitempty"`
-	Categories []string `json:"categories,omitempty"`
-	Author     string   `json:"author,omitempty"`
-	Date       string   `json:"date,omitempty"`
-	WordCount  int      `json:"word_count"`
 	Inbound    []string `json:"inbound"`
+	Categories []string `json:"categories,omitempty"`
+	Tags       []string `json:"tags,omitempty"`
 	Outbound   []string `json:"outbound"`
+	WordCount  int      `json:"word_count"`
+	Orphan     bool     `json:"orphan"`
+	Stub       bool     `json:"stub"`
+	Render     bool     `json:"render"`
 }
 
 // Data is the full payload written to <output>/graph/data.json.
 type Data struct {
+	BasePath           string      `json:"base_path"`
 	Nodes              []NodeData  `json:"nodes"`
 	Edges              [][2]string `json:"edges"`
 	LargeSiteThreshold int         `json:"large_site_threshold"`
-	BasePath           string      `json:"base_path"`
 }
 
 // BuildData assembles the explorer payload from the generated graph, the page

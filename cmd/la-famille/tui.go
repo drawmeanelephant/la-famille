@@ -87,15 +87,15 @@ type statsUpdateMsg struct {
 
 type workResultMsg struct {
 	err error
-	msg string
 	res *generator.BuildResult
+	msg string
 }
 
 type workProgressMsg struct {
 	phase     string
+	detail    string
 	completed int
 	total     int
-	detail    string
 }
 
 type serverErrorMsg struct {
@@ -109,30 +109,30 @@ type diagnostic struct {
 }
 
 type model struct {
-	cfg               config.Config
-	screen            screen
-	choices           []menuOption
-	cursor            int
-	menuOpen          bool
-	frame             int
-	workMsg           string
 	workErr           error
-	workPhase         string
-	workCompleted     int
-	workTotal         int
-	workEvents        []string
-	server            *http.Server
-	serverCancel      context.CancelFunc
-	watcherCancel     context.CancelFunc
-	askServer         *ask.Server
-	askServerCancel   context.CancelFunc
 	askServerErr      error
 	stats             *generator.BuildResult
+	server            *http.Server
+	askServerCancel   context.CancelFunc
+	askServer         *ask.Server
+	serverCancel      context.CancelFunc
+	watcherCancel     context.CancelFunc
+	workPhase         string
+	workMsg           string
+	workEvents        []string
 	diagnostics       []diagnostic
+	choices           []menuOption
+	cfg               config.Config
+	cursor            int
+	frame             int
+	screen            screen
+	workCompleted     int
+	workTotal         int
 	diagnosticCursor  int
 	diagnosticsReturn screen
 	width             int
 	height            int
+	menuOpen          bool
 }
 
 func initialModel(cfg config.Config) model {

@@ -18,9 +18,9 @@ const (
 
 // PRDecision is the policy outcome for a single PR.
 type PRDecision struct {
-	Number int
 	Action PRAction
 	Reason string
+	Number int
 }
 
 // PolicyConfig is the explicit litterbox policy evaluated without side effects.
@@ -36,16 +36,16 @@ type PolicyConfig struct {
 
 // PRState is the snapshot of PR + check state used for pure policy evaluation.
 type PRState struct {
-	Number    int
+	Mergeable *bool
 	Title     string
 	Author    string
-	Draft     bool
-	Labels    []string
 	HeadRef   string
 	HeadSHA   string
 	BaseRef   string
-	Mergeable *bool
+	Labels    []string
 	Checks    CheckSummary
+	Number    int
+	Draft     bool
 }
 
 // EvaluatePR decides what to do with a PR. It never performs I/O.

@@ -20,10 +20,10 @@ import (
 )
 
 type groupSpec struct {
+	getItems func(meta *content.FileMeta) []string
 	singular string
 	plural   string
 	prefix   string
-	getItems func(meta *content.FileMeta) []string
 }
 
 var (

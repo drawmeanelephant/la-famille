@@ -18,9 +18,9 @@ import (
 // (and what we couldn't find) so the orchestrator can produce an actionable
 // error if the archive is stale or malformed.
 type LoadResult struct {
+	MalformedArtifact string
 	Corpus            Corpus
-	MissingArtifacts  []string // e.g. ["rag-content.md"] when not found
-	MalformedArtifact string   // one of the artifact paths that could not be parsed (empty if all OK)
+	MissingArtifacts  []string
 }
 
 // LoadOptions configures where Load reads from.

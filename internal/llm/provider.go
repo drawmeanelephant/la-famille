@@ -39,9 +39,9 @@ type Request struct {
 	Question  string
 	System    string
 	Context   string
+	Model     string
 	Citations []CitationHint
 	MaxTokens int
-	Model     string
 }
 
 // CitationHint tells the model which integer key in its answer corresponds

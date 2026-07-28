@@ -14,11 +14,11 @@ import (
 // the only place that mutates model state from this message, which
 // preserves Bubble Tea's single-writer threading model.
 type askServerReadyMsg struct {
+	err    error
 	server *ask.Server
 	cancel context.CancelFunc
 	host   string
 	port   int
-	err    error
 }
 
 // askServerFailedMsg is dispatched when the background goroutine running

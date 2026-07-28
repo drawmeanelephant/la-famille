@@ -123,8 +123,8 @@ func TestValidateAllowsSiblingDirectories(t *testing.T) {
 // working sites unbuildable with no legal escape.
 func TestValidateAllowsInputsThatAreTheProjectRoot(t *testing.T) {
 	cases := []struct {
-		name   string
 		mutate func(*Config)
+		name   string
 	}{
 		{
 			// A single layout.html beside config.yaml: filepath.Dir gives ".".

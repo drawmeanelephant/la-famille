@@ -28,12 +28,12 @@ var askFlagBundle = struct {
 	provider  string
 	model     string
 	host      string
-	port      int
 	ragDir    string
 	outputDir string
+	port      int
+	maxCtx    int
 	rebuild   bool
 	noBrowser bool
-	maxCtx    int
 	verbose   bool
 	expose    bool
 }{}

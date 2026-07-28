@@ -6,11 +6,11 @@
     },
     "blog/missing": {
       "type": "stub",
-      "render": true,
-      "missing": true,
       "referenced_by": [
         "blog/post.md"
-      ]
+      ],
+      "render": true,
+      "missing": true
     },
     "blog/post": {
       "type": "page",

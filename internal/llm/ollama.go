@@ -16,17 +16,10 @@ import (
 // OllamaConfig describes how to reach a local Ollama daemon. The defaults
 // assume the standard install (http://127.0.0.1:11434).
 type OllamaConfig struct {
-	// Endpoint is a full URL, e.g. "http://127.0.0.1:11434". When empty, the
-	// constructor defaults to "http://127.0.0.1:11434".
-	Endpoint string
-	// Model is the model identifier (e.g. "llama3.2"). Required for Complete.
-	Model string
-	// Timeout caps each Complete call. Zero means "no timeout", which is almost
-	// always the wrong answer — callers should set a sane value (e.g. 60s).
-	Timeout time.Duration
-	// HTTPClient, if non-nil, replaces the default client. Useful for tests
-	// that want to stub the network layer.
 	HTTPClient *http.Client
+	Endpoint   string
+	Model      string
+	Timeout    time.Duration
 }
 
 // NewOllama builds an Ollama provider. It does not contact the network; use

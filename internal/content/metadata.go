@@ -90,21 +90,21 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 		}
 
 		var matter struct {
-			Title           string      `yaml:"title"`
-			Author          string      `yaml:"author"`
-			Date            string      `yaml:"date"`
+			Category        interface{} `yaml:"category"`
+			Categories      interface{} `yaml:"categories"`
 			Render          *bool       `yaml:"render"`
+			SoundtrackTheme string      `yaml:"soundtrack_theme"`
 			VideoScript     string      `yaml:"video_script"`
 			AnimationCues   string      `yaml:"animation_cues"`
-			SoundtrackTheme string      `yaml:"soundtrack_theme"`
+			Title           string      `yaml:"title"`
 			Layout          string      `yaml:"layout"`
 			ComplianceModal string      `yaml:"compliance_modal"`
 			Slug            string      `yaml:"slug"`
-			Tags            StringList  `yaml:"tags"`
-			Categories      interface{} `yaml:"categories"`
-			Category        interface{} `yaml:"category"`
+			Date            string      `yaml:"date"`
+			Author          string      `yaml:"author"`
 			Description     string      `yaml:"description"`
 			Image           string      `yaml:"image"`
+			Tags            StringList  `yaml:"tags"`
 		}
 
 		for _, detail := range DecodeFrontmatter(rawMatter, &matter) {

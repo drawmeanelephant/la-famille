@@ -17,9 +17,9 @@ import (
 type frontmatterData struct {
 	Title      string   `yaml:"title"`
 	Date       string   `yaml:"date"`
+	Layout     string   `yaml:"layout,omitempty"`
 	Tags       []string `yaml:"tags,omitempty"`
 	Categories []string `yaml:"categories,omitempty"`
-	Layout     string   `yaml:"layout,omitempty"`
 }
 
 func setupNewCmd(cfg config.Config) *cobra.Command {

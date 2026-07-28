@@ -30,23 +30,21 @@ const (
 
 // SyncConfig holds configuration for the PR sync process.
 type SyncConfig struct {
-	Token               string
-	BotAuthors          []string
-	BaseBranch          string // empty: resolve repository default_branch via API
+	Client              APIClient
+	Git                 GitRunner
+	Sleep               func(time.Duration)
+	Now                 func() time.Time
 	RequiredLabel       string
+	Token               string
+	BaseBranch          string
+	Owner               string
+	Repo                string
 	HeadPrefixes        []string
+	BotAuthors          []string
 	Apply               bool
 	CloseConflicts      bool
 	AllowNoChecks       bool
 	PublishLocalChanges bool
-
-	// Optional injection for tests / advanced callers.
-	Client APIClient
-	Git    GitRunner
-	Now    func() time.Time
-	Sleep  func(time.Duration)
-	Owner  string
-	Repo   string
 }
 
 // GitRunner abstracts git operations used by local-change publishing.
@@ -81,17 +79,17 @@ type SyncResult struct {
 	Owner       string
 	Repo        string
 	BaseBranch  string
-	Apply       bool
-	Decisions   []PRDecision
-	Inspected   int
-	Skipped     int
-	WouldMerge  int
-	Merged      int
-	WouldClose  int
-	Closed      int
-	LocalAction LocalAction
 	LocalReason string
+	LocalAction LocalAction
 	PRErrors    []error
+	Decisions   []PRDecision
+	WouldClose  int
+	Merged      int
+	WouldMerge  int
+	Closed      int
+	Skipped     int
+	Inspected   int
+	Apply       bool
 }
 
 // Validate checks configuration before any mutations.

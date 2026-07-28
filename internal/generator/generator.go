@@ -92,12 +92,12 @@ func setConvertMarkdown(fn func(goldmark.Markdown, []byte, *bytes.Buffer) error)
 
 // BuildResult contains statistics about the build process.
 type BuildResult struct {
+	Health     ContentHealth
+	Warnings   []string
 	Duration   time.Duration
 	PageCount  int
 	ErrorCount int
 	CacheHit   bool
-	Health     ContentHealth
-	Warnings   []string
 }
 
 // Build generates the static site based on the given configuration.
@@ -196,8 +196,8 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	renderer := render.New(filepath.Dir(cfg.Template))
 
 	type indexedError struct {
-		index int
 		err   error
+		index int
 	}
 	var errs []indexedError
 
@@ -235,8 +235,8 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	rssItems := make([]feed.Item, len(keys))
 
 	type job struct {
-		index   int
 		relPath string
+		index   int
 	}
 
 	jobs := make(chan job, len(keys))
@@ -320,7 +320,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						}
 						if len(update.errs) > 0 {
 							for _, e := range update.errs {
-								errs = append(errs, indexedError{idx, e})
+								errs = append(errs, indexedError{err: e, index: idx})
 							}
 						}
 						mu.Unlock()
@@ -637,9 +637,9 @@ type outputOwner struct {
 // and the deploy target need not agree, so two outputs that differ only in case
 // are refused even where the local filesystem could hold both.
 type outputClaims struct {
-	mu        sync.Mutex
-	outputDir string
 	owners    map[string]outputOwner
+	outputDir string
+	mu        sync.Mutex
 }
 
 func newOutputClaims(outputDir string, size int) *outputClaims {

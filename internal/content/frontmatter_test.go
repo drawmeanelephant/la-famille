@@ -189,8 +189,8 @@ func TestNormalizeFrontmatterKeysWarnsOnCollapsedVariants(t *testing.T) {
 // value, which logs a warning.
 func TestDecodeFrontmatterWarnsOnUnusableValue(t *testing.T) {
 	var out struct {
-		Title  string `yaml:"title"`
 		Render *bool  `yaml:"render"`
+		Title  string `yaml:"title"`
 	}
 	warnings := DecodeFrontmatter(map[string]interface{}{
 		"title":  "kept",

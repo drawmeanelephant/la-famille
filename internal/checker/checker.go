@@ -35,9 +35,9 @@ const (
 
 type Finding struct {
 	File    string
-	Line    int
 	Level   Level
 	Message string
+	Line    int
 }
 
 func (f Finding) String() string {
@@ -116,10 +116,10 @@ func Validate(cfg config.Config) (*Result, error) {
 			yamlBytes, yErr := yaml.Marshal(normalizedMatter)
 			if yErr == nil {
 				var matter struct {
-					Date   string   `yaml:"date"`
-					Tags   []string `yaml:"tags"`
-					Slug   string   `yaml:"slug"`
 					Render *bool    `yaml:"render"`
+					Date   string   `yaml:"date"`
+					Slug   string   `yaml:"slug"`
+					Tags   []string `yaml:"tags"`
 				}
 				_ = yaml.Unmarshal(yamlBytes, &matter)
 

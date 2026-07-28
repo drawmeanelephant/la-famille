@@ -25,11 +25,11 @@ const (
 
 // Client is a minimal GitHub REST API client used by litterbox sync.
 type Client struct {
+	HTTPClient *http.Client
 	Token      string
 	Owner      string
 	Repo       string
-	BaseURL    string // optional; defaults to https://api.github.com (overridable in tests)
-	HTTPClient *http.Client
+	BaseURL    string
 }
 
 // NewClient constructs a Client with the project-standard timeout.
@@ -139,15 +139,15 @@ type Ref struct {
 
 // PullRequest is the subset of the GitHub PR model needed for policy evaluation.
 type PullRequest struct {
-	Number    int     `json:"number"`
-	Title     string  `json:"title"`
-	State     string  `json:"state"`
-	Draft     bool    `json:"draft"`
-	User      User    `json:"user"`
-	Labels    []Label `json:"labels"`
+	Mergeable *bool   `json:"mergeable"`
 	Head      Ref     `json:"head"`
 	Base      Ref     `json:"base"`
-	Mergeable *bool   `json:"mergeable"`
+	Title     string  `json:"title"`
+	State     string  `json:"state"`
+	User      User    `json:"user"`
+	Labels    []Label `json:"labels"`
+	Number    int     `json:"number"`
+	Draft     bool    `json:"draft"`
 }
 
 // LabelNames returns the label names on the PR.
@@ -233,8 +233,8 @@ type CheckRun struct {
 
 // CheckRunsResponse is the list check-runs API payload.
 type CheckRunsResponse struct {
-	TotalCount int        `json:"total_count"`
 	CheckRuns  []CheckRun `json:"check_runs"`
+	TotalCount int        `json:"total_count"`
 }
 
 // CheckState classifies aggregate check-run status for policy decisions.
@@ -334,9 +334,9 @@ func (c *Client) ClosePR(number int) error {
 
 // MergeResult is the GitHub merge endpoint response.
 type MergeResult struct {
-	Merged  bool   `json:"merged"`
 	Message string `json:"message"`
 	SHA     string `json:"sha"`
+	Merged  bool   `json:"merged"`
 }
 
 // MergePR squash-merges a pull request at the expected head SHA.

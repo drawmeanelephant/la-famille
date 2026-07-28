@@ -35,10 +35,10 @@ func TestEvaluatePR(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		pr     PRState
-		cfg    PolicyConfig
 		action PRAction
 		reason string
+		pr     PRState
+		cfg    PolicyConfig
 	}{
 		{
 			name:   "1 dry-run eligible would merge",

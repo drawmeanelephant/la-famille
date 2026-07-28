@@ -200,9 +200,9 @@ func TestConfigValidation(t *testing.T) {
 	}
 
 	dirFields := []struct {
-		name     string
 		setEmpty func(*Config)
 		setAbs   func(*Config)
+		name     string
 	}{
 		{name: "ContentDir", setEmpty: func(c *Config) { c.ContentDir = "" }, setAbs: func(c *Config) { c.ContentDir = "/etc/passwd" }},
 		{name: "OutputDir", setEmpty: func(c *Config) { c.OutputDir = "" }, setAbs: func(c *Config) { c.OutputDir = "/etc/passwd" }},

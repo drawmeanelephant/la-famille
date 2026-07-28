@@ -7,17 +7,17 @@ import (
 )
 
 type Page struct {
-	Site            config.Config
+	AnimationCues   string
 	Content         template.HTML
 	Title           string
 	Author          string
 	Date            string
 	VideoScript     string
-	AnimationCues   string
 	SoundtrackTheme string
 	Layout          string
 	ComplianceModal string
 	Description     string
 	Image           string
 	CanonicalURL    string
+	Site            config.Config
 }

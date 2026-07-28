@@ -2,11 +2,11 @@
   "nodes": {
     "absolute/path": {
       "type": "stub",
-      "render": true,
-      "missing": true,
       "referenced_by": [
         "index.md"
-      ]
+      ],
+      "render": true,
+      "missing": true
     },
     "index": {
       "type": "page",

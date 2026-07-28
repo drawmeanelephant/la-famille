@@ -16,21 +16,17 @@ import (
 // Chunk is a single retrievable unit. IDs are deterministic across loads so
 // tests and follow-up reruns compare cleanly.
 type Chunk struct {
-	ID          string   // stable, e.g. "docs/rag.md#h-1-foo"
-	PageID      string   // identifier derived from file path without extension
-	Title       string   // YAML title or first H1
-	HeadingPath []string // ordered list of headings surrounding this chunk (closest first)
-	HeadingText string   // the closest enclosing heading text (empty if no heading)
-	URL         string   // generated site URL for the page (may be empty)
-	SourcePath  string   // absolute path the chunk came from (rag archive or content)
-	SourceKind  string   // "rag-content", "rag-system", "rag-config", "site-meta"
-	Text        string   // full chunk text (used for context prompts and snippets)
-	// TokenCount is approximate (bytes / 4). Used for budget enforcement
-	// before sending chunks to the provider.
-	TokenCount int
-	// Position is the chunk's index inside its source page; preserved across
-	// reloads so citations like "[3]" map to whichever chunk was at position 3.
-	Position int
+	ID          string
+	PageID      string
+	Title       string
+	HeadingText string
+	URL         string
+	SourcePath  string
+	SourceKind  string
+	Text        string
+	HeadingPath []string
+	TokenCount  int
+	Position    int
 }
 
 // Excerpt returns a short, single-line preview of the chunk text suitable
@@ -60,11 +56,11 @@ func (c Chunk) HeadingLabel() string {
 
 // Corpus is a deterministic view over the chunks known to the assistant.
 type Corpus struct {
-	Version       string  // "v1" today; bumped on schema/format changes
-	SourceDir     string  // "rag-archive" or whatever --rag-dir was
-	DocumentCount int     // number of distinct source files
-	ChunkCount    int     // total chunks
-	Chunks        []Chunk // immutable slice; never mutated after Load
+	Version       string
+	SourceDir     string
+	Chunks        []Chunk
+	DocumentCount int
+	ChunkCount    int
 }
 
 // ChunkByID returns the chunk with the given ID or a zero Chunk and false

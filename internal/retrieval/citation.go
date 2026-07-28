@@ -15,10 +15,9 @@ var citationPattern = regexp.MustCompile(`\[\s*([0-9]+)\s*\]`)
 // fixed for a given ordered set of chunks: reordering or growing the slice
 // shifts the keys, but rerunning without changes produces identical keys.
 type Citations struct {
-	// order is the canonical ordering used to assign numeric keys.
-	order  []Chunk
 	keyOf  map[string]string
 	chunks map[string]Chunk
+	order  []Chunk
 }
 
 // NewCitations builds a Citations index. Keys ("1", "2", …) are assigned in

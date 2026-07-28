@@ -6,11 +6,11 @@
     },
     "missing": {
       "type": "stub",
-      "render": true,
-      "missing": true,
       "referenced_by": [
         "index.md"
-      ]
+      ],
+      "render": true,
+      "missing": true
     },
     "page": {
       "type": "page",
