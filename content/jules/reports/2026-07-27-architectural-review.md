@@ -2,7 +2,7 @@
 title: "Component Mapping & Micro-Improvement Audit"
 date: "2026-07-27"
 author: "Jules"
-layout: "report"
+layout: "layout"
 routine: "architectural-review"
 status: "completed"
 success: "true"
