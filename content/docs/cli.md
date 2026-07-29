@@ -128,4 +128,3 @@ go run ./cmd/la-famille new <slug-or-filename> [flags]
     *   `--content`, `-c` (string): Override target content directory.
 
 *Example:* `go run ./cmd/la-famille new blog/my-first-post --title "My First Post" --tags "tech,go" --categories "news"`
-

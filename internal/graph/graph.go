@@ -2,9 +2,9 @@ package graph
 
 type Node struct {
 	Type         string   `json:"type"`
+	ReferencedBy []string `json:"referenced_by,omitempty"`
 	Render       bool     `json:"render"`
 	Missing      bool     `json:"missing,omitempty"`
-	ReferencedBy []string `json:"referenced_by,omitempty"`
 }
 
 type Graph struct {

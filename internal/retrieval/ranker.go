@@ -12,11 +12,11 @@ import (
 // the corpus can be rebuilt after every `la-famille rag` without a separate
 // indexing step.
 type Ranker struct {
-	corpus Corpus
-	index  map[string]map[string]int // term -> chunkID -> frequency
+	index  map[string]map[string]int
 	idf    map[string]float64
-	avgDL  float64
 	docLen map[string]int
+	corpus Corpus
+	avgDL  float64
 }
 
 // NewRanker precomputes an in-memory inverted index over the corpus. It is

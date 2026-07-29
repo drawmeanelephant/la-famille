@@ -41,13 +41,10 @@ var templateFS embed.FS
 
 // Input is everything Write needs to assemble the explorer.
 type Input struct {
-	Config config.Config
-	Graph  graph.Graph
-	// Meta is the per-page frontmatter map the build collected, keyed by page id.
-	Meta map[string]map[string]interface{}
-	// PageOutputs maps a page id to the output-relative path its HTML was
-	// written to, which is what makes emitted URLs slug-aware.
+	Meta        map[string]map[string]interface{}
 	PageOutputs map[string]string
+	Graph       graph.Graph
+	Config      config.Config
 }
 
 // Result summarizes what Write produced. The fields are stable so tests can

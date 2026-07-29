@@ -22,12 +22,12 @@ func TestLinkTransformer(t *testing.T) {
 	renderFalse := false
 
 	tests := []struct {
+		fileMap      map[string]*content.FileMeta
+		expectedMiss map[string][]string
 		name         string
 		currentFile  string
 		markdown     string
-		fileMap      map[string]*content.FileMeta
 		expectedHTML string
-		expectedMiss map[string][]string
 	}{
 		{
 			name:        "internal link rewritten",
@@ -164,12 +164,12 @@ func TestLinkTransformerExtended(t *testing.T) {
 	renderFalse := false
 
 	tests := []struct {
+		fileMap      map[string]*content.FileMeta
+		expectedMiss map[string][]string
 		name         string
 		currentFile  string
 		markdown     string
-		fileMap      map[string]*content.FileMeta
 		expectedHTML string
-		expectedMiss map[string][]string
 	}{
 		{
 			name:         "mailto link ignored",

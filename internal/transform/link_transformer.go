@@ -15,12 +15,12 @@ import (
 )
 
 type LinkTransformer struct {
-	CurrentFile  string // The current file being processed (e.g., docs/index.md)
 	FileMap      map[string]*content.FileMeta
-	MissingFiles map[string][]string // map[targetFile]parents
+	MissingFiles map[string][]string
 	Backlinks    map[string][]string
 	Graph        *graph.Graph
 	Mu           *sync.Mutex
+	CurrentFile  string
 }
 
 func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {

@@ -34,19 +34,19 @@ const PortDefault = 8090
 // Config collects the user-facing knobs for the ask server. It is what the
 // CLI flag parser builds before calling NewServer.
 type Config struct {
-	Host         string
-	Port         int
+	ContentDir   string
 	ProviderName string
 	Model        string
 	RagDir       string
 	OutputDir    string
-	ContentDir   string
+	Host         string
+	Port         int
+	MaxContext   int
 	Rebuild      bool
 	Verbose      bool
 	NoBrowser    bool
-	MaxContext   int
-	DisableUI    bool // when true, only `/api/*` endpoints are served
-	LoopbackOnly bool // defaults to true; advanced callers may allow all
+	DisableUI    bool
+	LoopbackOnly bool
 }
 
 // Defaults fills in sensible values for unspecified fields. It does not
@@ -95,12 +95,11 @@ func (c *Config) Validate() error {
 // few goroutines. Build it with NewServer, start it with Start, and shut it
 // down with Shutdown.
 type Server struct {
-	cfg      Config
-	corpus   retrieval.Corpus
-	ranker   *retrieval.Ranker
 	provider llm.Provider
-
-	ui fs.FS // optional; nil when DisableUI is true
+	ui       fs.FS
+	ranker   *retrieval.Ranker
+	corpus   retrieval.Corpus
+	cfg      Config
 }
 
 // NewServer loads the corpus and wires the provider. It does NOT start the
@@ -163,15 +162,15 @@ func buildProvider(cfg Config) (llm.Provider, error) {
 // Status returns a small JSON-safe description of the server's state. The
 // UI uses it to populate the diagnostics drawer.
 type Status struct {
-	Ready         bool   `json:"ready"`
 	Provider      string `json:"provider"`
 	Model         string `json:"model"`
 	Bind          string `json:"bind"`
 	CorpusVersion string `json:"corpus_version"`
-	DocumentCount int    `json:"document_count"`
-	ChunkCount    int    `json:"chunk_count"`
 	RagVersion    string `json:"rag_version"`
 	SourceDir     string `json:"source_dir"`
+	DocumentCount int    `json:"document_count"`
+	ChunkCount    int    `json:"chunk_count"`
+	Ready         bool   `json:"ready"`
 	LoopbackOnly  bool   `json:"loopback_only"`
 }
 
@@ -215,15 +214,15 @@ type AnswerRequest struct {
 
 // AnswerResponse is the JSON body returned by /api/ask.
 type AnswerResponse struct {
-	Status           string                 `json:"status"` // "answered" or "no_answer"
+	Diagnostics      AnswerDiagnostics      `json:"diagnostics"`
+	Status           string                 `json:"status"`
 	Question         string                 `json:"question"`
 	Answer           string                 `json:"answer,omitempty"`
 	Markdown         string                 `json:"markdown,omitempty"`
+	NoAnswerMessage  string                 `json:"no_answer_message,omitempty"`
 	Sources          []retrieval.SourceCard `json:"sources"`
 	DroppedCitations []string               `json:"dropped_citations,omitempty"`
 	NoAnswer         bool                   `json:"no_answer"`
-	NoAnswerMessage  string                 `json:"no_answer_message,omitempty"`
-	Diagnostics      AnswerDiagnostics      `json:"diagnostics"`
 }
 
 // AnswerDiagnostics carries the timing numbers, etc. we want to expose on
@@ -231,11 +230,11 @@ type AnswerResponse struct {
 // guarantee parity between the drawer (status endpoint) and the per-answer
 // timings (ask endpoint).
 type AnswerDiagnostics struct {
+	Provider        string `json:"provider"`
+	Model           string `json:"model"`
 	RetrievalMs     int64  `json:"retrieval_ms"`
 	GenerationMs    int64  `json:"generation_ms"`
 	ChunksRetrieved int    `json:"chunks_retrieved"`
-	Provider        string `json:"provider"`
-	Model           string `json:"model"`
 }
 
 // Answer runs the full retrieval + LLM + citation-verification pipeline

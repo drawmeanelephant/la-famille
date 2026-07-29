@@ -12,30 +12,27 @@ import (
 
 // fakeClient records mutating calls and serves scripted responses.
 type fakeClient struct {
-	mu sync.Mutex
-
-	prs           []PullRequest
-	prByNumber    map[int]*PullRequest
-	checks        map[string]CheckSummary
-	checkErrs     map[string]error
-	getPRErrs     map[int]error
-	defaultBranch string
-	listErr       error
-
-	merges  []mergeCall
-	closes  []int
-	creates []createCall
-
-	mergeErr        error
-	closeErr        error
+	listErr         error
 	createErr       error
+	closeErr        error
+	mergeErr        error
+	checkErrs       map[string]error
+	getPRErrs       map[int]error
+	checks          map[string]CheckSummary
+	prByNumber      map[int]*PullRequest
+	defaultBranch   string
+	merges          []mergeCall
+	closes          []int
+	creates         []createCall
+	prs             []PullRequest
 	createFailTimes int
 	createAttempts  int
+	mu              sync.Mutex
 }
 
 type mergeCall struct {
-	Number int
 	SHA    string
+	Number int
 }
 
 type createCall struct {
@@ -103,18 +100,16 @@ func (f *fakeClient) GetDefaultBranch() (string, error) {
 }
 
 type fakeGit struct {
-	mu sync.Mutex
-
-	hasChanges    bool
-	remoteURL     string
-	currentBranch string
-	branchStack   []string
-
+	remoteURL        string
+	currentBranch    string
+	branchStack      []string
 	checkoutNewCalls []string
 	checkoutCalls    []string
+	pushCalls        []string
 	addAllCalls      int
 	commitCalls      int
-	pushCalls        []string
+	mu               sync.Mutex
+	hasChanges       bool
 }
 
 func (g *fakeGit) HasUncommittedChanges() (bool, error) { return g.hasChanges, nil }

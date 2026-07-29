@@ -16,14 +16,14 @@ type TagCount struct {
 
 // ContentHealth encapsulates observability and health metrics calculated from build data.
 type ContentHealth struct {
-	TotalWordCount      int        `json:"total_word_count"`
-	AvgWordsPerPage     float64    `json:"avg_words_per_page"`
 	TopTags             []TagCount `json:"top_tags"`
 	OrphanedPages       []string   `json:"orphaned_pages"`
-	NodeCount           int        `json:"node_count"`
-	EdgeCount           int        `json:"edge_count"`
 	MissingDescriptions []string   `json:"missing_descriptions"`
 	MissingDates        []string   `json:"missing_dates"`
+	TotalWordCount      int        `json:"total_word_count"`
+	AvgWordsPerPage     float64    `json:"avg_words_per_page"`
+	NodeCount           int        `json:"node_count"`
+	EdgeCount           int        `json:"edge_count"`
 }
 
 // ComputeContentHealth calculates content health metrics from metadata, graph data, and backlinks.

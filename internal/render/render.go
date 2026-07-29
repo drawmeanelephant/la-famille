@@ -24,8 +24,8 @@ type Renderer struct {
 	cache       map[string]*cacheEntry
 	onces       map[string]*sync.Once
 	allowlist   map[string]bool
-	mu          sync.RWMutex
 	templateDir string
+	mu          sync.RWMutex
 }
 
 func New(templateDir string) *Renderer {

@@ -32,12 +32,12 @@ type generatedFile struct {
 }
 
 type buildCache struct {
-	Version        int             `json:"version"`
 	Fingerprint    string          `json:"fingerprint"`
-	GeneratedFiles []generatedFile `json:"generated_files"`
-	PageCount      int             `json:"page_count"`
 	Health         ContentHealth   `json:"health,omitempty"`
+	GeneratedFiles []generatedFile `json:"generated_files"`
 	Warnings       []string        `json:"warnings,omitempty"`
+	Version        int             `json:"version"`
+	PageCount      int             `json:"page_count"`
 }
 
 func cachePath(outputDir string) string { return filepath.Join(outputDir, cacheFileName) }

@@ -21,10 +21,9 @@ import (
 //
 // Concurrent calls are safe.
 type FakeProvider struct {
-	mu       sync.Mutex
-	EchoMode string
-	// ForceError, when non-nil, makes Complete return that error verbatim.
 	ForceError error
+	EchoMode   string
+	mu         sync.Mutex
 }
 
 // Name returns "fake".

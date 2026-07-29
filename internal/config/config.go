@@ -19,23 +19,23 @@ type SiteLink struct {
 
 // Config represents the site configuration.
 type Config struct {
-	SiteName           string     `yaml:"site_name"`
-	Template           string     `yaml:"template"`
+	DefaultDescription string     `yaml:"default_description"`
+	SiteURL            string     `yaml:"siteurl"`
 	ContentDir         string     `yaml:"content_dir"`
 	OutputDir          string     `yaml:"output_dir"`
 	AssetDir           string     `yaml:"asset_dir"`
 	RagDir             string     `yaml:"rag_dir"`
 	Theme              string     `yaml:"theme"`
 	ProjectRoot        string     `yaml:"project_root"`
-	DefaultDescription string     `yaml:"default_description"`
+	Template           string     `yaml:"template"`
+	SiteName           string     `yaml:"site_name"`
 	DefaultOGImage     string     `yaml:"default_og_image"`
-	SiteURL            string     `yaml:"siteurl"`
 	LegacySiteURL      string     `yaml:"site_url"`
 	SiteLinks          []SiteLink `yaml:"site_links"`
 	Port               int        `yaml:"port"`
+	MaxAssetSizeBytes  int64      `yaml:"max_asset_size_bytes"`
 	WatchMode          bool       `yaml:"-"`
 	CheckAssetHealth   bool       `yaml:"check_asset_health"`
-	MaxAssetSizeBytes  int64      `yaml:"max_asset_size_bytes"`
 	GraphExplorer      bool       `yaml:"graph_explorer"`
 }
 

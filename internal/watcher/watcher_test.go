@@ -316,9 +316,9 @@ func TestWatchTracksNestedNewDirectories(t *testing.T) {
 }
 
 type syncResponseWriter struct {
-	mu     sync.Mutex
 	header http.Header
 	body   bytes.Buffer
+	mu     sync.Mutex
 }
 
 func (w *syncResponseWriter) Header() http.Header { return w.header }
