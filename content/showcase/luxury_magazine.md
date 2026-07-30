@@ -1,7 +1,7 @@
 ---
 date: "2026-07-09"
 title: "Luxury Magazine Demo"
-layout: "luxury_magazine"
+layout: "layout-luxury_magazine"
 author: "Jules"
 ---
 

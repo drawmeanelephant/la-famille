@@ -1,6 +1,6 @@
 ---
 title: "Devlog Premium Demo"
-layout: "devlog"
+layout: "layout-devlog"
 author: "Jules"
 date: "2026-07-02"
 description: "Multimedia developer tracking log showcasing video scripts, animation cues, and asset syncing."

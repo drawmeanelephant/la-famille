@@ -256,8 +256,8 @@ func TestBundledLayoutsRegressionHarness(t *testing.T) {
 					targetID = strings.TrimPrefix(targetID, "#")
 
 					// Theme-specific exceptions: pure-CSS/JS mobile menu triggers without DOM targets
-					if (layoutName == "brutalist" && targetID == "mobile-menu") ||
-						(layoutName == "luxury_magazine" && targetID == "menu") ||
+					if (layoutName == "layout-brutalist" && targetID == "mobile-menu") ||
+						(layoutName == "layout-luxury_magazine" && targetID == "menu") ||
 						(layoutName == "layout-magazine-grid" && targetID == "navigation-drawer") {
 						continue
 					}
