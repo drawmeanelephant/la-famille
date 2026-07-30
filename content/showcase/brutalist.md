@@ -1,6 +1,6 @@
 ---
 title: "Brutalist Premium Demo"
-layout: "brutalist"
+layout: "layout-brutalist"
 author: "Jules"
 date: "2026-07-02"
 description: "A comprehensive typographic test rendering tables, lists, code blocks, and custom components natively."
