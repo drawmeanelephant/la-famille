@@ -19,6 +19,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/generator"
 	"github.com/tbuddy/la-famille/internal/ragexport"
+	"github.com/tbuddy/la-famille/internal/runtimeassets"
 	"github.com/tbuddy/la-famille/internal/watcher"
 )
 
@@ -26,15 +27,41 @@ var (
 	globalLogFile string
 	contentDir    string
 	outputDir     string
+	assetDir      string
 	templateFile  string
 	siteURL       string
+	projectRoot   string
+	configPath    string
+	showVersion   bool
+	versionJSON   bool
 )
 
 func setupRootCmd(cfg config.Config) *cobra.Command {
+	// The TUI command is shared for historical reasons, so pass the same
+	// bootstrapped configuration to it when the real binary constructs the
+	// command tree. Unit tests that call setupRootCmd with an ad-hoc Config keep
+	// the old direct-CWD loading behavior.
+	if cfg.ConfigPath != "" {
+		tuiRuntimeConfig = cfg
+		tuiRuntimeConfigSet = true
+	} else {
+		tuiRuntimeConfig = config.Config{}
+		tuiRuntimeConfigSet = false
+	}
+
 	var rootCmd = &cobra.Command{
 		Use:          "la-famille",
 		Short:        "La Famille is a static site generator",
 		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if !showVersion && versionJSON {
+				return fmt.Errorf("--json is only valid together with --version")
+			}
+			if showVersion {
+				return writeBuildInfo(cmd.OutOrStdout(), versionJSON)
+			}
+			return cmd.Help()
+		},
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if cmd.Name() != "tui" {
 				_, _ = logger.Setup(globalLogFile, false)
@@ -48,9 +75,13 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		Short: "Build the static site",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			// Update config from flags
-			cfg.ContentDir = contentDir
-			cfg.OutputDir = outputDir
-			cfg.Template = templateFile
+			if projectRoot != "" {
+				cfg.ProjectRoot = resolveProjectPath(cfg.ProjectRoot, projectRoot)
+			}
+			cfg.ContentDir = resolveProjectPath(cfg.ProjectRoot, contentDir)
+			cfg.OutputDir = resolveProjectPath(cfg.ProjectRoot, outputDir)
+			cfg.AssetDir = resolveProjectPath(cfg.ProjectRoot, assetDir)
+			cfg.Template = resolveProjectPath(cfg.ProjectRoot, templateFile)
 			if cmd.Flags().Changed("site-url") || cmd.Flags().Changed("siteurl") {
 				cfg.SiteURL = siteURL
 				if err := cfg.ValidateSiteURL(); err != nil {
@@ -68,6 +99,9 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 						return fmt.Errorf("invalid configuration: %w", err)
 					}
 				}
+			}
+			if err := cfg.ValidateResolved(); err != nil {
+				return fmt.Errorf("invalid configuration: %w", err)
 			}
 			res, err := generator.Build(cfg)
 			if err != nil {
@@ -97,6 +131,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 
 	buildCmd.Flags().StringVarP(&contentDir, "content", "c", cfg.ContentDir, "Directory containing markdown files")
 	buildCmd.Flags().StringVarP(&outputDir, "output", "o", cfg.OutputDir, "Directory for generated static site")
+	buildCmd.Flags().StringVar(&assetDir, "asset-dir", cfg.AssetDir, "Directory containing static assets")
 	buildCmd.Flags().StringVarP(&templateFile, "template", "t", cfg.Template, "Path to HTML layout template")
 	buildCmd.Flags().StringVarP(&siteURL, "site-url", "s", cfg.SiteURL, "Public base URL of the site")
 	buildCmd.Flags().StringVar(&siteURL, "siteurl", cfg.SiteURL, "Public base URL of the site (alias for --site-url)")
@@ -106,73 +141,119 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		Use:   "init",
 		Short: "Initialize default configuration",
 		RunE: func(_ *cobra.Command, _ []string) error {
+			root := cfg.ProjectRoot
+			if root == "" {
+				root = "."
+			}
+			root, err := absolutePath(".", root)
+			if err != nil {
+				return fmt.Errorf("resolve project root: %w", err)
+			}
+			configFile := cfg.ConfigPath
+			if configFile == "" {
+				configFile = filepath.Join(root, "config.yaml")
+			}
+			if err := os.MkdirAll(filepath.Dir(configFile), 0755); err != nil {
+				return fmt.Errorf("failed to create configuration directory: %w", err)
+			}
 			// Writing unconditionally replaced a customized config.yaml with
 			// defaults and reported success, losing siteurl, output_dir and
 			// every other setting the operator had chosen. Overwriting is now
 			// something you ask for.
-			if err := writeInitialConfig("config.yaml", initForce); err != nil {
+			if err := writeInitialConfig(configFile, initForce); err != nil {
 				return err
 			}
 
-			tmplDir := "templates"
-			tmplPath := filepath.Join(tmplDir, "layout.html")
-			if _, err := os.Stat(tmplPath); os.IsNotExist(err) {
-				if err := os.MkdirAll(tmplDir, 0755); err != nil {
-					return fmt.Errorf("failed to create templates directory: %w", err)
-				}
-				defaultTmplContent := `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}}</title>
-    <meta name="description" content="{{.Description}}">
-</head>
-<body>
-    <header>
-        <h1>{{.Title}}</h1>
-    </header>
-    <main>
-        <article>
-            {{.Content}}
-        </article>
-    </main>
-</body>
-</html>
-`
-				if err := os.WriteFile(tmplPath, []byte(defaultTmplContent), 0600); err != nil {
-					return fmt.Errorf("failed to write default template: %w", err)
-				}
-				slog.Info("Created default templates/layout.html")
+			// --force replaces the selected config with the defaults. Use that
+			// same default configuration for the scaffold paths below; otherwise
+			// a previously customized or malformed config could cause init to
+			// create directories that the newly written config does not use.
+			initCfg, err := config.DefaultConfig().ResolvePaths(root)
+			if err != nil {
+				return fmt.Errorf("resolve default project paths: %w", err)
 			}
 
-			cDir := cfg.ContentDir
-			if cDir == "" {
-				cDir = "content"
+			tmplPath := initCfg.Template
+			if _, err := os.Stat(tmplPath); os.IsNotExist(err) {
+				defaultTmplContent, readErr := runtimeassets.DefaultTemplate()
+				if readErr != nil {
+					return fmt.Errorf("read embedded default template: %w", readErr)
+				}
+				if err := os.MkdirAll(filepath.Dir(tmplPath), 0755); err != nil {
+					return fmt.Errorf("failed to create template directory: %w", err)
+				}
+				if err := os.WriteFile(tmplPath, defaultTmplContent, 0600); err != nil {
+					return fmt.Errorf("failed to write default template: %w", err)
+				}
+				slog.Info("Created default template", "path", tmplPath)
+			} else if err != nil {
+				return fmt.Errorf("inspect default template %s: %w", tmplPath, err)
 			}
+			partials, err := runtimeassets.DefaultPartials()
+			if err != nil {
+				return fmt.Errorf("read embedded template partials: %w", err)
+			}
+			if err := runtimeassets.InstallMissing(filepath.Dir(tmplPath), partials, 0600); err != nil {
+				return fmt.Errorf("install default template partials: %w", err)
+			}
+
+			cDir := initCfg.ContentDir
 			if err := os.MkdirAll(cDir, 0755); err != nil {
 				return fmt.Errorf("failed to create content directory: %w", err)
 			}
 
-			aDir := cfg.AssetDir
-			if aDir == "" {
-				aDir = "assets"
-			}
+			aDir := initCfg.AssetDir
 			if err := os.MkdirAll(aDir, 0755); err != nil {
 				return fmt.Errorf("failed to create assets directory: %w", err)
+			}
+			assetFiles, err := runtimeassets.DefaultAssetFiles()
+			if err != nil {
+				return fmt.Errorf("read embedded default assets: %w", err)
+			}
+			if !initCfg.GraphExplorer {
+				delete(assetFiles, "graph/explorer.css")
+				delete(assetFiles, "graph/explorer.js")
+			}
+			if err := runtimeassets.InstallMissing(aDir, assetFiles, 0644); err != nil {
+				return fmt.Errorf("install default assets: %w", err)
 			}
 
 			return nil
 		},
 	}
 
+	var ragOutputDir, ragContentDir, ragAssetDir, ragTemplateFile string
 	var ragCmd = &cobra.Command{
 		Use:   "rag",
 		Short: "Export project files into RAG-friendly markdown bundles",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return ragexport.RunExport(cfg)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ragCfg := cfg
+			if projectRoot != "" {
+				ragCfg.ProjectRoot = resolveProjectPath(cfg.ProjectRoot, projectRoot)
+			}
+			if ragContentDir != "" {
+				ragCfg.ContentDir = resolveProjectPath(ragCfg.ProjectRoot, ragContentDir)
+			}
+			if ragAssetDir != "" {
+				ragCfg.AssetDir = resolveProjectPath(ragCfg.ProjectRoot, ragAssetDir)
+			}
+			if ragTemplateFile != "" {
+				ragCfg.Template = resolveProjectPath(ragCfg.ProjectRoot, ragTemplateFile)
+			}
+			if ragOutputDir != "" {
+				ragCfg.RagDir = resolveProjectPath(ragCfg.ProjectRoot, ragOutputDir)
+			}
+			if err := ragCfg.ValidateResolved(); err != nil {
+				return fmt.Errorf("invalid configuration: %w", err)
+			}
+			slog.Info("Writing RAG archive", "output", ragCfg.RagDir)
+			return ragexport.RunExport(ragCfg)
 		},
 	}
+	ragCmd.Flags().StringVar(&ragOutputDir, "output", cfg.RagDir, "Directory for the RAG archive")
+	ragCmd.Flags().StringVar(&ragContentDir, "content", cfg.ContentDir, "Directory containing Markdown files")
+	ragCmd.Flags().StringVar(&ragAssetDir, "asset-dir", cfg.AssetDir, "Directory containing static assets")
+	ragCmd.Flags().StringVar(&ragTemplateFile, "template", cfg.Template, "Path to the HTML layout template")
 
 	var servePort int
 	var watchMode bool
@@ -262,9 +343,14 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	rootCmd.AddCommand(prCmd)
 	rootCmd.AddCommand(tuiCmd)
 	rootCmd.PersistentFlags().StringVar(&globalLogFile, "log-file", "", "Path to log file (default is stderr for CLI, la-famille.log for TUI)")
+	rootCmd.PersistentFlags().StringVar(&projectRoot, "project-root", cfg.ProjectRoot, "Project root for config-relative paths")
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", cfg.ConfigPath, "Path to config.yaml (default: <project-root>/config.yaml)")
+	rootCmd.PersistentFlags().BoolVar(&showVersion, "version", false, "Print build identity and exit")
+	rootCmd.PersistentFlags().BoolVar(&versionJSON, "json", false, "Print machine-readable output (use with --version)")
 
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(setupCheckCmd(cfg))
+	rootCmd.AddCommand(setupPublishCheckCmd(cfg))
 	rootCmd.AddCommand(setupNewCmd(cfg))
 	rootCmd.AddCommand(setupAskCmd(cfg))
 
@@ -325,6 +411,9 @@ func guardUnusableConfig(rootCmd *cobra.Command, configErr error) {
 				return err
 			}
 		}
+		if showVersion {
+			return nil
+		}
 		if requiresSiteConfig(cmd) {
 			return fmt.Errorf("%w (run `la-famille init` to regenerate config.yaml, or fix it by hand)", configErr)
 		}
@@ -333,15 +422,37 @@ func guardUnusableConfig(rootCmd *cobra.Command, configErr error) {
 }
 
 func main() {
+	args := os.Args[1:]
+	// Version output is intentionally independent of project state. This is
+	// what makes an unpacked release archive identifiable in an empty directory
+	// with no source tree, Go module, or network access.
+	if argsRequestVersion(args) {
+		rootCmd := setupRootCmd(config.DefaultConfig())
+		versionArgs := []string{"--version"}
+		for _, arg := range args {
+			if arg == "--json" {
+				versionArgs = append(versionArgs, "--json")
+				break
+			}
+		}
+		rootCmd.SetArgs(versionArgs)
+		if err := rootCmd.Execute(); err != nil {
+			slog.Error("Application error", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
 
-	// Load config first to set defaults for flags. On failure cfg is the zero
-	// Config, and guardUnusableConfig below stops anything that would consume
-	// it from running -- deliberately without falling back to DefaultConfig,
-	// so a hole in the guard surfaces as an obvious failure rather than a
-	// build that quietly loses siteurl and friends.
-	cfg, configErr := loadSiteConfig("config.yaml")
+	// Load config first to set path-aware command defaults. On failure the
+	// bootstrapper still returns the selected project root/config path so
+	// `init --force` remains available as the repair path.
+	cfg, configErr := loadProjectConfig(args)
 	if configErr != nil {
-		slog.Error("config.yaml is unusable; only `la-famille init` and help remain available", "error", configErr)
+		slog.Error("selected config is unusable; only `la-famille init` and help remain available", "error", configErr)
+		fallback := config.DefaultConfig()
+		fallback.ProjectRoot = cfg.ProjectRoot
+		fallback.ConfigPath = cfg.ConfigPath
+		cfg = fallback
 	}
 
 	rootCmd := setupRootCmd(cfg)
@@ -371,6 +482,7 @@ const initConfigBackup = "config.yaml.bak"
 // with `init --force`, which keeps the old file as config.yaml.bak so even a
 // broken one can still be read back by hand.
 func writeInitialConfig(path string, force bool) error {
+	backupPath := filepath.Join(filepath.Dir(path), initConfigBackup)
 	_, statErr := os.Stat(path)
 	switch {
 	case statErr == nil && !force:
@@ -380,10 +492,10 @@ func writeInitialConfig(path string, force bool) error {
 		if err != nil {
 			return fmt.Errorf("failed to read existing %s before replacing it: %w", path, err)
 		}
-		if err := os.WriteFile(initConfigBackup, existing, 0600); err != nil {
-			return fmt.Errorf("failed to back up %s to %s: %w", path, initConfigBackup, err)
+		if err := os.WriteFile(backupPath, existing, 0600); err != nil {
+			return fmt.Errorf("failed to back up %s to %s: %w", path, backupPath, err)
 		}
-		slog.Info("Backed up existing configuration", "from", path, "to", initConfigBackup)
+		slog.Info("Backed up existing configuration", "from", path, "to", backupPath)
 	case !os.IsNotExist(statErr):
 		return fmt.Errorf("failed to inspect %s: %w", path, statErr)
 	}

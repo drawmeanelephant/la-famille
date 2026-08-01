@@ -18,6 +18,28 @@ go run ./cmd/la-famille [command] [flags]
 
 *Tip: Running the CLI with the `tui` subcommand will launch the interactive [Terminal UI (TUI)](tui.md).*
 
+The runtime-independent identity commands are available from any directory:
+
+```bash
+la-famille --version
+la-famille --version --json
+```
+
+`--json` is valid with `--version` and returns stable `version`, `commit`,
+`build_date`, `target`, and `go_version` fields. Release builds set the first
+three fields with `-X main.buildVersion=...`, `-X main.buildCommit=...`, and
+`-X main.buildDate=...`.
+
+Global path flags are resolved before the config is loaded:
+
+* `--project-root` selects the site root. Relative content, template, asset,
+  output, and RAG paths are resolved from it.
+* `--config` selects a config file. Without `--project-root`, its directory is
+  the project root. An explicit `--project-root` takes precedence.
+
+The precedence order is explicit flags, then `config.yaml`, then the current
+directory/defaults.
+
 ---
 
 ## Commands
@@ -57,11 +79,18 @@ go run ./cmd/la-famille build [flags]
     *   `--content`, `-c` (string): The path to the directory containing your Markdown source files. Defaults to `content`.
     *   `--output`, `-o` (string): The path to the directory where the generated HTML should be placed. Defaults to `public`.
     *   `--template`, `-t` (string): The path to the default HTML layout template to use. Defaults to `templates/layout.html`.
+    *   `--asset-dir` (string): The directory containing static assets. Defaults to `assets`.
     *   `--site-url` / `--siteurl` (`-s`) (string): The public base URL of the site. Used for canonical links, `og:url`, and absolute URLs in the sitemap, feed, and Knowledge Graph page. Defaults to unset (root-relative URLs only).
 
 *Example:* `go run ./cmd/la-famille build -c my_docs -o dist -t templates/custom.html`
 
 After the build, a static Knowledge Graph Explorer page is also written to `<output>/graph/index.html` (default enabled). The explorer page is self-contained — opening it directly in a browser, or serving the `public/` directory with any static file server, works without any runtime backend. To opt out, set `graph_explorer: false` in `config.yaml`.
+
+`init` installs the embedded default layout, required partial, and runtime
+assets only when the corresponding site files are absent. Existing site files
+remain the explicit override. Run `publish-check --output public` before
+uploading an artifact to get a deterministic file manifest and validate local
+HTML references.
 
 ### `serve`
 
@@ -87,6 +116,20 @@ go run ./cmd/la-famille rag
 ```
 
 *   **Description:** Scans the generated output and metadata to construct an optimized dataset designed for Large Language Models (LLMs). This exports files like `rag-system.md`, `rag-config.md`, and `rag-content.md` into the `rag-archive/` directory. See the [RAG Export Guide](rag.md) for more details.
+*   **Flags:** `--output` selects the archive directory, `--project-root` selects the source project, and `--content`, `--asset-dir`, and `--template` select the source inputs. These flags allow CI to write directly to `public/rag-archive` without changing the checkout.
+
+### `publish-check`
+
+Validates a generated static artifact and prints every relative file path:
+
+```bash
+la-famille --project-root /path/to/site publish-check --output public
+la-famille --project-root /path/to/site publish-check --output public --json
+```
+
+The check rejects an accidentally published `.la-famille-cache.json`, verifies
+local `href`/`src` references, and requires the graph explorer's payload and
+companion CSS/JS when `graph/index.html` is present.
 
 ### `pr`
 

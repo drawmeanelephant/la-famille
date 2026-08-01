@@ -37,6 +37,11 @@ type Config struct {
 	WatchMode          bool       `yaml:"-"`
 	CheckAssetHealth   bool       `yaml:"check_asset_health"`
 	GraphExplorer      bool       `yaml:"graph_explorer"`
+	// ConfigPath is populated by the CLI bootstrapper and is not part of the
+	// site configuration or build fingerprint. It lets commands such as init
+	// write to an explicitly selected configuration file while keeping the
+	// public Config type useful to library callers.
+	ConfigPath string `yaml:"-" json:"-"`
 }
 
 // DefaultConfig returns a Config with sensible default values.
@@ -116,6 +121,10 @@ asset_dir: "assets"
 
 # rag_dir: The directory where RAG markdown bundles will be exported.
 rag_dir: "rag-archive"
+
+# project_root: Optional root for all relative paths. The CLI --project-root
+# flag takes precedence over this value.
+# project_root: "."
 
 # theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
 theme: "retro"
@@ -238,8 +247,52 @@ func (c Config) ValidateSiteURL() error {
 	return nil
 }
 
-// Validate checks that the configuration values are safe and correct.
+// ResolvePaths makes all project-relative paths explicit. The CLI calls this
+// after loading config.yaml so a binary launched from outside a project does
+// not accidentally interpret content/, templates/, or public/ relative to
+// the process CWD.
+//
+// Absolute paths are preserved. This is intentional for explicit overrides
+// such as --asset-dir /tmp/site-assets; the source configuration file remains
+// restricted to local relative paths by Validate.
+func (c Config) ResolvePaths(projectRoot string) (Config, error) {
+	root, err := filepath.Abs(filepath.Clean(projectRoot))
+	if err != nil {
+		return Config{}, fmt.Errorf("resolve project root %q: %w", projectRoot, err)
+	}
+
+	c.ProjectRoot = root
+	c.ContentDir = resolvePath(root, c.ContentDir)
+	c.OutputDir = resolvePath(root, c.OutputDir)
+	c.AssetDir = resolvePath(root, c.AssetDir)
+	c.RagDir = resolvePath(root, c.RagDir)
+	c.Template = resolvePath(root, c.Template)
+	return c, nil
+}
+
+func resolvePath(root, configured string) string {
+	if filepath.IsAbs(configured) {
+		return filepath.Clean(configured)
+	}
+	return filepath.Clean(filepath.Join(root, configured))
+}
+
+// Validate checks that a configuration file contains safe, local paths and
+// valid values. Config files are deliberately not allowed to smuggle absolute
+// paths into a build; callers that have resolved an explicit project-root may
+// use ValidateResolved instead.
 func (c Config) Validate() error {
+	return c.validate(false)
+}
+
+// ValidateResolved validates a runtime configuration after ResolvePaths has
+// made its paths absolute. It keeps the same value and output-isolation checks
+// as Validate while allowing explicit paths selected by the operator.
+func (c Config) ValidateResolved() error {
+	return c.validate(true)
+}
+
+func (c Config) validate(allowAbsolutePaths bool) error {
 	if c.Port < 1 || c.Port > 65535 {
 		return fmt.Errorf("Port must be between 1 and 65535, got %d", c.Port)
 	}
@@ -261,7 +314,7 @@ func (c Config) Validate() error {
 		if path == "" {
 			return fmt.Errorf("%s cannot be empty", name)
 		}
-		if !filepath.IsLocal(path) {
+		if !allowAbsolutePaths && !filepath.IsLocal(path) {
 			return fmt.Errorf("%s must be a local path, got %s", name, path)
 		}
 	}
@@ -325,6 +378,13 @@ func (c Config) validateOutputIsolation() error {
 		case other == output:
 			return fmt.Errorf("OutputDir (%s) is the same directory as %s (%s); a build would replace it and delete its contents", c.OutputDir, in.name, in.path)
 		case isWithin(output, other):
+			if in.name == "RagDir" {
+				// RAG archives may intentionally be staged below public for a
+				// Pages artifact. The build does not read RagDir; a later `rag`
+				// command repopulates that child after the static build swaps the
+				// output directory into place.
+				continue
+			}
 			// The input lives inside the output directory, so the swap takes
 			// it with the rest of the replaced tree.
 			return fmt.Errorf("%s (%s) is inside OutputDir (%s); a build would delete it when it replaces the output directory", in.name, in.path, c.OutputDir)

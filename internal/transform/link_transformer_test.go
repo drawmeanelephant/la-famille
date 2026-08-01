@@ -66,6 +66,16 @@ func TestLinkTransformer(t *testing.T) {
 			expectedMiss: map[string][]string{},
 		},
 		{
+			name:        "nested rendered page links to root unrendered md file",
+			currentFile: "about.md",
+			markdown:    "[Raw](unrendered.md)",
+			fileMap: map[string]*content.FileMeta{
+				"unrendered.md": {Render: &renderFalse},
+			},
+			expectedHTML: "<p><a href=\"../unrendered.md\">Raw</a></p>\n",
+			expectedMiss: map[string][]string{},
+		},
+		{
 			name:         "missing link rewritten and tracked",
 			currentFile:  "index.md",
 			markdown:     "[Link](missing.md)",

@@ -122,7 +122,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 	if err != nil {
 		return BuildResult{}, fmt.Errorf("failed to fingerprint build inputs: %w", err)
 	}
-	if cache, cacheErr := loadBuildCache(cachePath(cfg.OutputDir)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
+	if cache, cacheErr := loadBuildCache(cachePath(cfg)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
 		if err := os.RemoveAll(stagingDir); err != nil {
 			return BuildResult{}, fmt.Errorf("remove unused build staging directory: %w", err)
 		}
@@ -585,7 +585,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	if err != nil {
 		return result, fmt.Errorf("failed to collect generated files: %w", err)
 	}
-	if err := writeBuildCache(cachePath(cfg.OutputDir), fingerprint, files, result.PageCount, result.Health, result.Warnings); err != nil {
+	if err := writeBuildCache(cachePath(siteCfg), fingerprint, files, result.PageCount, result.Health, result.Warnings); err != nil {
 		return result, fmt.Errorf("failed to write build cache: %w", err)
 	}
 

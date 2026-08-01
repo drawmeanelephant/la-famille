@@ -7,10 +7,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/pathutil"
+	"github.com/tbuddy/la-famille/internal/runtimeassets"
 )
 
 // graphAssetDir is the asset subdirectory holding the knowledge graph
@@ -48,20 +50,20 @@ func resolveDir(dir string) string {
 type ClaimOutput func(relOut string) error
 
 func CopyAssets(cfg config.Config, claim ClaimOutput) error {
-	if cfg.AssetDir == "" {
-		return nil
-	}
-
 	var ignoreRules []IgnoreRule
 	if cfg.ProjectRoot != "" {
 		ignoreRules = LoadIgnoreRules(cfg.ProjectRoot)
 	}
 
-	if _, err := os.Stat(cfg.AssetDir); err != nil {
-		if os.IsNotExist(err) {
-			return nil
+	assetRootExists := cfg.AssetDir != ""
+	if assetRootExists {
+		if _, err := os.Stat(cfg.AssetDir); err != nil {
+			if os.IsNotExist(err) {
+				assetRootExists = false
+			} else {
+				return err
+			}
 		}
-		return err
 	}
 
 	outDirClean := filepath.Clean(filepath.Join(cfg.OutputDir, "assets"))
@@ -90,92 +92,143 @@ func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 	// pointing at the project root, say. Walking it would copy the previous
 	// build, and everything sitting beside it, into the new one and grow
 	// without bound. Failing here beats publishing the whole project.
-	if pathutil.IsSafePath(walkRoot, outputResolved) {
+	if assetRootExists && pathutil.IsSafePath(walkRoot, outputResolved) {
 		return fmt.Errorf("asset directory %q resolves to %q, which contains the output directory; copying it would publish the output into itself", cfg.AssetDir, walkRoot)
 	}
 
-	return filepath.WalkDir(walkRoot, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
+	if assetRootExists {
+		if err := filepath.WalkDir(walkRoot, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
 
-		// Belt and braces: never descend into the output directory even if the
-		// containment check above was somehow satisfied.
-		if d.IsDir() && path == outputResolved {
-			return filepath.SkipDir
-		}
-
-		if d.Type()&os.ModeSymlink != 0 {
-			slog.Warn("Skipping symlink in assets", "path", path)
-			return nil
-		}
-		relPath, err := filepath.Rel(walkRoot, path)
-		if err != nil {
-			return err
-		}
-
-		relSlash := filepath.ToSlash(relPath)
-
-		// The knowledge graph explorer's bundle is only reachable from the
-		// explorer page. When graph_explorer is off that page is never
-		// generated, so copying the bundle would ship dead CSS and JS.
-		if !cfg.GraphExplorer && (relSlash == graphAssetDir || strings.HasPrefix(relSlash, graphAssetDir+"/")) {
-			if d.IsDir() {
+			// Belt and braces: never descend into the output directory even if the
+			// containment check above was somehow satisfied.
+			if d.IsDir() && path == outputResolved {
 				return filepath.SkipDir
 			}
-			return nil
+
+			if d.Type()&os.ModeSymlink != 0 {
+				slog.Warn("Skipping symlink in assets", "path", path)
+				return nil
+			}
+			relPath, err := filepath.Rel(walkRoot, path)
+			if err != nil {
+				return err
+			}
+
+			relSlash := filepath.ToSlash(relPath)
+
+			// The knowledge graph explorer's bundle is only reachable from the
+			// explorer page. When graph_explorer is off that page is never
+			// generated, so copying the bundle would ship dead CSS and JS.
+			if !cfg.GraphExplorer && (relSlash == graphAssetDir || strings.HasPrefix(relSlash, graphAssetDir+"/")) {
+				if d.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+
+			// projectRootResolved, not cfg.ProjectRoot: walk paths are resolved, and
+			// mixing the two makes every path non-local, which silently turns
+			// .gitignore filtering into a no-op and publishes ignored files.
+			if IsIgnoredAsset(path, d.IsDir(), relSlash, projectRootResolved, ignoreRules) {
+				return nil
+			}
+
+			if d.IsDir() {
+				return nil
+			}
+
+			destPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
+			if !pathutil.IsSafePath(outDirClean, destPath) {
+				slog.Warn("Static asset sync boundary intervention blocked layout breakout", "path", relPath)
+				return nil
+			}
+
+			// Assets are copied after the pages are rendered, so without an
+			// ownership check an asset silently replaces a page that renders to the
+			// same path — the site publishes the asset bytes while search, graph and
+			// meta all still describe the page.
+			if claim != nil {
+				if claimErr := claim("assets/" + relSlash); claimErr != nil {
+					return claimErr
+				}
+			}
+
+			// Ensure directory structure is built first
+			if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+				return err
+			}
+
+			srcStat, err := d.Info()
+			if err != nil {
+				return err
+			}
+
+			destStat, err := os.Stat(destPath)
+			if err == nil {
+				if srcStat.Size() == destStat.Size() && srcStat.ModTime().Equal(destStat.ModTime()) {
+					return nil
+				}
+			}
+
+			if err := CopyFile(path, destPath); err != nil {
+				return err
+			}
+
+			return os.Chtimes(destPath, srcStat.ModTime(), srcStat.ModTime())
+		}); err != nil {
+			return err
+		}
+	}
+
+	// Released binaries own a small fallback bundle so a fresh init/build does
+	// not require an operator to discover repository assets. User-owned files
+	// were copied first and remain authoritative: the embedded copy only fills
+	// paths that are still absent from the staged output.
+	files, err := runtimeassets.DefaultAssetFiles()
+	if err != nil {
+		return err
+	}
+	assetNames := make([]string, 0, len(files))
+	for relSlash := range files {
+		assetNames = append(assetNames, relSlash)
+	}
+	sort.Strings(assetNames)
+	for _, relSlash := range assetNames {
+		data := files[relSlash]
+		if !cfg.GraphExplorer && (relSlash == graphAssetDir || strings.HasPrefix(relSlash, graphAssetDir+"/")) {
+			continue
 		}
 
-		// projectRootResolved, not cfg.ProjectRoot: walk paths are resolved, and
-		// mixing the two makes every path non-local, which silently turns
-		// .gitignore filtering into a no-op and publishes ignored files.
-		if IsIgnoredAsset(path, d.IsDir(), relSlash, projectRootResolved, ignoreRules) {
-			return nil
-		}
-
-		if d.IsDir() {
-			return nil
-		}
-
-		destPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
+		destPath := filepath.Join(outDirClean, filepath.FromSlash(relSlash))
 		if !pathutil.IsSafePath(outDirClean, destPath) {
-			slog.Warn("Static asset sync boundary intervention blocked layout breakout", "path", relPath)
-			return nil
+			return fmt.Errorf("embedded asset %q escapes output directory", relSlash)
+		}
+		if info, statErr := os.Lstat(destPath); statErr == nil {
+			if info.IsDir() {
+				return fmt.Errorf("embedded asset destination is a directory: %s", destPath)
+			}
+			continue
+		} else if !os.IsNotExist(statErr) {
+			return statErr
 		}
 
-		// Assets are copied after the pages are rendered, so without an
-		// ownership check an asset silently replaces a page that renders to the
-		// same path — the site publishes the asset bytes while search, graph and
-		// meta all still describe the page.
 		if claim != nil {
-			if claimErr := claim("assets/" + relSlash); claimErr != nil {
-				return claimErr
+			if err := claim("embedded asset " + relSlash); err != nil {
+				return err
 			}
 		}
-
-		// Ensure directory structure is built first
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 			return err
 		}
-
-		srcStat, err := d.Info()
-		if err != nil {
-			return err
+		if err := os.WriteFile(destPath, data, 0644); err != nil {
+			return fmt.Errorf("write embedded asset %s: %w", relSlash, err)
 		}
+	}
 
-		destStat, err := os.Stat(destPath)
-		if err == nil {
-			if srcStat.Size() == destStat.Size() && srcStat.ModTime().Equal(destStat.ModTime()) {
-				return nil
-			}
-		}
-
-		if err := CopyFile(path, destPath); err != nil {
-			return err
-		}
-
-		return os.Chtimes(destPath, srcStat.ModTime(), srcStat.ModTime())
-	})
+	return nil
 }
 
 type IgnoreRule struct {

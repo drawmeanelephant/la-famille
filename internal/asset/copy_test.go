@@ -50,14 +50,42 @@ func TestCopyAssets(t *testing.T) {
 
 func TestCopyAssets_EmptyAssetDir(t *testing.T) {
 	cfg := config.Config{
-		AssetDir:  "",
-		OutputDir: t.TempDir(),
+		AssetDir:      "",
+		OutputDir:     t.TempDir(),
+		GraphExplorer: true,
 	}
 	err := CopyAssets(cfg, nil)
 	if err != nil {
 		t.Errorf("Expected nil error for empty AssetDir, got: %v", err)
 	}
+	if _, err := os.Stat(filepath.Join(cfg.OutputDir, "assets", "graph", "explorer.js")); err != nil {
+		t.Errorf("embedded graph explorer fallback was not staged: %v", err)
+	}
 }
+
+func TestCopyAssets_SiteOverrideBeatsEmbeddedFallback(t *testing.T) {
+	tempDir := t.TempDir()
+	assetDir := filepath.Join(tempDir, "assets")
+	outputDir := filepath.Join(tempDir, "public")
+	if err := os.MkdirAll(filepath.Join(assetDir, "graph"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(assetDir, "graph", "explorer.js"), []byte("site override"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := CopyAssets(config.Config{AssetDir: assetDir, OutputDir: outputDir, GraphExplorer: true}, nil); err != nil {
+		t.Fatalf("CopyAssets: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(outputDir, "assets", "graph", "explorer.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "site override" {
+		t.Errorf("site asset override = %q, want site override", got)
+	}
+}
+
 func TestCopyAssets_SkipGoAndGitignore(t *testing.T) {
 	tempDir := t.TempDir()
 

@@ -149,6 +149,55 @@ func TestLoadMissingConfigStillReturnsDefaults(t *testing.T) {
 	}
 }
 
+func TestResolvePathsMakesProjectRootExplicit(t *testing.T) {
+	root := filepath.Join(string(filepath.Separator), "tmp", "la-famille-site")
+	cfg := DefaultConfig()
+	cfg.ContentDir = "docs"
+	cfg.OutputDir = "dist"
+	cfg.AssetDir = "static"
+	cfg.RagDir = "build/rag"
+	cfg.Template = "layouts/base.html"
+
+	resolved, err := cfg.ResolvePaths(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.ProjectRoot != root {
+		t.Errorf("ProjectRoot = %q, want %q", resolved.ProjectRoot, root)
+	}
+	for name, got := range map[string]string{
+		"ContentDir": resolved.ContentDir,
+		"OutputDir":  resolved.OutputDir,
+		"AssetDir":   resolved.AssetDir,
+		"RagDir":     resolved.RagDir,
+		"Template":   resolved.Template,
+	} {
+		if !filepath.IsAbs(got) {
+			t.Errorf("%s = %q, want absolute path", name, got)
+		}
+	}
+	if err := resolved.ValidateResolved(); err != nil {
+		t.Fatalf("ValidateResolved: %v", err)
+	}
+}
+
+func TestResolvePathsPreservesExplicitAbsoluteOverrides(t *testing.T) {
+	root := t.TempDir()
+	externalAssets := filepath.Join(t.TempDir(), "assets")
+	cfg := DefaultConfig()
+	cfg.AssetDir = externalAssets
+	resolved, err := cfg.ResolvePaths(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.AssetDir != externalAssets {
+		t.Errorf("AssetDir = %q, want explicit absolute override %q", resolved.AssetDir, externalAssets)
+	}
+	if err := resolved.ValidateResolved(); err != nil {
+		t.Fatalf("ValidateResolved: %v", err)
+	}
+}
+
 func TestWriteDefault(t *testing.T) {
 	tmpDir := t.TempDir()
 	testConfigFile := filepath.Join(tmpDir, "config.yaml")

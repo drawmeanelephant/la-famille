@@ -49,7 +49,7 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 
 			contentDir := cfg.ContentDir
 			if newContentDir != "" {
-				contentDir = newContentDir
+				contentDir = resolveProjectPath(cfg.ProjectRoot, newContentDir)
 			}
 
 			cleanInput := inputPath
