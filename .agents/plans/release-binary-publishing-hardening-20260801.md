@@ -102,7 +102,8 @@ Each branch must remain a real worktree under `/private/tmp`, use system Git for
 Implementation complete on `codex/release-binary-contract`. The CLI/runtime
 boundary, embedded fallback assets, cache/publication policy, artifact checker,
 RAG output isolation, Pages/action workflows, release packaging, tests, and
-operator documentation are in the working tree. `go test ./...` and `go vet
-./...` pass. The three isolated dogfood branches remain unchanged; their
-same-name retest sections are still pending and require separate worktree
-coordination.
+operator documentation are committed. `go test ./...` and `go vet ./...`
+pass. The same-name dogfood retests are complete: local static `512de18`,
+GitHub Pages `e9ec01a`, and release binary `27c90db`; each branch preserved its
+original report and added only its retest section plus the cherry-picked
+implementation commit.
