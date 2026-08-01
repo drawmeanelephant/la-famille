@@ -1,26 +1,41 @@
 # Component Mapping & Micro-Improvement Audit: La Famille
 
 ## Part 1: Component Identification
-* `internal/generator`: Orchestrates the site build process, manages the output directory lifecycle (staging, replacement), and handles output path reservations to prevent collisions.
-* `internal/render`: Handles HTML template parsing, caching, layout discovery, partials loading, and rendering pages to HTML files. Injects live-reload scripts during WatchMode.
-* `internal/transform`: Provides URL transformation utilities, slug validation, and abstract syntax tree manipulations (e.g., link transformation, emoji kitchen).
-* `internal/asset`: Manages copying static assets to the output directory and natively evaluates `.gitignore` rules to filter files without using external git subshells.
-* `internal/search`: Generates clean text snippets, extracts headings from Markdown, strips HTML/Markdown noise, and writes a minified JSON search index.
-* `internal/taxonomy`: Manages tags, categories, and other metadata aggregations across pages to build taxonomy listings.
-* `internal/graph`: Parses backlink data, builds adjacency lists, and exports a knowledge graph JSON bundle for the explorer UI.
-* `internal/ragexport`: Formats and exports site content into a clean Markdown structure suitable for Retrieval-Augmented Generation (RAG) consumption.
-* `internal/config`: Defines application configuration structures (`SiteLink`, `Config`), validation logic, and default values.
-* `internal/content`: Parses Markdown source files, decodes YAML frontmatter into typed structs, normalizes frontmatter keys, and gathers file metadata.
-* `internal/stub`: Manages missing link placeholders by claiming output paths and generating stub pages for dangling links.
-* `internal/page`: Defines the core data models and template context models used during HTML rendering.
-* `internal/sitedata`: Generates aggregate site metadata outputs such as writing `meta.json`.
-* `internal/markdown`: Configures and extends the Goldmark Markdown parser with custom renderers and extensions for La Famille (GFM, Typographer).
-* `internal/git`: Provides native git operations and local working tree status checks.
-* `internal/github`: Integrates with the GitHub API to fetch PRs, evaluate policy for automatic merging/closing (litterbox policy engine), and sync local changes.
-* `internal/watcher`: Implements WatchMode using `fsnotify`, monitoring the filesystem for changes, triggering rebuilds, and serving SSE live-reload events.
+The `internal/` directory contains the core business logic of La Famille, divided into focused components:
+
+*   **`internal/generator`**: Orchestrates the overall site build process. It manages concurrency, dependencies, error collection, and build caching to output the final static site.
+*   **`internal/render`**: Handles the rendering of HTML templates.
+*   **`internal/transform`**: Manages transformations, such as adjusting markdown AST links and applying Emoji Kitchen features.
+*   **`internal/asset`**: Copies static assets from the source to the output directory, respecting `.gitignore` patterns without invoking external `git` subprocesses.
+*   **`internal/search`**: Responsible for generating a minified JSON search index from the content.
+*   **`internal/taxonomy`**: Aggregates and renders taxonomy terms (like tags and categories) across the site.
+*   **`internal/graph`**: Manages the adjacency list of backlinks and relationships between content nodes.
+*   **`internal/ragexport`**: Exports the corpus into markdown bundles formatted for Retrieval-Augmented Generation (RAG) consumption.
+*   **`internal/config`**: Provides configuration validation, defaults, and struct definitions for the site and engine.
+*   **`internal/content`**: Extracts and structures metadata and YAML frontmatter from content files.
+*   **`internal/stub`**: Provides logic for resolving missing or stubbed placeholders within the content.
+*   **`internal/page`**: Defines the data models used when rendering templates.
+*   **`internal/sitedata`**: Handles the writing of structural site metadata (like `meta.json` and sitemaps).
+*   **`internal/markdown`**: Configures and instantiates the Goldmark markdown rendering engine with custom extensions.
+*   **`internal/git`**: Provides utilities for querying local git repository status.
+*   **`internal/github`**: Handles external GitHub API interactions, such as checking Pull Request policies and syncing data.
+*   **`internal/watcher`**: Implements file system watching, debouncing, and SSE-based live-reloading for the development server.
+*   **`internal/ask`**: HTTP orchestrator tying the retrieval corpus and LLM provider together for answering queries.
+*   **`internal/retrieval`**: Handles corpus and artifact loading for RAG (Retrieval-Augmented Generation).
 
 ## Part 2: Micro-Improvements
-1. **Struct Field Alignment (`internal/search/search.go` -> `Item`)**: Reorder the fields of the `Item` struct by size (placing slices `Tags` and `Headings` before strings `Title`, `URL`, `Snippet`) to minimize padding and improve memory packing.
-2. **Linear Scan to Map Lookup (`internal/github/policy.go` -> `authorAllowed`)**: `authorAllowed` and `hasRequiredLabel` perform linear slice scans and lowercasing inside loops for every PR evaluation. Converting `PolicyConfig.BotAuthors` and labels to maps (`map[string]bool`) during policy initialization would turn these `O(N)` scans into `O(1)` map lookups.
-3. **Better Error Context (`internal/asset/copy.go`)**: When `os.MkdirAll` or `os.Chtimes` fails during asset directory creation or timestamp syncing, they return raw standard library errors. Wrapping them with `fmt.Errorf("failed to create asset dir %q: %w", outDirClean, err)` would provide much better context during debugging.
-4. **Optimize Live-Reload Injection (`internal/render/render.go`)**: In `writeWithLiveReload`, the code writes directly to an `io.Writer` in three separate byte chunks. Utilizing `strings.LastIndex` to pinpoint `</body>` and assembling the final payload with a `strings.Builder` (pre-allocated with `sb.Grow()`) before performing a single `w.Write()` would reduce overhead and allocations.
+Based on a focused architectural review, here are 4 high-ROI micro-improvements focusing on localized technical debt, memory optimization, and performance:
+
+1.  **Struct Field Alignment Optimization (`internal/ask/server.go`, `internal/generator/cache.go`, etc.):**
+    *   Several core structures are sub-optimally aligned in memory. For example, in `internal/generator/cache.go`, reordering `buildCache` to group pointers and word-sized fields together saves 32 bytes per struct (reducing from 176 to 144 bytes).
+    *   Similar improvements can be made in `internal/ask/server.go` (`AnswerResponse` from 168 to 152 bytes) and `internal/generator/generator.go` (`BuildResult` from 136 to 104 bytes).
+
+2.  **Pre-allocate Slices in Hot Loops (`internal/taxonomy/taxonomy.go`, `internal/generator/generator.go`):**
+    *   In `internal/taxonomy/taxonomy.go` (line 163), when gathering deduplicated pages, the `pages` slice is instantiated dynamically. Pre-allocating it with `make([]string, 0, len(rawPages))` will avoid intermediate reallocations.
+    *   In `internal/generator/generator.go` (line 513), `joinErrs` is appended to without a known length, but its length will always exactly match `len(errs)`. We can pre-allocate it with `make([]error, 0, len(errs))`.
+
+3.  **Optimize Map-based Slice Deduplication (`internal/generator/generator.go`):**
+    *   In `internal/generator/generator.go` (line 342), a map `taxonomySeen` and slice `taxonomyTerms` are created per-file to deduplicate tags. Since we know the maximum capacity is `len(meta.Tags)`, pre-allocating `taxonomyTerms` and potentially reusing a map across the loop could save allocations in the hot path.
+
+4.  **Error Wrapping Enhancements (`internal/generator/generator.go`):**
+    *   In `internal/generator/generator.go` (line 517), `errors.Join(joinErrs...)` is used nicely to aggregate errors. However, there are places where native errors are returned without contextual wrapping. Ensuring all errors propagated up from components like `internal/sitedata` are wrapped with `fmt.Errorf("...: %w", err)` improves observability when debugging build failures.
