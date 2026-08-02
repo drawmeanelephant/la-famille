@@ -1,6 +1,6 @@
 ---
 title: "Cyberpunk Premium Demo"
-layout: "cyberpunk"
+layout: "layout-cyberpunk"
 author: "Jules"
 date: "2026-07-02"
 description: "Neon-drenched interface validator utilizing high-contrast focus states and custom inline emoji extensions."

@@ -9,9 +9,9 @@ author: "Jules"
 
 Welcome to the template gallery. Here is a visual index of every layout available:
 
-- [Brutalist](/showcase/brutalist/)
-- [Cyberpunk](/showcase/cyberpunk/)
-- [Devlog](/showcase/devlog/)
+- [Brutalist](/showcase/layout-brutalist/)
+- [Cyberpunk](/showcase/layout-cyberpunk/)
+- [Devlog](/showcase/layout-devlog/)
 - [Layout Asymmetric](/showcase/layout-asymmetric/)
 - [Layout Bento](/showcase/layout-bento/)
 - [Layout Centered Minimalist](/showcase/layout-centered-minimalist/)
@@ -28,4 +28,4 @@ Welcome to the template gallery. Here is a visual index of every layout availabl
 - [Layout Terminal](/showcase/layout-terminal/)
 - [Layout The Hacker](/showcase/layout-the-hacker/)
 - [Layout](/showcase/layout/)
-- [Luxury Magazine](/showcase/luxury_magazine/)
+- [Luxury Magazine](/showcase/layout-luxury-magazine/)

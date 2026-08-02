@@ -16,8 +16,8 @@ I standardardized keyboard focus visibility for anchor tags within markdown cont
 **Templates updated:**
 - `templates/layout-asymmetric.html`
 - `templates/layout-bento.html`
-- `templates/luxury_magazine.html`
-- `templates/brutalist.html`
+- `templates/layout-luxury-magazine.html`
+- `templates/layout-brutalist.html`
 - `templates/layout-sidebar.html`
 
 ## Learnings
