@@ -223,7 +223,7 @@ func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 			return err
 		}
-		if err := os.WriteFile(destPath, data, 0644); err != nil {
+		if err := os.WriteFile(destPath, data, 0600); err != nil {
 			return fmt.Errorf("write embedded asset %s: %w", relSlash, err)
 		}
 	}

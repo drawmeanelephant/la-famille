@@ -226,7 +226,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	var ragCmd = &cobra.Command{
 		Use:   "rag",
 		Short: "Export project files into RAG-friendly markdown bundles",
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			ragCfg := cfg
 			if projectRoot != "" {
 				ragCfg.ProjectRoot = resolveProjectPath(cfg.ProjectRoot, projectRoot)

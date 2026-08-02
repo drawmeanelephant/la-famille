@@ -27,3 +27,7 @@ jobs:
       - name: Run Tests with Race Detector
         run: |
           go test -race ./...
+
+      - name: Validate release tag helper
+        run: |
+          bash .github/scripts/release/test.sh

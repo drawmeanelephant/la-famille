@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to package'
+        description: 'Existing tag to package (v1.2.3 or 1.2.3)'
         required: true
         type: string
 
@@ -15,15 +15,34 @@ permissions:
 
 jobs:
   test:
-    name: Test source and vet
+    name: Test source at release tag
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      - run: go test ./...
-      - run: go vet ./...
+      # The requested release tag is the authoritative source ref. Manual
+      # dispatches may name the tag with or without the "v" prefix; the exact
+      # tag is checked out and proven to match the checked-out commit before
+      # any test runs.
+      - name: Resolve and verify release tag
+        id: release
+        env:
+          RELEASE_TAG_INPUT: ${{ inputs.tag || github.ref_name }}
+        run: |
+          source .github/scripts/release/tag.sh
+          resolve_and_checkout "$RELEASE_TAG_INPUT"
+          echo "TAG=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "COMMIT=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
+      - name: Test and vet verified tag source
+        run: |
+          echo "Testing ${{ steps.release.outputs.TAG }} at commit ${{ steps.release.outputs.COMMIT }}"
+          go test ./...
+          go vet ./...
 
   package:
     name: Package ${{ matrix.goos }}/${{ matrix.goarch }}
@@ -47,14 +66,29 @@ jobs:
             goarch: arm64
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+      # The same exact-tag checkout runs per packaging target so a manual
+      # dispatch can never package branch HEAD instead of the requested tag.
+      - name: Resolve and verify release tag
+        id: release
+        env:
+          RELEASE_TAG_INPUT: ${{ inputs.tag || github.ref_name }}
+        run: |
+          source .github/scripts/release/tag.sh
+          resolve_and_checkout "$RELEASE_TAG_INPUT"
+          echo "TAG=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "COMMIT=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
       - name: Build and smoke test
         env:
           GOOS_VALUE: ${{ matrix.goos }}
           GOARCH_VALUE: ${{ matrix.goarch }}
-          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+          RELEASE_TAG: ${{ steps.release.outputs.TAG }}
+          RELEASE_COMMIT: ${{ steps.release.outputs.COMMIT }}
         run: |
           TAG="$RELEASE_TAG"
           VERSION="${TAG#v}"
@@ -63,8 +97,9 @@ jobs:
           BIN="la-famille"
           if [ "$GOOS_VALUE" = "windows" ]; then BIN="la-famille.exe"; fi
           BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Packaging verified release $TAG at commit $RELEASE_COMMIT for $GOOS_VALUE/$GOARCH_VALUE"
           GOOS="$GOOS_VALUE" GOARCH="$GOARCH_VALUE" CGO_ENABLED=0 \
-            go build -trimpath -ldflags "-s -w -X main.buildVersion=$TAG -X main.buildCommit=$GITHUB_SHA -X main.buildDate=$BUILD_DATE" \
+            go build -trimpath -ldflags "-s -w -X main.buildVersion=$TAG -X main.buildCommit=$RELEASE_COMMIT -X main.buildDate=$BUILD_DATE" \
             -o "$STAGE/$BIN" ./cmd/la-famille
 
           # Cross-target archives cannot execute on the Ubuntu runner. The
@@ -106,6 +141,9 @@ jobs:
     needs: package
     runs-on: ubuntu-latest
     steps:
+      # A checkout provides the tag-resolution helper and the canonical form of
+      # the release tag; the archives themselves come from the upload step.
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v5
         with:
           path: dist
@@ -114,9 +152,14 @@ jobs:
       - name: Create checksums and release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+          RELEASE_TAG_INPUT: ${{ inputs.tag || github.ref_name }}
         run: |
+          source .github/scripts/release/tag.sh
+          TAG="$(canonical_release_tag "$RELEASE_TAG_INPUT")"
+          echo "Publishing verified release $TAG (test and package jobs verified it points at the built source)"
           cd dist
           sha256sum la-famille_*.tar.gz > SHA256SUMS
-          TAG="$RELEASE_TAG"
+          # --verify-tag confirms the tag still exists at publish time; the
+          # authoritative provenance check that the archive was built from the
+          # tag commit happened in the test and package jobs.
           gh release create "$TAG" --verify-tag --title "La Famille $TAG" --generate-notes la-famille_*.tar.gz SHA256SUMS

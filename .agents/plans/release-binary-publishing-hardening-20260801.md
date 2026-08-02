@@ -4,7 +4,7 @@
 `release-binary-publishing-hardening-20260801`
 
 ## Goal
-Move La Famille from a source-aware developer workflow toward a reproducible, source-independent release workflow while preserving the observed static-site output contract. Then rerun the same three dogfooding branches against the hardened implementation.
+Move La Famille from a source-aware developer workflow toward a repeatable, source-independent release workflow while preserving the observed static-site output contract. Then rerun the same three dogfooding branches against the hardened implementation.
 
 ## Evidence
 Use the three isolated reports as the baseline:
