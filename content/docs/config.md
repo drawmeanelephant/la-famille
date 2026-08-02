@@ -33,6 +33,15 @@ content_dir: "content"
 # output_dir: The directory where the generated HTML site will be placed.
 output_dir: "public"
 
+# asset_dir: The directory containing static assets.
+asset_dir: "assets"
+
+# rag_dir: The directory where RAG markdown bundles will be exported.
+rag_dir: "rag-archive"
+
+# project_root: Optional root for all relative paths. CLI --project-root wins.
+# project_root: "."
+
 # theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
 theme: "retro"
 
@@ -53,14 +62,15 @@ Here is a breakdown of each available field:
 *   **`output_dir`** (string): The destination directory where the fully generated static site (HTML, JSON graphs, etc.) will be placed. *Default: "public"*
 *   **`asset_dir`** (string): The directory containing static assets. *Default: "assets"*
 *   **`rag_dir`** (string): The directory where RAG markdown bundles will be exported. *Default: "rag-archive"*
+*   **`project_root`** (string, optional): The site root used to resolve the other relative paths. When omitted, the config file directory (or current directory) is used. An explicit `--project-root` flag takes precedence.
 *   **`theme`** (string): The DaisyUI theme you want to apply globally to your site. This allows you to easily switch between "light", "dark", "retro", "synthwave", and many more! *Default: "retro"*
 *   **`siteurl`** (string, optional): The public base URL for canonical links, `og:url`, absolute `sitemap.xml` locations, and the `Sitemap` directive in `robots.txt`. For example, GitHub Pages projects can use `https://username.github.io/project-name`. Leave it unset for local-only builds; the sitemap uses root-relative locations and no production host is guessed. The legacy `site_url` key is still accepted.
 *   **`port`** (integer): The local network port used by the built-in HTTP server (`go run ./cmd/la-famille serve`). *Default: 8080*
-*   **`graph_explorer`** (bool): When `true` (default), every build also emits a self-contained Knowledge Graph Explorer page at `<output_dir>/graph/index.html`. The page is fully static, loads its prebuilt `graph/data.json` payload via a relative fetch, and supports search, filter toggles, focus mode, and `?node=` deep-linking. Sites at or above 500 nodes open in search-first mode, where the visualization is not drawn until a page is selected. Set to `false` to skip generation entirely; the legacy config keys `graphExplorer` and `Graph Explorer` are not accepted. The associated client bundle is at `assets/graph/explorer.{js,css}` and ships under the user-owned `assets/` directory. **Note:** the YAML tag is snake_case `graph_explorer` to match neighboring keys like `check_asset_health`; the camelCase `graphExplorer` form documented in the original task spec is intentionally not accepted.
+*   **`graph_explorer`** (bool): When `true` (default), every build also emits a self-contained Knowledge Graph Explorer page at `<output_dir>/graph/index.html`. The page is fully static, loads its prebuilt `graph/data.json` payload via a relative fetch, and supports search, filter toggles, focus mode, and `?node=` deep-linking. Sites at or above 500 nodes open in search-first mode, where the visualization is not drawn until a page is selected. Set to `false` to skip generation entirely; the legacy config keys `graphExplorer` and `Graph Explorer` are not accepted. The associated client bundle is at `assets/graph/explorer.{js,css}`; released binaries provide fallback copies, while files in the selected site asset directory remain authoritative overrides. **Note:** the YAML tag is snake_case `graph_explorer` to match neighboring keys like `check_asset_health`; the camelCase `graphExplorer` form documented in the original task spec is intentionally not accepted.
 
 ## CLI Flag & Environment Overrides
 
-While `config.yaml` sets the baseline, you can temporarily override settings using Command Line Flags or environment variables when running the `build` command.
+While `config.yaml` sets the baseline, you can temporarily override settings using Command Line Flags or environment variables. Explicit CLI paths are resolved from `--project-root`; `--config` can select a config file from outside the current directory.
 
 For example, if you want to build an alternative content directory into a different output folder, you can run:
 
@@ -75,3 +85,11 @@ SITE_URL="https://example.com" go run ./cmd/la-famille build
 ```
 
 Any flags provided at runtime take precedence over environment variables and `config.yaml`. See the [CLI Reference](cli.md) for more details.
+
+## Build cache and publish output
+
+The complete publish artifact is the `output_dir` tree: clean-URL HTML pages,
+raw `render: false` files, taxonomies, graph/backlink/meta/search files,
+discovery files, feeds, and copied or embedded runtime assets. The incremental
+cache is named `.la-famille-cache.json` and is written beside the project root,
+not inside `public/`. Do not upload it. `publish-check` enforces this policy.

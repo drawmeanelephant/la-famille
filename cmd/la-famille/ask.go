@@ -108,11 +108,13 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 		if ragDir == "" {
 			ragDir = "rag-archive"
 		}
+		ragDir = resolveProjectPath(cfg.ProjectRoot, ragDir)
 
 		outputDir := askFlagBundle.outputDir
 		if outputDir == "" {
 			outputDir = cfg.OutputDir
 		}
+		outputDir = resolveProjectPath(cfg.ProjectRoot, outputDir)
 
 		if askFlagBundle.rebuild {
 			slog.Info("rebuilding RAG archive", "dir", ragDir)
@@ -143,7 +145,7 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 		for _, p := range []struct {
 			name, value string
 		}{{"rag-dir", ragDir}, {"output", outputDir}} {
-			if !filepath.IsLocal(p.value) {
+			if !filepath.IsAbs(p.value) && !filepath.IsLocal(p.value) {
 				return fmt.Errorf("ask: %s must be a local path, got %s", p.name, p.value)
 			}
 		}

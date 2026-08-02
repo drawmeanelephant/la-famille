@@ -85,8 +85,25 @@ func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.
 
 			// If target exists and render is explicitly false, keep as .md
 			if exists && meta.Render != nil && !*meta.Render {
-				// keep it as .md, no change needed
-				_ = meta
+				// Keep the raw-file extension, but still rewrite the path relative
+				// to the generated HTML page. A page such as about/index.html that
+				// links to a root-level unrendered.md needs ../unrendered.md; leaving
+				// the source-relative spelling untouched produces a broken publish
+				// artifact.
+				currRender := true
+				if m, ok := t.FileMap[t.CurrentFile]; ok && m.Render != nil && !*m.Render {
+					currRender = false
+				}
+				currOut := GetOutputURL(t.CurrentFile, "", currRender)
+				targetOut := GetOutputURL(targetRelPath, "", false)
+				currDir := filepath.Dir(currOut)
+				if currDir == "." {
+					currDir = ""
+				}
+				if relOut, relErr := filepath.Rel(currDir, targetOut); relErr == nil {
+					u.Path = filepath.ToSlash(relOut)
+					link.Destination = []byte(u.String())
+				}
 			} else {
 				slug := ""
 				if exists && meta != nil {

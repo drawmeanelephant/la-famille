@@ -23,6 +23,18 @@ To generate the RAG archive, you can use either the CLI or the TUI.
 go run ./cmd/la-famille rag
 ```
 
+The archive destination and source root are explicit CLI contracts:
+
+```bash
+la-famille --project-root /path/to/site rag \
+  --output /path/to/site/public/rag-archive \
+  --content content --asset-dir assets --template templates/layout.html
+```
+
+This is the Pages-friendly form: it writes only to the selected archive
+directory and does not copy files into or mutate the source checkout. Relative
+values are resolved from `--project-root`.
+
 **Using the TUI:**
 1. Run `go run ./cmd/la-famille tui`
 2. Select **RAG Export** from the main menu.
@@ -35,7 +47,7 @@ When the export process completes, it places the resulting datasets into the `ra
 *   **`rag-config.md`**: Captures configuration parameters and global state details relevant to the site's generation.
 *   **`rag-content.md`**: The bulk of the archive. This file compiles all the textual content from your pages, stripped of unnecessary HTML bloat, while preserving semantic meaning and linking structure.
 
-`rag-archive/` is generated output. It is intentionally ignored by Git: regenerate it when needed, and do not edit or commit its files. The deployment workflow can still publish a freshly generated archive at `public/rag-archive/`.
+`rag-archive/` is generated output. It is intentionally ignored by Git: regenerate it when needed, and do not edit or commit its files. The deployment workflow publishes a freshly generated archive at `public/rag-archive/` as part of the complete Pages artifact.
 
 ## Using the Output
 

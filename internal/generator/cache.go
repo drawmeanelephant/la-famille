@@ -40,7 +40,26 @@ type buildCache struct {
 	PageCount      int             `json:"page_count"`
 }
 
-func cachePath(outputDir string) string { return filepath.Join(outputDir, cacheFileName) }
+// cachePath keeps incremental state beside the project, never inside the
+// publish artifact. Direct library callers that leave ProjectRoot at "." and
+// build into a temporary output get an output-specific sibling cache so tests
+// and independent sites cannot share state accidentally.
+func cachePath(cfg config.Config) string {
+	outputAbs, err := filepath.Abs(cfg.OutputDir)
+	if err != nil {
+		outputAbs = filepath.Clean(cfg.OutputDir)
+	}
+
+	root := strings.TrimSpace(cfg.ProjectRoot)
+	if root == "" || root == "." {
+		cwd, cwdErr := filepath.Abs(".")
+		if cwdErr == nil && filepath.Dir(outputAbs) == cwd && filepath.Base(outputAbs) == "public" {
+			return filepath.Join(cwd, cacheFileName)
+		}
+		return filepath.Join(filepath.Dir(outputAbs), "."+filepath.Base(outputAbs)+cacheFileName)
+	}
+	return filepath.Join(root, cacheFileName)
+}
 
 // generatorIdentity identifies the build of the generator that produced the
 // output. It is a variable so tests can stand in for a different build.
@@ -254,6 +273,9 @@ func writeBuildCache(path, fingerprint string, files []generatedFile, pageCount 
 	cache := buildCache{Version: cacheVersion, Fingerprint: fingerprint, GeneratedFiles: files, PageCount: pageCount, Health: health, Warnings: warnings}
 	data, err := json.MarshalIndent(cache, "", "  ")
 	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
 	tmp := path + ".tmp"

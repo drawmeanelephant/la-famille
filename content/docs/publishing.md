@@ -14,6 +14,10 @@ This document specifies the contract, generation conditions, URL structures, and
 
 When `la-famille build` executes, it processes Markdown source files in `contentDir` and writes output files to `outputDir`. The generator produces rendered HTML pages, search and discovery files, taxonomy listings, link graphs, and structural metadata.
 
+The publish artifact is the complete `public/` (or configured `output_dir`)
+tree. GitHub Pages uploads that directory with the Pages artifact/deploy
+actions; this project does not publish a `gh-pages` branch.
+
 | Artifact | Output Path | Generation Condition | Primary Purpose |
 | :--- | :--- | :--- | :--- |
 | **HTML Pages** | `<slug>/index.html` or `<path>/index.html` | Rendered for every `.md` source file with `render != false` | Public site web pages |
@@ -91,7 +95,7 @@ When `la-famille build` executes, it processes Markdown source files in `content
 ### 8. Knowledge Graph Explorer (`graph/index.html`)
 
 - **Generation:** Written to `<output_dir>/graph/index.html` when the `graph_explorer` config option is true (default). When disabled, neither the page nor its companion assets directory are emitted and no nav link is injected into layouts.
-- **Companion assets:** `assets/graph/explorer.js` and `assets/graph/explorer.css` are copied into `<output_dir>/assets/graph/` by the established asset pipeline. Both files ship under the user-owned `assets/` directory and reach the explorer page via root-relative URLs.
+- **Companion assets:** `assets/graph/explorer.js` and `assets/graph/explorer.css` are copied into `<output_dir>/assets/graph/` by the asset pipeline. A released binary embeds fallback copies; files present in the selected site asset directory remain authoritative overrides.
 - **Runtime semantics:** The page is fully static — it loads `../graph.json`, `../meta.json`, and `../backlinks.json` via relative fetches and never contacts a remote host. A `<link rel="canonical">` is emitted only when `siteurl` is configured; without it the page works the same when opened directly via `file://`.
 - **No change to existing contracts:** The explorer's writer does NOT extend `graph.json`, `meta.json`, or `backlinks.json`. It emits its own `graph/data.json` payload, assembled in Go from the same graph the build already computed. Public URLs there follow the path each page was actually written to, so front-matter `slug:` overrides and sub-path deployments (for example a GitHub Pages project site) both produce correct links.
 
@@ -171,8 +175,25 @@ All files and subdirectories created in `outputDir` are intended for public web 
 - `graph/index.html` (Knowledge Graph Explorer) and `assets/graph/explorer.{js,css}`
 
 ### Do Not Publish / Internal Only
-- `.buildcache.json`: Stored inside `outputDir` for incremental build change detection. Safe to host if published, but intended strictly as generator build cache state.
+- `.la-famille-cache.json`: Incremental build state stored beside the project root. A correct build never places it in `outputDir`; `publish-check` rejects an accidental copy.
 - `.staging-*` directories: Temporary build staging folders created during atomic build execution. Cleaned up automatically upon build completion.
+
+Run the artifact check before deployment:
+
+```bash
+la-famille --project-root /path/to/site publish-check --output public
+```
+
+It emits a deterministic manifest and verifies local `href`/`src` references,
+including clean-URL directories and the graph explorer's payload/assets.
+
+## Source checkout vs released binary
+
+| Use case | Recommended command | Notes |
+| --- | --- | --- |
+| Develop the generator | `go run ./cmd/la-famille ...` | Requires the Go toolchain and source checkout. |
+| Build an external site in CI | `la-famille --project-root /path/to/site ...` | Requires only the verified release archive. |
+| GitHub Pages | release binary from `LA_FAMILLE_VERSION` | The workflow checks `SHA256SUMS` and uploads `public/`; empty variable is a development source fallback. |
 
 ---
 
@@ -181,7 +202,7 @@ All files and subdirectories created in `outputDir` are intended for public web 
 | Aspect | Detail |
 | :--- | :--- |
 | **Page path** | `<output_dir>/graph/index.html` (controlled by `graph_explorer: true` config, **default: true**) |
-| **Companion bundle** | `<output_dir>/assets/graph/explorer.{js,css}` copied from user-owned `assets/graph/` by the asset pipeline |
+| **Companion bundle** | `<output_dir>/assets/graph/explorer.{js,css}` copied from the selected site asset directory when present, otherwise supplied by the released binary's embedded fallback |
 | **Data sources** | `../graph.json`, `../meta.json`, `../backlinks.json` (loaded at runtime via relative fetches) |
 | **Runtime network calls** | None. The page is fully static; no remote scripts, fonts, or APIs are loaded. |
 | **Canonical URL** | Emitted only when `siteurl` is configured. Otherwise the page works the same when opened directly via `file://`. |

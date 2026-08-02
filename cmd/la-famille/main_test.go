@@ -309,7 +309,7 @@ func TestCommandFlags(t *testing.T) {
 		t.Fatalf("Failed to find build command: %v", err)
 	}
 
-	buildFlags := []string{"content", "output", "template", "site-url", "siteurl"}
+	buildFlags := []string{"content", "output", "asset-dir", "template", "site-url", "siteurl"}
 	for _, flag := range buildFlags {
 		if buildCmd.Flags().Lookup(flag) == nil {
 			t.Errorf("buildCmd is missing expected flag: %s", flag)
@@ -478,6 +478,11 @@ func TestInitCommand_FreshProject(t *testing.T) {
 	if info, err := os.Stat(assetDir); os.IsNotExist(err) || !info.IsDir() {
 		t.Errorf("expected assets directory to be created by init")
 	}
+	for _, rel := range []string{"css/search.css", "css/theme-foundations.css", "js/search.js", "graph/explorer.css", "graph/explorer.js", "img/mascot-default.jpeg"} {
+		if _, err := os.Stat(filepath.Join(assetDir, filepath.FromSlash(rel))); err != nil {
+			t.Errorf("expected embedded asset %s to be created by init: %v", rel, err)
+		}
+	}
 }
 
 func TestInitCommand_ExistingConfigRefusalAndForce(t *testing.T) {
@@ -634,5 +639,16 @@ func TestGitHubPagesWorkflowAudit(t *testing.T) {
 	if !strings.Contains(sContent, "--site-url") {
 		t.Errorf("deploy.yml build step must pass --site-url flag")
 	}
+	for _, required := range []string{
+		"LA_FAMILLE_VERSION",
+		"SHA256SUMS",
+		"--project-root",
+		"--output \"$GITHUB_WORKSPACE/public\"",
+		"publish-check",
+		"actions/upload-pages-artifact",
+	} {
+		if !strings.Contains(sContent, required) {
+			t.Errorf("deploy.yml missing publishing contract marker %q", required)
+		}
+	}
 }
-

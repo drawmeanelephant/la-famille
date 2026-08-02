@@ -5,6 +5,10 @@ branding:
   icon: 'layout'
   color: 'blue'
 inputs:
+  project-root:
+    description: 'Project root used to resolve config-relative paths'
+    required: false
+    default: '.'
   content-dir:
     description: 'Directory containing markdown files'
     required: false
@@ -17,10 +21,22 @@ inputs:
     description: 'Path to HTML layout template'
     required: false
     default: 'templates/layout.html'
+  asset-dir:
+    description: 'Directory containing static assets'
+    required: false
+    default: 'assets'
   site-url:
     description: 'Public base URL of the generated site'
     required: false
     default: ''
+  release-version:
+    description: 'Optional pinned La Famille release version; empty uses the source-build fallback'
+    required: false
+    default: ''
+  binary-repository:
+    description: 'GitHub repository hosting the pinned La Famille release archive'
+    required: false
+    default: 'drawmeanelephant/la-famille'
 runs:
   using: "composite"
   steps:
@@ -35,23 +51,78 @@ runs:
         INPUT_CONTENT_DIR: ${{ inputs.content-dir }}
         INPUT_OUTPUT_DIR: ${{ inputs.output-dir }}
         INPUT_TEMPLATE: ${{ inputs.template }}
+        INPUT_PROJECT_ROOT: ${{ inputs.project-root }}
+        INPUT_ASSET_DIR: ${{ inputs.asset-dir }}
         INPUT_SITE_URL: ${{ inputs.site-url }}
+        INPUT_RELEASE_VERSION: ${{ inputs.release-version }}
+        INPUT_BINARY_REPOSITORY: ${{ inputs.binary-repository }}
       run: |
-        ARGS=("-c" "$INPUT_CONTENT_DIR" "-o" "$INPUT_OUTPUT_DIR")
+        ARGS=("--project-root" "$INPUT_PROJECT_ROOT" "-c" "$INPUT_CONTENT_DIR" "-o" "$INPUT_OUTPUT_DIR" "--asset-dir" "$INPUT_ASSET_DIR")
         if [ -n "$INPUT_TEMPLATE" ]; then
           ARGS+=("-t" "$INPUT_TEMPLATE")
         fi
         if [ -n "$INPUT_SITE_URL" ]; then
           ARGS+=("--site-url" "$INPUT_SITE_URL")
         fi
-        # Build from the action's own checkout. The module is declared as
-        # github.com/tbuddy/la-famille, so it cannot be fetched through the
-        # module proxy under the repository path this action is published at.
-        # go build takes -o literally, so the .exe suffix Windows needs has to
-        # be supplied here; the action declares no OS restriction.
         BIN="${RUNNER_TEMP:-/tmp}/la-famille"
         if [ "${RUNNER_OS:-}" = "Windows" ]; then
           BIN="${BIN}.exe"
         fi
-        (cd "$GITHUB_ACTION_PATH" && go build -o "$BIN" ./cmd/la-famille)
+
+        verify_checksum() {
+          archive_path="$1"
+          sums_path="$2"
+          expected="$(awk -v archive="$(basename "$archive_path")" '$2 == archive || $2 == "*" archive { print $1; exit }' "$sums_path")"
+          if [ -z "$expected" ]; then
+            echo "No SHA-256 entry found for $(basename "$archive_path")" >&2
+            exit 1
+          fi
+          if command -v sha256sum >/dev/null 2>&1; then
+            actual="$(sha256sum "$archive_path" | awk '{print $1}')"
+          elif command -v shasum >/dev/null 2>&1; then
+            actual="$(shasum -a 256 "$archive_path" | awk '{print $1}')"
+          else
+            echo "Neither sha256sum nor shasum is available" >&2
+            exit 1
+          fi
+          if [ "$actual" != "$expected" ]; then
+            echo "SHA-256 mismatch for $(basename "$archive_path")" >&2
+            exit 1
+          fi
+        }
+
+        if [ -n "$INPUT_RELEASE_VERSION" ]; then
+          VERSION="${INPUT_RELEASE_VERSION#v}"
+          case "${RUNNER_OS:-}" in
+            Linux) RELEASE_OS="linux" ;;
+            macOS) RELEASE_OS="darwin" ;;
+            Windows) RELEASE_OS="windows" ;;
+            *) echo "Unsupported runner OS: ${RUNNER_OS:-unknown}" >&2; exit 1 ;;
+          esac
+          case "${RUNNER_ARCH:-}" in
+            X64) RELEASE_ARCH="amd64" ;;
+            ARM64) RELEASE_ARCH="arm64" ;;
+            *) echo "Unsupported runner architecture: ${RUNNER_ARCH:-unknown}" >&2; exit 1 ;;
+          esac
+          ARCHIVE="la-famille_${VERSION}_${RELEASE_OS}_${RELEASE_ARCH}.tar.gz"
+          RELEASE_BASE="https://github.com/${INPUT_BINARY_REPOSITORY}/releases/download/v${VERSION}"
+          DOWNLOAD_DIR="${RUNNER_TEMP:-/tmp}/la-famille-release-${VERSION}"
+          mkdir -p "$DOWNLOAD_DIR"
+          curl --fail --location --silent --show-error "$RELEASE_BASE/$ARCHIVE" -o "$DOWNLOAD_DIR/$ARCHIVE"
+          curl --fail --location --silent --show-error "$RELEASE_BASE/SHA256SUMS" -o "$DOWNLOAD_DIR/SHA256SUMS"
+          verify_checksum "$DOWNLOAD_DIR/$ARCHIVE" "$DOWNLOAD_DIR/SHA256SUMS"
+          tar -xzf "$DOWNLOAD_DIR/$ARCHIVE" -C "$DOWNLOAD_DIR"
+          if [ "${RUNNER_OS:-}" = "Windows" ]; then
+            cp "$DOWNLOAD_DIR/la-famille.exe" "$BIN"
+          else
+            cp "$DOWNLOAD_DIR/la-famille" "$BIN"
+            chmod +x "$BIN"
+          fi
+        else
+          # Source-build fallback for development and unreleased versions. The
+          # module is declared as github.com/tbuddy/la-famille, so this build
+          # must run from the action's own checkout.
+          (cd "$GITHUB_ACTION_PATH" && go build -o "$BIN" ./cmd/la-famille)
+        fi
         "$BIN" build "${ARGS[@]}"
+        "$BIN" publish-check --project-root "$INPUT_PROJECT_ROOT" --output "$INPUT_OUTPUT_DIR"

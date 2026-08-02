@@ -5,11 +5,13 @@ import (
 	"encoding/xml"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/generator"
+	"github.com/tbuddy/la-famille/internal/publisher"
 )
 
 func TestReleaseSmoke(t *testing.T) {
@@ -40,6 +42,19 @@ func TestReleaseSmoke(t *testing.T) {
 
 	if res.PageCount == 0 {
 		t.Errorf("expected page count > 0, got %d", res.PageCount)
+	}
+
+	manifest, err := publisher.Check(outDir1)
+	if err != nil {
+		t.Fatalf("generated publish artifact failed validation: %v", err)
+	}
+	wantManifestData, err := os.ReadFile(filepath.Join("..", "..", "assets", "testdata", "sites", "release-smoke", "manifest.txt"))
+	if err != nil {
+		t.Fatalf("read frozen release manifest: %v", err)
+	}
+	wantManifest := strings.Split(strings.TrimSpace(string(wantManifestData)), "\n")
+	if !reflect.DeepEqual(manifest.Files, wantManifest) {
+		t.Fatalf("publish manifest drifted:\n got: %v\nwant: %v", manifest.Files, wantManifest)
 	}
 
 	// 1. Verify HTML pages exist and contain canonical/OG metadata

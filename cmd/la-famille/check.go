@@ -22,10 +22,10 @@ func setupCheckCmd(cfg config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			checkCfg := cfg
 			if checkContentDir != "" {
-				checkCfg.ContentDir = checkContentDir
+				checkCfg.ContentDir = resolveProjectPath(cfg.ProjectRoot, checkContentDir)
 			}
 			if checkAssetDir != "" {
-				checkCfg.AssetDir = checkAssetDir
+				checkCfg.AssetDir = resolveProjectPath(cfg.ProjectRoot, checkAssetDir)
 			}
 			if cmd.Flags().Changed("asset-health") {
 				checkCfg.CheckAssetHealth = checkAssetHealth

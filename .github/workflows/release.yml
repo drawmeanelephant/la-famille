@@ -1,0 +1,165 @@
+name: Release La Famille
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to package (v1.2.3 or 1.2.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Test source at release tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      # The requested release tag is the authoritative source ref. Manual
+      # dispatches may name the tag with or without the "v" prefix; the exact
+      # tag is checked out and proven to match the checked-out commit before
+      # any test runs.
+      - name: Resolve and verify release tag
+        id: release
+        env:
+          RELEASE_TAG_INPUT: ${{ inputs.tag || github.ref_name }}
+        run: |
+          source .github/scripts/release/tag.sh
+          resolve_and_checkout "$RELEASE_TAG_INPUT"
+          echo "TAG=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "COMMIT=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
+      - name: Test and vet verified tag source
+        run: |
+          echo "Testing ${{ steps.release.outputs.TAG }} at commit ${{ steps.release.outputs.COMMIT }}"
+          go test ./...
+          go vet ./...
+
+  package:
+    name: Package ${{ matrix.goos }}/${{ matrix.goarch }}
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      # The same exact-tag checkout runs per packaging target so a manual
+      # dispatch can never package branch HEAD instead of the requested tag.
+      - name: Resolve and verify release tag
+        id: release
+        env:
+          RELEASE_TAG_INPUT: ${{ inputs.tag || github.ref_name }}
+        run: |
+          source .github/scripts/release/tag.sh
+          resolve_and_checkout "$RELEASE_TAG_INPUT"
+          echo "TAG=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "COMMIT=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
+      - name: Build and smoke test
+        env:
+          GOOS_VALUE: ${{ matrix.goos }}
+          GOARCH_VALUE: ${{ matrix.goarch }}
+          RELEASE_TAG: ${{ steps.release.outputs.TAG }}
+          RELEASE_COMMIT: ${{ steps.release.outputs.COMMIT }}
+        run: |
+          TAG="$RELEASE_TAG"
+          VERSION="${TAG#v}"
+          STAGE="$RUNNER_TEMP/la-famille-$GOOS_VALUE-$GOARCH_VALUE"
+          mkdir -p "$STAGE"
+          BIN="la-famille"
+          if [ "$GOOS_VALUE" = "windows" ]; then BIN="la-famille.exe"; fi
+          BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Packaging verified release $TAG at commit $RELEASE_COMMIT for $GOOS_VALUE/$GOARCH_VALUE"
+          GOOS="$GOOS_VALUE" GOARCH="$GOARCH_VALUE" CGO_ENABLED=0 \
+            go build -trimpath -ldflags "-s -w -X main.buildVersion=$TAG -X main.buildCommit=$RELEASE_COMMIT -X main.buildDate=$BUILD_DATE" \
+            -o "$STAGE/$BIN" ./cmd/la-famille
+
+          # Cross-target archives cannot execute on the Ubuntu runner. The
+          # native linux/amd64 package gets the full offline CLI smoke test;
+          # every other advertised target is still required to cross-build.
+          if [ "$GOOS_VALUE/$GOARCH_VALUE" = "linux/amd64" ]; then
+            "$STAGE/$BIN" --version
+            "$STAGE/$BIN" --version --json
+            "$STAGE/$BIN" --help >/dev/null
+
+            # Run the full archive contract offline on the native target:
+            # invalid input, init, new, check, build, and publish validation.
+            SMOKE_ROOT="$RUNNER_TEMP/la-famille-smoke"
+            mkdir -p "$SMOKE_ROOT"
+            if "$STAGE/$BIN" --definitely-not-a-la-famille-flag >/dev/null 2>&1; then
+              echo "invalid CLI input unexpectedly succeeded" >&2
+              exit 1
+            fi
+            "$STAGE/$BIN" --project-root "$SMOKE_ROOT" init
+            "$STAGE/$BIN" --project-root "$SMOKE_ROOT" new index --title "Release Smoke" --date 2026-08-01
+            "$STAGE/$BIN" --project-root "$SMOKE_ROOT" check
+            "$STAGE/$BIN" --project-root "$SMOKE_ROOT" build
+            "$STAGE/$BIN" --project-root "$SMOKE_ROOT" publish-check --output public --json
+          fi
+
+          cp README.md NOTICE RELEASE-QUICKSTART.md "$STAGE/"
+          ARCHIVE="la-famille_${VERSION}_${GOOS_VALUE}_${GOARCH_VALUE}.tar.gz"
+          tar -czf "$RUNNER_TEMP/$ARCHIVE" -C "$STAGE" .
+          printf '%s\n' "$ARCHIVE" > "$RUNNER_TEMP/archive-name"
+      - name: Upload package
+        uses: actions/upload-artifact@v5
+        with:
+          name: package-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            ${{ runner.temp }}/la-famille_*.tar.gz
+
+  publish:
+    name: Publish release archives
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      # A checkout provides the tag-resolution helper and the canonical form of
+      # the release tag; the archives themselves come from the upload step.
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v5
+        with:
+          path: dist
+          pattern: package-*
+          merge-multiple: true
+      - name: Create checksums and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG_INPUT: ${{ inputs.tag || github.ref_name }}
+        run: |
+          source .github/scripts/release/tag.sh
+          TAG="$(canonical_release_tag "$RELEASE_TAG_INPUT")"
+          echo "Publishing verified release $TAG (test and package jobs verified it points at the built source)"
+          cd dist
+          sha256sum la-famille_*.tar.gz > SHA256SUMS
+          # --verify-tag confirms the tag still exists at publish time; the
+          # authoritative provenance check that the archive was built from the
+          # tag commit happened in the test and package jobs.
+          gh release create "$TAG" --verify-tag --title "La Famille $TAG" --generate-notes la-famille_*.tar.gz SHA256SUMS

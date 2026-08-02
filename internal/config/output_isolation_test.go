@@ -153,6 +153,14 @@ func TestValidateAllowsInputsThatAreTheProjectRoot(t *testing.T) {
 	}
 }
 
+func TestValidateAllowsRagArchiveInsidePublishOutput(t *testing.T) {
+	cfg := baseValidConfig()
+	cfg.RagDir = filepath.Join(cfg.OutputDir, "rag-archive")
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("RAG output below public is a supported Pages layout, got: %v", err)
+	}
+}
+
 // TestValidateStillRejectsOutputEqualToARootInput keeps the relaxation narrow:
 // an input at the project root may contain the output, but may not BE it.
 func TestValidateStillRejectsOutputEqualToARootInput(t *testing.T) {

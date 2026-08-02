@@ -9,6 +9,10 @@ on:
         description: 'Public base URL of the deployed site'
         required: false
         type: string
+      la_famille_version:
+        description: 'Pinned La Famille release version (for example v1.2.3); empty uses the source-build fallback'
+        required: false
+        type: string
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -41,21 +45,52 @@ jobs:
         with:
           enablement: true
 
+      - name: Prepare La Famille compiler
+        env:
+          RELEASE_VERSION: ${{ inputs.la_famille_version || vars.LA_FAMILLE_VERSION }}
+        run: |
+          BIN="$RUNNER_TEMP/la-famille"
+          if [ -n "$RELEASE_VERSION" ]; then
+            VERSION="${RELEASE_VERSION#v}"
+            ARCHIVE="la-famille_${VERSION}_linux_amd64.tar.gz"
+            BASE="https://github.com/drawmeanelephant/la-famille/releases/download/v${VERSION}"
+            mkdir -p "$RUNNER_TEMP/la-famille-release"
+            curl --fail --location --silent --show-error "$BASE/$ARCHIVE" -o "$RUNNER_TEMP/la-famille-release/$ARCHIVE"
+            curl --fail --location --silent --show-error "$BASE/SHA256SUMS" -o "$RUNNER_TEMP/la-famille-release/SHA256SUMS"
+            EXPECTED="$(awk -v archive="$ARCHIVE" '$2 == archive || $2 == "*" archive { print $1; exit }' "$RUNNER_TEMP/la-famille-release/SHA256SUMS")"
+            ACTUAL="$(sha256sum "$RUNNER_TEMP/la-famille-release/$ARCHIVE" | awk '{print $1}')"
+            test -n "$EXPECTED" && test "$ACTUAL" = "$EXPECTED"
+            tar -xzf "$RUNNER_TEMP/la-famille-release/$ARCHIVE" -C "$RUNNER_TEMP/la-famille-release"
+            cp "$RUNNER_TEMP/la-famille-release/la-famille" "$BIN"
+            chmod +x "$BIN"
+          else
+            # Development/source fallback. Production Pages should set the
+            # LA_FAMILLE_VERSION repository variable so this branch is not
+            # silently selected for a release deployment.
+            go build -o "$BIN" ./cmd/la-famille
+          fi
+          echo "LA_FAMILLE_BIN=$BIN" >> "$GITHUB_ENV"
+
       - name: Build Static Site
         env:
           SITE_URL: ${{ inputs.site_url || vars.SITE_URL || steps.pages.outputs.base_url }}
         run: |
-          # Executes the La Famille compiler
+          # public/ is the complete Pages artifact root. No gh-pages branch is
+          # used by this workflow.
+          ARGS=(--project-root "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/public")
           if [ -n "$SITE_URL" ]; then
-            go run ./cmd/la-famille build --site-url "$SITE_URL"
-          else
-            go run ./cmd/la-famille build
+            ARGS+=(--site-url "$SITE_URL")
           fi
+          # Source fallback equivalent: go run ./cmd/la-famille build
+          "$LA_FAMILLE_BIN" build "${ARGS[@]}"
 
       - name: Generate RAG Export
         run: |
-          go run ./cmd/la-famille rag
-          cp -r rag-archive public/rag-archive
+          "$LA_FAMILLE_BIN" rag --project-root "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/public/rag-archive"
+
+      - name: Validate publish artifact
+        run: |
+          "$LA_FAMILLE_BIN" publish-check --project-root "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/public"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
