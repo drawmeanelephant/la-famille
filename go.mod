@@ -11,7 +11,8 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/spf13/cobra v1.10.2
-	github.com/yuin/goldmark v1.8.4
+	github.com/yuin/goldmark v1.8.5
+	golang.org/x/net v0.26.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -36,7 +37,6 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 )
