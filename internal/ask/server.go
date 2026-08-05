@@ -214,7 +214,6 @@ type AnswerRequest struct {
 
 // AnswerResponse is the JSON body returned by /api/ask.
 type AnswerResponse struct {
-	Diagnostics      AnswerDiagnostics      `json:"diagnostics"`
 	Status           string                 `json:"status"`
 	Question         string                 `json:"question"`
 	Answer           string                 `json:"answer,omitempty"`
@@ -222,6 +221,7 @@ type AnswerResponse struct {
 	NoAnswerMessage  string                 `json:"no_answer_message,omitempty"`
 	Sources          []retrieval.SourceCard `json:"sources"`
 	DroppedCitations []string               `json:"dropped_citations,omitempty"`
+	Diagnostics      AnswerDiagnostics      `json:"diagnostics"`
 	NoAnswer         bool                   `json:"no_answer"`
 }
 

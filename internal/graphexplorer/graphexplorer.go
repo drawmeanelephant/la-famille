@@ -43,8 +43,8 @@ var templateFS embed.FS
 type Input struct {
 	Meta        map[string]map[string]interface{}
 	PageOutputs map[string]string
-	Graph       graph.Graph
 	Config      config.Config
+	Graph       graph.Graph
 }
 
 // Result summarizes what Write produced. The fields are stable so tests can

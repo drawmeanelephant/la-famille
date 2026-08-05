@@ -33,9 +33,9 @@ type generatedFile struct {
 
 type buildCache struct {
 	Fingerprint    string          `json:"fingerprint"`
-	Health         ContentHealth   `json:"health,omitempty"`
 	GeneratedFiles []generatedFile `json:"generated_files"`
 	Warnings       []string        `json:"warnings,omitempty"`
+	Health         ContentHealth   `json:"health,omitempty"`
 	Version        int             `json:"version"`
 	PageCount      int             `json:"page_count"`
 }
