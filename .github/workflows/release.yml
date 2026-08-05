@@ -144,7 +144,7 @@ jobs:
       # A checkout provides the tag-resolution helper and the canonical form of
       # the release tag; the archives themselves come from the upload step.
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           pattern: package-*
