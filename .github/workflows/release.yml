@@ -130,7 +130,7 @@ jobs:
           tar -czf "$RUNNER_TEMP/$ARCHIVE" -C "$STAGE" .
           printf '%s\n' "$ARCHIVE" > "$RUNNER_TEMP/archive-name"
       - name: Upload package
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: package-${{ matrix.goos }}-${{ matrix.goarch }}
           path: |
