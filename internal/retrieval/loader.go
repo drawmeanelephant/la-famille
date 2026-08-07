@@ -19,8 +19,8 @@ import (
 // error if the archive is stale or malformed.
 type LoadResult struct {
 	MalformedArtifact string
-	Corpus            Corpus
 	MissingArtifacts  []string
+	Corpus            Corpus
 }
 
 // LoadOptions configures where Load reads from.

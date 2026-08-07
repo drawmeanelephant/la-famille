@@ -19,29 +19,29 @@ type SiteLink struct {
 
 // Config represents the site configuration.
 type Config struct {
-	DefaultDescription string     `yaml:"default_description"`
-	SiteURL            string     `yaml:"siteurl"`
+	Template           string     `yaml:"template"`
+	DefaultOGImage     string     `yaml:"default_og_image"`
 	ContentDir         string     `yaml:"content_dir"`
-	OutputDir          string     `yaml:"output_dir"`
+	SiteName           string     `yaml:"site_name"`
 	AssetDir           string     `yaml:"asset_dir"`
 	RagDir             string     `yaml:"rag_dir"`
 	Theme              string     `yaml:"theme"`
 	ProjectRoot        string     `yaml:"project_root"`
-	Template           string     `yaml:"template"`
-	SiteName           string     `yaml:"site_name"`
-	DefaultOGImage     string     `yaml:"default_og_image"`
+	SiteURL            string     `yaml:"siteurl"`
+	DefaultDescription string     `yaml:"default_description"`
+	OutputDir          string     `yaml:"output_dir"`
 	LegacySiteURL      string     `yaml:"site_url"`
+	// ConfigPath is populated by the CLI bootstrapper and is not part of the
+	// site configuration or build fingerprint. It lets commands such as init
+	// write to an explicitly selected configuration file while keeping the
+	// public Config type useful to library callers.
+	ConfigPath         string     `yaml:"-" json:"-"`
 	SiteLinks          []SiteLink `yaml:"site_links"`
 	Port               int        `yaml:"port"`
 	MaxAssetSizeBytes  int64      `yaml:"max_asset_size_bytes"`
 	WatchMode          bool       `yaml:"-"`
 	CheckAssetHealth   bool       `yaml:"check_asset_health"`
 	GraphExplorer      bool       `yaml:"graph_explorer"`
-	// ConfigPath is populated by the CLI bootstrapper and is not part of the
-	// site configuration or build fingerprint. It lets commands such as init
-	// write to an explicitly selected configuration file while keeping the
-	// public Config type useful to library callers.
-	ConfigPath string `yaml:"-" json:"-"`
 }
 
 // DefaultConfig returns a Config with sensible default values.

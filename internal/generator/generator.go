@@ -92,8 +92,8 @@ func setConvertMarkdown(fn func(goldmark.Markdown, []byte, *bytes.Buffer) error)
 
 // BuildResult contains statistics about the build process.
 type BuildResult struct {
-	Health     ContentHealth
 	Warnings   []string
+	Health     ContentHealth
 	Duration   time.Duration
 	PageCount  int
 	ErrorCount int
@@ -255,10 +255,10 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 			for j := range jobs {
 				func() {
 					type jobUpdate struct {
-						node      graph.Node
 						meta      map[string]interface{}
 						outputRel string
 						errs      []error
+						node      graph.Node
 						errCount  int
 						pageCount int
 					}

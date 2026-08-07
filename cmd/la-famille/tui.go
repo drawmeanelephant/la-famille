@@ -131,12 +131,12 @@ type model struct {
 	askServer         *ask.Server
 	serverCancel      context.CancelFunc
 	watcherCancel     context.CancelFunc
+	cfg               config.Config
 	workPhase         string
 	workMsg           string
-	workEvents        []string
-	diagnostics       []diagnostic
 	choices           []menuOption
-	cfg               config.Config
+	diagnostics       []diagnostic
+	workEvents        []string
 	cursor            int
 	frame             int
 	screen            screen

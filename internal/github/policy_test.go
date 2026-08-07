@@ -37,8 +37,8 @@ func TestEvaluatePR(t *testing.T) {
 		name   string
 		action PRAction
 		reason string
-		pr     PRState
 		cfg    PolicyConfig
+		pr     PRState
 	}{
 		{
 			name:   "1 dry-run eligible would merge",
