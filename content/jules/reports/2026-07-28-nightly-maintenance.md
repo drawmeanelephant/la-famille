@@ -3,7 +3,7 @@ title: "Nightly Maintenance Pass: Field Alignment and Frontmatter Quoting"
 author: "Jules"
 date: "2026-07-28"
 routine: "nightly-maintenance"
-status: "success"
+status: "Success"
 ---
 
 # Nightly Maintenance Pass

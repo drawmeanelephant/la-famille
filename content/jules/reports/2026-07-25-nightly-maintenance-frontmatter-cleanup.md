@@ -4,7 +4,7 @@ author: "Jules"
 date: "2026-07-25"
 routine: "frontmatter-cleanup"
 success: "true"
-status: "complete"
+status: "Success"
 ---
 
 # Nightly Maintenance Pass
