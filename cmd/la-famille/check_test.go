@@ -52,6 +52,10 @@ Back to [Home](index.md).
 		t.Fatalf("expected check command to succeed, got error: %v (stderr: %s)", err, errBuf.String())
 	}
 
+	if !strings.Contains(outBuf.String(), "La Famille Diagnostics [") {
+		t.Errorf("expected build version header in stdout, got: %s", outBuf.String())
+	}
+
 	if !strings.Contains(outBuf.String(), "All content validation checks passed.") {
 		t.Errorf("expected success message in stdout, got: %s", outBuf.String())
 	}

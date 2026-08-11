@@ -843,7 +843,8 @@ func (m model) View() string {
 		return s
 
 	case screenDiagnostics:
-		s := titleStyle.Render("Diagnostics & Recovery Guidance") + "\n\n"
+		info := currentBuildInfo()
+		s := titleStyle.Render(fmt.Sprintf("Diagnostics & Recovery Guidance [%s (commit: %s)]", info.Version, info.Commit)) + "\n\n"
 		if len(m.diagnostics) == 0 {
 			s += "No diagnostics recorded. All system checks passed cleanly.\n\n"
 			s += "Press d, Esc, or q to return."

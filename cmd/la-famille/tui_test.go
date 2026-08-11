@@ -726,8 +726,8 @@ func TestTUIDiagnosticsRecoveryActionRendering(t *testing.T) {
 	}
 
 	view := m.View()
-	if !strings.Contains(view, "Diagnostics & Recovery Guidance") {
-		t.Errorf("diagnostics view missing title: %s", view)
+	if !strings.Contains(view, "Diagnostics & Recovery Guidance [") {
+		t.Errorf("diagnostics view missing title with version: %s", view)
 	}
 	if !strings.Contains(view, "Source: content/post.md:5") {
 		t.Errorf("diagnostics view missing source line: %s", view)
