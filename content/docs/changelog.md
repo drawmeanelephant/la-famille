@@ -1,12 +1,18 @@
 ---
-date: "2026-07-09"
+date: "2026-08-13"
 title: "Changelog"
 author: "Jules"
 ---
 
 # Changelog
 
-This page tracks recent updates, features, and fixes merged into the La Famille project.
+This page is the canonical changelog. It tracks recent updates, features, and fixes merged into the La Famille project.
+
+## 2026-08-13
+- **Content:** Sunset the soundtrack albums, cat facts, the genesis retrospective, and the "Godfather of Farts" page. Removed from the live site to keep it aligned with current project reality (history preserved in git).
+- **Docs:** Consolidated four duplicate root-level component-mapping reports into a single [Architecture & Component Map](architecture.md).
+- **Docs:** Rewrote the [Help Menu](../help.md) to link real documentation pages instead of stub links.
+- **Docs:** Merged the meta changelog into this page; removed the retired cat-facts routine.
 
 ## Recent Updates
 
@@ -22,5 +28,19 @@ This page tracks recent updates, features, and fixes merged into the La Famille 
 *   **Merge PR #265 / PR #264**: Refactor markdown engine to internal/markdown and execute cat facts routine.
 *   **Merge PR #263**: ci: add golangci-lint pipeline and fix errors.
 *   **Merge PR #261**: refactor: apply cyberpunk template updates.
+
+## 2026-06-19
+- **Templates:** Added a centered minimalist layout template.
+- **Templates:** Added a Cyberpunk sidebar layout template.
+- **Export:** Implemented RAG (Retrieval-Augmented Generation) export logic.
+
+## 2026-06-18
+- **Core Engine:** Implemented YAML frontmatter parsing.
+- **Core Engine:** Implemented Markdown link resolution and render control.
+- **Accessibility:** Added "skip to content" link and semantic navigation (Palette persona).
+- **Core Engine:** Simplified extension removal logic and added unit tests for `relPathFromTo`.
+- **Infrastructure:** Established automated release strategy and soundtrack integration (soundtrack since sunset, 2026-08-13).
+- **Content:** Added soundtrack entries and lore.
+- **CLI/Configuration:** Migrated to `spf13/cobra` with a `build` subcommand for better CLI configuration and flags.
 
 [Go back to Index](index.md)

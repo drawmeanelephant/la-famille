@@ -1,4 +1,14 @@
-# Component Mapping & Micro-Improvement Audit: La Famille
+---
+date: "2026-08-13"
+title: "Architecture & Component Map"
+author: "Jules"
+---
+
+# Architecture & Component Map
+
+This document maps the major components residing in the `internal/` directory
+and records the micro-improvements identified during the component audit.
+It consolidates the earlier component-mapping reports.
 
 ## Part 1: Component Identification
 
@@ -24,7 +34,7 @@ Here is the architectural map of the major components located in the `internal/`
 
 ## Part 2: Micro-Improvements
 
-Based on the audit, here are 5 high-ROI localized micro-improvements to enhance memory efficiency, safety, and performance:
+Based on the audit, here are the high-ROI localized micro-improvements to enhance memory efficiency, safety, and performance:
 
 1. **Struct Field Alignment (`internal/config/config.go`)**:
    In the `Config` struct, boolean fields (like `WatchMode` and `CheckAssetHealth`) are interspersed with larger fields (like `Port`). This alignment creates unnecessary padding holes. By reordering the struct to group the larger fields before the 1-byte booleans, you can pack them tightly and save bytes per struct instance.
@@ -36,3 +46,7 @@ Based on the audit, here are 5 high-ROI localized micro-improvements to enhance 
    When dynamically injecting the SSE livereload script into rendered pages during WatchMode, use `strings.LastIndex` to locate the `</body>` tag. Then, append the script block utilizing a pre-allocated `strings.Builder` (with `sb.Grow()`), which prevents the heavy allocation footprint of standard `strings.Replace` or byte slice operations on large HTML documents.
 5. **Slice Pre-allocation (`internal/search/search.go`)**:
    In `ExtractHeadings`, `strings.Split(string(rest), "\n")` produces a known count of lines. The `headings` slice is appended to dynamically. Since the maximum number of headings cannot exceed the number of lines, initialising it with `make([]string, 0, len(lines)/4)` or similar capacity estimation could save multiple reallocations during extraction.
+6. **Map-based Taxonomy Uniqueness (`internal/taxonomy/taxonomy.go`)**:
+   When collecting unique taxonomy items (like tags or categories) during the generation phase, the current implementation iterates to ensure uniqueness before appending. Relying entirely on map sets and converting them to slices once at the end reduces potential linear search debt when combining taxonomy paths.
+
+[Go back to Index](index.md)

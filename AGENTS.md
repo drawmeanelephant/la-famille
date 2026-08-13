@@ -9,12 +9,11 @@ Coding agents have full ownership to write code, debug issues, resolve merge con
 - **Language:** Go (latest stable). Follow standard idioms (`gofmt`, `go vet`).
 - **Dependencies:** Keep external dependencies strictly minimal. Prefer the Go standard library for routing, parsing, and file I/O unless explicitly cleared in the task description.
 - **Directory Structure:**
-  - `cmd/la-famille/`: Main application entry point.
-  - `internal/`: Private application code.
-  - `pkg/`: Publicly usable libraries.
-  - `content/`: Markdown source files.
-  - `templates/`: HTML layouts.
-  - `public/`: Generated static output.
+- `cmd/la-famille/`: Main application entry point.
+- `internal/`: Private application code.
+- `content/`: Markdown source files.
+- `templates/`: HTML layouts.
+- `public/`: Generated static output.
 
 ## 3. Execution Guardrails (The Rules of Engagement)
 To ensure high-quality PRs and maintain codebase health, agents must adhere to the following steps for every task:
