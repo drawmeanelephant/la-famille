@@ -95,7 +95,10 @@ func TestBuild_IgnoredSlugIsNotACollision(t *testing.T) {
 
 // Case-insensitive filesystems (macOS, Windows) treat Foo/ and foo/ as one
 // directory, so two pages differing only in case race for the same file.
+// The probe is pinned to "insensitive" so the behavior is asserted on every
+// host, CI included.
 func TestBuild_CaseOnlyCollisionIsDetected(t *testing.T) {
+	pinCaseSensitivity(t, false)
 	cfg := setupCollisionSite(t, map[string]string{
 		"one.md": "---\nslug: Foo\n---\nUPPER_BODY\n",
 		"two.md": "---\nslug: foo\n---\nlower_body\n",
@@ -114,6 +117,119 @@ func TestBuild_CaseOnlyCollisionIsDetected(t *testing.T) {
 	if !strings.Contains(err.Error(), "case-insensitive") {
 		t.Fatalf("Build() error = %v, want the case-folding reason explained", err)
 	}
+}
+
+// On a case-sensitive filesystem the same two pages are genuinely distinct
+// files, so the build must publish both and warn instead of refusing.
+func TestBuild_CaseOnlyCollisionAllowedOnCaseSensitiveFS(t *testing.T) {
+	pinCaseSensitivity(t, true)
+	cfg := setupCollisionSite(t, map[string]string{
+		"one.md": "---\nslug: Foo\n---\nUPPER_BODY\n",
+		"two.md": "---\nslug: foo\n---\nlower_body\n",
+	})
+
+	result, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build() error = %v, want success on a case-sensitive filesystem", err)
+	}
+	warned := false
+	for _, w := range result.Warnings {
+		if strings.Contains(w, "differ only in case") || strings.Contains(w, "case-insensitive filesystem") {
+			warned = true
+		}
+	}
+	if !warned {
+		t.Errorf("Warnings = %v, want a case-only collision warning", result.Warnings)
+	}
+	// The registry admits both writers, which is the point of the test — but
+	// whether the staging directory can physically hold both pages depends on
+	// the host filesystem. Assert the distinct outputs only where the host can
+	// represent them.
+	if !probeCaseSensitivity(t.TempDir()) {
+		return
+	}
+	if got := readOutput(t, cfg, "Foo/index.html"); !strings.Contains(got, "UPPER_BODY") {
+		t.Errorf("Foo/index.html = %q, want the upper-case page", got)
+	}
+	if got := readOutput(t, cfg, "foo/index.html"); !strings.Contains(got, "lower_body") {
+		t.Errorf("foo/index.html = %q, want the lower-case page", got)
+	}
+}
+
+// The same policy covers assets: a downloaded theme's assets/CSS/ next to the
+// generator's assets/css/ is an ordinary layout on a case-sensitive host.
+func TestBuild_CaseOnlyAssetCollisionHonoursFilesystem(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		caseSensitive bool
+		wantErr       bool
+	}{
+		{name: "insensitive filesystem refuses", caseSensitive: false, wantErr: true},
+		{name: "sensitive filesystem warns and builds", caseSensitive: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pinCaseSensitivity(t, tc.caseSensitive)
+			tempDir := t.TempDir()
+			contentDir := filepath.Join(tempDir, "content")
+			assetDir := filepath.Join(tempDir, "assets")
+			templateDir := filepath.Join(tempDir, "templates")
+			outputDir := filepath.Join(tempDir, "public")
+
+			for _, d := range []string{filepath.Join(contentDir, "assets", "help"), filepath.Join(assetDir, "help"), templateDir} {
+				if err := os.MkdirAll(d, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := os.WriteFile(filepath.Join(templateDir, "layout.html"), []byte("{{.Content}}"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			// Renders to assets/help/index.html.
+			page := []byte("---\ntitle: Help Page\n---\n# AUTHORED_PAGE_CONTENT\n")
+			if err := os.WriteFile(filepath.Join(contentDir, "assets", "help", "index.md"), page, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			// Copies to assets/help/INDEX.html: same file on an insensitive FS.
+			if err := os.WriteFile(filepath.Join(assetDir, "help", "INDEX.html"), []byte("ASSET_BYTES"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+
+			cfg := config.DefaultConfig()
+			cfg.ContentDir = contentDir
+			cfg.AssetDir = assetDir
+			cfg.OutputDir = outputDir
+			cfg.Template = filepath.Join(templateDir, "layout.html")
+			cfg.ProjectRoot = tempDir
+
+			result, err := Build(cfg)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("Build() error = nil, want a case-only collision error")
+				}
+				if !strings.Contains(err.Error(), "case-insensitive") {
+					t.Fatalf("Build() error = %v, want the case reason explained", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Build() error = %v, want success on a case-sensitive filesystem", err)
+			}
+			for _, w := range result.Warnings {
+				if strings.Contains(w, "case-insensitive filesystem") {
+					return
+				}
+			}
+			t.Errorf("Warnings = %v, want a case-only collision warning", result.Warnings)
+		})
+	}
+}
+
+// pinCaseSensitivity forces the filesystem-sensitivity probe to either answer
+// for the rest of the test, so collision behavior is asserted on every host.
+func pinCaseSensitivity(t *testing.T, sensitive bool) {
+	t.Helper()
+	old := detectCaseSensitivity
+	detectCaseSensitivity = func(string) bool { return sensitive }
+	t.Cleanup(func() { detectCaseSensitivity = old })
 }
 
 // Taxonomy listings are written before the content workers run, so a content
@@ -278,7 +394,7 @@ func TestBuild_AssetDoesNotOverwriteRenderedPage(t *testing.T) {
 // TestOutputClaimsStillRejectsAnExactDuplicate keeps the relaxation narrow: the
 // case rule changed, the collision rule did not.
 func TestOutputClaimsStillRejectsAnExactDuplicate(t *testing.T) {
-	claims := newOutputClaims(t.TempDir(), 2)
+	claims := newOutputClaims(t.TempDir(), 2, false)
 
 	if _, ok := claims.claim("the page \"a.md\"", "docs/index.html"); !ok {
 		t.Fatal("first claim should succeed")
@@ -289,5 +405,27 @@ func TestOutputClaimsStillRejectsAnExactDuplicate(t *testing.T) {
 	}
 	if previous.source == "" {
 		t.Error("the collision should name the previous owner")
+	}
+}
+
+// TestOutputClaimsAllowsCaseOnlyOnCaseSensitiveFS pins the registry-level rule:
+// on a case-sensitive filesystem the second, case-differing writer is admitted
+// and recorded as a warning.
+func TestOutputClaimsAllowsCaseOnlyOnCaseSensitiveFS(t *testing.T) {
+	claims := newOutputClaims(t.TempDir(), 2, true)
+
+	if _, ok := claims.claim("the page \"one.md\"", "Foo/index.html"); !ok {
+		t.Fatal("first claim should succeed")
+	}
+	if _, ok := claims.claim("the page \"two.md\"", "foo/index.html"); !ok {
+		t.Fatal("case-differing claim should succeed on a case-sensitive filesystem")
+	}
+	if warns := claims.Warnings(); len(warns) != 1 {
+		t.Fatalf("Warnings() = %v, want exactly one warning", warns)
+	}
+	// A third writer must still collide against the earlier owners, not slip
+	// past a one-entry map.
+	if _, ok := claims.claim("the asset \"docs/foo/index.html\"", "foo/index.html"); ok {
+		t.Fatal("an exact duplicate of an admitted case-differing owner must collide")
 	}
 }

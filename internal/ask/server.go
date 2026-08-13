@@ -16,6 +16,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -532,7 +533,10 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/ask", s.handleAsk)
 }
 
-// handleIndex serves the local UI shell. Static assets are embedded.
+// handleIndex serves the local UI shell. Static assets are embedded; any path
+// that is not an embedded asset is resolved against the generated site in
+// OutputDir, so answer citations ("Open source") point at pages this server
+// actually serves. Unknown paths fall through to the UI shell.
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	if s.ui == nil {
 		http.Error(w, "UI disabled", http.StatusNotFound)
@@ -550,6 +554,9 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 			_, _ = w.Write(data)
 			return
 		}
+		if s.serveSiteFile(w, r) {
+			return
+		}
 	}
 	data, err := fs.ReadFile(s.ui, "index.html")
 	if err != nil {
@@ -559,6 +566,34 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	_, _ = w.Write(data)
+}
+
+// serveSiteFile serves one file out of the generated site (cfg.OutputDir), so
+// citation URLs resolve locally instead of opening a second copy of the Ask
+// UI. Only exact files are served — a directory is served through its
+// index.html — so an OutputDir without the requested page falls through to
+// the caller's fallback instead of producing a directory listing.
+func (s *Server) serveSiteFile(w http.ResponseWriter, r *http.Request) bool {
+	if s.cfg.OutputDir == "" || r.URL.Path == "/" || r.URL.Path == "" {
+		return false
+	}
+	rel := strings.TrimPrefix(filepath.Clean(r.URL.Path), "/")
+	if rel == "" {
+		return false
+	}
+	target := filepath.Join(s.cfg.OutputDir, filepath.FromSlash(rel))
+	st, err := os.Stat(target)
+	if err != nil {
+		return false
+	}
+	if st.IsDir() {
+		target = filepath.Join(target, "index.html")
+		if _, err := os.Stat(target); err != nil {
+			return false
+		}
+	}
+	http.ServeFile(w, r, target)
+	return true
 }
 
 // handleStatus returns the public server status as JSON.

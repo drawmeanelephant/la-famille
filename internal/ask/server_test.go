@@ -386,6 +386,129 @@ func TestServerDefaultsToBindLoopback(t *testing.T) {
 	}
 }
 
+// --- AI answer server: generated-site serving ---
+//
+// Citation links in answers ("Open source") land on generated-site paths, so
+// handleIndex must serve the built site in OutputDir in addition to the Ask
+// UI. These tests exercise handleIndex through httptest recorders.
+
+func newFixtureServer(t *testing.T, outputDir string) *Server {
+	t.Helper()
+	corpus := t.TempDir()
+	fixtureCorpus(t, corpus)
+	srv, err := NewServer(Config{
+		ProviderName: "fake",
+		RagDir:       corpus,
+		OutputDir:    outputDir,
+		Host:         "127.0.0.1",
+		LoopbackOnly: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return srv
+}
+
+func serveIndex(s *Server, target string) *httptest.ResponseRecorder {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, target, nil)
+	s.handleIndex(w, r)
+	return w
+}
+
+func TestHandleIndexServesGeneratedPage(t *testing.T) {
+	outputDir := t.TempDir()
+	pageDir := filepath.Join(outputDir, "handbook")
+	if err := os.MkdirAll(pageDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(pageDir, "index.html"), []byte("<h1>Handbook</h1>"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "feed.xml"), []byte("<rss/>"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := newFixtureServer(t, outputDir)
+
+	t.Run("page directory resolves to its index.html", func(t *testing.T) {
+		w := serveIndex(srv, "/handbook/")
+		if w.Code != http.StatusOK {
+			t.Fatalf("status %d, want 200 (body %q)", w.Code, w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "<h1>Handbook</h1>") {
+			t.Errorf("body %q, want the generated page", w.Body.String())
+		}
+		if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+			t.Errorf("Content-Type %q, want text/html", ct)
+		}
+	})
+
+	t.Run("plain file is served", func(t *testing.T) {
+		w := serveIndex(srv, "/feed.xml")
+		if w.Code != http.StatusOK {
+			t.Fatalf("status %d, want 200", w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "<rss/>") {
+			t.Errorf("body %q, want the feed file", w.Body.String())
+		}
+	})
+
+	t.Run("unknown path falls through to the UI", func(t *testing.T) {
+		w := serveIndex(srv, "/handbook/does-not-exist/")
+		if w.Code != http.StatusOK {
+			t.Fatalf("status %d, want the UI fallback", w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "<title>") {
+			t.Errorf("body %q, want the Ask UI shell", w.Body.String())
+		}
+	})
+
+	t.Run("directory without index.html is not listed", func(t *testing.T) {
+		empty := filepath.Join(outputDir, "empty")
+		if err := os.MkdirAll(empty, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		w := serveIndex(srv, "/empty/")
+		if strings.Contains(w.Body.String(), "index of") || w.Code == http.StatusOK && strings.Contains(w.Body.String(), "<pre>") {
+			t.Errorf("status %d body %q, want no directory listing", w.Code, w.Body.String())
+		}
+	})
+
+	t.Run("embedded UI assets still win", func(t *testing.T) {
+		w := serveIndex(srv, "/app.js")
+		if w.Code != http.StatusOK {
+			t.Fatalf("status %d, want the embedded UI asset", w.Code)
+		}
+		if ct := w.Header().Get("Content-Type"); !strings.Contains(ct, "javascript") {
+			t.Errorf("Content-Type %q, want the asset's type", ct)
+		}
+	})
+
+	t.Run("root always serves the UI, not the site", func(t *testing.T) {
+		if err := os.WriteFile(filepath.Join(outputDir, "index.html"), []byte("<h1>Generated Home</h1>"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		w := serveIndex(srv, "/")
+		if strings.Contains(w.Body.String(), "Generated Home") {
+			t.Errorf("root body %q, want the Ask UI shell, not the generated site", w.Body.String())
+		}
+	})
+}
+
+func TestHandleIndexBypassesMissingOutputDir(t *testing.T) {
+	outputDir := filepath.Join(t.TempDir(), "never-built")
+	srv := newFixtureServer(t, outputDir)
+
+	w := serveIndex(srv, "/handbook/")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status %d, want UI fallback when OutputDir is absent", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "<title>") {
+		t.Errorf("body %q, want the Ask UI shell", w.Body.String())
+	}
+}
+
 // --- helpers ---
 
 func freePort() (int, error) {
