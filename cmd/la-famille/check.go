@@ -39,6 +39,9 @@ func setupCheckCmd(cfg config.Config) *cobra.Command {
 			out := cmd.OutOrStdout()
 			errOut := cmd.ErrOrStderr()
 
+			info := currentBuildInfo()
+			fmt.Fprintf(out, "La Famille Diagnostics [%s (commit: %s)]\n", info.Version, info.Commit)
+
 			for _, finding := range res.Findings {
 				if finding.Level == checker.LevelError {
 					fmt.Fprintln(errOut, finding.String())

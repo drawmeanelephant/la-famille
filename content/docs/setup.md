@@ -34,64 +34,56 @@ git clone https://github.com/drawmeanelephant/la-famille.git
 cd la-famille
 ```
 
-## 3. Initialize the Project
+## 3. Unified Getting-Started Workflow Path
 
-La Famille includes a helpful initialization command that sets up default configuration files for you. Run the following command from the root of the project:
+Follow this concise sequential path to initialize, author, validate, build, preview, and export your site:
 
+### Step 1: Initialize Project (`init`)
+Initialize default configuration, layout templates, and required assets:
 ```bash
 go run ./cmd/la-famille init
 ```
+*(For a released binary outside source: `la-famille --project-root /path/to/site init`)*
 
-This will create a `config.yaml` file in the root directory if one doesn't already exist. You can read more about what settings are available in the [Configuration Guide](config.md).
-
-For a released binary and a site outside the current directory:
-
+### Step 2: Scaffold Content (`new`)
+Create new markdown posts or pages with pre-formatted YAML frontmatter:
 ```bash
-la-famille --project-root /path/to/site init
+go run ./cmd/la-famille new posts/first-post --title "First Post" --tags "welcome,guide" --categories "updates"
 ```
 
-`init` installs the embedded default layout, required partials, and runtime
-assets only when site-owned files are absent. Existing overrides are preserved.
+### Step 3: Validate Content & Asset Health (`check`)
+Check frontmatter syntax, internal links, slug collisions, and asset references:
+```bash
+go run ./cmd/la-famille check --asset-health
+```
+Diagnostic findings include the active build version and commit metadata.
 
-## 4. Run the Static Site Generator
-
-To process the markdown files in the `content/` directory and generate the static HTML site in the `public/` directory, use the build command:
-
+### Step 4: Build Static Site (`build`)
+Compile markdown files and assets into static HTML in `public/`:
 ```bash
 go run ./cmd/la-famille build
 ```
 
-The output directory is the complete publish artifact. Validate it before
-uploading:
-
+### Step 5: Serve Locally with Watch Mode (`serve --watch`)
+Launch the local HTTP server and automatically rebuild on content changes:
 ```bash
-la-famille --project-root /path/to/site publish-check --output public
+go run ./cmd/la-famille serve --watch
+```
+Navigate to `http://localhost:8080` in your web browser to preview your site live.
+
+### Step 6: Export RAG Context Bundles (`rag`)
+Generate LLM-ready context archives (`rag-system.md`, `rag-content.md`):
+```bash
+go run ./cmd/la-famille rag
 ```
 
-This step will parse your markdown files, process frontmatter, resolve links, generate graph data, and compile everything using the HTML layouts found in the `templates/` directory.
+## 4. GitHub Pages Deployment
 
-## 5. Serve the Site Locally
+GitHub Pages uses the Actions Pages artifact/deploy flow and uploads the whole `public/` tree; it does not imply or require a `gh-pages` branch. Set the `LA_FAMILLE_VERSION` repository variable to make the workflow download and checksum-verify a released binary. With the variable empty, it uses the clearly marked source-build fallback for development.
 
-You don't need a separate web server to view your generated site! La Famille comes with a built-in HTTP server to serve the `public/` directory.
+## 5. What's Next?
 
-```bash
-go run ./cmd/la-famille serve
-```
-
-By default, the server will start on port `8080`. Open your web browser and navigate to `http://localhost:8080` to see your new static site.
-
-*Note: If you need to stop the server, simply press `Ctrl+C` in your terminal.*
-
-GitHub Pages uses the Actions Pages artifact/deploy flow and uploads the whole
-`public/` tree; it does not imply or require a `gh-pages` branch. Set the
-`LA_FAMILLE_VERSION` repository variable to make the workflow download and
-checksum-verify a released binary. With the variable empty, it uses the
-clearly marked source-build fallback for development.
-
-## 6. What's Next?
-
-Now that you have the site running, here are a few things you can do next:
-
-*   **Explore the TUI:** Try running `go run ./cmd/la-famille tui` to see the interactive Terminal UI. See the [TUI Guide](tui.md) for more details.
-*   **Learn the CLI:** Read the [CLI Reference](cli.md) to discover all available flags and options.
-*   **Design with Templates:** Find out how to change the look of your site using different layouts in the [Templating Guide](templates.md).
+* **Explore the TUI:** Run `go run ./cmd/la-famille tui` to launch the interactive Terminal UI. See the [TUI Guide](tui.md).
+* **Learn the CLI:** Read the [CLI Reference](cli.md) to discover all available flags and subcommands.
+* **Design with Templates:** Customize HTML layouts in the [Templating Guide](templates.md).
+* **Ask This Site:** Learn about the on-device AI assistant in the [Ask Guide](ask.md).
