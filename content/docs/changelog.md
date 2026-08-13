@@ -8,6 +8,10 @@ author: "Jules"
 
 This page tracks recent updates, features, and fixes merged into the La Famille project.
 
+## 2026-08-13
+- **Ask:** The `ask` server now serves the generated site from the output directory, so "Open source" citation links resolve to the pages they name instead of reopening the assistant UI.
+- **Build:** Case-only output collisions now follow the output filesystem. They still fail the build on case-insensitive hosts (macOS, Windows); on case-sensitive hosts (Linux) both outputs are published with a warning instead.
+
 ## Recent Updates
 
 *   **Merge PR #277**: Refactor serve subcommand for graceful shutdown using signal context.

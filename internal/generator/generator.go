@@ -219,7 +219,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	// Taxonomy listings share the output tree with content pages, so the guard
 	// can only see the whole picture once their paths are known. claims keeps
 	// the ownership map alive for the writers that run later in the build.
-	claims, err := validateOutputPaths(fileMap, cfg.OutputDir, reservedOutputPaths(cfg), taxPaths)
+	claims, err := validateOutputPaths(fileMap, cfg.OutputDir, reservedOutputPaths(cfg), taxPaths, detectCaseSensitivity(cfg.OutputDir))
 	if err != nil {
 		return result, err
 	}
@@ -585,6 +585,11 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	if err != nil {
 		return result, fmt.Errorf("failed to collect generated files: %w", err)
 	}
+	// Asset, stub, and page claims may have produced non-fatal case-only
+	// warnings during the passes above; surface them alongside the metadata
+	// warnings.
+	result.Warnings = append(result.Warnings, claims.Warnings()...)
+	sort.Strings(result.Warnings)
 	if err := writeBuildCache(cachePath(siteCfg), fingerprint, files, result.PageCount, result.Health, result.Warnings); err != nil {
 		return result, fmt.Errorf("failed to write build cache: %w", err)
 	}
@@ -633,17 +638,62 @@ type outputOwner struct {
 // overwriting the first.
 //
 // Keys are case-folded, because macOS and Windows collapse paths differing only
-// in case onto one file. The fold is deliberately unconditional: the build host
-// and the deploy target need not agree, so two outputs that differ only in case
-// are refused even where the local filesystem could hold both.
+// in case onto one file. Whether the fold is enforced depends on the output
+// filesystem: exact duplicates always collide, while two paths differing only
+// in case are refused when that filesystem is case-insensitive and admitted
+// with a warning when it is case-sensitive.
 type outputClaims struct {
-	owners    map[string]outputOwner
-	outputDir string
-	mu        sync.Mutex
+	owners        map[string][]outputOwner
+	outputDir     string
+	caseSensitive bool
+	warnings      []string
+	mu            sync.Mutex
 }
 
-func newOutputClaims(outputDir string, size int) *outputClaims {
-	return &outputClaims{outputDir: outputDir, owners: make(map[string]outputOwner, size)}
+func newOutputClaims(outputDir string, size int, caseSensitive bool) *outputClaims {
+	return &outputClaims{
+		outputDir:     outputDir,
+		caseSensitive: caseSensitive,
+		owners:        make(map[string][]outputOwner, size),
+	}
+}
+
+// detectCaseSensitivity reports whether the output filesystem collapses paths
+// differing only in case. It is a variable so tests can pin either branch on
+// any host.
+var detectCaseSensitivity = probeCaseSensitivity
+
+// probeCaseSensitivity probes dir with one file: it creates a probe file and
+// asks whether a differently-cased spelling of its name names the same file.
+// A spelling that resolves to its own file means the filesystem is
+// case-sensitive. When the probe cannot run it conservatively reports
+// case-insensitive, preserving the historical behavior of refusing case-only
+// collisions.
+func probeCaseSensitivity(dir string) bool {
+	probe := filepath.Join(dir, fmt.Sprintf("lafamille-case-probe-%d", os.Getpid()))
+	f, err := os.Create(probe)
+	if err != nil {
+		return false
+	}
+	_ = f.Close()
+	defer func() { _ = os.Remove(probe) }()
+
+	_, err = os.Stat(filepath.Join(dir, flipProbeCase(filepath.Base(probe))))
+	return errors.Is(err, os.ErrNotExist)
+}
+
+// flipProbeCase toggles the case of the first ASCII letter in s, so the probe
+// name "lafamille-..." is re-checked as "Lafamille-...".
+func flipProbeCase(s string) string {
+	for i := 0; i < len(s); i++ {
+		switch {
+		case s[i] >= 'a' && s[i] <= 'z':
+			return s[:i] + string(s[i]-('a'-'A')) + s[i+1:]
+		case s[i] >= 'A' && s[i] <= 'Z':
+			return s[:i] + string(s[i]+('a'-'A')) + s[i+1:]
+		}
+	}
+	return s
 }
 
 func (c *outputClaims) absPath(relOut string) string {
@@ -655,17 +705,44 @@ func (c *outputClaims) key(relOut string) string {
 }
 
 // claim reserves relOut for source. It returns the writer that already holds
-// the path, and false, when the path is taken.
+// the path, and false, when the path is taken. An exact duplicate is always
+// refused; a pair differing only in case is refused on case-insensitive
+// filesystems and admitted with a warning on case-sensitive ones.
 func (c *outputClaims) claim(source, relOut string) (outputOwner, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	key := c.key(relOut)
-	if previous, exists := c.owners[key]; exists {
-		return previous, false
+	var firstCaseDiff outputOwner
+	haveCaseDiff := false
+	for _, previous := range c.owners[key] {
+		if previous.relOut == relOut {
+			return previous, false
+		}
+		if !haveCaseDiff {
+			firstCaseDiff = previous
+			haveCaseDiff = true
+		}
 	}
-	c.owners[key] = outputOwner{source: source, relOut: relOut}
+	if haveCaseDiff && !c.caseSensitive {
+		return firstCaseDiff, false
+	}
+	if haveCaseDiff {
+		c.warnings = append(c.warnings, fmt.Sprintf(
+			"output path warning: %s maps to %q and %s maps to %q, which would be the same file on a case-insensitive filesystem",
+			firstCaseDiff.source, firstCaseDiff.relOut, source, relOut))
+	}
+	c.owners[key] = append(c.owners[key], outputOwner{source: source, relOut: relOut})
 	return outputOwner{}, true
+}
+
+// Warnings returns the non-fatal collision notices collected while claiming.
+func (c *outputClaims) Warnings() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	out := make([]string, len(c.warnings))
+	copy(out, c.warnings)
+	return out
 }
 
 // stubClaimer adapts the registry to the reservation callback internal/stub
@@ -711,8 +788,8 @@ func collisionError(previous outputOwner, source, relOut string) error {
 
 // validateOutputPaths claims every output path known before the render pass and
 // returns the registry so later writers can claim theirs too.
-func validateOutputPaths(fileMap map[string]*content.FileMeta, outputDir string, reserved map[string]string, taxonomyPaths []string) (*outputClaims, error) {
-	claims := newOutputClaims(outputDir, len(fileMap)+len(taxonomyPaths)+len(reserved))
+func validateOutputPaths(fileMap map[string]*content.FileMeta, outputDir string, reserved map[string]string, taxonomyPaths []string, caseSensitive bool) (*outputClaims, error) {
+	claims := newOutputClaims(outputDir, len(fileMap)+len(taxonomyPaths)+len(reserved), caseSensitive)
 
 	// Content pages claim first so that an author's own file is the first party
 	// named in any error and the generated owner that follows explains itself.
