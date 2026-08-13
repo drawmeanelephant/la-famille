@@ -1,6 +1,6 @@
 ---
 title: "Raoul(s) - The Multipersonality Octodeveloper"
-date: "2024-06-20"
+date: "2026-06-20"
 author: "Jules"
 ---
 
@@ -24,7 +24,7 @@ When the repository starts getting cluttered with old branch artifacts, temporar
 ### 2. The Maestro
 **Asset:** `Octopus_mascot_writing_music_dia…_202606200817.jpeg`
 
-La Famille isn't just about code; it's about vibes. The Maestro Raoul(s) is responsible for the `content/soundtrack/` directories. After a long coding session, he curates the Flow Music prompts and conceptualizes the synthwave and electro tracks that fuel our next milestones.
+La Famille isn't just about code; it's about vibes. The Maestro Raoul(s) curates the multimedia devlog themes and `soundtrack_theme` prompts that give devlogs their musical identity, keeping the project's creative energy alive alongside the technical milestones.
 
 ### 3. The Skater / The Agilist
 **Asset:** `Octopus_mascot_riding_skateboard…_202606200817.jpeg` & `Octopus_riding_skateboard_holdin…_202606200817_2.jpeg`

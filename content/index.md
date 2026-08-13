@@ -18,20 +18,10 @@ See what others have built with La Famille.
 
 [View Showcase](showcase/index.md)
 
-## Catfacts
-Learn some interesting facts about cats.
-
-[View Catfacts](catfacts/1781980227-catfact.md)
-
 ## Jules
 Information about Jules.
 
 [View Jules](jules/index.md)
-
-## Soundtrack
-The official soundtrack of La Famille.
-
-[View Soundtrack](soundtrack/index.md)
 
 ## Meta
 Meta information about the project.

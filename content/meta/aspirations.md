@@ -1,50 +1,40 @@
 ---
 title: "Aspirational Goals"
 author: "Jules"
-date: "2026-06-18"
+date: "2026-08-13"
 ---
 
 # Aspirational To-Do Recommendations for La Famille
 
-This document contains recommendations and aspirational goals for the future development of the **La Famille** project.
+This document contains recommendations and aspirational goals for the future development of the **La Famille** project. Status is tracked per item so the list stays honest.
 
 ## 🛠️ Technical & Architecture Enhancements
 
-### 1. Frontmatter Support
-Currently, the generator assigns the Markdown filename as the page title.
-- **Action:** Integrate a YAML frontmatter parser to extract metadata like `Title`, `Date`, `Author`, and `Draft` status from the top of the `.md` files before rendering with Goldmark. *(Note: partially implemented)*
+### 1. Frontmatter Support — *Shipped*
+Originally, the generator assigned the Markdown filename as the page title. YAML frontmatter is now parsed for `title`, `date`, `author`, and `draft` fields before rendering with Goldmark. See [Using Frontmatter](../docs/frontmatter.md).
 
-### 2. Multi-Template System & Partials
-The generator currently only relies on a single `layout.html`.
-- **Action:** Expand the templating engine to support partials (e.g., headers, footers, navbars) and specific page templates (e.g., `post.html` vs. `index.html`).
-- **Action:** Implement a static asset pipeline to seamlessly copy CSS, JavaScript, and image files from an `assets/` folder to the `public/` directory.
+### 2. Multi-Template System & Partials — *Shipped*
+The templating engine supports partials (headers, footers, navbars), per-page layouts (`layout` frontmatter), and a static asset pipeline that copies assets from `assets/` to `public/`. See [Templating System](../docs/templates.md).
 
-### 3. CLI Configuration & Flags
-The input/output paths are currently hardcoded in `cmd/la-famille/main.go`.
-- **Action:** Implement command-line flags (via the standard `flag` package or a library like `cobra`/`viper`) so users can execute `go run ./cmd/la-famille/main.go --contentDir ./docs --out ./dist`.
+### 3. CLI Configuration & Flags — *Shipped*
+Input/output paths are configurable via `config.yaml` and CLI flags (`--contentDir`, `--out`, `--project-root`) built with `spf13/cobra`. See [CLI Reference](../docs/cli.md).
 
-### 4. Dev Server & Live Reload
-To improve the authoring experience:
-- **Action:** Add an integrated local HTTP server (`net/http`) to serve the `public/` directory.
-- **Action:** Integrate file watching (e.g., `fsnotify`) to automatically trigger a rebuild when a `.md` or `.html` file is saved.
+### 4. Dev Server & Live Reload — *Shipped*
+An integrated local HTTP server serves `public/`, and file watching (via `fsnotify`) triggers debounced rebuilds with SSE live-reload. See [Terminal UI Guide](../docs/tui.md).
 
-### 5. Code Refactoring (Following GEMINI.md)
-The `GEMINI.md` file specifies `internal/` and `pkg/` directories, but core logic currently lives in `main.go`.
-- **Action:** Refactor `processFile` and `run` into an `internal/generator/` package to improve modularity and testability.
+### 5. Code Refactoring — *Shipped*
+Core logic now lives in tested `internal/` packages (`generator`, `render`, `transform`, `asset`, `search`, `taxonomy`, and friends). See [Architecture & Component Map](../docs/architecture.md).
 
 ## 🎨 Content & Creative Development
 
-### 6. Styling & UI Polish
-The generated output is currently raw HTML.
-- **Action:** Create a CSS stylesheet (Vanilla CSS or a micro-framework) to give the generated site a modern, readable, and responsive aesthetic. Update `layout.html` to include it.
+### 6. Styling & UI Polish — *Shipped*
+The site renders through a library of DaisyUI-based layout templates with a modern, readable, responsive aesthetic.
 
-### 7. Soundtrack & Lore Expansion (In Progress)
-The soundtrack files have been moved to the `content/` directory and expanded with new track listings (e.g., "go.mod (The Ledger)" and "Unit Test Blues").
-- **Next Step:** Further expand the lore and lyrics within these files to bridge the engineering and musical narratives.
+### 7. Soundtrack & Lore Expansion — *Sunset (2026-08-13)*
+The soundtrack albums and cat-facts content were removed from the live site to keep the published site aligned with current project reality. The multimedia devlog feature (`video_script`, `animation_cues`, `soundtrack_theme` frontmatter) remains supported.
 
-### 8. CI/CD Deployment
-To make the project accessible to the world:
-- **Action:** Set up a GitHub Actions workflow (`.github/workflows/deploy.yml`) to automatically build the Go binary, generate the static site, and deploy the `public/` folder to GitHub Pages.
+### 8. CI/CD Deployment — *Shipped*
+A GitHub Actions workflow builds the Go binary, generates the static site, and deploys `public/` to GitHub Pages. See [Publishing Output Contract](../docs/publishing.md).
 
 ---
 *See [roadmap.md](roadmap.md) for a structured breakdown of these goals into phases.*

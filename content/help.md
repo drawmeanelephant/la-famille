@@ -1,30 +1,34 @@
 ---
-date: "2026-07-09"
+date: "2026-08-13"
 title: "Help Menu & Documentation"
 author: "Jules"
 ---
 
 # La Famille Help Menu
 
-Welcome to the Help Menu. Below is a comprehensive list of documentation topics for La Famille. Many of these links point to pages that haven't been written yet, demonstrating how La Famille automatically generates stub pages for missing content!
+Welcome to the Help Menu. The full documentation index is the best starting
+point for everything La Famille can do.
 
-### 📖 General Usage
-- [Getting Started](docs/getting-started.md)
-- [Writing Content](docs/writing/content.md)
-- [Frontmatter Guide](docs/frontmatter.md)
-- [Managing Assets](docs/assets.md)
+### 📚 Start Here
+- [Documentation Index](docs/index.md) - The complete, current list of guides.
+- [Getting Started](docs/setup.md) - Install prerequisites, build, and serve your site.
 
 ### 🛠️ Configuration & CLI
-- [CLI Reference](docs/cli/reference.md)
+- [CLI Reference](docs/cli.md)
 - [Configuration Files](docs/config.md)
-- [Environment Variables](docs/env.md)
+- [Terminal UI Guide](docs/tui.md)
 
 ### 🎨 Design & Templates
-- [Templating Guide](docs/templates/guide.md)
-- [Custom Layouts](docs/templates/layouts.md)
-- [CSS and Styling](docs/styling.md)
+- [Templating System](docs/templates.md)
+- [Template Gallery](docs/templates.md)
 
 ### 🚀 Advanced
-- [Architecture Overview](docs/architecture.md)
-- [Deployment Guide](docs/deployment.md)
-- [Writing Custom Parsers](docs/advanced/parsers.md)
+- [How the Generator Works](docs/generator.md)
+- [Architecture & Component Map](docs/architecture.md)
+- [Publishing Output Contract](docs/publishing.md)
+- [RAG Export Guide](docs/rag.md)
+
+### 🌐 Site Sections
+- [Showcase](showcase/index.md)
+- [Jules & Routines](jules/index.md)
+- [Meta & Development](meta/index.md)

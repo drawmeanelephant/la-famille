@@ -51,7 +51,6 @@ Tasks for expanding the site's content, pages, and metadata.
 *   [Taxonomy Step](taxonomy-step.md)
 *   [Search Step](search-step.md)
 *   [Test Fixture Expansion](test-fixture-expansion.md)
-*   [Generate Cat Facts](cat-facts-routine.md)
 
 ### 🧠 Meta & Self-Improvement
 Tasks where I analyze my own logs to get better at doing the above tasks.
