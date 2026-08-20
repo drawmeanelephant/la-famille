@@ -162,6 +162,7 @@ func initialModel(cfg config.Config) model {
 			{"RAG Export"},
 			{"Ask This Site"},
 			{"Help"},
+			{"Just Raoul"},
 		},
 		menuOpen: true,
 	}
@@ -984,24 +985,25 @@ func (m model) View() string {
 }
 
 func staticRaoul() string {
-	return `       .---.
-      ( o o )
-       \_-_/
-      / | | \
-     / / \ \ \`
+	return "  .---." + "\n" +
+		" ( @ @ )" + "\n" +
+		"  )   (" + "\n" +
+		" (v|v|v)"
 }
 
 func animatedRaoul(frame int) string {
 	if frame == 0 {
-		return `       .---.
-      ( o o )
-       \_-_/
-      / | | \
-     / / \ \ \`
+		return "  .---." + "\n" +
+			" ( @ @ )" + "\n" +
+			"  )   (" + "\n" +
+			" (v|v|v)" + "\n" +
+			"  \\ | /" + "\n" +
+			"   \\|/"
 	}
-	return `       .---.
-      ( - - )
-       \_-_/
-      \ \ / /
-       \ | | /`
+	return "  .---." + "\n" +
+		" ( @ @ )" + "\n" +
+		"  )   (" + "\n" +
+		" (v|v|v)" + "\n" +
+		"  / | \\" + "\n" +
+		"   /|\\"
 }
