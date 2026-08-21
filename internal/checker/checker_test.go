@@ -19,6 +19,7 @@ func TestValidate_ValidContent(t *testing.T) {
 	doc1 := `---
 title: Page One
 date: 2026-05-10
+description: Page one description
 tags:
   - go
   - web
@@ -29,6 +30,7 @@ Link to [Page Two](page2.md).
 	doc2 := `---
 title: Page Two
 date: 2026-05-11
+description: Page two description
 tags:
   - go
 ---
@@ -342,6 +344,7 @@ func TestValidate_RenderFalseLinksValid(t *testing.T) {
 
 	doc1 := `---
 title: Rendered Page
+description: A rendered page
 ---
 # Rendered Page
 Link to [raw file](raw.md).
@@ -542,8 +545,8 @@ func TestValidate_AssetHealth_DeterministicFindingOrder(t *testing.T) {
 	_ = os.MkdirAll(contentDir, 0755)
 	_ = os.MkdirAll(assetDir, 0755)
 
-	_ = os.WriteFile(filepath.Join(contentDir, "a.md"), []byte("---\ntitle: A\n---\n![m](/assets/missing_z.png)\n"), 0600)
-	_ = os.WriteFile(filepath.Join(contentDir, "b.md"), []byte("---\ntitle: B\n---\n![m](/assets/missing_a.png)\n"), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "a.md"), []byte("---\ntitle: A\ndescription: desc\n---\n![m](/assets/missing_z.png)\n"), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "b.md"), []byte("---\ntitle: B\ndescription: desc\n---\n![m](/assets/missing_a.png)\n"), 0600)
 	_ = os.WriteFile(filepath.Join(assetDir, "b_file.psd"), []byte("psd"), 0600)
 	_ = os.WriteFile(filepath.Join(assetDir, "a_file.psd"), []byte("psd"), 0600)
 
@@ -570,5 +573,281 @@ func TestValidate_AssetHealth_DeterministicFindingOrder(t *testing.T) {
 		if res1.Findings[i].String() != res2.Findings[i].String() {
 			t.Errorf("finding %d mismatch:\n  res1: %s\n  res2: %s", i, res1.Findings[i].String(), res2.Findings[i].String())
 		}
+	}
+}
+
+func TestValidate_MissingTitleAndDescription(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	_ = os.MkdirAll(contentDir, 0755)
+
+	// rendered page missing title and description
+	docNoMeta := `---
+date: 2026-05-10
+---
+# No meta
+`
+	// rendered page with title but no description
+	docNoDesc := `---
+title: Has Title
+---
+# Has Title
+`
+	// render:false page without title/description should NOT warn
+	docRaw := `---
+render: false
+---
+# Raw
+`
+	_ = os.WriteFile(filepath.Join(contentDir, "no_meta.md"), []byte(docNoMeta), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "no_desc.md"), []byte(docNoDesc), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "raw.md"), []byte(docRaw), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	hasMissingTitle := false
+	hasMissingDesc := false
+	rawWarned := false
+	for _, f := range res.Findings {
+		if f.File == "no_meta.md" && strings.Contains(f.Message, "missing title") {
+			hasMissingTitle = true
+			if f.Category != CategoryMissingMetadata || f.Level != LevelWarn {
+				t.Errorf("missing title finding has wrong Level/Category: %v", f)
+			}
+		}
+		if f.File == "no_desc.md" && strings.Contains(f.Message, "missing description") {
+			hasMissingDesc = true
+			if f.Category != CategoryMissingMetadata {
+				t.Errorf("missing description category = %q want %q", f.Category, CategoryMissingMetadata)
+			}
+		}
+		if f.File == "no_meta.md" && strings.Contains(f.Message, "missing description") {
+			hasMissingDesc = true
+		}
+		if f.File == "raw.md" && strings.Contains(f.Message, "missing title") {
+			rawWarned = true
+		}
+		if f.File == "raw.md" && strings.Contains(f.Message, "missing description") {
+			rawWarned = true
+		}
+	}
+	if !hasMissingTitle {
+		t.Errorf("expected missing title warning for no_meta.md, got %v", res.Findings)
+	}
+	if !hasMissingDesc {
+		t.Errorf("expected missing description warning, got %v", res.Findings)
+	}
+	if rawWarned {
+		t.Errorf("render:false page should not produce missing metadata warnings, got %v", res.Findings)
+	}
+}
+
+func TestValidate_CategoriesValidation(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	_ = os.MkdirAll(contentDir, 0755)
+
+	doc := `---
+title: Cat Test
+description: desc
+categories:
+  - Valid-Cat
+  - Bad Category!
+  - good-cat
+category: Another Bad One
+---
+# Content
+`
+	_ = os.WriteFile(filepath.Join(contentDir, "page.md"), []byte(doc), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	catWarns := 0
+	for _, f := range res.Findings {
+		if strings.Contains(f.Message, "malformed category") {
+			catWarns++
+			if f.Category != CategoryMissingMetadata || f.Level != LevelWarn {
+				t.Errorf("category warning wrong Level/Category: %v", f)
+			}
+		}
+	}
+	// Valid-Cat, Bad Category!, Another Bad One are malformed (uppercase/space)
+	if catWarns < 3 {
+		t.Errorf("expected at least 3 malformed category warnings, got %d: %v", catWarns, res.Findings)
+	}
+	// good-cat should not warn
+	for _, f := range res.Findings {
+		if strings.Contains(f.Message, "good-cat") {
+			t.Errorf("good-cat should not produce warning, got %v", f)
+		}
+	}
+}
+
+func TestValidate_OrphanDetection(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	_ = os.MkdirAll(contentDir, 0755)
+
+	// index links to about, orphan has no inbound
+	indexDoc := `---
+title: Home
+description: home desc
+---
+# Home
+Link to [About](about.md).
+`
+	aboutDoc := `---
+title: About
+description: about desc
+---
+# About
+No links.
+`
+	orphanDoc := `---
+title: Orphan
+description: orphan desc
+---
+# Orphan
+No inbound.
+`
+	_ = os.WriteFile(filepath.Join(contentDir, "index.md"), []byte(indexDoc), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "about.md"), []byte(aboutDoc), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "orphan.md"), []byte(orphanDoc), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	hasOrphanWarn := false
+	hasAboutOrphan := false
+	hasIndexOrphan := false
+	for _, f := range res.Findings {
+		if f.File == "orphan.md" && strings.Contains(f.Message, "orphaned page") {
+			hasOrphanWarn = true
+			if f.Category != CategoryOrphan || f.Level != LevelWarn {
+				t.Errorf("orphan finding wrong Category/Level: %v", f)
+			}
+		}
+		if f.File == "about.md" && strings.Contains(f.Message, "orphaned page") {
+			hasAboutOrphan = true
+		}
+		if f.File == "index.md" && strings.Contains(f.Message, "orphaned page") {
+			hasIndexOrphan = true
+		}
+	}
+	if !hasOrphanWarn {
+		t.Errorf("expected orphan warning for orphan.md, got %v", res.Findings)
+	}
+	if hasAboutOrphan {
+		t.Errorf("about.md has inbound from index, should not be orphan: %v", res.Findings)
+	}
+	if hasIndexOrphan {
+		t.Errorf("index.md exempt from orphan rule, should not be flagged: %v", res.Findings)
+	}
+	if c := res.CountByCategory(CategoryOrphan); c != 1 {
+		t.Errorf("CountByCategory(orphan) = %d want 1", c)
+	}
+}
+
+func TestValidate_OrphanIndexExempt(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	_ = os.MkdirAll(contentDir, 0755)
+
+	// Only index with no inbound — should NOT be orphan due to exemption
+	indexDoc := `---
+title: Home
+description: home desc
+---
+# Home
+No inbound links to index.
+`
+	_ = os.WriteFile(filepath.Join(contentDir, "index.md"), []byte(indexDoc), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+	for _, f := range res.Findings {
+		if strings.Contains(f.Message, "orphaned page") {
+			t.Errorf("index should be exempt from orphan detection, got finding %v", f)
+		}
+	}
+	if c := res.CountByCategory(CategoryOrphan); c != 0 {
+		t.Errorf("expected 0 orphans when only index exists, got %d", c)
+	}
+}
+
+func TestValidate_CategoryCounts(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	assetDir := filepath.Join(tempDir, "assets")
+	_ = os.MkdirAll(contentDir, 0755)
+	_ = os.MkdirAll(assetDir, 0755)
+
+	// missing description + malformed tag => missing_metadata
+	doc1 := `---
+title: Page1
+tags:
+  - Bad Tag!
+---
+# Page1
+Link to [missing](missing.md).
+`
+	// orphan page
+	doc2 := `---
+title: Orphan
+description: desc
+---
+# Orphan
+`
+	_ = os.WriteFile(filepath.Join(contentDir, "page1.md"), []byte(doc1), 0600)
+	_ = os.WriteFile(filepath.Join(contentDir, "orphan.md"), []byte(doc2), 0600)
+	_ = os.WriteFile(filepath.Join(assetDir, "design.psd"), []byte("psd"), 0600)
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.AssetDir = assetDir
+	cfg.CheckAssetHealth = true
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+
+	if res.CountByCategory(CategoryBrokenLink) == 0 {
+		t.Errorf("expected broken_links >0, got findings %v", res.Findings)
+	}
+	if res.CountByCategory(CategoryMissingMetadata) == 0 {
+		t.Errorf("expected missing_metadata >0, got findings %v", res.Findings)
+	}
+	if res.CountByCategory(CategoryAssetHealth) == 0 {
+		t.Errorf("expected asset_health >0, got findings %v", res.Findings)
+	}
+	if res.CountByCategory(CategoryOrphan) == 0 {
+		t.Errorf("expected orphan >0, got findings %v", res.Findings)
+	}
+	// broken links are errors, orphans/missing/asset are warns -> errorCount only broken
+	if res.ErrorCount() == 0 {
+		t.Errorf("expected ErrorCount >0 for broken link")
 	}
 }

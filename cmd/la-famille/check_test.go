@@ -20,6 +20,7 @@ func TestCheckCommand_ValidContent(t *testing.T) {
 	doc1 := `---
 title: Home Page
 date: 2026-05-10
+description: Home description
 ---
 # Welcome
 See [About](about.md).
@@ -27,6 +28,7 @@ See [About](about.md).
 	doc2 := `---
 title: About Page
 date: 2026-05-11
+description: About description
 ---
 # About
 Back to [Home](index.md).

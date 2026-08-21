@@ -27,6 +27,12 @@ type ContentHealth struct {
 }
 
 // ComputeContentHealth calculates content health metrics from metadata, graph data, and backlinks.
+//
+// Orphan rule: a rendered page is orphan when it has zero inbound links,
+// exempting the rendered homepage (id "index") so a freshly-seeded site that
+// links out from index.md doesn't flag index as orphan. This matches the
+// Explorer Orphan Rule documented in content/docs/publishing.md. Raw
+// render:false pages (ids carry .md suffix) are never orphan candidates.
 func ComputeContentHealth(fileMap map[string]*content.FileMeta, g graph.Graph, backlinks map[string][]string) ContentHealth {
 	var health ContentHealth
 
@@ -62,7 +68,7 @@ func ComputeContentHealth(fileMap map[string]*content.FileMeta, g graph.Graph, b
 				health.MissingDates = append(health.MissingDates, id)
 			}
 
-			if len(backlinks[id]) == 0 {
+			if len(backlinks[id]) == 0 && id != "index" {
 				health.OrphanedPages = append(health.OrphanedPages, id)
 			}
 		}

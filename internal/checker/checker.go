@@ -33,11 +33,20 @@ const (
 	LevelWarn  Level = "WARN"
 )
 
+// Categories for findings — used to feed the publish-check summary footer (#483).
+const (
+	CategoryBrokenLink     = "broken_links"
+	CategoryMissingMetadata = "missing_metadata"
+	CategoryAssetHealth    = "asset_health"
+	CategoryOrphan         = "orphan"
+)
+
 type Finding struct {
-	File    string
-	Level   Level
-	Message string
-	Line    int
+	File     string
+	Level    Level
+	Message  string
+	Line     int
+	Category string
 }
 
 func (f Finding) String() string {
@@ -74,8 +83,20 @@ func (r *Result) WarnCount() int {
 	return count
 }
 
-// Validate checks content files for frontmatter errors, invalid dates, malformed tags,
-// invalid render/slug combinations, path collisions, and broken internal links.
+// CountByCategory returns the number of findings in the given category.
+func (r *Result) CountByCategory(category string) int {
+	count := 0
+	for _, f := range r.Findings {
+		if f.Category == category {
+			count++
+		}
+	}
+	return count
+}
+
+// Validate checks content files for frontmatter errors, invalid dates, malformed tags/categories,
+// missing metadata (title/description), invalid render/slug combinations, path collisions,
+// broken internal links, orphaned pages, and optional asset health.
 func Validate(cfg config.Config) (*Result, error) {
 	fileMap, err := content.GatherMetadata(cfg.ContentDir)
 	if err != nil {
@@ -101,10 +122,11 @@ func Validate(cfg config.Config) (*Result, error) {
 		_, fmErr := frontmatter.Parse(bytes.NewReader(meta.Content), &rawMatter)
 		if fmErr != nil {
 			findings = append(findings, Finding{
-				File:    relPath,
-				Line:    1,
-				Level:   LevelError,
-				Message: fmt.Sprintf("invalid frontmatter: %v", fmErr),
+				File:     relPath,
+				Line:     1,
+				Level:    LevelError,
+				Category: CategoryMissingMetadata,
+				Message:  fmt.Sprintf("invalid frontmatter: %v", fmErr),
 			})
 		}
 
@@ -116,10 +138,14 @@ func Validate(cfg config.Config) (*Result, error) {
 			yamlBytes, yErr := yaml.Marshal(normalizedMatter)
 			if yErr == nil {
 				var matter struct {
-					Render *bool    `yaml:"render"`
-					Date   string   `yaml:"date"`
-					Slug   string   `yaml:"slug"`
-					Tags   []string `yaml:"tags"`
+					Render      *bool              `yaml:"render"`
+					Date        string             `yaml:"date"`
+					Slug        string             `yaml:"slug"`
+					Tags        content.StringList `yaml:"tags"`
+					Categories  content.StringList `yaml:"categories"`
+					Category    content.StringList `yaml:"category"`
+					Title       string             `yaml:"title"`
+					Description string             `yaml:"description"`
 				}
 				_ = yaml.Unmarshal(yamlBytes, &matter)
 
@@ -128,16 +154,17 @@ func Validate(cfg config.Config) (*Result, error) {
 					if _, err := time.Parse(time.DateOnly, matter.Date); err != nil {
 						line := findFieldLine(meta.Content, "date")
 						findings = append(findings, Finding{
-							File:    relPath,
-							Line:    line,
-							Level:   LevelError,
-							Message: fmt.Sprintf("invalid date format %q: must be YYYY-MM-DD", matter.Date),
+							File:     relPath,
+							Line:     line,
+							Level:    LevelError,
+							Category: CategoryMissingMetadata,
+							Message:  fmt.Sprintf("invalid date format %q: must be YYYY-MM-DD", matter.Date),
 						})
 					}
 				}
 
 				// Tags validation
-				for _, tag := range matter.Tags {
+				for _, tag := range []string(matter.Tags) {
 					if !validTagRegex.MatchString(tag) {
 						lower := strings.ToLower(tag)
 						var sb strings.Builder
@@ -149,10 +176,41 @@ func Validate(cfg config.Config) (*Result, error) {
 						norm := sb.String()
 						line := findFieldLine(meta.Content, "tags")
 						findings = append(findings, Finding{
-							File:    relPath,
-							Line:    line,
-							Level:   LevelWarn,
-							Message: fmt.Sprintf("malformed tag %q (normalized to %q)", tag, norm),
+							File:     relPath,
+							Line:     line,
+							Level:    LevelWarn,
+							Category: CategoryMissingMetadata,
+							Message:  fmt.Sprintf("malformed tag %q (normalized to %q)", tag, norm),
+						})
+					}
+				}
+
+				// Categories validation — mirrors tags (^[a-z0-9-]+$)
+				allCategories := append([]string(nil), []string(matter.Categories)...)
+				allCategories = append(allCategories, []string(matter.Category)...)
+				for _, cat := range allCategories {
+					if !validTagRegex.MatchString(cat) {
+						lower := strings.ToLower(cat)
+						var sb strings.Builder
+						for _, r := range lower {
+							if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+								sb.WriteRune(r)
+							}
+						}
+						norm := sb.String()
+						line := findFieldLine(meta.Content, "categories")
+						if findFieldLine(meta.Content, "category") != 1 || strings.Contains(strings.ToLower(string(meta.Content)), "category:") {
+							// Prefer the line of the key that actually appears; fall back to categories
+							if strings.Contains(strings.ToLower(string(meta.Content)), "\ncategory:") || strings.HasPrefix(strings.ToLower(strings.TrimSpace(string(meta.Content))), "category:") {
+								line = findFieldLine(meta.Content, "category")
+							}
+						}
+						findings = append(findings, Finding{
+							File:     relPath,
+							Line:     line,
+							Level:    LevelWarn,
+							Category: CategoryMissingMetadata,
+							Message:  fmt.Sprintf("malformed category %q (normalized to %q)", cat, norm),
 						})
 					}
 				}
@@ -161,10 +219,11 @@ func Validate(cfg config.Config) (*Result, error) {
 				if matter.Render != nil && !*matter.Render && matter.Slug != "" {
 					line := findFieldLine(meta.Content, "slug")
 					findings = append(findings, Finding{
-						File:    relPath,
-						Line:    line,
-						Level:   LevelError,
-						Message: fmt.Sprintf("invalid render/slug combination: slug %q specified when render is false", matter.Slug),
+						File:     relPath,
+						Line:     line,
+						Level:    LevelError,
+						Category: CategoryMissingMetadata,
+						Message:  fmt.Sprintf("invalid render/slug combination: slug %q specified when render is false", matter.Slug),
 					})
 				}
 
@@ -174,13 +233,38 @@ func Validate(cfg config.Config) (*Result, error) {
 					if !filepath.IsLocal(slug) || strings.Contains(slug, ".") || strings.Contains(slug, string(filepath.Separator)) || strings.Contains(slug, "/") {
 						line := findFieldLine(meta.Content, "slug")
 						findings = append(findings, Finding{
-							File:    relPath,
-							Line:    line,
-							Level:   LevelError,
-							Message: fmt.Sprintf("invalid slug %q: slug must be a simple local name without slashes or dots", slug),
+							File:     relPath,
+							Line:     line,
+							Level:    LevelError,
+							Category: CategoryMissingMetadata,
+							Message:  fmt.Sprintf("invalid slug %q: slug must be a simple local name without slashes or dots", slug),
 						})
 					}
 				}
+			}
+		}
+
+		// 1b. Missing metadata warnings (title, description) — only for rendered pages
+		shouldRender := true
+		if meta.Render != nil && !*meta.Render {
+			shouldRender = false
+		}
+		if shouldRender {
+			if strings.TrimSpace(meta.Title) == "" {
+				findings = append(findings, Finding{
+					File:     relPath,
+					Level:    LevelWarn,
+					Category: CategoryMissingMetadata,
+					Message:  "missing title: <meta property=\"og:title\"> will fallback to filename",
+				})
+			}
+			if strings.TrimSpace(meta.Description) == "" {
+				findings = append(findings, Finding{
+					File:     relPath,
+					Level:    LevelWarn,
+					Category: CategoryMissingMetadata,
+					Message:  "missing description: page will use default_description if configured",
+				})
 			}
 		}
 
@@ -222,10 +306,11 @@ func Validate(cfg config.Config) (*Result, error) {
 				if _, exists := fileMap[targetRelPath]; !exists {
 					lineNo := findLinkLine(meta.Content, meta.Rest, n, dest)
 					findings = append(findings, Finding{
-						File:    relPath,
-						Line:    lineNo,
-						Level:   LevelError,
-						Message: fmt.Sprintf("broken internal link %q -> %q", dest, targetRelPath),
+						File:     relPath,
+						Line:     lineNo,
+						Level:    LevelError,
+						Category: CategoryBrokenLink,
+						Message:  fmt.Sprintf("broken internal link %q -> %q", dest, targetRelPath),
 					})
 				}
 
@@ -248,17 +333,22 @@ func Validate(cfg config.Config) (*Result, error) {
 		relOut := transform.GetOutputURL(relPath, slug, true)
 		if prev, exists := owners[relOut]; exists {
 			findings = append(findings, Finding{
-				File:    relPath,
-				Line:    0,
-				Level:   LevelError,
-				Message: fmt.Sprintf("output path collision: %q and %q both map to %q", prev, relPath, relOut),
+				File:     relPath,
+				Line:     0,
+				Level:    LevelError,
+				Category: CategoryBrokenLink,
+				Message:  fmt.Sprintf("output path collision: %q and %q both map to %q", prev, relPath, relOut),
 			})
 		} else {
 			owners[relOut] = relPath
 		}
 	}
 
-	// 4. Asset health diagnostics (optional)
+	// 4. Orphan detection — zero-inbound rendered pages, exempting index (Explorer Orphan Rule)
+	orphanFindings := detectOrphans(fileMap)
+	findings = append(findings, orphanFindings...)
+
+	// 5. Asset health diagnostics (optional)
 	if cfg.CheckAssetHealth {
 		assetFindings, aErr := validateAssets(cfg, fileMap)
 		if aErr != nil {
@@ -282,6 +372,88 @@ func Validate(cfg config.Config) (*Result, error) {
 	})
 
 	return &Result{Findings: findings}, nil
+}
+
+// detectOrphans reuses the markdown link graph to find rendered pages with zero inbound links.
+// It mirrors the logic in generator.ComputeContentHealth but without requiring a full build.
+// The rendered homepage (id "index") is exempt per content/docs/publishing.md Explorer Orphan Rule.
+func detectOrphans(fileMap map[string]*content.FileMeta) []Finding {
+	// Build inbound count map for rendered pages.
+	ids := make(map[string]string) // id -> relPath
+	inbound := make(map[string]int)
+	for relPath, meta := range fileMap {
+		if meta.Render != nil && !*meta.Render {
+			continue
+		}
+		id := strings.TrimSuffix(relPath, ".md")
+		ids[id] = relPath
+		inbound[id] = 0
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+
+	mdEngine := markdown.NewEngine(nil)
+	for relPath, meta := range fileMap {
+		if len(meta.Rest) == 0 {
+			continue
+		}
+		doc := mdEngine.Parser().Parse(text.NewReader(meta.Rest))
+		_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+			if !entering {
+				return ast.WalkContinue, nil
+			}
+			link, ok := n.(*ast.Link)
+			if !ok {
+				return ast.WalkContinue, nil
+			}
+			dest := string(link.Destination)
+			u, err := url.Parse(dest)
+			if err != nil || u.IsAbs() || strings.HasPrefix(dest, "//") || !strings.HasSuffix(u.Path, ".md") {
+				return ast.WalkContinue, nil
+			}
+			var targetRelPath string
+			if strings.HasPrefix(u.Path, "/") {
+				targetRelPath = filepath.ToSlash(filepath.Clean(strings.TrimPrefix(u.Path, "/")))
+			} else {
+				dir := filepath.Dir(relPath)
+				if dir == "." {
+					targetRelPath = filepath.ToSlash(filepath.Clean(u.Path))
+				} else {
+					targetRelPath = filepath.ToSlash(filepath.Clean(dir + "/" + u.Path))
+				}
+			}
+			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) || strings.Contains(dest, "%2E%2E") {
+				return ast.WalkContinue, nil
+			}
+			targetMeta, exists := fileMap[targetRelPath]
+			if !exists {
+				return ast.WalkContinue, nil
+			}
+			targetID := strings.TrimSuffix(targetRelPath, ".md")
+			if targetMeta.Render != nil && !*targetMeta.Render {
+				targetID = targetRelPath
+			}
+			if _, ok := inbound[targetID]; ok {
+				inbound[targetID]++
+			}
+			return ast.WalkContinue, nil
+		})
+	}
+
+	var findings []Finding
+	for id, count := range inbound {
+		if count == 0 && id != "index" {
+			relPath := ids[id]
+			findings = append(findings, Finding{
+				File:     relPath,
+				Level:    LevelWarn,
+				Category: CategoryOrphan,
+				Message:  "orphaned page: no inbound links",
+			})
+		}
+	}
+	return findings
 }
 
 var rasterExts = map[string]bool{
@@ -357,10 +529,11 @@ func validateAssets(cfg config.Config, fileMap map[string]*content.FileMeta) ([]
 
 			if d.Type()&os.ModeSymlink != 0 {
 				findings = append(findings, Finding{
-					File:    relSlash,
-					Line:    0,
-					Level:   LevelWarn,
-					Message: fmt.Sprintf("symlink in asset directory skipped: %s", relSlash),
+					File:     relSlash,
+					Line:     0,
+					Level:    LevelWarn,
+					Category: CategoryAssetHealth,
+					Message:  fmt.Sprintf("symlink in asset directory skipped: %s", relSlash),
 				})
 				return nil
 			}
@@ -368,10 +541,11 @@ func validateAssets(cfg config.Config, fileMap map[string]*content.FileMeta) ([]
 			// Boundary breakout check for asset paths
 			if !filepath.IsLocal(relPath) || strings.HasPrefix(relSlash, "..") || !pathutil.IsSafePath(cfg.AssetDir, path) {
 				findings = append(findings, Finding{
-					File:    relSlash,
-					Line:    0,
-					Level:   LevelWarn,
-					Message: fmt.Sprintf("asset path %q escapes configured asset root %q", relSlash, cfg.AssetDir),
+					File:     relSlash,
+					Line:     0,
+					Level:    LevelWarn,
+					Category: CategoryAssetHealth,
+					Message:  fmt.Sprintf("asset path %q escapes configured asset root %q", relSlash, cfg.AssetDir),
 				})
 				return nil
 			}
@@ -391,10 +565,11 @@ func validateAssets(cfg config.Config, fileMap map[string]*content.FileMeta) ([]
 			lowerRel := strings.ToLower(relSlash)
 			if prev, exists := assetCaseMap[lowerRel]; exists && prev != relSlash {
 				findings = append(findings, Finding{
-					File:    relSlash,
-					Line:    0,
-					Level:   LevelWarn,
-					Message: fmt.Sprintf("asset case-collision / duplicate destination risk: %q and %q map to the same destination %q", prev, relSlash, lowerRel),
+					File:     relSlash,
+					Line:     0,
+					Level:    LevelWarn,
+					Category: CategoryAssetHealth,
+					Message:  fmt.Sprintf("asset case-collision / duplicate destination risk: %q and %q map to the same destination %q", prev, relSlash, lowerRel),
 				})
 			} else {
 				assetCaseMap[lowerRel] = relSlash
@@ -404,10 +579,11 @@ func validateAssets(cfg config.Config, fileMap map[string]*content.FileMeta) ([]
 			ext := strings.ToLower(filepath.Ext(relSlash))
 			if suspiciousImageExts[ext] {
 				findings = append(findings, Finding{
-					File:    relSlash,
-					Line:    0,
-					Level:   LevelWarn,
-					Message: fmt.Sprintf("unsupported or suspicious image extension %q: prefer web-optimized formats (.png, .jpg, .webp, .svg, .avif)", ext),
+					File:     relSlash,
+					Line:     0,
+					Level:    LevelWarn,
+					Category: CategoryAssetHealth,
+					Message:  fmt.Sprintf("unsupported or suspicious image extension %q: prefer web-optimized formats (.png, .jpg, .webp, .svg, .avif)", ext),
 				})
 			}
 
@@ -416,10 +592,11 @@ func validateAssets(cfg config.Config, fileMap map[string]*content.FileMeta) ([]
 			if infoErr == nil && rasterExts[ext] {
 				if info.Size() > maxSize {
 					findings = append(findings, Finding{
-						File:    relSlash,
-						Line:    0,
-						Level:   LevelWarn,
-						Message: fmt.Sprintf("unusually large raster asset (%s > %s threshold)", formatBytes(info.Size()), formatBytes(maxSize)),
+						File:     relSlash,
+						Line:     0,
+						Level:    LevelWarn,
+						Category: CategoryAssetHealth,
+						Message:  fmt.Sprintf("unusually large raster asset (%s > %s threshold)", formatBytes(info.Size()), formatBytes(maxSize)),
 					})
 				}
 			}
@@ -506,10 +683,11 @@ func validateAssets(cfg config.Config, fileMap map[string]*content.FileMeta) ([]
 			if !filepath.IsLocal(filepath.FromSlash(assetRel)) || strings.HasPrefix(assetRel, "..") || strings.Contains(dest, "%2E%2E") {
 				lineNo := findLinkLine(meta.Content, meta.Rest, n, dest)
 				findings = append(findings, Finding{
-					File:    relPath,
-					Line:    lineNo,
-					Level:   LevelWarn,
-					Message: fmt.Sprintf("referenced asset path %q escapes asset root", dest),
+					File:     relPath,
+					Line:     lineNo,
+					Level:    LevelWarn,
+					Category: CategoryAssetHealth,
+					Message:  fmt.Sprintf("referenced asset path %q escapes asset root", dest),
 				})
 				return ast.WalkContinue, nil
 			}
@@ -519,17 +697,19 @@ func validateAssets(cfg config.Config, fileMap map[string]*content.FileMeta) ([]
 				lineNo := findLinkLine(meta.Content, meta.Rest, n, dest)
 				if actual, caseMismatch := assetCaseMap[strings.ToLower(assetRel)]; caseMismatch {
 					findings = append(findings, Finding{
-						File:    relPath,
-						Line:    lineNo,
-						Level:   LevelWarn,
-						Message: fmt.Sprintf("referenced asset %q has case mismatch with existing asset %q", dest, actual),
+						File:     relPath,
+						Line:     lineNo,
+						Level:    LevelWarn,
+						Category: CategoryAssetHealth,
+						Message:  fmt.Sprintf("referenced asset %q has case mismatch with existing asset %q", dest, actual),
 					})
 				} else {
 					findings = append(findings, Finding{
-						File:    relPath,
-						Line:    lineNo,
-						Level:   LevelWarn,
-						Message: fmt.Sprintf("missing referenced asset %q", dest),
+						File:     relPath,
+						Line:     lineNo,
+						Level:    LevelWarn,
+						Category: CategoryAssetHealth,
+						Message:  fmt.Sprintf("missing referenced asset %q", dest),
 					})
 				}
 			}
