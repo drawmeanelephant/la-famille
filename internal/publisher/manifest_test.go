@@ -120,11 +120,14 @@ func TestCheckRejectsStagingDirectories(t *testing.T) {
 func writeRequiredArtifacts(t *testing.T, root string) {
 	t.Helper()
 	for _, required := range coreArtifacts {
-		content := "{}"
-		if required == "robots.txt" {
+		var content string
+		switch required {
+		case "robots.txt":
 			content = "User-agent: *\nAllow: /\n"
-		} else if required == "sitemap.xml" {
+		case "sitemap.xml":
 			content = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>`
+		default:
+			content = "{}"
 		}
 		writePublishFile(t, root, required, content)
 	}
