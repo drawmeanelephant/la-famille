@@ -117,9 +117,10 @@ type serverErrorMsg struct {
 }
 
 type diagnostic struct {
-	level   string
-	message string
-	source  string
+	level      string
+	message    string
+	source     string
+	nextAction string
 }
 
 type model struct {
@@ -189,6 +190,49 @@ func getRecoveryGuidance(err error) string {
 }
 
 var diagnosticSourceRE = regexp.MustCompile(`(?:^|[[:space:]([])([^[:space:]]+:[0-9]+(?::[0-9]+)?)`)
+var frontmatterPathRE = regexp.MustCompile(`frontmatter (?:parse )?warning in ([^:]+):`)
+
+func diagnosticNextAction(message string) string {
+	lower := strings.ToLower(message)
+	switch {
+	case strings.Contains(lower, "case-insensitive filesystem") || strings.Contains(lower, "would be the same file on a case-insensitive"):
+		return "see docs/issues-420-422.md — case-only collision is same file on case-insensitive filesystem; rename one path"
+	case strings.Contains(lower, "frontmatter"):
+		if m := frontmatterPathRE.FindStringSubmatch(message); len(m) == 2 {
+			rel := strings.TrimSpace(m[1])
+			if rel != "" {
+				return fmt.Sprintf("fix frontmatter in %s", rel)
+			}
+		}
+		// fallback: try generic "in <path>:" extraction
+		if idx := strings.Index(lower, " in "); idx != -1 {
+			rest := message[idx+4:]
+			if end := strings.Index(rest, ":"); end != -1 {
+				rel := strings.TrimSpace(rest[:end])
+				if rel != "" && strings.Contains(rel, ".md") {
+					return fmt.Sprintf("fix frontmatter in %s", rel)
+				}
+			}
+		}
+		return "fix frontmatter in offending file"
+	case strings.Contains(lower, "broken internal link"):
+		return "run `la-famille check` to list broken links"
+	case strings.Contains(lower, "missing referenced asset") || strings.Contains(lower, "missing asset") || (strings.Contains(lower, "asset") && strings.Contains(lower, "missing")):
+		return "run `la-famille check --asset-health` to diagnose asset issues"
+	case strings.Contains(lower, "unusually large raster"):
+		return "run `la-famille check --asset-health` to diagnose large raster assets (consider optimizing)"
+	case strings.Contains(lower, "suspicious image extension") || strings.Contains(lower, "unsupported or suspicious image"):
+		return "run `la-famille check --asset-health` to diagnose unsupported image formats"
+	case strings.Contains(lower, "case mismatch") || strings.Contains(lower, "case-collision") || strings.Contains(lower, "case collision"):
+		return "run `la-famille check --asset-health` — asset case mismatch"
+	case strings.Contains(lower, "output path collision"):
+		if strings.Contains(lower, "case-insensitive") {
+			return "see docs/issues-420-422.md — case-only collision"
+		}
+		return "run `la-famille check` — output collision: rename one source or slug"
+	}
+	return ""
+}
 
 func (m *model) addDiagnostic(level string, err error) {
 	if err == nil {
@@ -199,7 +243,21 @@ func (m *model) addDiagnostic(level string, err error) {
 	if match := diagnosticSourceRE.FindStringSubmatch(message); len(match) == 2 {
 		source = match[1]
 	}
-	m.diagnostics = append(m.diagnostics, diagnostic{level: level, message: message, source: source})
+	next := diagnosticNextAction(message)
+	m.diagnostics = append(m.diagnostics, diagnostic{level: level, message: message, source: source, nextAction: next})
+	m.diagnosticCursor = len(m.diagnostics) - 1
+}
+
+func (m *model) addDiagnosticWarning(message string) {
+	if strings.TrimSpace(message) == "" {
+		return
+	}
+	source := ""
+	if match := diagnosticSourceRE.FindStringSubmatch(message); len(match) == 2 {
+		source = match[1]
+	}
+	next := diagnosticNextAction(message)
+	m.diagnostics = append(m.diagnostics, diagnostic{level: "warning", message: message, source: source, nextAction: next})
 	m.diagnosticCursor = len(m.diagnostics) - 1
 }
 
@@ -523,7 +581,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.addDiagnostic("error", msg.err)
 		}
 		if msg.err == nil && msg.res != nil && msg.res.ErrorCount > 0 {
-			m.diagnostics = append(m.diagnostics, diagnostic{level: "warning", message: fmt.Sprintf("Build completed with %d error(s)", msg.res.ErrorCount)})
+			m.addDiagnosticWarning(fmt.Sprintf("Build completed with %d error(s)", msg.res.ErrorCount))
+		}
+		if msg.res != nil {
+			for _, w := range msg.res.Warnings {
+				m.addDiagnosticWarning(w)
+			}
 		}
 		m.workCompleted = m.workTotal
 		m.workPhase = "Complete"
@@ -535,6 +598,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.stats = msg.res
 			if msg.res.ErrorCount > 0 {
 				m.workEvents = append(m.workEvents, fmt.Sprintf("Warning: %d build errors reported", msg.res.ErrorCount))
+			}
+			if len(msg.res.Warnings) > 0 {
+				m.workEvents = append(m.workEvents, fmt.Sprintf("Warning: %d warning(s) — open diagnostics (d) for next actions", len(msg.res.Warnings)))
 			}
 		}
 
@@ -898,7 +964,7 @@ func (m model) View() string {
 				style = lipgloss.NewStyle().Bold(true)
 			}
 			color := "9"
-			if item.level == "warning" {
+			if strings.EqualFold(item.level, "warning") || strings.EqualFold(item.level, "warn") {
 				color = "11"
 			}
 			label := lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(strings.ToUpper(item.level))
@@ -906,9 +972,17 @@ func (m model) View() string {
 			if item.source != "" {
 				s += fmt.Sprintf("    Source: %s\n", item.source)
 			}
-			guidance := getRecoveryGuidance(errors.New(item.message))
-			if guidance != "" {
-				s += fmt.Sprintf("    Action: %s\n", guidance)
+			if item.nextAction != "" {
+				s += fmt.Sprintf("    Next: %s\n", item.nextAction)
+				if g := getRecoveryGuidance(errors.New(item.message)); g != "" && g != item.nextAction {
+					s += fmt.Sprintf("    Action: %s\n", g)
+				}
+			} else {
+				if next := diagnosticNextAction(item.message); next != "" {
+					s += fmt.Sprintf("    Next: %s\n", next)
+				} else if guidance := getRecoveryGuidance(errors.New(item.message)); guidance != "" {
+					s += fmt.Sprintf("    Action: %s\n", guidance)
+				}
 			}
 		}
 		s += "\nUse ↑/↓ to navigate • c: Clear • d/Esc/q: Return • ?: Help • w: Watch"

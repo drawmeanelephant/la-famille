@@ -250,3 +250,48 @@ func TestGatherMetadata_SkipSymlink(t *testing.T) {
 		t.Errorf("Expected symlink to be skipped")
 	}
 }
+
+func TestGatherMetadata_FrontmatterParseWarning(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Malformed frontmatter: unclosed sequence
+	bad := "---\ntitle: Bad\ntags: [unclosed\n---\n# Body\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "bad.md"), []byte(bad), 0600); err != nil {
+		t.Fatal(err)
+	}
+	fileMap, err := GatherMetadata(tmpDir)
+	if err != nil {
+		t.Fatalf("GatherMetadata failed: %v", err)
+	}
+	meta, ok := fileMap["bad.md"]
+	if !ok {
+		t.Fatal("bad.md not in fileMap")
+	}
+	if len(meta.Warnings) == 0 {
+		t.Fatalf("expected frontmatter warning, got none: %#v", meta.Warnings)
+	}
+	foundFallback := false
+	for _, w := range meta.Warnings {
+		if contains(w, "frontmatter parse warning in bad.md") && contains(w, "falling back to raw markdown") {
+			foundFallback = true
+			break
+		}
+	}
+	if !foundFallback {
+		t.Errorf("warnings = %v, want frontmatter parse fallback warning", meta.Warnings)
+	}
+	// Rest should be raw markdown fallback
+	if string(meta.Rest) != bad {
+		t.Errorf("Rest = %q, want raw markdown fallback", string(meta.Rest))
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (func() bool {
+		for i := 0; i <= len(s)-len(substr); i++ {
+			if s[i:i+len(substr)] == substr {
+				return true
+			}
+		}
+		return false
+	})()
+}

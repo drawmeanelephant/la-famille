@@ -907,7 +907,7 @@ func TestTUIMenuFooterShowsAllKeys(t *testing.T) {
 		m.width = 200
 		// ensure diagnostics has entry so footer shows c: Clear
 		if tc.screen == screenDiagnostics {
-			m.diagnostics = []diagnostic{{level: "warning", message: "sample warning"}}
+			m.diagnostics = []diagnostic{{level: "warning", message: "sample warning", nextAction: "run check"}}
 		} else {
 			m.diagnostics = nil
 		}
@@ -932,5 +932,106 @@ func TestTUIHelpScreenShowsWatchAndDiagnostics(t *testing.T) {
 		if !strings.Contains(view, want) {
 			t.Errorf("help view missing %q: %s", want, view)
 		}
+	}
+}
+
+func TestTUIWorkResultWarningsPopulateDiagnostics(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenWorking
+	m.workTotal = 4
+	warnings := []string{
+		"frontmatter parse warning in broken.md: yaml: unmarshal errors, falling back to raw markdown",
+		"output path warning: the page \"one.md\" maps to \"Foo/index.html\" and the page \"two.md\" maps to \"foo/index.html\", which would be the same file on a case-insensitive filesystem",
+		"missing referenced asset \"/assets/ghost.png\"",
+	}
+	res := &generator.BuildResult{
+		Warnings:   warnings,
+		PageCount:  2,
+		ErrorCount: 0,
+	}
+	updated, _ := m.Update(workResultMsg{msg: "Build complete (cache miss)", res: res})
+	m = updated.(model)
+	if len(m.diagnostics) != len(warnings)+0 { // No ErrorCount warning, only warnings themselves
+		t.Fatalf("diagnostics count = %d, want %d: %#v", len(m.diagnostics), len(warnings), m.diagnostics)
+	}
+	// Check each warning has nextAction mapping
+	expectNext := map[string]string{
+		"broken.md":              "fix frontmatter in broken.md",
+		"case-insensitive":       "see docs/issues-420-422.md",
+		"missing referenced asset": "la-famille check --asset-health",
+	}
+	for i, diag := range m.diagnostics {
+		if diag.level != "warning" {
+			t.Errorf("diag %d level = %q, want warning", i, diag.level)
+		}
+		found := false
+		for substr, wantNext := range expectNext {
+			if strings.Contains(strings.ToLower(diag.message), strings.ToLower(substr)) {
+				if !strings.Contains(diag.nextAction, wantNext) {
+					t.Errorf("diag %d message %q nextAction=%q want contains %q", i, diag.message, diag.nextAction, wantNext)
+				}
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("unexpected diag message %q with nextAction %q", diag.message, diag.nextAction)
+		}
+	}
+	view := m.View()
+	// Diagnostics drawer should show Next hints via View even when not on drawer? Check drawer view itself:
+	m.screen = screenDiagnostics
+	viewDiag := m.View()
+	for _, want := range []string{"Next: fix frontmatter in broken.md", "Next: see docs/issues-420-422.md", "Next: run `la-famille check --asset-health`"} {
+		if !strings.Contains(viewDiag, want) {
+			t.Errorf("diagnostics view missing Next hint %q: %s", want, viewDiag)
+		}
+	}
+	if !strings.Contains(view, "warning(s) — open diagnostics") {
+		t.Errorf("working view missing warning event hint: %s", view)
+	}
+}
+
+func TestTUIDiagnosticNextActionMapping(t *testing.T) {
+	tests := []struct {
+		msg  string
+		want string
+	}{
+		{"frontmatter parse warning in foo/bar.md: bad yaml, falling back to raw markdown", "fix frontmatter in foo/bar.md"},
+		{"broken internal link \"missing.md\" -> \"missing.md\"", "la-famille check"},
+		{"missing referenced asset \"/assets/x.png\"", "la-famille check --asset-health"},
+		{"unusually large raster asset (200 B > 100 B threshold)", "la-famille check --asset-health"},
+		{"suspicious image extension \".psd\"", "la-famille check --asset-health"},
+		{"output path warning: a maps to \"a\" and b maps to \"b\", which would be the same file on a case-insensitive filesystem", "see docs/issues-420-422.md"},
+		{"output path collision: \"a\" and \"b\" both map to \"x\"", "la-famille check"},
+	}
+	for _, tt := range tests {
+		got := diagnosticNextAction(tt.msg)
+		if !strings.Contains(got, tt.want) {
+			t.Errorf("diagnosticNextAction(%q)=%q want contains %q", tt.msg, got, tt.want)
+		}
+	}
+}
+
+func TestTUIDiagnosticWarningLevelColor(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.diagnostics = []diagnostic{
+		{level: "warning", message: "warn msg", nextAction: "run check"},
+		{level: "WARN", message: "upper warn", nextAction: "run check"},
+		{level: "error", message: "err msg", nextAction: "fix tmpl"},
+		{level: "ERROR", message: "upper err"},
+	}
+	m.screen = screenDiagnostics
+	view := m.View()
+	// Should contain both WARNING and ERROR labels (uppercased) but colors differ internally - just ensure both render
+	if !strings.Contains(view, "WARNING") {
+		t.Errorf("diagnostics view should render WARNING label: %s", view)
+	}
+	if !strings.Contains(view, "ERROR") {
+		t.Errorf("diagnostics view should render ERROR label: %s", view)
+	}
+	// Ensure nextAction renders for both warning levels
+	if !strings.Contains(view, "Next: run check") {
+		t.Errorf("diagnostics view missing Next for warnings: %s", view)
 	}
 }
