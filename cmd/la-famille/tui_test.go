@@ -775,3 +775,162 @@ func TestTUIReturnPathFromFailedWork(t *testing.T) {
 		t.Fatalf("esc key on failed work screen = %v, want screenMenu", mResEsc.screen)
 	}
 }
+
+func TestTUIHelpToggleViaQuestionAndH(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenMenu
+	// ? should open help
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	mHelp := updated.(model)
+	if mHelp.screen != screenHelp {
+		t.Fatalf("'?': screen = %v, want screenHelp", mHelp.screen)
+	}
+	// ? again should return to menu
+	updated, _ = mHelp.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	mBack := updated.(model)
+	if mBack.screen != screenMenu {
+		t.Fatalf("second '?': screen = %v, want screenMenu", mBack.screen)
+	}
+	// h from menu should open help
+	updated, _ = mBack.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	mHelp2 := updated.(model)
+	if mHelp2.screen != screenHelp {
+		t.Fatalf("'h': screen = %v, want screenHelp", mHelp2.screen)
+	}
+	// h on help should return
+	updated, _ = mHelp2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	mBack2 := updated.(model)
+	if mBack2.screen != screenMenu {
+		t.Fatalf("second 'h': screen = %v, want screenMenu", mBack2.screen)
+	}
+	// ? from stats should open help and remember return
+	m.screen = screenStats
+	m.stats = &generator.BuildResult{PageCount: 1}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	mHelpStats := updated.(model)
+	if mHelpStats.screen != screenHelp {
+		t.Fatalf("'?'' from stats: screen = %v, want screenHelp", mHelpStats.screen)
+	}
+	if mHelpStats.helpReturn != screenStats {
+		t.Fatalf("helpReturn = %v, want screenStats", mHelpStats.helpReturn)
+	}
+	updated, _ = mHelpStats.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	mBackStats := updated.(model)
+	if mBackStats.screen != screenStats {
+		t.Fatalf("Esc from help should return to stats, got %v", mBackStats.screen)
+	}
+}
+
+func TestTUIWatchToggleViaWKey(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenMenu
+	m.cfg.WatchMode = false
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+	mOn := updated.(model)
+	if !mOn.cfg.WatchMode {
+		t.Fatal("w should enable watch mode from menu")
+	}
+	if !strings.Contains(mOn.workMsg, "enabled") {
+		t.Fatalf("workMsg = %q, want contains 'enabled'", mOn.workMsg)
+	}
+	updated, _ = mOn.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+	mOff := updated.(model)
+	if mOff.cfg.WatchMode {
+		t.Fatal("second w should disable watch mode")
+	}
+	// w from stats should also toggle
+	mOff.screen = screenStats
+	updated, _ = mOff.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+	mStatsToggled := updated.(model)
+	if !mStatsToggled.cfg.WatchMode {
+		t.Fatal("w should toggle watch mode from stats")
+	}
+	// w from diagnostics as well
+	mStatsToggled.screen = screenDiagnostics
+	mStatsToggled.cfg.WatchMode = true
+	updated, _ = mStatsToggled.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+	mDiag := updated.(model)
+	if mDiag.cfg.WatchMode {
+		t.Fatal("w should toggle watch mode from diagnostics")
+	}
+}
+
+func TestTUIMenuFooterShowsAllKeys(t *testing.T) {
+	normalize := func(s string) string {
+		s = strings.ReplaceAll(s, "\n", " ")
+		s = strings.ReplaceAll(s, "│", " ")
+		return strings.Join(strings.Fields(s), " ")
+	}
+	m := initialModel(config.Config{})
+	m.screen = screenMenu
+	m.menuOpen = true
+	m.width = 200 // wide to avoid line wrap breaking substring checks
+	view := normalize(m.View())
+	for _, want := range []string{"Diagnostics", "Watch", "Help", "Quit", "↑/k", "Enter/Space"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("menu open footer missing %q in view: %s", want, view)
+		}
+	}
+	// Also ensure key prefixes present (d:, w:, ?:)
+	for _, want := range []string{"d:", "w:", "?:"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("menu open footer missing key prefix %q in view: %s", want, view)
+		}
+	}
+	m.menuOpen = false
+	m.width = 200
+	viewClosed := normalize(m.View())
+	for _, want := range []string{"Press m to open", "Diagnostics", "Watch", "Help"} {
+		if !strings.Contains(viewClosed, want) {
+			t.Errorf("menu closed footer missing %q: %s", want, viewClosed)
+		}
+	}
+	for _, want := range []string{"d:", "w:", "?:"} {
+		if !strings.Contains(viewClosed, want) {
+			t.Errorf("menu closed footer missing key prefix %q: %s", want, viewClosed)
+		}
+	}
+	// Every other screen should show its valid keys including d and ?
+	for _, tc := range []struct {
+		screen screen
+		wants  []string
+	}{
+		{screenStats, []string{"d for diagnostics", "?/h for help"}},
+		{screenWorking, []string{"d for diagnostics", "?/h for help"}},
+		{screenServe, []string{"d for diagnostics", "?/h for help", "w to toggle watch"}},
+		{screenAsk, []string{"d for diagnostics", "?/h for help"}},
+		{screenRaoul, []string{"d for diagnostics", "?/h for help"}},
+		{screenHelp, []string{"d for diagnostics", "w: Toggle watch"}},
+		{screenDiagnostics, []string{"c: Clear", "?: Help", "w: Watch"}},
+	} {
+		m.screen = tc.screen
+		m.width = 200
+		// ensure diagnostics has entry so footer shows c: Clear
+		if tc.screen == screenDiagnostics {
+			m.diagnostics = []diagnostic{{level: "warning", message: "sample warning"}}
+		} else {
+			m.diagnostics = nil
+		}
+		// ensure stats not nil for stats screen rendering
+		if tc.screen == screenStats {
+			m.stats = &generator.BuildResult{PageCount: 1, Health: generator.ContentHealth{}}
+		}
+		v := normalize(m.View())
+		for _, want := range tc.wants {
+			if !strings.Contains(strings.ToLower(v), strings.ToLower(want)) {
+				t.Errorf("screen %v missing footer %q in view: %s", tc.screen, want, v)
+			}
+		}
+	}
+}
+
+func TestTUIHelpScreenShowsWatchAndDiagnostics(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenHelp
+	view := m.View()
+	for _, want := range []string{"w            Toggle Watch Mode", "? / h", "d            Toggle Diagnostics"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("help view missing %q: %s", want, view)
+		}
+	}
+}

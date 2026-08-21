@@ -144,6 +144,7 @@ type model struct {
 	workTotal         int
 	diagnosticCursor  int
 	diagnosticsReturn screen
+	helpReturn        screen
 	width             int
 	height            int
 	menuOpen          bool
@@ -208,6 +209,16 @@ func (m *model) showDiagnostics() {
 	if len(m.diagnostics) > 0 && m.diagnosticCursor >= len(m.diagnostics) {
 		m.diagnosticCursor = len(m.diagnostics) - 1
 	}
+}
+
+func (m *model) showHelp() {
+	m.helpReturn = m.screen
+	m.screen = screenHelp
+}
+
+func (m *model) toggleWatchMode() {
+	m.cfg.WatchMode = !m.cfg.WatchMode
+	m.workMsg = fmt.Sprintf("Watch mode %s", map[bool]string{true: "enabled", false: "disabled"}[m.cfg.WatchMode])
 }
 
 func (m model) Init() tea.Cmd {
@@ -308,7 +319,31 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.menuOpen = !m.menuOpen
 				return m, nil
 			}
+		case "w", "W":
+			if m.screen == screenMenu || m.screen == screenStats || m.screen == screenDiagnostics || m.screen == screenHelp {
+				m.toggleWatchMode()
+				return m, nil
+			}
+		case "?", "h", "H":
+			if m.screen == screenHelp {
+				if m.helpReturn != screenHelp {
+					m.screen = m.helpReturn
+				} else {
+					m.screen = screenMenu
+				}
+				return m, nil
+			}
+			m.showHelp()
+			return m, nil
 		case "q", "esc":
+			if m.screen == screenHelp {
+				if m.helpReturn != screenHelp {
+					m.screen = m.helpReturn
+				} else {
+					m.screen = screenMenu
+				}
+				return m, nil
+			}
 			if m.screen == screenDiagnostics {
 				m.screen = m.diagnosticsReturn
 				return m, nil
@@ -360,13 +395,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.screen = screenStats
 					return m, nil
 				case "Diagnostics":
-					m.screen = screenDiagnostics
+					m.showDiagnostics()
 					return m, nil
 				case "Help":
-					m.screen = screenHelp
+					m.showHelp()
 					return m, nil
 				case "Toggle Watch Mode":
-					m.cfg.WatchMode = !m.cfg.WatchMode
+					m.toggleWatchMode()
 					m.workMsg = fmt.Sprintf("Watch mode %s", map[bool]string{true: "enabled", false: "disabled"}[m.cfg.WatchMode])
 					return m, nil
 				case "Build Site":
@@ -700,18 +735,19 @@ func (m model) View() string {
 		leftBuf.WriteString(headerStyle.Render("🍔 OCTOBURGER MENU") + "\n")
 
 		if !m.menuOpen {
-			leftBuf.WriteString("\nMenu closed. Press m to open commands, d for diagnostics, q to quit.")
+			leftBuf.WriteString("\nMenu closed. Press m to open • d: Diagnostics • w: Watch • ?: Help • q: Quit")
 		} else {
 			for i, choice := range m.choices {
 				cursor := "  "
 				style := subtleStyle
 				if m.cursor == i {
 					cursor = "> "
-					style = lipgloss.NewStyle().Foreground(lipgloss.Color("212")).Bold(true)
+					// focus-visible: mirror templates/layout.html focus-visible:outline pattern with underline + background highlight for a11y
+					style = lipgloss.NewStyle().Foreground(lipgloss.Color("212")).Bold(true).Underline(true).Background(lipgloss.Color("236"))
 				}
 				leftBuf.WriteString(fmt.Sprintf("%s %s\n", cursor, style.Render(choice.label)))
 			}
-			leftBuf.WriteString("\n↑/k, ↓/j: Navigate • Enter: Select • m: Toggle menu • d: Diagnostics • q: Quit")
+			leftBuf.WriteString("\n↑/k, ↓/j: Navigate • Enter/Space: Select • m: Menu • d: Diagnostics • w: Watch • ?: Help • q: Quit")
 		}
 
 		if isWide {
@@ -736,7 +772,7 @@ func (m model) View() string {
 
 	case screenRaoul:
 		s := accentStyle.Render(animatedRaoul(m.frame))
-		s += "\n\nJust Raoul doing mascot work.\n\nPress Esc or q to go back to main menu."
+		s += "\n\nJust Raoul doing mascot work.\n\nPress d for diagnostics • Press ?/h for help • Press Esc or q to go back to main menu."
 		if m.width > 0 {
 			return lipgloss.NewStyle().MaxWidth(m.width).Render(s)
 		}
@@ -837,7 +873,7 @@ func (m model) View() string {
 		} else {
 			s += "RAG archive not found. Run 'RAG Export' to generate bundles.\n"
 		}
-		s += "\nPress d for diagnostics • Press Esc or q to go back to main menu."
+		s += "\nPress d for diagnostics • Press w to toggle watch • Press ?/h for help • Press Esc or q to go back to main menu."
 		if m.width > 0 {
 			return boxBorder.MaxWidth(m.width).Render(s)
 		}
@@ -848,7 +884,7 @@ func (m model) View() string {
 		s := titleStyle.Render(fmt.Sprintf("Diagnostics & Recovery Guidance [%s (commit: %s)]", info.Version, info.Commit)) + "\n\n"
 		if len(m.diagnostics) == 0 {
 			s += "No diagnostics recorded. All system checks passed cleanly.\n\n"
-			s += "Press d, Esc, or q to return."
+			s += "Press d, Esc, or q to return • ?: Help • w: Watch"
 			if m.width > 0 {
 				return boxBorder.MaxWidth(m.width).Render(s)
 			}
@@ -875,7 +911,7 @@ func (m model) View() string {
 				s += fmt.Sprintf("    Action: %s\n", guidance)
 			}
 		}
-		s += "\nUse ↑/↓ to navigate, c to clear, d/Esc/q to return."
+		s += "\nUse ↑/↓ to navigate • c: Clear • d/Esc/q: Return • ?: Help • w: Watch"
 		if m.width > 0 {
 			return boxBorder.MaxWidth(m.width).Render(s)
 		}
@@ -890,15 +926,17 @@ func (m model) View() string {
 		s += "  m            Toggle octoburger menu open/closed\n\n"
 		s += headerStyle.Render("Global Shortcuts") + "\n"
 		s += "  d            Toggle Diagnostics drawer\n"
+		s += "  w            Toggle Watch Mode (menu/stats/diagnostics)\n"
+		s += "  ? / h        Open/close this help (legend)\n"
 		s += "  c            Clear diagnostics (in Diagnostics drawer)\n"
-		s += "  Esc / q      Go back to main menu / close menu / quit\n"
+		s += "  Esc / q      Go back / close menu / quit\n"
 		s += "  Ctrl+C       Force quit application\n\n"
 		s += headerStyle.Render("Workflow Hints") + "\n"
 		s += "  • Build Site: Compiles site content & static assets to public directory.\n"
 		s += "  • Serve Site: Runs HTTP web server on 127.0.0.1 (with live reload if Watch Mode is on).\n"
-		s += "  • Toggle Watch Mode: Automatically rebuilds site on content change.\n"
-		s += "  • Diagnostics: Inspect error logs, stack traces, and recovery actions.\n\n"
-		s += "Press Esc or q to go back to main menu."
+		s += "  • Toggle Watch Mode: Automatically rebuilds site on content change (w).\n"
+		s += "  • Diagnostics: Inspect error logs, warnings, and next CLI actions (d → Next: …).\n\n"
+		s += "Press d for diagnostics • Press Esc, q, ? or h to return • w: Toggle watch"
 		if m.width > 0 {
 			return boxBorder.MaxWidth(m.width).Render(s)
 		}
@@ -928,7 +966,7 @@ func (m model) View() string {
 				s += warningBadge.Render(fmt.Sprintf("Warning: Build completed with %d error(s). Press 'd' to view diagnostics.", m.stats.ErrorCount)) + "\n"
 			}
 		}
-		s += "\nPress d for diagnostics • Press Enter or Esc to return to the menu."
+		s += "\nPress d for diagnostics • Press ?/h for help • Press Enter or Esc to return to menu"
 		if m.width > 0 {
 			return boxBorder.MaxWidth(m.width).Render(s)
 		}
@@ -948,7 +986,7 @@ func (m model) View() string {
 			s += subtleStyle.Render("Watch Mode: DISABLED") + "\n"
 		}
 		s += infoBadge.Render("Server Status: RUNNING") + "\n\n"
-		s += "Press d for diagnostics • Press Esc or q to stop serving and return to menu."
+		s += "Press d for diagnostics • Press ?/h for help • Press w to toggle watch • Press Esc or q to stop serving and return to menu"
 		if m.width > 0 {
 			return lipgloss.NewStyle().MaxWidth(m.width).Render(s)
 		}
@@ -974,7 +1012,7 @@ func (m model) View() string {
 		} else {
 			s += infoBadge.Render("Server Status: RUNNING") + "\n"
 		}
-		s += "\nPress d for diagnostics • Press Esc or q to stop the assistant and return to menu."
+		s += "\nPress d for diagnostics • Press ?/h for help • Press Esc or q to stop the assistant and return to menu"
 		if m.width > 0 {
 			return lipgloss.NewStyle().MaxWidth(m.width).Render(s)
 		}

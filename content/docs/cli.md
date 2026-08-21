@@ -52,7 +52,8 @@ Launches the semi-graphical user interface.
 go run ./cmd/la-famille tui
 ```
 
-*   **Description:** Starts the interactive Bubbletea Terminal UI. This provides a menu-driven interface to build, serve, export RAG data, and view project stats. See the [Terminal UI Guide](tui.md) for more details.
+*   **Description:** Starts the interactive Bubbletea Terminal UI. This provides a menu-driven interface to build, serve, export RAG data, and view project stats. Every screen shows its valid keys in the footer; press `?` or `h` for the full legend, `d` for diagnostics (with `Next:` action hints), and `w` to toggle Watch Mode. See the [Terminal UI Guide](tui.md) for the complete keybinding table and diagnostics-to-CLI linkage.
+*   **Keybindings:** `↑`/`k` `↓`/`j` navigate, `Enter`/`Space` select, `m` toggle menu, `d` diagnostics drawer, `w` toggle watch, `?`/`h` help, `c` clear diagnostics (in drawer), `q`/`Esc` back/quit, `Ctrl+C` force quit. Menu selection has `focus-visible` a11y highlight mirroring `templates/layout.html`.
 
 ### `init`
 
