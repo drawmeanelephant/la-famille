@@ -105,7 +105,7 @@ Every screen shows its valid keys in the footer (e.g., menu: `↑/k, ↓/j: Navi
 | `↓` / `j` | Move selection down | Menu, Diagnostics |
 | `Enter` / `Space` | Select command | Menu (when open) |
 | `m` | Toggle octoburger menu open/closed | Menu |
-| `d` | Toggle Diagnostics drawer | Any screen |
+| `d` | Toggle Diagnostics drawer (warnings → `Next:` hints) | Any screen |
 | `w` | Toggle Watch Mode (auto-rebuild) | Menu / Stats / Diagnostics / Help |
 | `?` / `h` | Open/close Help & Keybindings legend (one-line footer expands to full help) | Any screen |
 | `c` | Clear diagnostics | Diagnostics drawer |
@@ -113,6 +113,17 @@ Every screen shows its valid keys in the footer (e.g., menu: `↑/k, ↓/j: Navi
 | `Ctrl+C` | Force quit application | Any screen |
 
 Press `?` or `h` from any screen to expand the footer help line into the full `Help` screen; press `?`, `h`, `Esc`, or `q` to return to the previous screen. Press `w` to toggle Watch Mode without opening the menu — the dashboard and serve screens reflect the state (`Watch Mode: ENABLED/DISABLED`).
+
+## Diagnostics → Next Action
+
+The Diagnostics drawer (`d`) is not a dead end — each finding links to the next CLI action:
+
+*   **Broken internal link** → `la-famille check`
+*   **Missing asset / large raster / suspicious image / case mismatch** → `la-famille check --asset-health`
+*   **Frontmatter parse or validation warning** → `fix frontmatter in <path>`
+*   **Case-only output collision** → `see docs/issues-420-422.md` (same file on case-insensitive filesystem; rename one path)
+
+Warnings from the build (frontmatter fallback to raw markdown, case-only collision notices) are propagated into the drawer as `warning` entries with `Next:` hints and appear in `View` as `Next: <hint>` beneath each diagnostic plus `Source:` and `Action:` guidance.
 
 ## Mascot Integration
 Keep an eye out for Jules! The TUI integrates ASCII graphics of the project's mascot to make long-running tasks (like serving the site locally) more enjoyable.

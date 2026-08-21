@@ -94,7 +94,7 @@ la-famille --project-root /path/to/site rag --output /path/to/site/public/rag-ar
 The TUI uses standard, frictionless keybindings for easy navigation (every screen shows its valid keys in the footer):
 *   **Navigation:** Use `up`/`down` arrows or Unix-centric `j`/`k` primitives to move through the menus. The selected menu item has a `focus-visible` highlight (underline + background) mirroring `templates/layout.html` accessibility patterns.
 *   **Selection & Exit:** Press `Enter` or `Space` to execute a command. Press `q` or `Esc` to safely drop back to the main menu screen buffer.
-*   **Diagnostics:** Press `d` from any screen to toggle the Diagnostics drawer. In the drawer, `c` clears entries and `↑`/`↓` navigates.
+*   **Diagnostics:** Press `d` from any screen to toggle the Diagnostics drawer (shows build warnings/errors with `Next:` action hints like `la-famille check` or `fix frontmatter in <path>`). In the drawer, `c` clears entries and `↑`/`↓` navigates.
 *   **Watch Mode:** Press `w` on the menu/stats/diagnostics to toggle Watch Mode (auto-rebuild on file changes) — equivalent to selecting "Toggle Watch Mode".
 *   **Help:** Press `?` or `h` from any screen to open the Help & Keybindings legend; press `?`, `h`, `q`, or `Esc` to return. Footer help lines expand to `↑/k, ↓/j: Navigate • Enter/Space: Select • m: Menu • d: Diagnostics • w: Watch • ?: Help • q: Quit`.
 *   **Active Server Views:** When you select "Serve Site" (or "Serve Site with Watch"), the TUI locks into an alternate screen buffer, displaying the dancing mascot animation (Raoul!). To gracefully tear down the network handle and exit back to the main menu, press `q` or `Esc`. From serve/ask screens you can also press `d` for diagnostics or `?`/`h` for help.

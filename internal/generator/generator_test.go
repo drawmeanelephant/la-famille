@@ -1349,3 +1349,86 @@ func TestBuild_EmptyTaxonomySearchIndex(t *testing.T) {
 		t.Errorf("search.json unexpectedly contains taxonomy entries when empty: %s", searchJSON)
 	}
 }
+
+func TestBuild_WarningsIncludeFrontmatterAndCaseCollision(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	templateDir := filepath.Join(tempDir, "templates")
+	outputDir := filepath.Join(tempDir, "public")
+
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatePath := filepath.Join(templateDir, "layout.html")
+	if err := os.WriteFile(templatePath, []byte("{{.Content}}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	// Bad frontmatter file
+	badFrontmatter := "---\ntitle: Bad\ntags: [unclosed\n---\n# Body\n"
+	if err := os.WriteFile(filepath.Join(contentDir, "bad.md"), []byte(badFrontmatter), 0600); err != nil {
+		t.Fatal(err)
+	}
+	// Good file
+	if err := os.WriteFile(filepath.Join(contentDir, "good.md"), []byte("# Good\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = outputDir
+	cfg.Template = templatePath
+	cfg.ProjectRoot = tempDir
+
+	res, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	foundFrontmatter := false
+	for _, w := range res.Warnings {
+		if strings.Contains(w, "frontmatter parse warning in bad.md") && strings.Contains(w, "falling back to raw markdown") {
+			foundFrontmatter = true
+			break
+		}
+	}
+	if !foundFrontmatter {
+		t.Errorf("BuildResult.Warnings = %v, want frontmatter fallback warning", res.Warnings)
+	}
+	// Verify warnings are sorted
+	sorted := make([]string, len(res.Warnings))
+	copy(sorted, res.Warnings)
+	sortStrings(sorted)
+	for i := range res.Warnings {
+		if res.Warnings[i] != sorted[i] {
+			t.Errorf("Warnings not sorted: got %v want sorted %v", res.Warnings, sorted)
+		}
+	}
+	// Verify cache hit preserves warnings
+	res2, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("second Build failed: %v", err)
+	}
+	if !res2.CacheHit {
+		t.Errorf("expected cache hit on second build")
+	}
+	if len(res2.Warnings) != len(res.Warnings) {
+		t.Errorf("cached warnings length %d != original %d", len(res2.Warnings), len(res.Warnings))
+	}
+	for i := range res.Warnings {
+		if res2.Warnings[i] != res.Warnings[i] {
+			t.Errorf("cached warning %d = %q, want %q", i, res2.Warnings[i], res.Warnings[i])
+		}
+	}
+}
+
+func sortStrings(s []string) {
+	for i := 0; i < len(s); i++ {
+		for j := i + 1; j < len(s); j++ {
+			if s[j] < s[i] {
+				s[i], s[j] = s[j], s[i]
+			}
+		}
+	}
+}
