@@ -16,8 +16,28 @@ import (
 
 // TestArtisanalCeramicsBoutiqueExampleSite is the milestone publishing
 // integration harness: one realistic fixture site exercised through
-// generator.Build, asserting every publishing artifact end to end.
+// generator.Build, asserting every publishing artifact end to end in both
+// documented contract modes — with and without siteurl.
 func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
+	modes := []struct {
+		name    string
+		siteURL string
+	}{
+		{name: "with siteurl", siteURL: "https://kintsugi.example.com"},
+		{name: "without siteurl", siteURL: ""},
+	}
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			outDir := buildBoutiqueFixture(t, mode.siteURL)
+			assertBoutiquePublishing(t, outDir, mode.siteURL)
+		})
+	}
+}
+
+func buildBoutiqueFixture(t *testing.T, siteURL string) string {
+	t.Helper()
+
 	fixtureContentDir, err := filepath.Abs(filepath.Join("..", "..", "assets", "testdata", "sites", "artisanal-ceramics", "content"))
 	if err != nil {
 		t.Fatalf("failed to resolve fixture content path: %v", err)
@@ -40,7 +60,7 @@ func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
 	cfg.AssetDir = assetDir
 	cfg.OutputDir = outDir
 	cfg.Template = templatePath
-	cfg.SiteURL = "https://kintsugi.example.com"
+	cfg.SiteURL = siteURL
 	cfg.SiteName = "Kintsugi & Co. Studio"
 
 	res, err := generator.Build(cfg)
@@ -51,6 +71,11 @@ func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
 	if res.PageCount < 4 {
 		t.Errorf("expected page count >= 4, got %d", res.PageCount)
 	}
+	return outDir
+}
+
+func assertBoutiquePublishing(t *testing.T, outDir, siteURL string) {
+	t.Helper()
 
 	// 1. Inspect HTML Outputs & Metadata Tags
 	expectedHTMLPages := []string{
@@ -80,6 +105,38 @@ func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
 	unrenderedHTML := filepath.Join(outDir, "notes", "unrendered-formulas", "index.html")
 	if _, err := os.Stat(unrenderedHTML); !os.IsNotExist(err) {
 		t.Errorf("unrendered file with render:false was incorrectly output to %s", unrenderedHTML)
+	}
+
+	// Canonical tags follow the siteurl contract: emitted with the absolute
+	// public URL when siteurl is configured, omitted entirely when it is not.
+	indexHTMLBytes, err := os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatalf("missing index.html: %v", err)
+	}
+	indexHasCanonical := strings.Contains(string(indexHTMLBytes), `rel="canonical"`)
+	if siteURL != "" && !indexHasCanonical {
+		t.Errorf("index.html should contain rel=canonical when siteurl is set")
+	}
+	if siteURL == "" && indexHasCanonical {
+		t.Errorf("index.html should omit rel=canonical when siteurl is empty")
+	}
+
+	// robots.txt always allows crawlers; the Sitemap directive appears only
+	// when siteurl gives the sitemap an absolute location.
+	robotsBytes, err := os.ReadFile(filepath.Join(outDir, "robots.txt"))
+	if err != nil {
+		t.Fatalf("missing robots.txt: %v", err)
+	}
+	robots := string(robotsBytes)
+	if !strings.Contains(robots, "User-agent: *") || !strings.Contains(robots, "Allow: /") {
+		t.Errorf("robots.txt missing User-agent/Allow rules, got:\n%s", robots)
+	}
+	hasSitemapDirective := strings.Contains(robots, "Sitemap:")
+	if siteURL != "" && !hasSitemapDirective {
+		t.Errorf("robots.txt should include Sitemap directive when siteurl is set, got:\n%s", robots)
+	}
+	if siteURL == "" && hasSitemapDirective {
+		t.Errorf("robots.txt should omit Sitemap directive when siteurl is empty, got:\n%s", robots)
 	}
 
 	// 2. Inspect Search Index (search.json) using the real wire schema
@@ -191,8 +248,11 @@ func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
 		if !strings.Contains(newest.Link, "2026-07-15-glazing-techniques") {
 			t.Errorf("feed.xml newest item should be the 2026-07-15 journal entry, got link %q", newest.Link)
 		}
-		if !strings.HasPrefix(newest.Link, "https://kintsugi.example.com/") {
+		if siteURL != "" && !strings.HasPrefix(newest.Link, siteURL+"/") {
 			t.Errorf("feed.xml item links should be absolute with siteurl, got %q", newest.Link)
+		}
+		if siteURL == "" && !strings.HasPrefix(newest.Link, "/") {
+			t.Errorf("feed.xml item links should be root-relative without siteurl, got %q", newest.Link)
 		}
 	}
 	pubDateRE := regexp.MustCompile(`^[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} [+-]\d{4}$`)
@@ -245,8 +305,11 @@ func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
 			t.Errorf("sitemap.xml contains an empty <loc>")
 			continue
 		}
-		if !strings.HasPrefix(loc, "https://kintsugi.example.com/") {
+		if siteURL != "" && !strings.HasPrefix(loc, siteURL+"/") {
 			t.Errorf("sitemap.xml <loc> %q should be absolute with siteurl", loc)
+		}
+		if siteURL == "" && !strings.HasPrefix(loc, "/") {
+			t.Errorf("sitemap.xml <loc> %q should be root-relative without siteurl", loc)
 		}
 		if seenLocs[loc] {
 			t.Errorf("sitemap.xml contains duplicate <loc> %q", loc)
@@ -254,10 +317,9 @@ func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
 		seenLocs[loc] = true
 	}
 	for _, want := range []string{
-		"https://kintsugi.example.com/",
-		"/collection/wheel-thrown-vessels/",
-		"/tags/ceramics/",
-		"/categories/journal/",
+		"collection/wheel-thrown-vessels/",
+		"tags/ceramics/",
+		"categories/journal/",
 	} {
 		if !sitemapHas(want) {
 			t.Errorf("sitemap.xml missing expected URL %q", want)
