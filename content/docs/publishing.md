@@ -31,6 +31,7 @@ actions; this project does not publish a `gh-pages` branch.
 | **Site Metadata** | `meta.json` | Generated on every build | Page metadata dictionary |
 | **Knowledge Graph Explorer** | `graph/index.html` | Generated on every build when `graph_explorer: true` (default) | Self-contained interactive visualization of the site's wikilink relationships |
 | **Explorer Payload** | `graph/data.json` | Generated alongside `graph/index.html` | Resolved node list the explorer page renders: link direction, classification, titles, and public URLs |
+| **RAG Export** | `rag-archive/` (`rag-system.md`, `rag-config.md`, `rag-content.md`) | Not produced by `build`; written by the separate `la-famille rag` command. CI writes it into `public/rag-archive/` after the build step | Markdown bundles of source/config/content for LLM and retrieval use |
 
 ---
 
@@ -109,6 +110,16 @@ Adding a global nav link to every bundled template would break custom-template c
 
 The link is root-relative so it works with or without `siteurl`, mirroring the explorer's own URL construction.
 
+### 9. RAG Export (`rag-archive/`)
+
+- **Generation:** Not part of `la-famille build`. Produced by the separate `la-famille rag` command (`internal/ragexport`), which writes three markdown bundles:
+  - `rag-system.md`: Go source, workflows, and module metadata.
+  - `rag-config.md`: config/templates/assets listing.
+  - `rag-content.md`: the site's markdown content (excluding `content/jules`).
+- **Output location:** `rag_dir` from `config.yaml` (default `rag-archive/`, beside the project root). In CI, pass `--output public/rag-archive` so the bundles ship inside the Pages artifact — this is what `.github/workflows/deploy.yml` does after the build step.
+- **Publish interaction:** `publish-check` validates whatever tree exists; it does not require `rag-archive/`. A `public/` tree with or without the export is publishable.
+
+
 ### Explorer Orphan Rule
 
 The explorer flags a page as **orphan** when it has zero inbound links unless the page id is `index` (the rendered homepage). Rendered pages named `about`, `posts/2026/welcome`, etc. follow the standard zero-inbound rule. Raw `render: false` pages never appear as orphan candidates because their IDs carry the `.md` suffix and the rule is not applied to them. Sites that use `render: false` for their homepage must provide inbound links from somewhere else.
@@ -173,6 +184,7 @@ All files and subdirectories created in `outputDir` are intended for public web 
 - `search.json`
 - `graph.json`, `backlinks.json`, `meta.json`
 - `graph/index.html` (Knowledge Graph Explorer) and `assets/graph/explorer.{js,css}`
+- `rag-archive/` (RAG export bundles), when the `la-famille rag` step ran with `--output <output_dir>/rag-archive`
 
 ### Do Not Publish / Internal Only
 - `.la-famille-cache.json`: Incremental build state stored beside the project root. A correct build never places it in `outputDir`; `publish-check` rejects an accidental copy.
