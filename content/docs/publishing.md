@@ -188,7 +188,9 @@ All files and subdirectories created in `outputDir` are intended for public web 
 
 ### Do Not Publish / Internal Only
 - `.la-famille-cache.json`: Incremental build state stored beside the project root. A correct build never places it in `outputDir`; `publish-check` rejects an accidental copy.
-- `.staging-*` directories: Temporary build staging folders created during atomic build execution. Cleaned up automatically upon build completion.
+- `.staging-*` directories: Temporary build staging folders created during atomic build execution. Cleaned up automatically upon build completion; `publish-check` rejects any that leak into the output.
+
+`publish-check` also enforces the artifact contract itself: `sitemap.xml`, `robots.txt`, `search.json`, `graph.json`, `backlinks.json`, and `meta.json` must always be present, and `feed.xml` is required whenever `meta.json` lists a dated rendered page (mirroring the generator's own feed condition).
 
 Run the artifact check before deployment:
 
