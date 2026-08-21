@@ -5,13 +5,18 @@ import (
 	"encoding/xml"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/generator"
 )
 
+// TestArtisanalCeramicsBoutiqueExampleSite is the milestone publishing
+// integration harness: one realistic fixture site exercised through
+// generator.Build, asserting every publishing artifact end to end.
 func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
 	fixtureContentDir, err := filepath.Abs(filepath.Join("..", "..", "assets", "testdata", "sites", "artisanal-ceramics", "content"))
 	if err != nil {
@@ -77,25 +82,66 @@ func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
 		t.Errorf("unrendered file with render:false was incorrectly output to %s", unrenderedHTML)
 	}
 
-	// 2. Inspect Search Index (search.json)
+	// 2. Inspect Search Index (search.json) using the real wire schema
+	// t/u/g/s/h from internal/search. render:false pages are excluded from the
+	// index; rendered pages and generated taxonomy pages are included.
 	searchPath := filepath.Join(outDir, "search.json")
 	searchBytes, err := os.ReadFile(searchPath)
 	if err != nil {
 		t.Fatalf("missing search.json: %v", err)
 	}
 	var searchEntries []struct {
-		Title   string `json:"title"`
-		URL     string `json:"url"`
-		Content string `json:"content"`
+		Title    string   `json:"t"`
+		URL      string   `json:"u"`
+		Tags     []string `json:"g"`
+		Snippet  string   `json:"s"`
+		Headings []string `json:"h"`
 	}
 	if err := json.Unmarshal(searchBytes, &searchEntries); err != nil {
 		t.Fatalf("failed to parse search.json: %v", err)
 	}
-	if len(searchEntries) < 5 {
-		t.Errorf("expected at least 5 search entries (including unrendered notes), got %d", len(searchEntries))
+
+	urlsByID := make(map[string]string, len(searchEntries))
+	for _, entry := range searchEntries {
+		if entry.Title == "" {
+			t.Errorf("search.json entry with empty title: %s", entry.URL)
+		}
+		if entry.URL == "" {
+			t.Errorf("search.json entry with empty URL: %s", entry.Title)
+		}
+		urlsByID[entry.URL] = entry.Title
 	}
 
-	// 3. Inspect Taxonomy (tags/ & categories/)
+	for _, wantURLSuffix := range []string{
+		"/collection/wheel-thrown-vessels/",
+		"/care-guide/",
+		"/journal/2026-07-15-glazing-techniques/",
+	} {
+		found := false
+		for url := range urlsByID {
+			if strings.HasSuffix(url, wantURLSuffix) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("search.json missing rendered page entry %q", wantURLSuffix)
+		}
+	}
+	hasHomepageEntry := false
+	for url := range urlsByID {
+		if url == "/" || url == "/index.html" {
+			hasHomepageEntry = true
+		}
+		if strings.Contains(url, "unrendered-formulas") {
+			t.Errorf("search.json unexpectedly contains render:false page: %s", url)
+		}
+	}
+	if !hasHomepageEntry {
+		t.Errorf("search.json missing homepage entry")
+	}
+
+	// 3. Inspect Taxonomy (tags/ & categories/): index pages and term pages
 	tagsDir := filepath.Join(outDir, "tags")
 	if _, err := os.Stat(filepath.Join(tagsDir, "index.html")); os.IsNotExist(err) {
 		t.Errorf("missing tags taxonomy index at %s", filepath.Join(tagsDir, "index.html"))
@@ -104,8 +150,20 @@ func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(categoriesDir, "index.html")); os.IsNotExist(err) {
 		t.Errorf("missing categories taxonomy index at %s", filepath.Join(categoriesDir, "index.html"))
 	}
+	expectedTermPages := []string{
+		filepath.Join(tagsDir, "ceramics", "index.html"),
+		filepath.Join(tagsDir, "glazing", "index.html"),
+		filepath.Join(categoriesDir, "crafts", "index.html"),
+		filepath.Join(categoriesDir, "journal", "index.html"),
+	}
+	for _, termPage := range expectedTermPages {
+		if _, err := os.Stat(termPage); os.IsNotExist(err) {
+			t.Errorf("missing taxonomy term page %s", termPage)
+		}
+	}
 
-	// 4. Inspect RSS Feed (feed.xml)
+	// 4. Inspect RSS Feed (feed.xml): all four rendered pages are dated, so
+	// the feed must contain exactly those items, newest first, RFC1123Z dates.
 	feedPath := filepath.Join(outDir, "feed.xml")
 	feedBytes, err := os.ReadFile(feedPath)
 	if err != nil {
@@ -116,53 +174,173 @@ func TestArtisanalCeramicsBoutiqueExampleSite(t *testing.T) {
 		Channel struct {
 			Title string `xml:"title"`
 			Items []struct {
-				Title string `xml:"title"`
-				Link  string `xml:"link"`
+				Title   string `xml:"title"`
+				Link    string `xml:"link"`
+				PubDate string `xml:"pubDate"`
 			} `xml:"item"`
 		} `xml:"channel"`
 	}
 	if err := xml.Unmarshal(feedBytes, &rssStruct); err != nil {
 		t.Fatalf("failed to parse feed.xml: %v", err)
 	}
-	if len(rssStruct.Channel.Items) == 0 {
-		t.Errorf("expected RSS feed items for dated posts, got 0")
+	if len(rssStruct.Channel.Items) != 4 {
+		t.Errorf("expected RSS feed items for the 4 dated rendered pages, got %d", len(rssStruct.Channel.Items))
+	}
+	if len(rssStruct.Channel.Items) > 0 {
+		newest := rssStruct.Channel.Items[0]
+		if !strings.Contains(newest.Link, "2026-07-15-glazing-techniques") {
+			t.Errorf("feed.xml newest item should be the 2026-07-15 journal entry, got link %q", newest.Link)
+		}
+		if !strings.HasPrefix(newest.Link, "https://kintsugi.example.com/") {
+			t.Errorf("feed.xml item links should be absolute with siteurl, got %q", newest.Link)
+		}
+	}
+	pubDateRE := regexp.MustCompile(`^[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} [+-]\d{4}$`)
+	itemDates := make([]time.Time, 0, len(rssStruct.Channel.Items))
+	for i, item := range rssStruct.Channel.Items {
+		if !pubDateRE.MatchString(item.PubDate) {
+			t.Errorf("feed.xml item %d pubDate %q is not RFC1123Z", i, item.PubDate)
+			continue
+		}
+		parsed, err := time.Parse(time.RFC1123Z, item.PubDate)
+		if err != nil {
+			t.Errorf("feed.xml item %d pubDate %q failed to parse: %v", i, item.PubDate, err)
+			continue
+		}
+		itemDates = append(itemDates, parsed)
+	}
+	for i := 1; i < len(itemDates); i++ {
+		if itemDates[i-1].Before(itemDates[i]) {
+			t.Errorf("feed.xml items not sorted newest-first: %q before %q", rssStruct.Channel.Items[i-1].PubDate, rssStruct.Channel.Items[i].PubDate)
+		}
 	}
 
-	// 5. Inspect Sitemap (sitemap.xml)
+	// 5. Inspect Sitemap (sitemap.xml): unique absolute URLs covering rendered
+	// pages and taxonomy term pages, excluding render:false pages.
 	sitemapPath := filepath.Join(outDir, "sitemap.xml")
 	sitemapBytes, err := os.ReadFile(sitemapPath)
 	if err != nil {
 		t.Fatalf("missing sitemap.xml: %v", err)
 	}
-	if !strings.Contains(string(sitemapBytes), "<urlset") || !strings.Contains(string(sitemapBytes), "https://kintsugi.example.com") {
-		t.Errorf("sitemap.xml missing urlset or site base URL")
+	var sitemapStruct struct {
+		URLs []struct {
+			Loc string `xml:"loc"`
+		} `xml:"url"`
+	}
+	if err := xml.Unmarshal(sitemapBytes, &sitemapStruct); err != nil {
+		t.Fatalf("failed to parse sitemap.xml: %v", err)
+	}
+	seenLocs := make(map[string]bool, len(sitemapStruct.URLs))
+	sitemapHas := func(suffix string) bool {
+		for loc := range seenLocs {
+			if strings.HasSuffix(loc, suffix) {
+				return true
+			}
+		}
+		return false
+	}
+	for _, u := range sitemapStruct.URLs {
+		loc := strings.TrimSpace(u.Loc)
+		if loc == "" {
+			t.Errorf("sitemap.xml contains an empty <loc>")
+			continue
+		}
+		if !strings.HasPrefix(loc, "https://kintsugi.example.com/") {
+			t.Errorf("sitemap.xml <loc> %q should be absolute with siteurl", loc)
+		}
+		if seenLocs[loc] {
+			t.Errorf("sitemap.xml contains duplicate <loc> %q", loc)
+		}
+		seenLocs[loc] = true
+	}
+	for _, want := range []string{
+		"https://kintsugi.example.com/",
+		"/collection/wheel-thrown-vessels/",
+		"/tags/ceramics/",
+		"/categories/journal/",
+	} {
+		if !sitemapHas(want) {
+			t.Errorf("sitemap.xml missing expected URL %q", want)
+		}
+	}
+	if sitemapHas("unrendered-formulas") {
+		t.Errorf("sitemap.xml unexpectedly contains render:false page notes/unrendered-formulas")
 	}
 
-	// 6. Inspect Robots (robots.txt)
-	robotsPath := filepath.Join(outDir, "robots.txt")
-	robotsBytes, err := os.ReadFile(robotsPath)
+	// 6. Inspect Graph, Backlinks, Meta JSON files: parse and assert content,
+	// not just existence.
+	graphBytes, err := os.ReadFile(filepath.Join(outDir, "graph.json"))
 	if err != nil {
-		t.Fatalf("missing robots.txt: %v", err)
+		t.Fatalf("missing graph.json: %v", err)
 	}
-	if !strings.Contains(string(robotsBytes), "User-agent:") || !strings.Contains(string(robotsBytes), "Sitemap:") {
-		t.Errorf("robots.txt missing User-agent or Sitemap link")
+	var graphStruct struct {
+		Nodes map[string]struct {
+			Type   string `json:"type"`
+			Render bool   `json:"render"`
+		} `json:"nodes"`
+		Edges [][2]string `json:"edges"`
+	}
+	if err := json.Unmarshal(graphBytes, &graphStruct); err != nil {
+		t.Fatalf("failed to parse graph.json: %v", err)
+	}
+	if len(graphStruct.Nodes) < 5 {
+		t.Errorf("graph.json expected >= 5 nodes (4 rendered + 1 unrendered), got %d", len(graphStruct.Nodes))
+	}
+	unrenderedNode, ok := graphStruct.Nodes["notes/unrendered-formulas.md"]
+	if !ok {
+		t.Errorf("graph.json missing node for unrendered note notes/unrendered-formulas.md")
+	} else if unrenderedNode.Render {
+		t.Errorf("graph.json node notes/unrendered-formulas.md should have render:false")
+	}
+	if len(graphStruct.Edges) == 0 {
+		t.Errorf("graph.json has no edges although index.md links other fixture pages")
 	}
 
-	// 7. Inspect Graph, Backlinks, Meta JSON files
-	graphPath := filepath.Join(outDir, "graph.json")
-	if _, err := os.Stat(graphPath); os.IsNotExist(err) {
-		t.Errorf("missing graph.json at %s", graphPath)
+	backlinksBytes, err := os.ReadFile(filepath.Join(outDir, "backlinks.json"))
+	if err != nil {
+		t.Fatalf("missing backlinks.json: %v", err)
 	}
-	backlinksPath := filepath.Join(outDir, "backlinks.json")
-	if _, err := os.Stat(backlinksPath); os.IsNotExist(err) {
-		t.Errorf("missing backlinks.json at %s", backlinksPath)
+	var backlinks map[string][]string
+	if err := json.Unmarshal(backlinksBytes, &backlinks); err != nil {
+		t.Fatalf("failed to parse backlinks.json: %v", err)
 	}
-	metaPath := filepath.Join(outDir, "meta.json")
-	if _, err := os.Stat(metaPath); os.IsNotExist(err) {
-		t.Errorf("missing meta.json at %s", metaPath)
+	vesselBacklinks := backlinks["collection/wheel-thrown-vessels"]
+	hasIndexBacklink := false
+	for _, parent := range vesselBacklinks {
+		if parent == "index" {
+			hasIndexBacklink = true
+		}
+	}
+	if !hasIndexBacklink {
+		t.Errorf("backlinks.json missing index -> collection/wheel-thrown-vessels backlink, got %v", vesselBacklinks)
 	}
 
-	// 8. Inspect Copied Assets
+	metaBytes, err := os.ReadFile(filepath.Join(outDir, "meta.json"))
+	if err != nil {
+		t.Fatalf("missing meta.json: %v", err)
+	}
+	var metaData map[string]struct {
+		Title  string `json:"title"`
+		Render bool   `json:"render"`
+		URL    string `json:"url"`
+	}
+	if err := json.Unmarshal(metaBytes, &metaData); err != nil {
+		t.Fatalf("failed to parse meta.json: %v", err)
+	}
+	indexMeta, ok := metaData["index"]
+	if !ok {
+		t.Errorf("meta.json missing entry for index")
+	} else if !indexMeta.Render || indexMeta.Title == "" {
+		t.Errorf("meta.json index entry unexpected: %+v", indexMeta)
+	}
+	noteMeta, ok := metaData["notes/unrendered-formulas.md"]
+	if !ok {
+		t.Errorf("meta.json missing entry for unrendered note")
+	} else if noteMeta.Render {
+		t.Errorf("meta.json entry for unrendered note should have render:false")
+	}
+
+	// 7. Inspect Copied Assets
 	assetPath := filepath.Join(outDir, "assets", "ceramic-vase.png")
 	assetData, err := os.ReadFile(assetPath)
 	if err != nil {
