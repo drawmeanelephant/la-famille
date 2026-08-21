@@ -218,6 +218,13 @@ func resolveReference(from, reference string, files map[string]struct{}) (string
 		candidate = path.Join(candidate, "index.html")
 	} else if path.Ext(candidate) == "" {
 		candidate = path.Join(candidate, "index.html")
+	} else if path.Ext(candidate) == ".html" {
+		// The generator may emit content/foo.md as content/foo/index.html.
+		// When a link says /foo.html, also accept /foo/index.html.
+		dirCandidate := candidate[:len(candidate)-len(".html")] + "/index.html"
+		if _, ok := files[dirCandidate]; ok {
+			return dirCandidate, true
+		}
 	}
 	_, ok := files[candidate]
 	return candidate, ok
