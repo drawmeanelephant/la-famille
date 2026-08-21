@@ -95,5 +95,24 @@ The main menu allows you to navigate through the core features of the applicatio
 
 </div>
 
+## Keybindings & Discoverability
+
+Every screen shows its valid keys in the footer (e.g., menu: `↑/k, ↓/j: Navigate • Enter/Space: Select • m: Menu • d: Diagnostics • w: Watch • ?: Help • q: Quit`). The selected menu item uses a `focus-visible` highlight (underline + background) following `templates/layout.html` accessibility patterns.
+
+| Key | Action | Where |
+| --- | --- | --- |
+| `↑` / `k` | Move selection up | Menu, Diagnostics |
+| `↓` / `j` | Move selection down | Menu, Diagnostics |
+| `Enter` / `Space` | Select command | Menu (when open) |
+| `m` | Toggle octoburger menu open/closed | Menu |
+| `d` | Toggle Diagnostics drawer | Any screen |
+| `w` | Toggle Watch Mode (auto-rebuild) | Menu / Stats / Diagnostics / Help |
+| `?` / `h` | Open/close Help & Keybindings legend (one-line footer expands to full help) | Any screen |
+| `c` | Clear diagnostics | Diagnostics drawer |
+| `q` / `Esc` | Go back to main menu / close menu / quit (Esc closes menu, `q` on menu quits) | Any screen |
+| `Ctrl+C` | Force quit application | Any screen |
+
+Press `?` or `h` from any screen to expand the footer help line into the full `Help` screen; press `?`, `h`, `Esc`, or `q` to return to the previous screen. Press `w` to toggle Watch Mode without opening the menu — the dashboard and serve screens reflect the state (`Watch Mode: ENABLED/DISABLED`).
+
 ## Mascot Integration
 Keep an eye out for Jules! The TUI integrates ASCII graphics of the project's mascot to make long-running tasks (like serving the site locally) more enjoyable.
