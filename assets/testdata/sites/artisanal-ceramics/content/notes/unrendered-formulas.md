@@ -13,4 +13,4 @@ categories:
 # Studio Glaze Formulations & Kiln Logs
 
 This file contains raw internal laboratory notes and pyrometric cone schedules.
-Because `render: false` is configured in frontmatter, this file is indexed into search and graph metadata, but no HTML page is rendered in the public site.
+Because `render: false` is configured in frontmatter, this file appears in graph metadata (`graph.json`, `meta.json`, `backlinks.json`) but is excluded from `search.json`, `feed.xml`, `sitemap.xml`, and taxonomy pages, and no HTML page is rendered in the public site.
