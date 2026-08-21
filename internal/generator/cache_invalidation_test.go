@@ -150,6 +150,11 @@ func TestCacheInvalidationMatrix(t *testing.T) {
 		if strings.Contains(string(searchJSON), "page2") || strings.Contains(string(searchJSON), "Page Two") {
 			t.Errorf("Deleted page still present in search.json: %s", string(searchJSON))
 		}
+
+		// Verify taxonomy/gen pages do not retain deleted content: search should only contain page1 entries
+		if strings.Contains(string(searchJSON), "Second page content") {
+			t.Errorf("Deleted page content still present in search.json")
+		}
 	})
 
 	t.Run("4_ChangedTemplates_TriggersRebuild", func(t *testing.T) {
@@ -180,6 +185,14 @@ func TestCacheInvalidationMatrix(t *testing.T) {
 		}
 		if !strings.Contains(string(outHTML), "theme-v2") {
 			t.Errorf("Generated output does not reflect template modifications")
+		}
+		// Verify all pages re-rendered with new template
+		out2, err := os.ReadFile(filepath.Join(cfg.OutputDir, "page2", "index.html"))
+		if err != nil {
+			t.Fatalf("Failed to read page2: %v", err)
+		}
+		if !strings.Contains(string(out2), "theme-v2") {
+			t.Errorf("Second page not re-rendered with new template")
 		}
 	})
 
@@ -230,6 +243,10 @@ func TestCacheInvalidationMatrix(t *testing.T) {
 		if _, err := os.Stat(scriptOut); err != nil {
 			t.Errorf("Newly added asset missing from output: %v", err)
 		}
+		scriptData, err := os.ReadFile(scriptOut)
+		if err != nil || !strings.Contains(string(scriptData), "console.log") {
+			t.Errorf("New asset content incorrect: %v", err)
+		}
 
 		// 5c. Delete asset
 		if err := os.Remove(scriptPath); err != nil {
@@ -242,6 +259,10 @@ func TestCacheInvalidationMatrix(t *testing.T) {
 		if _, err := os.Stat(scriptOut); !os.IsNotExist(err) {
 			t.Errorf("Deleted asset still exists in output: %v", err)
 		}
+		// Original asset should still be present
+		if _, err := os.Stat(assetOut); err != nil {
+			t.Errorf("Original asset missing after deleting added asset: %v", err)
+		}
 	})
 
 	t.Run("6_ChangedConfiguration_TriggersRebuild", func(t *testing.T) {
@@ -252,22 +273,123 @@ func TestCacheInvalidationMatrix(t *testing.T) {
 			t.Fatalf("Initial build failed: err=%v, cacheHit=%v", err, res1.CacheHit)
 		}
 
+		// Initial graph explorer files must exist (default true)
+		for _, rel := range []string{"graph/index.html", "graph/data.json"} {
+			p := filepath.Join(cfg.OutputDir, filepath.FromSlash(rel))
+			if _, err := os.Stat(p); err != nil {
+				t.Fatalf("Expected %s to exist with GraphExplorer enabled: %v", rel, err)
+			}
+		}
+		// Initial search.json should contain /page1/ without extra base path
+		initialSearch, err := os.ReadFile(filepath.Join(cfg.OutputDir, "search.json"))
+		if err != nil {
+			t.Fatalf("read initial search.json: %v", err)
+		}
+		if !strings.Contains(string(initialSearch), "/page1/") {
+			t.Fatalf("initial search.json missing /page1/: %s", string(initialSearch))
+		}
+
+		// 6a. SiteName change
 		cfg.SiteName = "Renamed Site Title"
 		res2, err := Build(cfg)
 		if err != nil {
-			t.Fatalf("Rebuild after config edit failed: %v", err)
+			t.Fatalf("Rebuild after SiteName edit failed: %v", err)
 		}
 		if res2.CacheHit {
 			t.Errorf("Changed configuration (SiteName) should trigger rebuild, got cache hit")
 		}
+		graphIndex, err := os.ReadFile(filepath.Join(cfg.OutputDir, "graph", "index.html"))
+		if err != nil {
+			t.Fatalf("graph/index.html missing after SiteName change: %v", err)
+		}
+		if !strings.Contains(string(graphIndex), "Renamed Site Title") {
+			t.Errorf("SiteName change not reflected in graph/index.html: %s", string(graphIndex)[:800])
+		}
 
+		// 6b. Theme change
 		cfg.Theme = "dark"
 		res3, err := Build(cfg)
 		if err != nil {
-			t.Fatalf("Rebuild after theme config edit failed: %v", err)
+			t.Fatalf("Rebuild after Theme edit failed: %v", err)
 		}
 		if res3.CacheHit {
 			t.Errorf("Changed configuration (Theme) should trigger rebuild, got cache hit")
+		}
+
+		// 6c. SiteURL change — verify search.json and sitemap.xml reflect new base
+		cfg.SiteURL = "https://new.example.com/subpath"
+		res4, err := Build(cfg)
+		if err != nil {
+			t.Fatalf("Rebuild after SiteURL edit failed: %v", err)
+		}
+		if res4.CacheHit {
+			t.Errorf("Changed configuration (SiteURL) should trigger rebuild, got cache hit")
+		}
+		searchAfterURL, err := os.ReadFile(filepath.Join(cfg.OutputDir, "search.json"))
+		if err != nil {
+			t.Fatalf("read search.json after SiteURL change: %v", err)
+		}
+		sSearch := string(searchAfterURL)
+		if !strings.Contains(sSearch, "/subpath/page1/") {
+			t.Errorf("search.json URLs do not reflect new SiteURL base /subpath/: %s", sSearch)
+		}
+		if !strings.Contains(sSearch, "/subpath/page2/") {
+			t.Errorf("search.json missing /subpath/page2/ after SiteURL change: %s", sSearch)
+		}
+		sitemap, err := os.ReadFile(filepath.Join(cfg.OutputDir, "sitemap.xml"))
+		if err != nil {
+			t.Fatalf("read sitemap.xml: %v", err)
+		}
+		sSitemap := string(sitemap)
+		if !strings.Contains(sSitemap, "https://new.example.com/subpath/page1/") {
+			t.Errorf("sitemap.xml does not reflect new SiteURL base: %s", sSitemap)
+		}
+		if !strings.Contains(sSitemap, "https://new.example.com/subpath/page2/") {
+			t.Errorf("sitemap.xml missing page2 with new base: %s", sSitemap)
+		}
+		// Ensure old base not lingering as absolute URL (e.g., https://example.com/page1/)
+		if strings.Contains(sSitemap, "https://example.com/page1/") {
+			t.Errorf("sitemap.xml still contains old SiteURL: %s", sSitemap)
+		}
+
+		// 6d. GraphExplorer toggle off -> files disappear
+		cfg.GraphExplorer = false
+		res5, err := Build(cfg)
+		if err != nil {
+			t.Fatalf("Rebuild after disabling GraphExplorer failed: %v", err)
+		}
+		if res5.CacheHit {
+			t.Errorf("GraphExplorer disable should trigger rebuild, got cache hit")
+		}
+		for _, rel := range []string{"graph/index.html", "graph/data.json"} {
+			p := filepath.Join(cfg.OutputDir, filepath.FromSlash(rel))
+			if _, err := os.Stat(p); !os.IsNotExist(err) {
+				t.Errorf("GraphExplorer disabled but %s still exists: %v", rel, err)
+			}
+		}
+
+		// 6e. GraphExplorer toggle on -> files reappear
+		cfg.GraphExplorer = true
+		res6, err := Build(cfg)
+		if err != nil {
+			t.Fatalf("Rebuild after re-enabling GraphExplorer failed: %v", err)
+		}
+		if res6.CacheHit {
+			t.Errorf("GraphExplorer re-enable should trigger rebuild, got cache hit")
+		}
+		for _, rel := range []string{"graph/index.html", "graph/data.json"} {
+			p := filepath.Join(cfg.OutputDir, filepath.FromSlash(rel))
+			if _, err := os.Stat(p); err != nil {
+				t.Errorf("GraphExplorer re-enabled but %s missing: %v", rel, err)
+			}
+		}
+		// Verify graph/data.json is valid JSON and contains nodes
+		graphData, err := os.ReadFile(filepath.Join(cfg.OutputDir, "graph", "data.json"))
+		if err != nil {
+			t.Fatalf("read graph/data.json: %v", err)
+		}
+		if !strings.Contains(string(graphData), "\"nodes\"") {
+			t.Errorf("graph/data.json missing nodes: %s", string(graphData)[:500])
 		}
 	})
 
