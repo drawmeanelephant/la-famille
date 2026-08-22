@@ -115,6 +115,80 @@ func TestCheckRejectsStagingDirectories(t *testing.T) {
 	}
 }
 
+func TestCheckResolvesHtmlToIndexFallback(t *testing.T) {
+	t.Run("absolute html maps to directory index", func(t *testing.T) {
+		root := t.TempDir()
+		writePublishFile(t, root, "index.html", `<a href="/docs/setup.html">setup</a>`)
+		writePublishFile(t, root, "docs/setup/index.html", "<html>setup</html>")
+		writeRequiredArtifacts(t, root)
+		if _, err := Check(root); err != nil {
+			t.Fatalf("Check = %v, want /docs/setup.html to resolve to docs/setup/index.html", err)
+		}
+	})
+
+	t.Run("relative html maps to directory index", func(t *testing.T) {
+		root := t.TempDir()
+		writePublishFile(t, root, "docs/index.html", `<a href="setup.html">setup</a>`)
+		writePublishFile(t, root, "docs/setup/index.html", "<html>setup</html>")
+		writeRequiredArtifacts(t, root)
+		writePublishFile(t, root, "index.html", "<html>home</html>")
+		if _, err := Check(root); err != nil {
+			t.Fatalf("Check = %v, want relative setup.html to resolve to docs/setup/index.html", err)
+		}
+	})
+
+	t.Run("html with query and fragment", func(t *testing.T) {
+		root := t.TempDir()
+		writePublishFile(t, root, "index.html", `<a href="/docs/setup.html?x=1#anchor">setup</a>`)
+		writePublishFile(t, root, "docs/setup/index.html", "<html>setup</html>")
+		writeRequiredArtifacts(t, root)
+		if _, err := Check(root); err != nil {
+			t.Fatalf("Check = %v, want query/fragment html to resolve", err)
+		}
+	})
+
+	t.Run("direct html still preferred over index", func(t *testing.T) {
+		root := t.TempDir()
+		writePublishFile(t, root, "index.html", `<a href="/docs/setup.html">setup</a>`)
+		writePublishFile(t, root, "docs/setup.html", "<html>direct</html>")
+		writePublishFile(t, root, "docs/setup/index.html", "<html>index</html>")
+		writeRequiredArtifacts(t, root)
+		if _, err := Check(root); err != nil {
+			t.Fatalf("Check = %v, want direct html to pass", err)
+		}
+	})
+
+	t.Run("missing html still fails", func(t *testing.T) {
+		root := t.TempDir()
+		writePublishFile(t, root, "index.html", `<a href="/missing.html">missing</a>`)
+		writeRequiredArtifacts(t, root)
+		if _, err := Check(root); err == nil || !strings.Contains(err.Error(), "missing.html") {
+			t.Fatalf("Check error = %v, want missing html failure", err)
+		}
+	})
+}
+
+func TestResolveReferenceHtmlFallback(t *testing.T) {
+	files := map[string]struct{}{
+		"docs/setup/index.html": {},
+		"index.html":            {},
+	}
+	if _, ok := resolveReference("index.html", "/docs/setup.html", files); !ok {
+		t.Fatalf("resolveReference /docs/setup.html should resolve to docs/setup/index.html")
+	}
+	if _, ok := resolveReference("docs/index.html", "setup.html", files); !ok {
+		t.Fatalf("resolveReference relative setup.html should resolve")
+	}
+	if _, ok := resolveReference("index.html", "/docs/setup.html?x=1#frag", files); !ok {
+		t.Fatalf("resolveReference with query/fragment should resolve")
+	}
+	// Direct file should still win
+	files["docs/setup.html"] = struct{}{}
+	if target, ok := resolveReference("index.html", "/docs/setup.html", files); !ok || target != "docs/setup.html" {
+		t.Fatalf("direct file should be preferred, got %q ok=%v", target, ok)
+	}
+}
+
 // writeRequiredArtifacts writes the always-required metadata files so tests
 // can exercise other validation on an otherwise complete artifact.
 func writeRequiredArtifacts(t *testing.T, root string) {
