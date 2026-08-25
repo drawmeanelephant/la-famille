@@ -74,7 +74,7 @@
                 resultsContainer.innerHTML = "";
                 if (results.length === 0) {
                     const li = document.createElement("li");
-                    li.className = "p-2 text-base-content/50";
+                    li.className = "search-no-results";
                     li.textContent = "No results found";
                     resultsContainer.appendChild(li);
                     resultsContainer.classList.remove("hidden");
@@ -91,34 +91,34 @@
                     const a = document.createElement("a");
                     // encodeURI on interpolated variables to prevent DOM-based XSS
                     a.href = encodeURI(item.u);
-                    a.className = "block p-4 hover:bg-base-200 text-sm focus-visible:bg-base-200 focus-visible:outline-none border-b border-base-200 last:border-0";
+                    a.className = "search-result-link";
 
                     const titleDiv = document.createElement("div");
-                    titleDiv.className = "font-bold text-base-content";
+                    titleDiv.className = "search-result-title";
                     titleDiv.textContent = title;
                     a.appendChild(titleDiv);
 
                     const matchedHeading = headings.find(h => h.toLowerCase().includes(query));
                     if (matchedHeading) {
                         const headingDiv = document.createElement("div");
-                        headingDiv.className = "text-xs font-medium text-primary mt-0.5";
+                        headingDiv.className = "search-result-section";
                         headingDiv.textContent = "Section: " + matchedHeading;
                         a.appendChild(headingDiv);
                     }
 
                     if (snippet) {
                         const snippetDiv = document.createElement("div");
-                        snippetDiv.className = "text-xs text-base-content/70 mt-1 line-clamp-2";
+                        snippetDiv.className = "search-result-snippet";
                         snippetDiv.textContent = snippet;
                         a.appendChild(snippetDiv);
                     }
 
                     if (tags.length > 0) {
                         const tagsDiv = document.createElement("div");
-                        tagsDiv.className = "flex flex-wrap gap-1 mt-1.5";
+                        tagsDiv.className = "search-result-tags";
                         tags.forEach(tag => {
                             const badge = document.createElement("span");
-                            badge.className = "badge badge-xs badge-ghost text-[10px]";
+                            badge.className = "search-result-tag";
                             badge.textContent = "#" + tag;
                             tagsDiv.appendChild(badge);
                         });

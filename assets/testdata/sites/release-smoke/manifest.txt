@@ -1,6 +1,9 @@
 about/index.html
+assets/css/layout-editorial.css
+assets/css/layout-midnight.css
 assets/css/search.css
 assets/css/theme-foundations.css
+assets/css/theme.css
 assets/graph/explorer.css
 assets/graph/explorer.js
 assets/img/mascot-default.jpeg

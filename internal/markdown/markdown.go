@@ -4,6 +4,7 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension" // Required for GFM and Typographer
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
 
@@ -20,6 +21,7 @@ func NewEngine(transformer *transform.LinkTransformer) goldmark.Markdown {
 		goldmark.WithParserOptions(
 			parser.WithASTTransformers(
 				util.Prioritized(transformer, 100),
+				util.Prioritized(&transform.FigureTransformer{}, 200),
 			),
 			parser.WithInlineParsers(
 				util.Prioritized(&transform.EmojiKitchenParser{}, 100),
@@ -27,6 +29,9 @@ func NewEngine(transformer *transform.LinkTransformer) goldmark.Markdown {
 		),
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),
+			renderer.WithNodeRenderers(
+				util.Prioritized(&transform.FigureRenderer{}, 100),
+			),
 		),
 	)
 }

@@ -42,7 +42,7 @@ rag_dir: "rag-archive"
 # project_root: Optional root for all relative paths. CLI --project-root wins.
 # project_root: "."
 
-# theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
+# theme: The built-in palette applied by the default layout (retro, ink, sepia, slate, moss).
 theme: "retro"
 
 # siteurl: Public URL used for canonical links, og:url, sitemap.xml, and robots.txt.
@@ -63,7 +63,7 @@ Here is a breakdown of each available field:
 *   **`asset_dir`** (string): The directory containing static assets. *Default: "assets"*
 *   **`rag_dir`** (string): The directory where RAG markdown bundles will be exported. *Default: "rag-archive"*
 *   **`project_root`** (string, optional): The site root used to resolve the other relative paths. When omitted, the config file directory (or current directory) is used. An explicit `--project-root` flag takes precedence.
-*   **`theme`** (string): The DaisyUI theme you want to apply globally to your site. This allows you to easily switch between "light", "dark", "retro", "synthwave", and many more! *Default: "retro"*
+*   **`theme`** (string): The built-in palette applied by the default layout. The default layout ships five local-first palettes: `retro` (warm paper, the default), `ink` (dark), `sepia` (aged paper), `slate` (cool light), and `moss` (green light). Alternate layouts may ignore this value and keep their own fixed identity. *Default: "retro"*
 *   **`siteurl`** (string, optional): The public base URL for canonical links, `og:url`, absolute `sitemap.xml` locations, and the `Sitemap` directive in `robots.txt`. For example, GitHub Pages projects can use `https://username.github.io/project-name`. Leave it unset for local-only builds; the sitemap uses root-relative locations and no production host is guessed. The legacy `site_url` key is still accepted.
 *   **`port`** (integer): The local network port used by the built-in HTTP server (`go run ./cmd/la-famille serve`). *Default: 8080*
 *   **`graph_explorer`** (bool): When `true` (default), every build also emits a self-contained Knowledge Graph Explorer page at `<output_dir>/graph/index.html`. The page is fully static, loads its prebuilt `graph/data.json` payload via a relative fetch, and supports search, filter toggles, focus mode, and `?node=` deep-linking. Sites at or above 500 nodes open in search-first mode, where the visualization is not drawn until a page is selected. Set to `false` to skip generation entirely; the legacy config keys `graphExplorer` and `Graph Explorer` are not accepted. The associated client bundle is at `assets/graph/explorer.{js,css}`; released binaries provide fallback copies, while files in the selected site asset directory remain authoritative overrides. **Note:** the YAML tag is snake_case `graph_explorer` to match neighboring keys like `check_asset_health`; the camelCase `graphExplorer` form documented in the original task spec is intentionally not accepted.

@@ -139,7 +139,8 @@ rag_dir: "rag-archive"
 # flag takes precedence over this value.
 # project_root: "."
 
-# theme: The DaisyUI theme applied to the site (e.g., retro, dark, cupcake, corporate).
+# theme: The built-in palette applied by the default layout
+# (retro, ink, sepia, slate, moss).
 theme: "retro"
 
 # default_description: A default description for SEO meta tags.

@@ -11,68 +11,63 @@
     <meta property="og:type" content="website">
     {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
     <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
-    <!-- DaisyUI CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Local-first stylesheets: no CDN, no framework, works offline. -->
     <link rel="stylesheet" href="/assets/css/theme-foundations.css">
-    <!-- Tailwind CSS with Typography plugin via CDN -->
-    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link rel="stylesheet" href="/assets/css/theme.css">
     <link rel="stylesheet" href="/assets/css/search.css">
 </head>
-<body class="min-h-screen bg-base-200 prose-a:focus-visible:outline prose-a:focus-visible:outline-2 prose-a:focus-visible:outline-primary">
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-base-100 focus:text-base-content focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Skip to content</a>
+<body>
+    <a href="#main-content" class="skip-link">Skip to content</a>
 
-    <header class="navbar bg-base-100 shadow-sm mb-8">
-        <nav id="site-navigation" aria-label="Main navigation" class="w-full flex items-center">
-            <div class="flex-none">
-                <a href="#site-navigation" class="btn btn-square btn-ghost focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-label="Open navigation menu">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </a>
-            </div>
-            <div class="flex-1">
-                <a class="btn btn-ghost text-xl focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none flex items-center gap-2" href="/">
-                    <img src="/assets/img/mascot-default.jpeg" alt="Mascot" class="w-8 h-8 rounded-full object-cover" />
-                    {{.Site.SiteName}}
-                </a>
-            </div>
+    <header class="navbar">
+        <nav id="site-navigation" aria-label="Main navigation" class="site-nav">
+            <a class="brand" href="/">
+                <img src="/assets/img/mascot-default.jpeg" alt="Mascot" width="32" height="32">
+                <span>{{.Site.SiteName}}</span>
+            </a>
+            {{if .Site.SiteLinks}}
+            <ul class="site-links">
+                {{range .Site.SiteLinks}}<li><a href="{{.URL}}">{{.Label}}</a></li>{{end}}
+            </ul>
+            {{end}}
             {{ template "search_modal" . }}
         </nav>
     </header>
 
-    <main id="main-content" class="container mx-auto px-4 max-w-4xl">
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h1 class="card-title text-4xl mb-2">{{.Title}}</h1>
+    <main id="main-content" class="page-container">
+        <article class="page-card">
+            <div class="page-head">
+                <h1>{{.Title}}</h1>
                 {{if or .Author .Date}}
-                <div class="text-sm text-base-content/70 mb-8 border-b pb-4">
-                    {{if .Author}}<span class="mr-4"><strong>By:</strong> {{.Author}}</span>{{- end -}}
-                    {{if .Date}}<span><strong>Date:</strong> {{.Date}}</span>{{- end -}}
-                </div>
+                <p class="page-meta">
+                    {{if .Author}}<span><strong>By</strong> {{.Author}}</span>{{if .Date}} &middot; {{end}}{{end}}
+                    {{if .Date}}<span><strong>Published</strong> {{.Date}}</span>{{end}}
+                </p>
                 {{- end -}}
-
-                <article class="prose prose-lg max-w-none prose-a:text-primary prose-a:hover:text-secondary prose-a:focus-visible:outline prose-a:focus-visible:outline-2 prose-a:focus-visible:outline-primary">
-                    {{.Content}}
-                </article>
             </div>
-        </div>
+
+            <div class="prose">
+                {{.Content}}
+            </div>
+        </article>
     </main>
 
-    <footer class="footer footer-center p-4 bg-base-300 text-base-content mt-12">
-        <aside>
-            <p>Built in Go and Jules by Google, with Raoul(s) and DaisyUI</p>
-        </aside>
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <p>Built with La Famille &mdash; static sites in pure Go.</p>
+        </div>
     </footer>
 
 {{if .ComplianceModal}}
-    <input type="checkbox" id="compliance-modal" class="modal-toggle" checked />
-    <div class="modal" role="dialog">
-        <div class="modal-box">
-            <h2 class="font-bold text-lg">Compliance Required</h2>
-            <p class="py-4">{{.ComplianceModal}}</p>
-            <div class="modal-action">
-                <label for="compliance-modal" class="btn btn-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">I Reluctantly Agree</label>
-            </div>
-        </div>
-    </div>
+    <dialog open class="compliance-modal" aria-labelledby="compliance-title">
+        <article>
+            <h2 id="compliance-title">Compliance Required</h2>
+            <p>{{.ComplianceModal}}</p>
+            <form method="dialog">
+                <button class="button button-primary" autofocus>I Reluctantly Agree</button>
+            </form>
+        </article>
+    </dialog>
 {{end}}
 <script src="/assets/js/search.js"></script>
 </body>

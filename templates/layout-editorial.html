@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Site.SiteName}}{{.Title}} - {{.Site.SiteName}}{{else}}{{.Title}}{{end}}</title>
+    <meta name="description" content="{{.Description}}">
+    <meta property="og:title" content="{{.Title}}">
+    <meta property="og:description" content="{{.Description}}">
+    <meta property="og:image" content="{{.Image}}">
+    <meta property="og:type" content="article">
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
+    <!-- Editorial: local-first, framework-free -->
+    <link rel="stylesheet" href="/assets/css/theme-foundations.css">
+    <link rel="stylesheet" href="/assets/css/layout-editorial.css">
+</head>
+<body>
+    <a href="#main-content" class="ed-skip">Skip to content</a>
+
+    <header class="ed-masthead">
+        <div class="ed-mast-inner">
+            <a class="ed-wordmark" href="/">{{.Site.SiteName}}</a>
+            <nav aria-label="Main navigation" class="ed-nav">
+                {{if .Site.SiteLinks}}
+                <ul>
+                    {{range .Site.SiteLinks}}<li><a href="{{.URL}}">{{.Label}}</a></li>{{end}}
+                </ul>
+                {{end}}
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content" class="ed-page">
+        <article class="ed-article">
+            <header class="ed-article-head">
+                {{if or .Date .Author}}
+                <p class="ed-dateline">
+                    {{if .Date}}<time>{{.Date}}</time>{{end}}{{if and .Date .Author}} &middot; {{end}}{{if .Author}}By {{.Author}}{{end}}
+                </p>
+                {{end}}
+                <h1 class="ed-title">{{.Title}}</h1>
+                {{if .Description}}<p class="ed-dek">{{.Description}}</p>{{end}}
+            </header>
+
+            <div class="ed-prose">
+                {{.Content}}
+            </div>
+        </article>
+    </main>
+
+    <footer class="ed-colophon">
+        <p>Set in system serifs. Built with La Famille.</p>
+    </footer>
+</body>
+</html>

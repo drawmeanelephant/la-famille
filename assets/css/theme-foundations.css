@@ -33,6 +33,46 @@ pre {
   white-space: pre;
 }
 
+/* Standalone images are promoted to <figure class="lf-figure"> blocks by the
+   markdown pipeline. These neutral defaults keep captions readable and images
+   contained in every theme; each theme refines them with its own tokens. */
+figure,
+figure.lf-figure {
+  margin: 2rem 0;
+}
+
+figure > img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+figcaption {
+  font-size: 0.875em;
+  line-height: 1.5;
+  margin-top: 0.625rem;
+  opacity: 0.8;
+}
+
+/* Minimal utilities shared by bundled components (search widget, skip links).
+   Deliberately tiny: no utility framework, just what release-owned markup
+   actually toggles. */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,

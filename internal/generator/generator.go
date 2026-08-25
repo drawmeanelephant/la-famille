@@ -8,14 +8,12 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 
 	"github.com/tbuddy/la-famille/internal/asset"
@@ -43,10 +41,6 @@ var (
 		return md.Convert(source, w)
 	}
 )
-
-// checkboxInputType limits the <input> elements the sanitizer keeps to the
-// disabled checkboxes goldmark emits for GFM task lists.
-var checkboxInputType = regexp.MustCompile(`^checkbox$`)
 
 // buildLocks serializes builds publishing into the same output directory.
 // replaceOutputDirectory renames directories in several steps, and the watcher
@@ -201,15 +195,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	}
 	var errs []indexedError
 
-	p := bluemonday.UGCPolicy()
-	p.AllowAttrs("class").Globally()
-	p.AllowElements("svg", "path")
-	p.AllowAttrs("xmlns", "fill", "viewBox", "stroke-linecap", "stroke-linejoin", "stroke-width", "d", "stroke", "class").OnElements("svg", "path")
-	// GFM task lists carry their state in a disabled checkbox input. Stripping
-	// it makes a completed item render exactly like a pending one, so allow
-	// precisely that element and nothing else about <input>.
-	p.AllowAttrs("type").Matching(checkboxInputType).OnElements("input")
-	p.AllowAttrs("checked", "disabled").OnElements("input")
+	p := newContentSanitizer()
 
 	taxPaths, taxSearchItems, err := taxonomy.GenerateTaxonomies(cfg, siteCfg, fileMap, renderer, p)
 	if err != nil {
