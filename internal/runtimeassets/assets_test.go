@@ -3,8 +3,37 @@ package runtimeassets
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestCuratedLayoutsPacket(t *testing.T) {
+	layouts, err := CuratedLayouts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"layout", "layout-octoburger", "layout-terminal"} {
+		data, ok := layouts[name]
+		if !ok {
+			t.Errorf("curated packet missing %q", name)
+			continue
+		}
+		if len(data) == 0 {
+			t.Errorf("curated layout %q is empty", name)
+			continue
+		}
+		if !strings.Contains(string(data), "<!DOCTYPE html>") {
+			t.Errorf("curated layout %q does not look like an HTML document", name)
+		}
+		if strings.Contains(string(data), "{{.") && strings.Count(string(data), "{{") > 0 {
+			// Template actions are expected; this guard only fails on obviously
+			// truncated files that end mid-action.
+			if strings.HasSuffix(strings.TrimSpace(string(data)), "{{") {
+				t.Errorf("curated layout %q appears truncated mid-action", name)
+			}
+		}
+	}
+}
 
 func TestEmbeddedDefaultsAreAvailable(t *testing.T) {
 	template, err := DefaultTemplate()

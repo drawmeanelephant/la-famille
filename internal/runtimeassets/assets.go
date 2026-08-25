@@ -19,6 +19,26 @@ func DefaultTemplate() ([]byte, error) {
 	return fs.ReadFile(templateassets.FS, "layout.html")
 }
 
+// CuratedLayoutNames lists the layouts shipped in the release theme packet.
+// Octoburger is the flagship: the octoburger TUI identity translated to a site
+// layout. Terminal rounds out the packet with an existing self-contained look.
+var CuratedLayoutNames = []string{"layout", "layout-octoburger", "layout-terminal"}
+
+// CuratedLayouts returns the bundled theme packet keyed by layout name, ready
+// for InstallMissing into a project's templates directory. Names match the
+// frontmatter `layout:` values accepted by the renderer.
+func CuratedLayouts() (map[string][]byte, error) {
+	layouts := make(map[string][]byte, len(CuratedLayoutNames))
+	for _, name := range CuratedLayoutNames {
+		data, err := fs.ReadFile(templateassets.FS, name+".html")
+		if err != nil {
+			return nil, fmt.Errorf("read embedded layout %s: %w", name, err)
+		}
+		layouts[name] = data
+	}
+	return layouts, nil
+}
+
 // DefaultPartials returns the partials required by the default layout keyed by
 // their path relative to the template directory.
 func DefaultPartials() (map[string][]byte, error) {

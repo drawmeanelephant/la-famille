@@ -99,10 +99,23 @@ func Load(filepath string) (Config, error) {
 
 // WriteDefault writes the default configuration to the specified filepath.
 func WriteDefault(filepath string) error {
+	return WriteDefaultWithLayout(filepath, "templates/layout.html")
+}
+
+// WriteDefaultWithLayout writes the default configuration using layoutPath as
+// the configured template path. It exists so `init --theme` can select a
+// bundled layout as the site default while preserving the commented config.
+func WriteDefaultWithLayout(filepath, layoutPath string) error {
 	// We use text templates to preserve comments, rather than yaml.Marshal
 	// which strips comments and ordering.
 
-	defaultYaml := `# La Famille Site Configuration
+	defaultYaml := strings.Replace(defaultConfigYaml,
+		`template: "templates/layout.html"`,
+		`template: "`+layoutPath+`"`, 1)
+	return os.WriteFile(filepath, []byte(defaultYaml), 0600)
+}
+
+const defaultConfigYaml = `# La Famille Site Configuration
 #
 # site_name: The name of your site, used in the navbar and footer.
 site_name: "La Famille"
@@ -153,8 +166,6 @@ port: 8080
 # /graph/ output, no nav link).
 # graph_explorer: true
 `
-	return os.WriteFile(filepath, []byte(defaultYaml), 0600)
-}
 
 // URLForOutputPath returns the canonical public URL for an output path. An
 // unavailable or invalid SiteURL intentionally produces an empty result so

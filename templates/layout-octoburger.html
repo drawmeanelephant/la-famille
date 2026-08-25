@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<!--  (v|v|v)  layout-octoburger — the soul theme.
+      Raoul(s) holds the burger so you can write your site. -->
+<html lang="en" data-theme="{{.Site.Theme}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Site.SiteName}}{{.Title}} - {{.Site.SiteName}}{{else}}{{.Title}}{{end}}</title>
+    <meta name="description" content="{{.Description}}">
+    <meta property="og:title" content="{{.Title}}">
+    <meta property="og:description" content="{{.Description}}">
+    <meta property="og:image" content="{{.Image}}">
+    <meta property="og:type" content="website">
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="/assets/css/theme-foundations.css">
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <style>
+        :root {
+            --ob-ink: #1c1c23;
+            --ob-panel: #272730;
+            --ob-panel-edge: #6c6ce5;
+            --ob-bun: #ffe08a;
+            --ob-bun-toast: #f4c95d;
+            --ob-patty: #8a4b32;
+            --ob-pink: #f472b6;
+            --ob-title-pink: #ff5faf;
+            --ob-blue: #38c3ff;
+            --ob-lettuce: #7dd87d;
+        }
+        html { scroll-behavior: smooth; }
+        body.ob-body {
+            min-height: 100vh;
+            background-color: var(--ob-ink);
+            background-image:
+                radial-gradient(circle at 12% -10%, rgba(108, 108, 229, 0.18), transparent 42%),
+                radial-gradient(circle at 88% 110%, rgba(244, 114, 182, 0.10), transparent 46%);
+            color: #ecebf4;
+        }
+        body.ob-body :focus-visible {
+            outline: 2px solid var(--ob-pink);
+            outline-offset: 2px;
+            text-decoration: underline;
+            text-decoration-color: var(--ob-pink);
+        }
+        .ob-skip {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            z-index: 60;
+            padding: 0.75rem 1rem;
+            background: var(--ob-panel);
+            color: var(--ob-bun);
+            font-weight: 700;
+        }
+        .ob-skip:focus { left: 0.5rem; top: 0.5rem; }
+
+        /* Burger-stack masthead: top bun, patty, bottom bun. */
+        .ob-masthead {
+            border-bottom: 3px solid var(--ob-panel-edge);
+            background:
+                radial-gradient(circle at 18% 38%, rgba(255, 255, 255, 0.16) 0 3px, transparent 4px),
+                radial-gradient(circle at 34% 62%, rgba(255, 255, 255, 0.14) 0 3px, transparent 4px),
+                radial-gradient(circle at 52% 30%, rgba(255, 255, 255, 0.15) 0 3px, transparent 4px),
+                radial-gradient(circle at 70% 58%, rgba(255, 255, 255, 0.13) 0 3px, transparent 4px),
+                radial-gradient(circle at 86% 36%, rgba(255, 255, 255, 0.16) 0 3px, transparent 4px),
+                linear-gradient(180deg, var(--ob-bun) 0%, var(--ob-bun-toast) 100%);
+            color: #33261a;
+        }
+        .ob-wordmark {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            color: inherit;
+        }
+        .ob-wordmark:focus-visible { outline-color: #33261a; }
+        .ob-wordmark .ob-glyph { font-size: 1.35rem; line-height: 1; }
+        .ob-tagline {
+            margin: 0;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            opacity: 0.75;
+        }
+        .ob-navlink {
+            color: inherit;
+            font-weight: 600;
+            padding: 0.25rem 0.35rem;
+        }
+        .ob-navlink:hover, .ob-navlink:focus-visible {
+            background: rgba(51, 38, 26, 0.16);
+            outline-color: #33261a;
+        }
+        .ob-navlink::before { content: ""; font-weight: 800; color: #33261a; }
+        .ob-navlink:hover::before, .ob-navlink:focus-visible::before { content: "> "; }
+
+        /* Patty card: layered burger between buns. */
+        .ob-card {
+            position: relative;
+            max-width: 56rem;
+            margin: 2.5rem auto 0;
+            padding: 2.75rem clamp(1.25rem, 4vw, 3rem) 2.25rem;
+            background: var(--ob-panel);
+            border: 1px solid var(--ob-panel-edge);
+            border-radius: 1.5rem;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+        }
+        .ob-card::before, .ob-card::after {
+            content: "";
+            position: absolute;
+            left: 1rem;
+            right: 1rem;
+            height: 0.9rem;
+            border-radius: 999px;
+        }
+        .ob-card::before {
+            top: 0.55rem;
+            background: linear-gradient(180deg, var(--ob-bun), var(--ob-bun-toast));
+        }
+        .ob-card::after {
+            bottom: 0.55rem;
+            background: linear-gradient(180deg, var(--ob-patty), #6e3b26);
+        }
+        .ob-title {
+            margin: 0 0 0.4rem;
+            font-size: clamp(1.8rem, 4.5vw, 2.6rem);
+            font-weight: 800;
+            color: var(--ob-title-pink);
+            letter-spacing: 0.01em;
+        }
+        /* Eight-arm scallop flourish: one wave per Raoul. */
+        .ob-flourish { display: block; margin: 0.35rem 0 1.4rem; }
+        .ob-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem 1.4rem;
+            font-size: 0.9rem;
+            color: rgba(236, 235, 244, 0.72);
+            border-bottom: 1px dashed rgba(108, 108, 229, 0.55);
+            padding-bottom: 1.1rem;
+            margin-bottom: 1.6rem;
+        }
+        .ob-article a { color: var(--ob-blue); }
+        .ob-article a:hover { color: var(--ob-pink); }
+        .ob-article blockquote {
+            border-left: 4px solid var(--ob-lettuce);
+            background: rgba(125, 216, 125, 0.07);
+            padding: 0.75rem 1rem;
+        }
+        .ob-footer {
+            max-width: 56rem;
+            margin: 2.25rem auto 0;
+            padding: 1.4rem 1rem 2rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(236, 235, 244, 0.66);
+        }
+        .ob-footer .ob-mascot-line { letter-spacing: 0.06em; }
+    </style>
+</head>
+<body class="ob-body prose-a:focus-visible:outline prose-a:focus-visible:outline-2">
+    <a href="#main-content" class="ob-skip">Skip to content</a>
+
+    <header class="ob-masthead">
+        <nav id="site-navigation" aria-label="Main navigation" class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3">
+            <div>
+                <a class="ob-wordmark" href="/">
+                    <span class="ob-glyph" aria-hidden="true">🍔</span>
+                    <img src="/assets/img/mascot-default.jpeg" alt="Raoul(s), the La Famille octopus mascot" width="34" height="34" style="border-radius:9999px;" />
+                    <span>{{if .Site.SiteName}}{{.Site.SiteName}}{{else}}Octoburger{{end}}</span>
+                </a>
+                <p class="ob-tagline">held together by eight arms and one burger</p>
+            </div>
+            <div class="flex items-center gap-3">
+                {{range .Site.SiteLinks}}<a class="ob-navlink" href="{{.URL}}">{{.Label}}</a>{{end}}
+                {{ template "search_modal" . }}
+            </div>
+        </nav>
+    </header>
+
+    <main id="main-content">
+        <article class="ob-card">
+            <h1 class="ob-title">{{.Title}}</h1>
+            <svg class="ob-flourish" width="148" height="12" viewBox="0 0 148 12" fill="none" aria-hidden="true" focusable="false">
+                <path d="M2 9 Q 11 2, 20 9 T 38 9 T 56 9 T 74 9 T 92 9 T 110 9 T 128 9 T 146 9"
+                      stroke="#f472b6" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                <circle cx="146" cy="9" r="2.4" fill="#ffe08a"/>
+            </svg>
+            {{if or .Author .Date}}
+            <div class="ob-meta">
+                {{if .Author}}<span><strong>By:</strong> {{.Author}}</span>{{end}}
+                {{if .Date}}<span><strong>Date:</strong> {{.Date}}</span>{{end}}
+            </div>
+            {{end}}
+            <div class="ob-article prose prose-invert prose-lg max-w-none">
+                {{.Content}}
+            </div>
+        </article>
+    </main>
+
+    <footer class="ob-footer">
+        <p class="ob-mascot-line"><span aria-hidden="true">🐙</span> × <span aria-hidden="true">🍔</span> Octoburger — a La Famille theme</p>
+        <p>Built in Go and Jules, with Raoul(s) on burger duty.</p>
+    </footer>
+
+{{if .ComplianceModal}}
+    <input type="checkbox" id="compliance-modal" class="modal-toggle" checked />
+    <div class="modal" role="dialog">
+        <div class="modal-box">
+            <h2 class="font-bold text-lg">Compliance Required</h2>
+            <p class="py-4">{{.ComplianceModal}}</p>
+            <div class="modal-action">
+                <label for="compliance-modal" class="btn btn-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">I Reluctantly Agree</label>
+            </div>
+        </div>
+    </div>
+{{end}}
+<script src="/assets/js/search.js"></script>
+</body>
+</html>

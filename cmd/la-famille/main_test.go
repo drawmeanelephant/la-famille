@@ -485,6 +485,106 @@ func TestInitCommand_FreshProject(t *testing.T) {
 	}
 }
 
+func TestInitCommand_ThemeFlagSelectsBundledLayout(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	cfg := config.DefaultConfig()
+	rootCmd := setupRootCmd(cfg)
+	rootCmd.SetArgs([]string{"init", "--theme", "layout-octoburger"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("expected init --theme to succeed, got: %v", err)
+	}
+
+	configBytes, err := os.ReadFile("config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(configBytes), `template: "templates/layout-octoburger.html"`) {
+		t.Errorf("expected config.yaml template to point at the octoburger layout, got:\n%s", configBytes)
+	}
+
+	for _, rel := range []string{
+		filepath.Join("templates", "layout-octoburger.html"),
+		filepath.Join("templates", "layout-terminal.html"),
+	} {
+		if _, err := os.Stat(rel); os.IsNotExist(err) {
+			t.Errorf("expected bundled layout %s to be installed by init --theme", rel)
+		}
+	}
+}
+
+func TestInitCommand_UnknownThemeListsChoices(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	cfg := config.DefaultConfig()
+	rootCmd := setupRootCmd(cfg)
+	rootCmd.SetArgs([]string{"init", "--theme", "definitely-not-a-theme"})
+
+	err = rootCmd.Execute()
+	if err == nil {
+		t.Fatal("expected unknown theme to fail")
+	}
+	for _, want := range []string{"layout-octoburger", "layout-terminal"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("expected error to list bundled theme %q, got: %v", want, err)
+		}
+	}
+}
+
+func TestInitCommand_PlainInitInstallsBundledThemes(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	cfg := config.DefaultConfig()
+	rootCmd := setupRootCmd(cfg)
+	rootCmd.SetArgs([]string{"init"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("expected plain init to succeed, got: %v", err)
+	}
+
+	configBytes, err := os.ReadFile("config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(configBytes), `template: "templates/layout.html"`) {
+		t.Errorf("plain init must keep the default template in config.yaml, got:\n%s", configBytes)
+	}
+	for _, rel := range []string{
+		filepath.Join("templates", "layout.html"),
+		filepath.Join("templates", "layout-octoburger.html"),
+		filepath.Join("templates", "layout-terminal.html"),
+	} {
+		if _, err := os.Stat(rel); os.IsNotExist(err) {
+			t.Errorf("expected bundled layout %s to be installed by init", rel)
+		}
+	}
+}
+
 func TestInitCommand_ExistingConfigRefusalAndForce(t *testing.T) {
 	tmpDir := t.TempDir()
 	origDir, err := os.Getwd()
