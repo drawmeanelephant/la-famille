@@ -10,6 +10,16 @@ This page is the curated, site-published changelog. **GitHub Releases are the so
 
 > **Convention (hybrid, decided 2026-08-20 for #466):** No per-PR changelog gate. Keep this file tidy and de-duplicated; link to the Release for the full PR list. See `plan.md:15` roadmap and milestone `1. Release Readiness` (`content/meta/roadmap.md:20`).
 
+## 2026-08-25 — v0.1.0-prealpha: the first cut
+
+The first tagged release ([full notes](https://github.com/drawmeanelephant/la-famille/releases/tag/v0.1.0-prealpha)). Intentionally pre-alpha: rough edges are expected, and black-box review findings (#500) drive the next iteration. Because it is the first tag, the generated notes list every merged PR in project history; the highlights below are what the release actually means.
+
+- **Release pipeline:** provenance-verified tags — each archive is built only after CI proves the checked-out commit equals the tag commit (`tag.sh`); six platform targets (linux/darwin/windows × amd64/arm64), `SHA256SUMS`, and a native linux/amd64 offline smoke test run before anything publishes. Semver prerelease suffixes are first-class.
+- **Bundled theme packet (#497):** the binary embeds its themes — default layout, octoburger flagship (Raoul(s) holding the burger while you write), and terminal. `init` installs the packet missing-only so frontmatter switching works without a source checkout.
+- **First-run experience (#498):** `la-famille themes` lists bundled layouts with one-line descriptions, config-free. `init` scaffolds a starter homepage plus a theming demo page that switches layout per-page; README and RELEASE-QUICKSTART document picking/switching on binary-only installs.
+- **Publishing validation (#474/#482/#483):** `publish-check` validates a generated `public/` tree against the output contract; `check` reports a concise summary of broken links, missing metadata, asset health, and orphans.
+- **Site hygiene:** broken showcase hrefs repaired with clean-URL fallback (#488/#487), soundtrack/cat-facts content sunset (2026-08-13).
+
 ## 2026-08-13 — Sunset + ask/build fixes
 
 - **Content:** Sunset the soundtrack albums, cat facts, the genesis retrospective, and the "Godfather of Farts" page. Removed from the live site to keep it aligned with current project reality (history preserved in git).
