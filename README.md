@@ -44,6 +44,26 @@ flags, then `config.yaml`, then the selected project root/current directory.
 `public/` is the complete static publish artifact; the build cache is kept
 beside the project and is never intended for hosting.
 
+### Bundled themes
+
+The release binary ships with a small packet of layouts. `init` installs all
+of them and scaffolds a starter homepage plus a theming demo, so a fresh site
+builds to something real immediately:
+
+```bash
+./la-famille themes                                   # list bundled themes with descriptions
+./la-famille --project-root /path/to/site init --theme layout-octoburger
+./la-famille --project-root /path/to/site build
+```
+
+Switching looks works on a binary-only install, no source checkout required:
+
+*   **Site default:** change the `template:` line in `config.yaml` to another
+    installed layout (for example `templates/layout-terminal.html`), or re-run
+    `init --force --theme <name>` (your config is kept as `config.yaml.bak`).
+*   **Single page:** set `layout:` in the page's frontmatter (see the
+    scaffolded `content/theming.md` for a working example).
+
 ### Prerequisites
 *   **Go Toolchain:** [Go 1.24 or newer](https://go.dev/doc/install) (the project `go.mod` specifies `go 1.24.0` with `toolchain go1.24.3`). Verify your installed version with `go version`.
 *   **Go Installation & Binary Path:** Ensure `go` is in your `PATH`. When installing binaries via Go (e.g. `go install`), binaries are placed in `$(go env GOPATH)/bin` (typically `~/go/bin`). Ensure `$(go env GOPATH)/bin` is added to your shell's `PATH`:

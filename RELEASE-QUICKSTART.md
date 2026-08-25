@@ -6,14 +6,47 @@ without a Go toolchain or source checkout:
 ```bash
 ./la-famille --version --json
 ./la-famille --project-root /path/to/site init
-./la-famille --project-root /path/to/site new index --title Home
+./la-famille --project-root /path/to/site new hello --title Hello
 ./la-famille --project-root /path/to/site build
 ./la-famille --project-root /path/to/site publish-check --output public
 ```
 
+`init` scaffolds a starter homepage (`content/index.md`) plus a theming demo,
+so `build` produces a real site immediately.
+
 Relative paths come from `--project-root`. The generated `public/` directory
 is the complete static artifact; incremental cache state stays beside the
 project root.
+
+## Bundled themes
+
+The binary ships with a small packet of layouts. List them any time, no
+project or config required:
+
+```bash
+./la-famille themes
+```
+
+Pick one as the site default while initializing:
+
+```bash
+./la-famille --project-root /path/to/site init --theme layout-octoburger
+./la-famille --project-root /path/to/site build
+./la-famille --project-root /path/to/site serve
+```
+
+Switch later without a source checkout:
+
+- **Site default:** edit the `template:` line in `config.yaml`
+  (`templates/layout.html`, `templates/layout-octoburger.html`,
+  `templates/layout-terminal.html`), or re-run
+  `init --force --theme <name>`; the previous config is kept as
+  `config.yaml.bak`.
+- **Single page:** set `layout:` in that page's frontmatter — the scaffolded
+  `content/theming.md` is a working example.
+
+Every bundled layout is installed into the project's `templates/` directory by
+`init`, so switching is always a one-line change.
 
 ## Release & changelog convention (decided 2026-08-20, #466)
 
