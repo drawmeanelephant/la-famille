@@ -29,7 +29,9 @@ This project is built and maintained primarily by **Jules** (AI assistant) along
 
 Released archives are self-contained: `--version` works offline from an empty
 directory, and the default layout plus required graph/search assets are
-embedded in the binary. Verify an archive before use, then select a site from
+embedded in the binary. Grab the latest cut from the
+[releases page](https://github.com/drawmeanelephant/la-famille/releases) —
+verify an archive before use, then select a site from
 any working directory:
 
 ```bash
