@@ -42,11 +42,13 @@ A basic layout template looks something like this:
 
 ## Available Layouts
 
-The `templates/` directory contains a library of unique HTML templates featuring different structural layouts and DaisyUI themes. The standard layouts include:
+The `templates/` directory contains a library of unique HTML templates. The default layout is fully local-first: it ships its own CSS token system with five built-in palettes and loads no frameworks or CDN assets.
 
-*   `layout.html` - The default, general-purpose layout.
-*   `layout-centered.html` - A centered, minimalist design.
-*   `layout-cyberpunk.html` - A bold sidebar layout using the DaisyUI 'cyberpunk' theme.
+*   `layout.html` - The default layout. Local-first, framework-free, styled by `assets/css/theme.css` tokens.
+*   `layout-editorial.html` - A serif gazette with a centered masthead, hairline rules, and drop caps.
+*   `layout-midnight.html` - A restrained dark theme for technical writing, with monospaced metadata.
+
+The gallery also includes showcase layouts (cyberpunk, devlog, magazine grid, terminal, and more). Most of these are DaisyUI-based demos that pull CSS from a CDN; they live in the repository but are not embedded in release binaries.
 
 *Note: You can easily create your own layouts by adding new `.html` files to the `templates/` directory.*
 

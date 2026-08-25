@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Site.SiteName}}{{.Title}} - {{.Site.SiteName}}{{else}}{{.Title}}{{end}}</title>
+    <meta name="description" content="{{.Description}}">
+    <meta property="og:title" content="{{.Title}}">
+    <meta property="og:description" content="{{.Description}}">
+    <meta property="og:image" content="{{.Image}}">
+    <meta property="og:type" content="article">
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
+    <!-- Midnight: local-first, framework-free -->
+    <link rel="stylesheet" href="/assets/css/theme-foundations.css">
+    <link rel="stylesheet" href="/assets/css/layout-midnight.css">
+</head>
+<body>
+    <a href="#main-content" class="mn-skip">Skip to content</a>
+
+    <header class="mn-header">
+        <nav aria-label="Main navigation" class="mn-nav">
+            <a class="mn-brand" href="/">{{.Site.SiteName}}</a>
+            {{if .Site.SiteLinks}}
+            <ul class="mn-links">
+                {{range .Site.SiteLinks}}<li><a href="{{.URL}}">{{.Label}}</a></li>{{end}}
+            </ul>
+            {{end}}
+        </nav>
+    </header>
+
+    <main id="main-content" class="mn-main">
+        <article class="mn-article">
+            {{if or .Date .Author}}
+            <p class="mn-kicker">
+                {{if .Date}}<time>{{.Date}}</time>{{end}}{{if and .Date .Author}} // {{end}}{{if .Author}}{{.Author}}{{end}}
+            </p>
+            {{end}}
+            <h1 class="mn-title">{{.Title}}</h1>
+
+            <div class="mn-prose">
+                {{.Content}}
+            </div>
+        </article>
+    </main>
+
+    <footer class="mn-footer">
+        <p>La Famille &mdash; static sites in pure Go.</p>
+    </footer>
+</body>
+</html>

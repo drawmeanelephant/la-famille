@@ -84,6 +84,7 @@ func DefaultAssetFiles() (map[string][]byte, error) {
 		"graph/explorer.css",
 		"graph/explorer.js",
 		"css/theme-foundations.css",
+		"css/theme.css",
 		"css/search.css",
 		"js/search.js",
 		"img/mascot-default.jpeg",

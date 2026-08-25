@@ -20,3 +20,7 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 - Elegant layout
 
 > "Design is not just what it looks like and feels like. Design is how it works."
+
+Standalone images become figures with captions automatically:
+
+![The family mascot](/assets/img/mascot-electric-blue.jpeg "The electric-blue variant of our mascot")

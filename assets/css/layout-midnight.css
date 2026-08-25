@@ -1,0 +1,218 @@
+/* Midnight — a restrained dark theme for technical writing.
+ * Local-first: system fonts, flat surfaces, hairline borders. No glass, no
+ * glow, no frameworks.
+ */
+
+:root {
+  color-scheme: dark;
+
+  --mn-bg: #101317;
+  --mn-surface: #161a20;
+  --mn-raised: #1d232b;
+  --mn-text: #d7dde5;
+  --mn-bright: #f2f5f9;
+  --mn-muted: #8b95a1;
+  --mn-accent: #8fb4d9;
+  --mn-accent-strong: #b3d0ea;
+  --mn-border: #262c35;
+  --mn-border-strong: #39424e;
+  --mn-measure: 70ch;
+
+  --mn-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --mn-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--mn-bg);
+  color: var(--mn-text);
+  font-family: var(--mn-sans);
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+
+::selection {
+  background: #2c3e50;
+  color: var(--mn-bright);
+}
+
+.mn-skip {
+  position: absolute;
+  left: -999px;
+}
+.mn-skip:focus {
+  left: 0;
+  z-index: 10;
+  padding: 0.6rem 1rem;
+  background: var(--mn-accent);
+  color: var(--mn-bg);
+}
+
+/* --------------------------------------------------------------- header */
+
+.mn-header {
+  border-bottom: 1px solid var(--mn-border);
+  background: var(--mn-surface);
+}
+
+.mn-nav {
+  max-width: calc(var(--mn-measure) + 3rem);
+  margin: 0 auto;
+  padding: 0.9rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.mn-brand {
+  font-family: var(--mn-mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: var(--mn-bright);
+  text-decoration: none;
+}
+
+.mn-brand::before {
+  content: "~/";
+  color: var(--mn-accent);
+}
+
+.mn-links {
+  list-style: none;
+  display: flex;
+  gap: 1.1rem;
+  margin: 0 0 0 auto;
+  padding: 0;
+  font-family: var(--mn-mono);
+  font-size: 0.85rem;
+}
+
+.mn-links a {
+  color: var(--mn-muted);
+  text-decoration: none;
+}
+
+.mn-links a:hover {
+  color: var(--mn-accent-strong);
+}
+
+/* -------------------------------------------------------------- article */
+
+.mn-main {
+  max-width: calc(var(--mn-measure) + 3rem);
+  margin: 0 auto;
+  padding: 2.75rem 1.5rem 4rem;
+}
+
+.mn-article {
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-top: 2px solid var(--mn-accent);
+  border-radius: 8px;
+  padding: clamp(1.5rem, 4vw, 2.75rem);
+}
+
+.mn-kicker {
+  margin: 0 0 0.75rem;
+  font-family: var(--mn-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mn-muted);
+}
+
+.mn-title {
+  margin: 0 0 1.75rem;
+  font-size: clamp(1.7rem, 4.5vw, 2.3rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--mn-bright);
+}
+
+/* ---------------------------------------------------------------- prose */
+
+.mn-prose h2 {
+  margin: 2.1rem 0 0.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--mn-border);
+  font-size: 1.35rem;
+  color: var(--mn-bright);
+}
+
+.mn-prose h3 {
+  margin: 1.6rem 0 0.55rem;
+  font-size: 1.12rem;
+  color: var(--mn-bright);
+}
+
+.mn-prose a {
+  color: var(--mn-accent-strong);
+  text-decoration-color: var(--mn-accent);
+}
+
+.mn-prose blockquote {
+  margin: 1.4rem 0;
+  padding: 0.25rem 0 0.25rem 1.1rem;
+  border-left: 2px solid var(--mn-accent);
+  color: var(--mn-muted);
+}
+
+.mn-prose pre {
+  background: var(--mn-bg);
+  border: 1px solid var(--mn-border);
+  border-radius: 6px;
+  padding: 1rem 1.15rem;
+  font-size: 0.86em;
+  line-height: 1.6;
+}
+
+.mn-prose :not(pre) > code {
+  font-family: var(--mn-mono);
+  font-size: 0.84em;
+  padding: 0.14em 0.38em;
+  background: var(--mn-raised);
+  border-radius: 4px;
+}
+
+.mn-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem;
+}
+
+.mn-prose th,
+.mn-prose td {
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--mn-border);
+  text-align: left;
+}
+
+.mn-prose th {
+  font-family: var(--mn-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mn-muted);
+}
+
+figure.lf-figure figcaption {
+  color: var(--mn-muted);
+  font-family: var(--mn-mono);
+  font-size: 0.78rem;
+}
+
+/* --------------------------------------------------------------- footer */
+
+.mn-footer {
+  border-top: 1px solid var(--mn-border);
+  color: var(--mn-muted);
+  font-family: var(--mn-mono);
+  font-size: 0.8rem;
+}
+
+.mn-footer p {
+  max-width: calc(var(--mn-measure) + 3rem);
+  margin: 0 auto;
+  padding: 1.4rem 1.5rem;
+}

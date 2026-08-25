@@ -8,5 +8,5 @@ import "embed"
 // FS contains fallback assets. Explicit files in a project asset directory
 // always take precedence over these bytes.
 //
-//go:embed graph/explorer.css graph/explorer.js css/theme-foundations.css css/search.css js/search.js img/mascot-default.jpeg
+//go:embed graph/explorer.css graph/explorer.js css/theme-foundations.css css/theme.css css/search.css js/search.js img/mascot-default.jpeg
 var FS embed.FS

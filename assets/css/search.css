@@ -1,7 +1,52 @@
-/* search dropdown overrides */
+/* Local-first search widget. Uses theme tokens when the default layout
+ * provides them and falls back to neutral values everywhere else, so legacy
+ * layouts keep a usable search box without any framework CSS. */
+
+.lf-search {
+  position: relative;
+  width: min(16rem, 100%);
+  margin-left: auto;
+}
+
+.lf-search form {
+  display: flex;
+  margin: 0;
+}
+
+#site-search,
+.lf-search-input {
+  width: 100%;
+  padding: 0.45rem 0.8rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--lf-text, inherit);
+  background: var(--lf-surface-2, rgba(127, 127, 127, 0.08));
+  border: 1px solid var(--lf-border, rgba(127, 127, 127, 0.35));
+  border-radius: var(--lf-radius, 6px);
+}
+
+#site-search::placeholder {
+  color: var(--lf-muted, rgba(127, 127, 127, 0.9));
+}
+
 #search-results-list {
+  position: absolute;
+  z-index: 50;
+  left: 0;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  max-height: 17rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: var(--lf-surface, #fff);
+  color: var(--lf-text, #222);
+  border: 1px solid var(--lf-border-strong, rgba(127, 127, 127, 0.5));
+  border-radius: var(--lf-radius, 6px);
+  box-shadow: var(--lf-shadow, 0 10px 30px -12px rgba(0, 0, 0, 0.35));
   scrollbar-width: thin;
-  scrollbar-color: var(--fallback-bc,oklch(var(--bc)/0.3)) transparent;
+  scrollbar-color: var(--lf-border, rgba(127, 127, 127, 0.4)) transparent;
 }
 
 #search-results-list::-webkit-scrollbar {
@@ -9,6 +54,68 @@
 }
 
 #search-results-list::-webkit-scrollbar-thumb {
-  background-color: var(--fallback-bc,oklch(var(--bc)/0.3));
+  background-color: var(--lf-border, rgba(127, 127, 127, 0.4));
   border-radius: 4px;
+}
+
+.search-no-results {
+  padding: 0.5rem 0.75rem;
+  color: var(--lf-muted, rgba(127, 127, 127, 0.9));
+  font-size: 0.85rem;
+}
+
+.search-result-link {
+  display: block;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--lf-border, rgba(127, 127, 127, 0.25));
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.875rem;
+}
+
+.search-result-link:last-child {
+  border-bottom: 0;
+}
+
+.search-result-link:hover,
+.search-result-link:focus-visible {
+  background: var(--lf-surface-2, rgba(127, 127, 127, 0.12));
+  outline: none;
+}
+
+.search-result-title {
+  font-weight: 600;
+}
+
+.search-result-section {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--lf-accent-strong, inherit);
+}
+
+.search-result-snippet {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--lf-muted, rgba(127, 127, 127, 0.95));
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.search-result-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.search-result-tag {
+  font-size: 0.65rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--lf-border, rgba(127, 127, 127, 0.35));
+  border-radius: 999px;
+  color: var(--lf-muted, inherit);
 }
