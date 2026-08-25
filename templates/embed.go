@@ -10,5 +10,5 @@ import "embed"
 // FS contains the default layout, the curated release themes, and the
 // partials required by them.
 //
-//go:embed layout.html layout-octoburger.html layout-terminal.html partials/search_modal.html
+//go:embed layout.html layout-octoburger.html layout-terminal.html layout-editorial.html layout-midnight.html partials/search_modal.html
 var FS embed.FS

@@ -479,7 +479,7 @@ func TestInitCommand_FreshProject(t *testing.T) {
 	if info, err := os.Stat(assetDir); os.IsNotExist(err) || !info.IsDir() {
 		t.Errorf("expected assets directory to be created by init")
 	}
-	for _, rel := range []string{"css/search.css", "css/theme-foundations.css", "js/search.js", "graph/explorer.css", "graph/explorer.js", "img/mascot-default.jpeg"} {
+	for _, rel := range []string{"css/search.css", "css/theme-foundations.css", "css/theme.css", "css/layout-editorial.css", "css/layout-midnight.css", "js/search.js", "graph/explorer.css", "graph/explorer.js", "img/mascot-default.jpeg"} {
 		if _, err := os.Stat(filepath.Join(assetDir, filepath.FromSlash(rel))); err != nil {
 			t.Errorf("expected embedded asset %s to be created by init: %v", rel, err)
 		}

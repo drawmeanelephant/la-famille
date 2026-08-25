@@ -12,7 +12,7 @@ func TestCuratedLayoutsPacket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"layout", "layout-octoburger", "layout-terminal"} {
+	for _, name := range []string{"layout", "layout-octoburger", "layout-terminal", "layout-editorial", "layout-midnight"} {
 		data, ok := layouts[name]
 		if !ok {
 			t.Errorf("curated packet missing %q", name)
@@ -72,7 +72,7 @@ func TestEmbeddedDefaultsAreAvailable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"graph/explorer.css", "graph/explorer.js", "css/theme-foundations.css", "css/search.css", "js/search.js", "img/mascot-default.jpeg"} {
+	for _, name := range []string{"graph/explorer.css", "graph/explorer.js", "css/theme-foundations.css", "css/theme.css", "css/layout-editorial.css", "css/layout-midnight.css", "css/search.css", "js/search.js", "img/mascot-default.jpeg"} {
 		if len(assets[name]) == 0 {
 			t.Errorf("embedded asset %q is empty", name)
 		}

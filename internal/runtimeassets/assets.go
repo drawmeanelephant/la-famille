@@ -29,10 +29,14 @@ type CuratedTheme struct {
 // curatedThemes is the release theme packet in display order. Octoburger is
 // the flagship: the octoburger TUI identity translated to a site layout.
 // Terminal rounds out the packet with an existing self-contained look.
+// Editorial and midnight are fully framework-free: system font stacks, no
+// CDN requests at all.
 var curatedThemes = []CuratedTheme{
 	{Name: "layout", Description: "the default La Famille look: clean, fast, content-first"},
 	{Name: "layout-octoburger", Description: "flagship soul theme; Raoul(s) the octopus holds the burger while you write"},
 	{Name: "layout-terminal", Description: "retro terminal console with a synthwave glow, self-contained"},
+	{Name: "layout-editorial", Description: "serif gazette with masthead and drop caps, framework-free and offline"},
+	{Name: "layout-midnight", Description: "restrained dark theme for technical writing, framework-free and offline"},
 }
 
 // CuratedLayoutNames lists the layouts shipped in the release theme packet.
@@ -85,6 +89,8 @@ func DefaultAssetFiles() (map[string][]byte, error) {
 		"graph/explorer.js",
 		"css/theme-foundations.css",
 		"css/theme.css",
+		"css/layout-editorial.css",
+		"css/layout-midnight.css",
 		"css/search.css",
 		"js/search.js",
 		"img/mascot-default.jpeg",
