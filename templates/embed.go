@@ -7,7 +7,8 @@ package templateassets
 
 import "embed"
 
-// FS contains the default layout and the partials required by it.
+// FS contains the default layout, the curated release themes, and the
+// partials required by them.
 //
-//go:embed layout.html partials/search_modal.html
+//go:embed layout.html layout-octoburger.html layout-terminal.html partials/search_modal.html
 var FS embed.FS

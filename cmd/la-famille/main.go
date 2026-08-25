@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -137,6 +138,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	buildCmd.Flags().StringVar(&siteURL, "siteurl", cfg.SiteURL, "Public base URL of the site (alias for --site-url)")
 
 	var initForce bool
+	var initTheme string
 	var initCmd = &cobra.Command{
 		Use:   "init",
 		Short: "Initialize default configuration",
@@ -160,7 +162,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			// defaults and reported success, losing siteurl, output_dir and
 			// every other setting the operator had chosen. Overwriting is now
 			// something you ask for.
-			if err := writeInitialConfig(configFile, initForce); err != nil {
+			if err := writeInitialConfig(configFile, initForce, initTheme); err != nil {
 				return err
 			}
 
@@ -175,19 +177,28 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 
 			tmplPath := initCfg.Template
 			if _, err := os.Stat(tmplPath); os.IsNotExist(err) {
-				defaultTmplContent, readErr := runtimeassets.DefaultTemplate()
-				if readErr != nil {
+				if _, readErr := runtimeassets.DefaultTemplate(); readErr != nil {
 					return fmt.Errorf("read embedded default template: %w", readErr)
 				}
 				if err := os.MkdirAll(filepath.Dir(tmplPath), 0755); err != nil {
 					return fmt.Errorf("failed to create template directory: %w", err)
 				}
-				if err := os.WriteFile(tmplPath, defaultTmplContent, 0600); err != nil {
-					return fmt.Errorf("failed to write default template: %w", err)
-				}
 				slog.Info("Created default template", "path", tmplPath)
 			} else if err != nil {
 				return fmt.Errorf("inspect default template %s: %w", tmplPath, err)
+			}
+			// The whole bundled packet is installed missing-only so frontmatter
+			// `layout:` switching works across themes without a source checkout.
+			bundled, err := runtimeassets.CuratedLayouts()
+			if err != nil {
+				return fmt.Errorf("read embedded bundled layouts: %w", err)
+			}
+			bundledFiles := make(map[string][]byte, len(bundled))
+			for name, data := range bundled {
+				bundledFiles[name+".html"] = data
+			}
+			if err := runtimeassets.InstallMissing(filepath.Dir(tmplPath), bundledFiles, 0600); err != nil {
+				return fmt.Errorf("install bundled layouts: %w", err)
 			}
 			partials, err := runtimeassets.DefaultPartials()
 			if err != nil {
@@ -336,6 +347,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	serveCmd.Flags().BoolVarP(&watchMode, "watch", "w", false, "Watch for file changes and auto-rebuild")
 
 	initCmd.Flags().BoolVarP(&initForce, "force", "f", false, "Replace an existing config.yaml, keeping the current one as config.yaml.bak")
+	initCmd.Flags().StringVar(&initTheme, "theme", "", fmt.Sprintf("Bundled theme to set as the site default (one of: %s)", strings.Join(runtimeassets.CuratedLayoutNames, ", ")))
 
 	rootCmd.AddCommand(buildCmd)
 	rootCmd.AddCommand(initCmd)
@@ -481,7 +493,14 @@ const initConfigBackup = "config.yaml.bak"
 // The recovery path stays open: a config.yaml too broken to parse is repaired
 // with `init --force`, which keeps the old file as config.yaml.bak so even a
 // broken one can still be read back by hand.
-func writeInitialConfig(path string, force bool) error {
+func writeInitialConfig(path string, force bool, theme string) error {
+	layoutPath := ""
+	if theme != "" && !isBundledTheme(theme) {
+		return fmt.Errorf("unknown theme %q; available themes: %s", theme, strings.Join(runtimeassets.CuratedLayoutNames, ", "))
+	}
+	if theme != "" {
+		layoutPath = "templates/" + theme + ".html"
+	}
 	backupPath := filepath.Join(filepath.Dir(path), initConfigBackup)
 	_, statErr := os.Stat(path)
 	switch {
@@ -500,8 +519,24 @@ func writeInitialConfig(path string, force bool) error {
 		return fmt.Errorf("failed to inspect %s: %w", path, statErr)
 	}
 
-	if err := config.WriteDefault(path); err != nil {
+	if layoutPath == "" {
+		if err := config.WriteDefault(path); err != nil {
+			return fmt.Errorf("failed to write %s: %w", path, err)
+		}
+		return nil
+	}
+	if err := config.WriteDefaultWithLayout(path, layoutPath); err != nil {
 		return fmt.Errorf("failed to write %s: %w", path, err)
 	}
 	return nil
+}
+
+// isBundledTheme reports whether name is one of the release packet layouts.
+func isBundledTheme(name string) bool {
+	for _, candidate := range runtimeassets.CuratedLayoutNames {
+		if candidate == name {
+			return true
+		}
+	}
+	return false
 }
