@@ -124,7 +124,7 @@ func scaffoldDemoContent(dir string, demos map[string][]byte) ([]string, error) 
 // writeFileNew creates the file exclusively so a file appearing between the
 // existence check above and this write is never clobbered.
 func writeFileNew(target string, data []byte) error {
-	file, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	file, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return fmt.Errorf("create %s: %w", target, err)
 	}

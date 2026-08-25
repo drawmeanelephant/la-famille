@@ -647,7 +647,7 @@ func TestInitCommand_ScaffoldsDemoContent(t *testing.T) {
 	}
 
 	// Re-running init over the scaffolded site must not clobber it.
-	if err := os.WriteFile(filepath.Join("content", "index.md"), []byte("---\ntitle: \"Mine\"\n---\n\n# Mine\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join("content", "index.md"), []byte("---\ntitle: \"Mine\"\n---\n\n# Mine\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	reRun := setupRootCmd(cfg)

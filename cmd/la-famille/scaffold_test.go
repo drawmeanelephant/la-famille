@@ -68,7 +68,7 @@ func TestScaffoldDemoContentCreatesAndPreserves(t *testing.T) {
 	}
 
 	// An operator edit must survive a re-run of init.
-	if err := os.WriteFile(filepath.Join(dir, "index.md"), []byte("my own words"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "index.md"), []byte("my own words"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	created, err = scaffoldDemoContent(dir, demos)
