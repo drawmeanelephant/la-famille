@@ -17,9 +17,9 @@ set -euo pipefail
 #   RELEASE_TAG    - canonical tag, e.g. v1.2.3
 #   RELEASE_COMMIT - verified commit SHA referenced by that tag.
 
-# canonical_release_tag normalizes INPUT (v1.2.3 or 1.2.3) to the repository's
-# v-prefixed tag form. Prints the canonical tag; exits non-zero on empty or
-# non-semver input.
+# canonical_release_tag normalizes INPUT (v1.2.3, 1.2.3, or a semver
+# prerelease such as v0.1.0-prealpha) to the repository's v-prefixed tag form.
+# Prints the canonical tag; exits non-zero on empty or non-semver input.
 canonical_release_tag() {
 	local raw="${1:?release tag input is required}"
 	local tag
@@ -27,8 +27,8 @@ canonical_release_tag() {
 		v*) tag="$raw" ;;
 		*) tag="v$raw" ;;
 	esac
-	if [[ ! "$tag" =~ ^v[0-9]+(\.[0-9]+){2}$ ]]; then
-		printf 'invalid release tag %q: expected vX.Y.Z or X.Y.Z\n' "$raw" >&2
+	if [[ ! "$tag" =~ ^v[0-9]+(\.[0-9]+){2}(-[0-9A-Za-z.-]+)?$ ]]; then
+		printf 'invalid release tag %q: expected vX.Y.Z, X.Y.Z, or a semver prerelease like vX.Y.Z-suffix\n' "$raw" >&2
 		return 1
 	fi
 	printf '%s\n' "$tag"

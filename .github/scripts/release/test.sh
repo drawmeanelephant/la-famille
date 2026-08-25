@@ -35,6 +35,7 @@ make_repo() {
 		git commit -q -m "tagged commit"
 		echo "TAGGED_COMMIT=$(git rev-parse HEAD)"
 		git tag -m "v1.2.3" v1.2.3
+		git tag -m "v0.1.0-prealpha" v0.1.0-prealpha
 		printf 'after tag\n' > tip.txt
 		git add tip.txt
 		git commit -q -m "tip after tag"
@@ -72,14 +73,15 @@ expect_tag_push() {
 # embedded commit equals the checked-out (tag) commit, not the dispatch HEAD.
 expect_manual() {
 	local raw="$1"
+	local want="${2:-v1.2.3}"
 	local out tag commit
 	out="$(run_tag "$raw")"
 	tag="$(printf '%s\n' "$out" | sed -n 's/^RELEASE_TAG=//p')"
 	commit="$(printf '%s\n' "$out" | sed -n 's/^RELEASE_COMMIT=//p')"
 	local current tag_commit
 	current="$(git -C "$TEST_ROOT/repo" rev-parse HEAD)"
-	tag_commit="$(git -C "$TEST_ROOT/repo" rev-parse "refs/tags/v1.2.3^{commit}")"
-	[[ "$tag" == "v1.2.3" ]] || fail "manual %s: got RELEASE_TAG=%s" "$raw" "$tag"
+	tag_commit="$(git -C "$TEST_ROOT/repo" rev-parse "refs/tags/$want^{commit}")"
+	[[ "$tag" == "$want" ]] || fail "manual %s: got RELEASE_TAG=%s" "$raw" "$tag"
 	[[ "$commit" == "$tag_commit" ]] || fail "manual %s: got RELEASE_COMMIT=%s want %s" "$raw" "$commit" "$tag_commit"
 	[[ "$current" == "$tag_commit" ]] || fail "manual %s: HEAD is %s, want tag commit %s" "$raw" "$current" "$tag_commit"
 	note "manual input $raw resolves to $tag and embeds the verified commit"
@@ -98,8 +100,13 @@ make_repo
 expect_tag_push
 expect_manual "v1.2.3"
 expect_manual "1.2.3"
+# Semver prerelease tags are first-class: the pre-alpha cut depends on them.
+expect_manual "v0.1.0-prealpha" "v0.1.0-prealpha"
+expect_manual "0.1.0-prealpha" "v0.1.0-prealpha"
 expect_fail "v9.9.9"
 expect_fail "9.9.9"
+expect_fail "v0.1.0-"
+expect_fail "v0.1.0prealpha"
 
 # The checkout line backstop: if a build ran from a commit that does not match
 # the tag it must be rejected even when the resolution wrapper is not used.
