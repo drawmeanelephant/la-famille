@@ -19,10 +19,38 @@ func DefaultTemplate() ([]byte, error) {
 	return fs.ReadFile(templateassets.FS, "layout.html")
 }
 
+// CuratedTheme pairs a bundled layout name with the one-line description
+// shown by the `themes` command and the unknown-theme error.
+type CuratedTheme struct {
+	Name        string
+	Description string
+}
+
+// curatedThemes is the release theme packet in display order. Octoburger is
+// the flagship: the octoburger TUI identity translated to a site layout.
+// Terminal rounds out the packet with an existing self-contained look.
+var curatedThemes = []CuratedTheme{
+	{Name: "layout", Description: "the default La Famille look: clean, fast, content-first"},
+	{Name: "layout-octoburger", Description: "flagship soul theme; Raoul(s) the octopus holds the burger while you write"},
+	{Name: "layout-terminal", Description: "retro terminal console with a synthwave glow, self-contained"},
+}
+
 // CuratedLayoutNames lists the layouts shipped in the release theme packet.
-// Octoburger is the flagship: the octoburger TUI identity translated to a site
-// layout. Terminal rounds out the packet with an existing self-contained look.
-var CuratedLayoutNames = []string{"layout", "layout-octoburger", "layout-terminal"}
+var CuratedLayoutNames = curatedLayoutNames()
+
+func curatedLayoutNames() []string {
+	names := make([]string, 0, len(curatedThemes))
+	for _, theme := range curatedThemes {
+		names = append(names, theme.Name)
+	}
+	return names
+}
+
+// CuratedThemes returns the bundled theme packet with one-line descriptions,
+// ready for user-facing discovery output.
+func CuratedThemes() []CuratedTheme {
+	return append([]CuratedTheme(nil), curatedThemes...)
+}
 
 // CuratedLayouts returns the bundled theme packet keyed by layout name, ready
 // for InstallMissing into a project's templates directory. Names match the

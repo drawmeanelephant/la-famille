@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/generator"
+	"github.com/tbuddy/la-famille/internal/runtimeassets"
 	"github.com/tbuddy/la-famille/internal/stub"
 	"os"
 	"os/exec"
@@ -582,6 +583,84 @@ func TestInitCommand_PlainInitInstallsBundledThemes(t *testing.T) {
 		if _, err := os.Stat(rel); os.IsNotExist(err) {
 			t.Errorf("expected bundled layout %s to be installed by init", rel)
 		}
+	}
+}
+
+func TestThemesCommandListsCuratedThemes(t *testing.T) {
+	cfg := config.DefaultConfig()
+	rootCmd := setupRootCmd(cfg)
+	var out strings.Builder
+	rootCmd.SetOut(&out)
+	rootCmd.SetArgs([]string{"themes"})
+
+	// themes must stay runnable without a site config: discovery is exactly
+	// what a binary-only operator needs before any project exists.
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("expected themes to succeed, got: %v", err)
+	}
+	for _, theme := range runtimeassets.CuratedLayoutNames {
+		if !strings.Contains(out.String(), theme) {
+			t.Errorf("expected themes output to list %q, got:\n%s", theme, out.String())
+		}
+	}
+	if !strings.Contains(out.String(), "flagship") {
+		t.Errorf("expected themes output to include descriptions, got:\n%s", out.String())
+	}
+}
+
+func TestInitCommand_ScaffoldsDemoContent(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	cfg := config.DefaultConfig()
+	rootCmd := setupRootCmd(cfg)
+	rootCmd.SetArgs([]string{"init", "--theme", "layout-octoburger"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("expected init to succeed, got: %v", err)
+	}
+
+	indexBytes, err := os.ReadFile(filepath.Join("content", "index.md"))
+	if err != nil {
+		t.Fatalf("expected init to scaffold content/index.md: %v", err)
+	}
+	for _, want := range []string{"title:", "date:", "la-famille new", "la-famille serve --watch"} {
+		if !strings.Contains(string(indexBytes), want) {
+			t.Errorf("scaffolded index.md missing %q, got:\n%s", want, indexBytes)
+		}
+	}
+
+	themingBytes, err := os.ReadFile(filepath.Join("content", "theming.md"))
+	if err != nil {
+		t.Fatalf("expected init to scaffold content/theming.md: %v", err)
+	}
+	// The demo must visibly switch away from the chosen site default.
+	if !strings.Contains(string(themingBytes), "\nlayout: ") || strings.Contains(string(themingBytes), "layout: layout-octoburger") {
+		t.Errorf("scaffolded theming.md should pin a non-default bundled layout, got:\n%s", themingBytes)
+	}
+
+	// Re-running init over the scaffolded site must not clobber it.
+	if err := os.WriteFile(filepath.Join("content", "index.md"), []byte("---\ntitle: \"Mine\"\n---\n\n# Mine\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	reRun := setupRootCmd(cfg)
+	reRun.SetArgs([]string{"init", "--force"})
+	if err := reRun.Execute(); err != nil {
+		t.Fatalf("expected re-run init --force to succeed, got: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join("content", "index.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "# Mine") {
+		t.Errorf("re-run of init replaced operator content index.md, got:\n%s", got)
 	}
 }
 

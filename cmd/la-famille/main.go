@@ -229,6 +229,17 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 				return fmt.Errorf("install default assets: %w", err)
 			}
 
+			// Starter pages are missing-only: a re-run or an init over an
+			// existing site must never touch content the operator wrote.
+			demos := demoContentFiles(initTheme, time.Now())
+			created, err := scaffoldDemoContent(cDir, demos)
+			if err != nil {
+				return err
+			}
+			if len(created) > 0 {
+				slog.Info("Scaffolded demo content", "files", strings.Join(created, ", "))
+			}
+
 			return nil
 		},
 	}
@@ -347,10 +358,23 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	serveCmd.Flags().BoolVarP(&watchMode, "watch", "w", false, "Watch for file changes and auto-rebuild")
 
 	initCmd.Flags().BoolVarP(&initForce, "force", "f", false, "Replace an existing config.yaml, keeping the current one as config.yaml.bak")
-	initCmd.Flags().StringVar(&initTheme, "theme", "", fmt.Sprintf("Bundled theme to set as the site default (one of: %s)", strings.Join(runtimeassets.CuratedLayoutNames, ", ")))
+	initCmd.Flags().StringVar(&initTheme, "theme", "", fmt.Sprintf("Bundled theme to set as the site default (one of: %s; run 'la-famille themes' for descriptions)", strings.Join(runtimeassets.CuratedLayoutNames, ", ")))
+
+	themesCmd := &cobra.Command{
+		Use:   "themes",
+		Short: "List the bundled themes with one-line descriptions",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			out := cmd.OutOrStdout()
+			for _, theme := range runtimeassets.CuratedThemes() {
+				fmt.Fprintf(out, "%s\t%s\n", theme.Name, theme.Description)
+			}
+			return nil
+		},
+	}
 
 	rootCmd.AddCommand(buildCmd)
 	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(themesCmd)
 	rootCmd.AddCommand(ragCmd)
 	rootCmd.AddCommand(prCmd)
 	rootCmd.AddCommand(tuiCmd)
@@ -376,6 +400,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 var configIndependentCommands = map[string]bool{
 	"init":             true,
 	"pr":               true,
+	"themes":           true,
 	"help":             true,
 	"completion":       true,
 	"__complete":       true,
@@ -496,7 +521,7 @@ const initConfigBackup = "config.yaml.bak"
 func writeInitialConfig(path string, force bool, theme string) error {
 	layoutPath := ""
 	if theme != "" && !isBundledTheme(theme) {
-		return fmt.Errorf("unknown theme %q; available themes: %s", theme, strings.Join(runtimeassets.CuratedLayoutNames, ", "))
+		return fmt.Errorf("unknown theme %q; available themes:\n%s", theme, formatThemeChoices())
 	}
 	if theme != "" {
 		layoutPath = "templates/" + theme + ".html"

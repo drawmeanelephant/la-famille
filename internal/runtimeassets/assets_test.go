@@ -35,6 +35,24 @@ func TestCuratedLayoutsPacket(t *testing.T) {
 	}
 }
 
+func TestCuratedThemesMatchPacket(t *testing.T) {
+	themes := CuratedThemes()
+	if len(themes) == 0 {
+		t.Fatal("CuratedThemes returned no entries")
+	}
+	if len(CuratedLayoutNames) != len(themes) {
+		t.Fatalf("CuratedLayoutNames has %d entries but CuratedThemes has %d", len(CuratedLayoutNames), len(themes))
+	}
+	for i, theme := range themes {
+		if theme.Name != CuratedLayoutNames[i] {
+			t.Errorf("theme %d is %q but CuratedLayoutNames[%d] is %q", i, theme.Name, i, CuratedLayoutNames[i])
+		}
+		if strings.TrimSpace(theme.Description) == "" {
+			t.Errorf("bundled theme %q has an empty description", theme.Name)
+		}
+	}
+}
+
 func TestEmbeddedDefaultsAreAvailable(t *testing.T) {
 	template, err := DefaultTemplate()
 	if err != nil {

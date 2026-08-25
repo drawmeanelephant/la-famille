@@ -90,7 +90,9 @@ func TestInitAndBuildFromExplicitProjectRootOutsideProject(t *testing.T) {
 	}
 
 	root = setupRootCmd(cfg)
-	root.SetArgs([]string{"new", "index", "--title", "Home", "--date", "2026-08-01"})
+	// init scaffolds content/index.md, so the first authored post gets its
+	// own slug rather than colliding with the scaffolded homepage.
+	root.SetArgs([]string{"new", "hello", "--title", "Hello", "--date", "2026-08-01"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("new from outside project: %v", err)
 	}
