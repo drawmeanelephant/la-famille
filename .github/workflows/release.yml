@@ -119,7 +119,11 @@ jobs:
               exit 1
             fi
             "$STAGE/$BIN" --project-root "$SMOKE_ROOT" init
-            "$STAGE/$BIN" --project-root "$SMOKE_ROOT" new index --title "Release Smoke" --date 2026-08-01
+            # init scaffolds content/index.md, so the authored post gets its
+            # own slug instead of colliding with the scaffolded homepage.
+            "$STAGE/$BIN" --project-root "$SMOKE_ROOT" new hello --title "Release Smoke" --date 2026-08-01
+            test -f "$SMOKE_ROOT/content/index.md"
+            grep -q "layout:" "$SMOKE_ROOT/content/theming.md"
             "$STAGE/$BIN" --project-root "$SMOKE_ROOT" check
             "$STAGE/$BIN" --project-root "$SMOKE_ROOT" build
             "$STAGE/$BIN" --project-root "$SMOKE_ROOT" publish-check --output public --json
