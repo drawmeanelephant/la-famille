@@ -175,7 +175,10 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 				return fmt.Errorf("resolve default project paths: %w", err)
 			}
 
-			tmplPath := initCfg.Template
+			// The log names the template the chosen configuration actually
+			// points at: a themed init used to say "Created default template"
+			// while config.yaml referenced the theme layout (#513).
+			tmplPath, themed := initTemplateTarget(initCfg.Template, initTheme)
 			if _, err := os.Stat(tmplPath); os.IsNotExist(err) {
 				if _, readErr := runtimeassets.DefaultTemplate(); readErr != nil {
 					return fmt.Errorf("read embedded default template: %w", readErr)
@@ -183,7 +186,11 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 				if err := os.MkdirAll(filepath.Dir(tmplPath), 0755); err != nil {
 					return fmt.Errorf("failed to create template directory: %w", err)
 				}
-				slog.Info("Created default template", "path", tmplPath)
+				if themed {
+					slog.Info("Created template", "theme", initTheme, "path", tmplPath)
+				} else {
+					slog.Info("Created default template", "path", tmplPath)
+				}
 			} else if err != nil {
 				return fmt.Errorf("inspect default template %s: %w", tmplPath, err)
 			}
@@ -499,6 +506,16 @@ func main() {
 		slog.Error("Application error", "error", err)
 		os.Exit(1)
 	}
+}
+
+// initTemplateTarget resolves which installed layout file the selected theme
+// points at and whether that theme was explicitly named. A themed init must
+// report its own template rather than the default one (#513).
+func initTemplateTarget(defaultTemplate, theme string) (path string, themed bool) {
+	if theme == "" {
+		return defaultTemplate, false
+	}
+	return filepath.Join(filepath.Dir(defaultTemplate), theme+".html"), true
 }
 
 // initConfigBackup is where `init --force` moves an existing config.yaml. The

@@ -221,9 +221,12 @@ Missing description should warn.
 	}
 
 	outStr := outBuf.String()
-	// Warnings only => ✓ symbol, 0 errors
-	if !strings.Contains(outStr, "✓ 0 errors") {
-		t.Errorf("expected warnings-only footer to start with '✓ 0 errors', got: %s", outStr)
+	// Warnings with no errors => ⚠ symbol (#512); ✓ is reserved for a clean run.
+	if !strings.Contains(outStr, "⚠ 0 errors") {
+		t.Errorf("expected warnings-only footer to start with '⚠ 0 errors', got: %s", outStr)
+	}
+	if strings.Contains(outStr, "✓ 0 errors") {
+		t.Errorf("warnings-only footer must not use the clean-run ✓ symbol, got: %s", outStr)
 	}
 	if !strings.Contains(outStr, "1 orphaned page, 1 missing description, 0 missing dates") {
 		t.Errorf("expected footer with '1 orphaned page, 1 missing description, 0 missing dates', got: %s", outStr)

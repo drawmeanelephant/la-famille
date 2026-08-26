@@ -44,7 +44,10 @@ sha256sum --check SHA256SUMS --ignore-missing
 Relative paths are resolved from `--project-root`. Precedence is explicit CLI
 flags, then `config.yaml`, then the selected project root/current directory.
 `public/` is the complete static publish artifact; the build cache is kept
-beside the project and is never intended for hosting.
+beside the project and is never intended for hosting. To publish a binary-only
+site to GitHub Pages, set `siteurl` to the full `<user>.github.io/<repo>` URL
+and upload the contents of `public/` — see RELEASE-QUICKSTART.md for the exact
+steps.
 
 ### Bundled themes
 

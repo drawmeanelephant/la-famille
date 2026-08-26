@@ -4,6 +4,7 @@
 package publisher
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -39,6 +40,21 @@ var coreArtifacts = []string{
 // Manifest is a deterministic list of files in a publish artifact.
 type Manifest struct {
 	Files []string `json:"files"`
+	// Stubs lists generated "Missing Page" placeholder files (#516). They are
+	// reported separately from validation failures: shipping one means an
+	// author typo'd an internal link, which deserves a signal before deploy
+	// but is not a malformed artifact.
+	Stubs []string `json:"stubs,omitempty"`
+}
+
+// ValidationError reports every concrete problem found in an artifact so
+// callers can render structured output instead of parsing prose (#510).
+type ValidationError struct {
+	Problems []string
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("publish artifact validation failed:\n- %s", strings.Join(e.Problems, "\n- "))
 }
 
 var htmlReference = regexp.MustCompile(`(?is)(?:href|src)\s*=\s*["']([^"']+)["']`)
@@ -107,6 +123,9 @@ func Check(outputDir string) (Manifest, error) {
 				problems = append(problems, fmt.Sprintf("read %s: %v", rel, readErr))
 				continue
 			}
+			if isStubPage(data) {
+				manifest.Stubs = append(manifest.Stubs, rel)
+			}
 			for _, match := range htmlReference.FindAllStringSubmatch(string(data), -1) {
 				reference := strings.TrimSpace(match[1])
 				if reference == "" || isExternalReference(reference) {
@@ -144,10 +163,23 @@ func Check(outputDir string) (Manifest, error) {
 		}
 	}
 
+	sort.Strings(manifest.Stubs)
+
 	if len(problems) > 0 {
-		return manifest, fmt.Errorf("publish artifact validation failed:\n- %s", strings.Join(problems, "\n- "))
+		return manifest, &ValidationError{Problems: problems}
 	}
 	return manifest, nil
+}
+
+// stubTitleRe matches the <title> a Missing Page stub is rendered with. The
+// body marker below is written by the stub generator itself, so requiring both
+// keeps ordinary pages that happen to be titled "Missing Page" out of the list.
+var stubTitleRe = regexp.MustCompile(`(?i)<title>\s*Missing Page\b`)
+
+const stubBodyMarker = "Under Construction"
+
+func isStubPage(data []byte) bool {
+	return stubTitleRe.Match(data) && bytes.Contains(data, []byte(stubBodyMarker))
 }
 
 func isExternalReference(reference string) bool {
