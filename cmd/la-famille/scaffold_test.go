@@ -17,6 +17,13 @@ func TestDemoContentFilesSwitchAwayFromDefaultTheme(t *testing.T) {
 	}
 	for _, theme := range []string{"", "layout", "layout-octoburger", "layout-terminal"} {
 		demos := demoContentFiles(theme, time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC))
+		for name, data := range demos {
+			// A scaffold that fails its own first-run hygiene check (#517)
+			// ships warnings to every fresh site: descriptions are required.
+			if !strings.Contains(string(data), "description:") {
+				t.Errorf("theme %q: demo %s is missing a description frontmatter field", theme, name)
+			}
+		}
 		theming, ok := demos["theming.md"]
 		if !ok {
 			t.Fatalf("theme %q: demo packet missing theming.md", theme)

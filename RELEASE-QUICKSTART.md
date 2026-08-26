@@ -4,6 +4,17 @@ Verify the archive with its matching `SHA256SUMS` entry, then run the binary
 without a Go toolchain or source checkout:
 
 ```bash
+# macOS / Linux (sha256sum on most Linux distros, shasum on macOS)
+shasum -a 256 --check SHA256SUMS
+
+# No shasum on PATH? Python 3 works everywhere macOS ships:
+python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" \
+  la-famille_0.1.0-prealpha_darwin_arm64.tar.gz
+```
+
+Compare the printed digest against the matching line in `SHA256SUMS`, then:
+
+```bash
 ./la-famille --version --json
 ./la-famille --project-root /path/to/site init
 ./la-famille --project-root /path/to/site new hello --title Hello
@@ -17,6 +28,31 @@ so `build` produces a real site immediately.
 Relative paths come from `--project-root`. The generated `public/` directory
 is the complete static artifact; incremental cache state stays beside the
 project root.
+
+## Deploying `public/` to GitHub Pages (binary-only install)
+
+`public/` is the only directory you upload. Two settings make or break a
+project pages site (`<user>.github.io/<repo>`):
+
+1. **Set `siteurl` in `config.yaml` to the full site URL including the repo
+   path**, e.g. `https://<user>.github.io/<repo>`. Without the `/repo` suffix,
+   asset and link paths resolve at the domain root and every subresource 404s.
+2. Upload the *contents* of `public/`, not the directory itself, so
+   `index.html` sits at the site root.
+
+Minimal Actions snippet for a binary-only operator:
+
+```yaml
+- name: Deploy public/ to GitHub Pages
+  uses: actions/upload-pages-artifact@v3
+  with:
+    path: public
+# then a deploy step (actions/deploy-pages@v4) — or upload public/ manually
+# under Settings → Pages when you have no CI at all.
+```
+
+Run `publish-check --output public --strict` before uploading; it fails on
+broken internal links and generated "Missing Page" stubs so a typo never ships.
 
 ## Bundled themes
 

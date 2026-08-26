@@ -94,6 +94,7 @@ func DefaultAssetFiles() (map[string][]byte, error) {
 		"css/search.css",
 		"js/search.js",
 		"img/mascot-default.jpeg",
+		"img/jules-logo.png",
 	}
 	files := make(map[string][]byte, len(paths))
 	for _, name := range paths {

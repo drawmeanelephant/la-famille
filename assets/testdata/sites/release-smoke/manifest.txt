@@ -6,6 +6,7 @@ assets/css/theme-foundations.css
 assets/css/theme.css
 assets/graph/explorer.css
 assets/graph/explorer.js
+assets/img/jules-logo.png
 assets/img/mascot-default.jpeg
 assets/js/search.js
 assets/sample-image.png

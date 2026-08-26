@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -177,9 +178,11 @@ func TestNewCommand_CustomContentDirHint(t *testing.T) {
 	}
 
 	outStr := outBuf.String()
-	expectedHint := "la-famille check --content " + customContentDir
+	// A custom --content dir still needs to reach `check`; the hint spells it
+	// CWD-relative when possible (#511).
+	expectedHint := fmt.Sprintf("la-famille check --content %s", displayPathFromCwd(customContentDir))
 	if !strings.Contains(outStr, expectedHint) {
-		t.Errorf("expected stdout to contain check hint with custom content dir %q, got: %s", expectedHint, outStr)
+		t.Errorf("expected stdout to contain check hint %q, got: %s", expectedHint, outStr)
 	}
 }
 

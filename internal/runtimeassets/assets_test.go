@@ -2,7 +2,9 @@ package runtimeassets
 
 import (
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -72,7 +74,7 @@ func TestEmbeddedDefaultsAreAvailable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"graph/explorer.css", "graph/explorer.js", "css/theme-foundations.css", "css/theme.css", "css/layout-editorial.css", "css/layout-midnight.css", "css/search.css", "js/search.js", "img/mascot-default.jpeg"} {
+	for _, name := range []string{"graph/explorer.css", "graph/explorer.js", "css/theme-foundations.css", "css/theme.css", "css/layout-editorial.css", "css/layout-midnight.css", "css/search.css", "js/search.js", "img/mascot-default.jpeg", "img/jules-logo.png"} {
 		if len(assets[name]) == 0 {
 			t.Errorf("embedded asset %q is empty", name)
 		}
@@ -104,5 +106,32 @@ func TestInstallMissingPreservesSiteOverride(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "assets", "css", "search.css")); err != nil {
 		t.Fatalf("missing fallback asset: %v", err)
+	}
+}
+
+// TestCuratedLayoutAssetReferencesResolve is the contract that keeps a fresh
+// init/build/publish-check cycle green: every local /assets/... reference in a
+// bundled layout must be satisfied by the embedded runtime asset packet, since
+// build deploys exactly that packet plus the site's own assets directory.
+// A layout that starts referencing an undeployed asset breaks publish-check
+// for every themed site (#507).
+func TestCuratedLayoutAssetReferencesResolve(t *testing.T) {
+	layouts, err := CuratedLayouts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assets, err := DefaultAssetFiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var refRe = regexp.MustCompile(`/assets/([^"'#?\s>]+)`)
+	for name, data := range layouts {
+		for _, match := range refRe.FindAllStringSubmatch(string(data), -1) {
+			rel := path.Clean(match[1])
+			if _, ok := assets[rel]; !ok {
+				t.Errorf("curated layout %s references %q but the embedded asset packet does not deploy it", name, "/assets/"+match[1])
+			}
+		}
 	}
 }

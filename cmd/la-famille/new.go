@@ -63,6 +63,17 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 			if !pathutil.IsSafePath(contentDir, targetPath) {
 				return fmt.Errorf("target path %q escapes content directory %q", inputPath, contentDir)
 			}
+			// A slug with spaces or uppercase ships broken URLs and malformed
+			// sitemap entries, so it is normalized up front and reported
+			// rather than created verbatim (#508).
+			normalizedInput, normalized := normalizeSlugSegments(cleanInput)
+			if normalized && !pathutil.IsSafePath(contentDir, filepath.Join(contentDir, normalizedInput)) {
+				return fmt.Errorf("normalized path %q escapes content directory %q", normalizedInput, contentDir)
+			}
+			if normalized {
+				targetPath = filepath.Join(contentDir, normalizedInput)
+				cleanInput = normalizedInput
+			}
 			// IsSafePath is lexical: it compares path strings and does not
 			// resolve symlinks. A link inside the content tree therefore passes
 			// it while redirecting the write outside the tree entirely.
@@ -119,15 +130,24 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 			}
 
 			out := cmd.OutOrStdout()
+			if normalized {
+				fmt.Fprintf(out, "note: normalized slug %q to %q\n", args[0], cleanInput)
+			}
 			fmt.Fprintf(out, "Created content file: %s\n\n", targetPath)
 			fmt.Fprintln(out, "Next steps:")
-			fmt.Fprintf(out, "  1. Edit the file: %s\n", targetPath)
-			if contentDir == "content" {
-				fmt.Fprintln(out, "  2. Validate content: la-famille check")
-			} else {
-				fmt.Fprintf(out, "  2. Validate content: la-famille check --content %s\n", contentDir)
+			fmt.Fprintf(out, "  1. Edit the file: %s\n", displayPathFromCwd(targetPath))
+			// Hints follow the documented workflow (#511): a --project-root
+			// form when one is in play, CWD-relative paths everywhere.
+			checkCmd := "la-famille check"
+			serveCmd := "la-famille serve --watch"
+			if rootHint := projectRootHint(cfg.ProjectRoot); rootHint != "" {
+				checkCmd = fmt.Sprintf("la-famille --project-root %s check", rootHint)
+				serveCmd = fmt.Sprintf("la-famille --project-root %s serve --watch", rootHint)
+			} else if cmd.Flags().Changed("content") {
+				checkCmd = fmt.Sprintf("la-famille check --content %s", displayPathFromCwd(contentDir))
 			}
-			fmt.Fprintln(out, "  3. Preview your site: la-famille serve --watch")
+			fmt.Fprintf(out, "  2. Validate content: %s\n", checkCmd)
+			fmt.Fprintf(out, "  3. Preview your site: %s\n", serveCmd)
 
 			return nil
 		},
@@ -156,6 +176,97 @@ func deriveTitle(input string) string {
 		}
 	}
 	return strings.Join(words, " ")
+}
+
+// normalizeSlugSegments rewrites each path segment of a content filename into
+// a URL-safe form: lowercase, [a-z0-9-_.], runs of anything else collapsed to
+// a single hyphen. It reports whether anything changed (#508).
+func normalizeSlugSegments(input string) (string, bool) {
+	slash := filepath.ToSlash(input)
+	segments := strings.Split(slash, "/")
+	changed := false
+	for i, seg := range segments {
+		if seg == "" {
+			continue
+		}
+		ext := filepath.Ext(seg)
+		isMarkdown := strings.EqualFold(ext, ".md")
+		name := seg
+		if isMarkdown {
+			name = seg[:len(seg)-len(ext)]
+		}
+		norm := normalizeSlugName(name)
+		if isMarkdown {
+			norm += ".md"
+		}
+		if norm != seg {
+			segments[i] = norm
+			changed = true
+		}
+	}
+	return strings.Join(segments, "/"), changed
+}
+
+// normalizeSlugName lowercases and maps every character outside the safe set
+// to a single hyphen. It mirrors internal/checker's suggestion logic so `new`
+// creates exactly what `check` would recommend renaming to.
+func normalizeSlugName(name string) string {
+	var sb strings.Builder
+	lastHyphen := false
+	for _, r := range strings.ToLower(strings.TrimSpace(name)) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			sb.WriteRune(r)
+			lastHyphen = false
+		case r == '-' || r == '_' || r == '.':
+			sb.WriteRune(r)
+			lastHyphen = r == '-'
+		default:
+			if !lastHyphen {
+				sb.WriteRune('-')
+				lastHyphen = true
+			}
+		}
+	}
+	normalized := strings.Trim(sb.String(), "-")
+	if normalized == "" {
+		return "untitled"
+	}
+	return normalized
+}
+
+// displayPathFromCwd renders an absolute path relative to the working
+// directory when possible so the printed hint matches what the user can type.
+func displayPathFromCwd(p string) string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return p
+	}
+	rel, err := filepath.Rel(cwd, p)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return p
+	}
+	return rel
+}
+
+// projectRootHint renders --project-root value for hint commands; "" means the
+// project root is the working directory and the flag would be noise.
+func projectRootHint(root string) string {
+	if root == "" || root == "." {
+		return ""
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return root
+	}
+	rel, err := filepath.Rel(cwd, root)
+	if err != nil || rel == "." {
+		return ""
+	}
+	if strings.HasPrefix(rel, "..") {
+		return root
+	}
+	return rel
 }
 
 // refuseSymlinkedComponents walks the destination one component at a time and

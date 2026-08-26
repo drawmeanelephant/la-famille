@@ -26,6 +26,7 @@ func demoContentFiles(theme string, now time.Time) map[string][]byte {
 
 	index := fmt.Sprintf(`---
 title: "Home"
+description: "Starter homepage scaffolded by la-famille init."
 date: "%s"
 tags:
   - welcome
@@ -56,6 +57,7 @@ page.
 
 	theming := fmt.Sprintf(`---
 title: "Theming"
+description: "How to switch a page or the whole site to another bundled layout."
 date: "%s"
 layout: %s
 ---

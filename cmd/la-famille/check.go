@@ -93,6 +93,11 @@ func formatCheckSummary(res *checker.Result) string {
 	}
 
 	symbol := "✓"
+	if warnings > 0 {
+		// A clean bill of health keeps ✓; warnings get ⚠ so a CI log scan
+		// reads pass/warn/fail from the leading symbol alone (#512).
+		symbol = "⚠"
+	}
 	if errors > 0 {
 		symbol = "✗"
 	}
