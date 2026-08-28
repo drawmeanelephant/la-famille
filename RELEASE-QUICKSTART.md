@@ -12,7 +12,13 @@ python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read
   la-famille_0.1.0-prealpha_darwin_arm64.tar.gz
 ```
 
-Compare the printed digest against the matching line in `SHA256SUMS`, then:
+Compare the printed digest against the matching line in `SHA256SUMS`. Compare the
+*digest*, not the filename: the archive you downloaded may be named
+`la-famille.tar.gz` (a renamed drop) while the checksum line names the versioned
+asset `la-famille_<version>_<os>_<arch>.tar.gz`. What must match is the
+hex digest, on your platform's line.
+
+Then:
 
 ```bash
 ./la-famille --version --json
@@ -26,8 +32,11 @@ Compare the printed digest against the matching line in `SHA256SUMS`, then:
 so `build` produces a real site immediately.
 
 Relative paths come from `--project-root`. The generated `public/` directory
-is the complete static artifact; incremental cache state stays beside the
-project root.
+is the complete static artifact. Incremental cache state lives inside the
+project root as `.la-famille-cache.json`, and a failed build swap can briefly
+leave a transient `.public.previous-<random>` copy of the previous site beside
+`public/`; delete it manually if it is ever stranded (a build that cannot
+remove it reports it as a warning).
 
 ## Deploying `public/` to GitHub Pages (binary-only install)
 
@@ -39,6 +48,12 @@ project pages site (`<user>.github.io/<repo>`):
    asset and link paths resolve at the domain root and every subresource 404s.
 2. Upload the *contents* of `public/`, not the directory itself, so
    `index.html` sits at the site root.
+
+Leave `siteurl` unset only for local-only builds. Without it the generated
+`sitemap.xml` has root-relative `<loc>` entries, which the sitemaps.org
+protocol requires to be absolute — so a built-and-uploaded site ships an
+invalid sitemap on day one (run `la-famille check` and set `siteurl` before
+you deploy anywhere public).
 
 Minimal Actions snippet for a binary-only operator:
 
@@ -71,6 +86,10 @@ Pick one as the site default while initializing:
 ./la-famille --project-root /path/to/site serve
 ```
 
+`serve` starts on port 8080 by default. If that port is busy (common on macOS
+with Docker or OrbStack running), recover with `serve -p <port>` or by
+setting `port:` in `config.yaml` — the bind error now says exactly that.
+
 Switch later without a source checkout:
 
 - **Site default:** edit the `template:` line in `config.yaml`
@@ -84,38 +103,49 @@ Switch later without a source checkout:
 Every bundled layout is installed into the project's `templates/` directory by
 `init`, so switching is always a one-line change.
 
-## Authoring content
+## More commands
 
-Every page is a Markdown file under `content/`. YAML frontmatter at the top of
-the file drives the generated page:
+The quickstart above walks the core workflow. The binary ships everything
+below — `--help` lists them all, and none needs a source checkout:
 
-````markdown
+- **`check`** — validate frontmatter, dates, tags, slugs, internal links, and
+  (with `--asset-health`) asset references before you publish. `new` and
+  `serve --watch` point at it; run it after writing content.
+- **`rag`** — export the project into RAG-friendly markdown bundles
+  (`rag-archive/` by default).
+- **`ask`** — local citation-grounded Q&A over the RAG archive.
+- **`tui`** — a semi-graphical full-screen interface.
+- **`pr`** — manage GitHub PRs (`pr sync`).
+- **`completion`** — shell autocompletion.
+
+### Tags
+
+Add a `tags:` list in a page's frontmatter and `build` renders the tag archive
+under `/tags/` (plus a per-tag listing and a `/tags/` index); `categories:`
+works the same way under `/categories/`. `la-famille new` writes both keys
+from the command line:
+
+```bash
+./la-famille new hello --title Hello --tags writing,meta --categories blog
+```
+
+```yaml
 ---
-title: "Hello"
+title: "A post"
 date: "2026-08-27"
 tags:
   - writing
   - meta
-categories:
-  - blog
 ---
-
-# Hello
-````
-
-`la-famille new` scaffolds the same shape; pass tags or categories on the
-command line:
-
-```bash
-./la-famille new hello --title "Hello" --tags writing,meta --categories blog
 ```
 
-Tags and categories become **archive pages**: a post tagged `writing`
-produces `public/tags/writing/`, and `public/tags/` lists every tag (categories
-work the same way under `public/categories/`). The scaffolded homepage already
-carries a `welcome` tag, so a fresh `init` + `build` shows the whole flow in
-action. When any page uses tags or categories, the site nav gains a **Tags**
-(or **Categories**) link to those archives automatically — no template edits
+Tag names are lowercased and reduced to `[a-z0-9-]` for the URL; a value that
+cannot survive that (`café ☕` → `caf`, a purely-non-ASCII tag) is reported as
+a warning, and one that normalizes to nothing is dropped with a warning. The
+scaffolded homepage already carries a `welcome` tag, so a fresh `init` +
+`build` shows the flow in action. Bundled themes link a page's tags straight
+to their archives, and when any page uses tags or categories the site nav
+gains a **Tags** (or **Categories**) link automatically — no template edits
 needed.
 
 ## Release & changelog convention (decided 2026-08-20, #466)
