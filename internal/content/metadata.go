@@ -87,6 +87,17 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			warnMsg := fmt.Sprintf("frontmatter parse warning in %s: %v, falling back to raw markdown", relPath, err)
 			warnings = append(warnings, warnMsg)
 			slog.Warn("Frontmatter parse failed", "file", relPath, "error", err)
+		} else if len(rawMatter) == 0 && bytes.Equal(rest, contentBytes) && frontmatterOpener(string(contentBytes)) != "" {
+			// An unterminated block (an opener with no matching closer) is a
+			// silent failure mode: adrg/frontmatter reports it as "no
+			// frontmatter" with no error, so the whole document, opener and
+			// all, rendered as body text and the summary stayed at warnings=0
+			// (#530). The parse error case above already warns; this catches
+			// the one the library cannot distinguish from an ordinary
+			// frontmatter-less file.
+			warnMsg := fmt.Sprintf("unterminated frontmatter in %s: %s opens a frontmatter block that is never closed with the matching delimiter, so it renders as body text", relPath, frontmatterOpener(string(contentBytes)))
+			warnings = append(warnings, warnMsg)
+			slog.Warn("Unterminated frontmatter block", "file", relPath)
 		}
 
 		var matter struct {
@@ -127,8 +138,8 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 		rawCategories = append(rawCategories, extractStringSlice(matter.Categories)...)
 		rawCategories = append(rawCategories, extractStringSlice(matter.Category)...)
 
-		normalizedTags := normalizeTaxonomyList(matter.Tags, relPath, "tag")
-		normalizedCategories := normalizeTaxonomyList(rawCategories, relPath, "category")
+		normalizedTags := normalizeTaxonomyList(matter.Tags, relPath, "tag", &warnings)
+		normalizedCategories := normalizeTaxonomyList(rawCategories, relPath, "category", &warnings)
 
 		fileMap[relPath] = &FileMeta{
 			RelPath:         relPath,
@@ -220,7 +231,7 @@ func NormalizeTaxonomyValue(item string) (string, bool) {
 	return norm, true
 }
 
-func normalizeTaxonomyList(items []string, relPath, kind string) []string {
+func normalizeTaxonomyList(items []string, relPath, kind string, warnings *[]string) []string {
 	var normalizedList []string
 	seen := make(map[string]bool)
 
@@ -230,14 +241,30 @@ func normalizeTaxonomyList(items []string, relPath, kind string) []string {
 			continue
 		}
 		norm, usable := NormalizeTaxonomyValue(item)
-		if norm != item {
-			slog.Warn("Normalized "+kind, "original", item, "normalized", norm, "file", relPath)
-		}
 		if !usable {
+			// A tag that normalizes to an empty string used to vanish with only
+			// a log line while the build summary stayed at warnings=0, so a
+			// purely non-ASCII tag silently lost its taxonomy page (#532).
+			// Dropping one is lossy, so it must be counted, naming the file.
 			if len(norm) > MaxTaxonomyValueLen {
+				msg := fmt.Sprintf("dropped over-long %s in %s: %q normalizes to %d bytes, over the %d-byte limit", kind, relPath, item, len(norm), MaxTaxonomyValueLen)
+				*warnings = append(*warnings, msg)
 				slog.Warn("Dropped over-long "+kind, "length", len(norm), "limit", MaxTaxonomyValueLen, "file", relPath)
+			} else {
+				msg := fmt.Sprintf("dropped %s in %s: %q normalizes to an empty value, which cannot be published as a path", kind, relPath, item)
+				*warnings = append(*warnings, msg)
+				slog.Warn("Dropped unusable "+kind, "original", item, "file", relPath)
 			}
 			continue
+		}
+		if norm != item {
+			// The current normalization strips runs of non-ASCII characters
+			// ("café ☕" → "caf"), so this line doubles as the signal that a
+			// value was mangled. Counting it makes the lossy rewrite visible in
+			// the build summary instead of living only in a log line (#532).
+			warnMsg := fmt.Sprintf("normalized %s in %s: %q became %q", kind, relPath, item, norm)
+			*warnings = append(*warnings, warnMsg)
+			slog.Warn("Normalized "+kind, "original", item, "normalized", norm, "file", relPath)
 		}
 		if !seen[norm] {
 			seen[norm] = true
@@ -245,4 +272,16 @@ func normalizeTaxonomyList(items []string, relPath, kind string) []string {
 		}
 	}
 	return normalizedList
+}
+
+// frontmatterOpener returns the opening delimiter line if content begins with
+// an adrg/frontmatter opener, and "" otherwise. Only the default YAML/TOML/JSON
+// delimiters are considered, matching what GatherMetadata relies on.
+func frontmatterOpener(content string) string {
+	for _, opener := range []string{"---", "+++", ";;;"} {
+		if strings.HasPrefix(content, opener+"\n") {
+			return opener
+		}
+	}
+	return ""
 }

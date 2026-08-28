@@ -4,6 +4,7 @@ package discovery
 import (
 	"encoding/xml"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -85,7 +86,20 @@ func localOutputURL(outputPath string) string {
 		return "/"
 	}
 	if strings.HasSuffix(p, "/index.html") {
-		return "/" + strings.TrimSuffix(p, "index.html")
+		return "/" + escapeSegments(strings.TrimSuffix(p, "index.html"))
 	}
-	return "/" + strings.TrimSuffix(p, ".html") + "/"
+	return "/" + escapeSegments(strings.TrimSuffix(p, ".html")+"/")
+}
+
+// escapeSegments percent-escapes each /-separated segment so a sitemap <loc>
+// with a space or non-ASCII character in the slug stays protocol-valid (#531).
+func escapeSegments(p string) string {
+	split := strings.Split(p, "/")
+	for i, seg := range split {
+		if seg == "" {
+			continue
+		}
+		split[i] = url.PathEscape(seg)
+	}
+	return strings.Join(split, "/")
 }

@@ -285,6 +285,80 @@ func TestGatherMetadata_FrontmatterParseWarning(t *testing.T) {
 	}
 }
 
+// Issue #530: a  `---` opener with no matching closer used to be treated as
+// "no frontmatter", so the whole document rendered as body text and the build
+// summary stayed at warnings=0.
+func TestGatherMetadataUnterminatedFrontmatterWarns(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+	}{{
+		name: "unterminated YAML opener",
+		body: "---\ntitle: Broken\ncontent: hello\n",
+	}, {
+		name: "opener followed by blank then text",
+		body: "---\n\nsome body\n",
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			meta := writeContentFile(t, tc.body)
+			if len(meta.Warnings) == 0 {
+				t.Fatalf("expected an unterminated-frontmatter warning, got none: %#v", meta.Warnings)
+			}
+			found := false
+			for _, w := range meta.Warnings {
+				if contains(w, "unterminated frontmatter") && contains(w, "page.md") {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("warnings = %v, want an unterminated-frontmatter warning naming the file", meta.Warnings)
+			}
+		})
+	}
+}
+
+// A properly closed frontmatter block must not trip the unterminated check,
+// even when it is empty or has only comments.
+func TestGatherMetadataClosedFrontmatterDoesNotWarnUnterminated(t *testing.T) {
+	meta := writeContentFile(t, "---\n# only a comment\n---\nBody.\n")
+	for _, w := range meta.Warnings {
+		if contains(w, "unterminated frontmatter") {
+			t.Errorf("closed frontmatter must not warn as unterminated, got %v", meta.Warnings)
+		}
+	}
+}
+
+// Issue #532: normalizing a value is lossy ("café ☕" → "caf") and dropping one
+// that normalizes to empty ("☕") used to leave the build summary at warnings=0.
+// Both must land in FileMeta.Warnings so the summary counts them.
+func TestGatherMetadataCountsLossyTaxonomyWarnings(t *testing.T) {
+	meta := writeContentFile(t, "---\nlayout: T\ntags: [café ☕, ☕, travel log, plain]\n---\nbody\n")
+
+	// "plain" is already slug-safe and passes through; only the lossy pair is
+	// mangled and the empty-normalized one dropped.
+	if len(meta.Tags) != 3 || meta.Tags[0] != "caf" || meta.Tags[1] != "travellog" || meta.Tags[2] != "plain" {
+		t.Errorf("tags = %v, want [caf travellog plain]", meta.Tags)
+	}
+
+	var sawMangled, sawEmpty bool
+	for _, w := range meta.Warnings {
+		switch {
+		case contains(w, "normalized") && contains(w, "café ☕") && contains(w, "page.md"):
+			sawMangled = true
+		case contains(w, "empty value") && contains(w, "☕") && contains(w, "page.md"):
+			sawEmpty = true
+		}
+	}
+	if !sawMangled {
+		t.Errorf("warnings = %v, want a counted warning for the lossy tag normalization", meta.Warnings)
+	}
+	if !sawEmpty {
+		t.Errorf("warnings = %v, want a counted warning for the empty-normalized tag", meta.Warnings)
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (func() bool {
 		for i := 0; i <= len(s)-len(substr); i++ {

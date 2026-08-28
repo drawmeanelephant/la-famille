@@ -42,6 +42,9 @@ Back to [Home](index.md).
 
 	cfg := config.DefaultConfig()
 	cfg.ContentDir = contentDir
+	// A clean pass needs a siteurl: without it, check (as the discoverability
+	// guard for the sitemap) reports a site-wide warning (#535).
+	cfg.SiteURL = "https://example.com"
 
 	rootCmd := setupRootCmd(cfg)
 	var outBuf, errBuf bytes.Buffer
@@ -350,6 +353,8 @@ Back to [Home](index.md).
 
 	cfg := config.DefaultConfig()
 	cfg.ContentDir = contentDir
+	// A "checks passed" run needs siteurl so check is genuinely clean (#535).
+	cfg.SiteURL = "https://example.com"
 
 	rootCmd := setupRootCmd(cfg)
 	var outBuf, errBuf bytes.Buffer

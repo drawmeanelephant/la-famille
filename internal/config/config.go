@@ -19,29 +19,29 @@ type SiteLink struct {
 
 // Config represents the site configuration.
 type Config struct {
-	Template           string     `yaml:"template"`
-	DefaultOGImage     string     `yaml:"default_og_image"`
-	ContentDir         string     `yaml:"content_dir"`
-	SiteName           string     `yaml:"site_name"`
-	AssetDir           string     `yaml:"asset_dir"`
-	RagDir             string     `yaml:"rag_dir"`
-	Theme              string     `yaml:"theme"`
-	ProjectRoot        string     `yaml:"project_root"`
-	SiteURL            string     `yaml:"siteurl"`
-	DefaultDescription string     `yaml:"default_description"`
-	OutputDir          string     `yaml:"output_dir"`
-	LegacySiteURL      string     `yaml:"site_url"`
+	Template           string `yaml:"template"`
+	DefaultOGImage     string `yaml:"default_og_image"`
+	ContentDir         string `yaml:"content_dir"`
+	SiteName           string `yaml:"site_name"`
+	AssetDir           string `yaml:"asset_dir"`
+	RagDir             string `yaml:"rag_dir"`
+	Theme              string `yaml:"theme"`
+	ProjectRoot        string `yaml:"project_root"`
+	SiteURL            string `yaml:"siteurl"`
+	DefaultDescription string `yaml:"default_description"`
+	OutputDir          string `yaml:"output_dir"`
+	LegacySiteURL      string `yaml:"site_url"`
 	// ConfigPath is populated by the CLI bootstrapper and is not part of the
 	// site configuration or build fingerprint. It lets commands such as init
 	// write to an explicitly selected configuration file while keeping the
 	// public Config type useful to library callers.
-	ConfigPath         string     `yaml:"-" json:"-"`
-	SiteLinks          []SiteLink `yaml:"site_links"`
-	Port               int        `yaml:"port"`
-	MaxAssetSizeBytes  int64      `yaml:"max_asset_size_bytes"`
-	WatchMode          bool       `yaml:"-"`
-	CheckAssetHealth   bool       `yaml:"check_asset_health"`
-	GraphExplorer      bool       `yaml:"graph_explorer"`
+	ConfigPath        string     `yaml:"-" json:"-"`
+	SiteLinks         []SiteLink `yaml:"site_links"`
+	Port              int        `yaml:"port"`
+	MaxAssetSizeBytes int64      `yaml:"max_asset_size_bytes"`
+	WatchMode         bool       `yaml:"-"`
+	CheckAssetHealth  bool       `yaml:"check_asset_health"`
+	GraphExplorer     bool       `yaml:"graph_explorer"`
 }
 
 // DefaultConfig returns a Config with sensible default values.
@@ -189,11 +189,14 @@ func (c Config) URLForOutputPath(outputPath string) string {
 // require siteurl to be set, so it is safe for links that must work in both
 // local and published builds.
 func (c Config) PublicPathForOutput(outputPath string) string {
+	// Both halves are decoded, so the combined result is escaped once at the
+	// end: a raw space in a filename-derived slug must not reach search.json or
+	// a canonical href unencoded (#531).
 	base := ""
 	if u, ok := c.publicURL(); ok {
 		base = u.Path
 	}
-	return base + publicPathForOutput(outputPath)
+	return escapeURLPathSegments(base + publicPathForOutput(outputPath))
 }
 
 // BasePath returns the URL path prefix the site is served under, derived from
@@ -238,6 +241,12 @@ func (c Config) publicURL() (*url.URL, bool) {
 	return u, true
 }
 
+// publicPathForOutput returns the site-root-relative URL path for an output
+// file, in decoded form. URLForOutputPath feeds this into a url.URL whose
+// String method re-escapes it correctly; callers that emit a bare string (such
+// as PublicPathForOutput or the discovery fallbacks) must escape separately so
+// a decoded space or non-ASCII rune never reaches a machine-readable consumer
+// raw (#531).
 func publicPathForOutput(outputPath string) string {
 	outputPath = strings.TrimPrefix(filepath.ToSlash(outputPath), "/")
 	if outputPath == "index.html" {
@@ -247,6 +256,24 @@ func publicPathForOutput(outputPath string) string {
 		return "/" + strings.TrimSuffix(outputPath, "index.html")
 	}
 	return "/" + path.Clean(outputPath)
+}
+
+// escapeURLPathSegments percent-escapes every segment of a URL path without
+// touching its / separators. A page whose filename contains a space or non-ASCII
+// character (a hand-written `my post.md`, which low-level authors can still
+// create directly) used to ship a <loc> in sitemap.xml with the raw space and an
+// unencoded feed <link>: the sitemaps.org protocol requires URL-encoding, so
+// search engines rejected the artifact (#531). Ordinary slug paths pass through
+// byte for byte.
+func escapeURLPathSegments(p string) string {
+	segments := strings.Split(p, "/")
+	for i, seg := range segments {
+		if seg == "" {
+			continue
+		}
+		segments[i] = url.PathEscape(seg)
+	}
+	return strings.Join(segments, "/")
 }
 
 // ValidateSiteURL checks that SiteURL (or LegacySiteURL), if set, is a valid absolute HTTP or HTTPS URL.

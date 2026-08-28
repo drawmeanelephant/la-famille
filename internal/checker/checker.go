@@ -107,6 +107,20 @@ func Validate(cfg config.Config) (*Result, error) {
 
 	var findings []Finding
 
+	// A missing siteurl is only a planning concern locally, but it becomes a
+	// ship-blocking omission when discovery files are published: without it the
+	// generated sitemap.xml carries root-relative <loc> entries, which the
+	// sitemaps.org protocol requires to be absolute. Surface it as a site-wide
+	// warning so `check` flags what the quickstart deploy section warns about
+	// (#535).
+	if strings.TrimSpace(cfg.SiteURL) == "" && strings.TrimSpace(cfg.LegacySiteURL) == "" {
+		findings = append(findings, Finding{
+			Level:    LevelWarn,
+			Category: CategoryMissingMetadata,
+			Message:  "siteurl is unset: sitemap.xml <loc> entries will be root-relative, which the sitemaps.org protocol requires to be absolute — set siteurl before deploying publicly",
+		})
+	}
+
 	// Sort file keys for deterministic evaluation order
 	keys := make([]string, 0, len(fileMap))
 	for k := range fileMap {
