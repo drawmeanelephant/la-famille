@@ -272,3 +272,138 @@ func TestGenerateTaxonomies_EscapingAndOrdering(t *testing.T) {
 		t.Errorf("expected Page A link before Page B link, got idxA=%d, idxB=%d in HTML:\n%s", idxA, idxB, html)
 	}
 }
+
+// Issue #529: /tags/ and /categories/ must be reachable from the site nav when
+// archive pages exist, and the links must never duplicate operator-configured
+// entries.
+func TestNavLinks_AddsArchiveLinksWhenPagesExist(t *testing.T) {
+	renderTrue := true
+	renderFalse := false
+
+	t.Run("no terms adds nothing", func(t *testing.T) {
+		fileMap := map[string]*content.FileMeta{
+			"post.md": {Title: "Post", Render: &renderTrue},
+		}
+		if got := NavLinks(nil, fileMap); len(got) != 0 {
+			t.Errorf("NavLinks(untagged site) = %v, want none", got)
+		}
+	})
+
+	t.Run("tagged page adds Tags link", func(t *testing.T) {
+		fileMap := map[string]*content.FileMeta{
+			"post.md": {Title: "Post", Tags: []string{"go"}, Render: &renderTrue},
+		}
+		got := NavLinks(nil, fileMap)
+		if len(got) != 1 || got[0].Label != "Tags" || got[0].URL != "/tags/" {
+			t.Errorf("NavLinks(tagged) = %v, want [Tags /tags/]", got)
+		}
+	})
+
+	t.Run("tags and categories both add links", func(t *testing.T) {
+		fileMap := map[string]*content.FileMeta{
+			"post.md": {Title: "Post", Tags: []string{"go"}, Categories: []string{"tech"}, Render: &renderTrue},
+		}
+		got := NavLinks(nil, fileMap)
+		if len(got) != 2 || got[0].Label != "Tags" || got[1].Label != "Categories" {
+			t.Errorf("NavLinks(tagged+categorized) = %v, want [Tags Categories]", got)
+		}
+	})
+
+	t.Run("blank terms do not add a link", func(t *testing.T) {
+		fileMap := map[string]*content.FileMeta{
+			"post.md": {Title: "Post", Tags: []string{"  ", ""}, Render: &renderTrue},
+		}
+		if got := NavLinks(nil, fileMap); len(got) != 0 {
+			t.Errorf("NavLinks(blank tags) = %v, want none", got)
+		}
+	})
+
+	t.Run("render:false pages do not add a link", func(t *testing.T) {
+		fileMap := map[string]*content.FileMeta{
+			"post.md": {Title: "Post", Tags: []string{"secret"}, Render: &renderFalse},
+		}
+		if got := NavLinks(nil, fileMap); len(got) != 0 {
+			t.Errorf("NavLinks(render:false tags) = %v, want none", got)
+		}
+	})
+}
+
+func TestNavLinks_DoesNotDuplicateOperatorLinks(t *testing.T) {
+	renderTrue := true
+	fileMap := map[string]*content.FileMeta{
+		"post.md": {Title: "Post", Tags: []string{"go"}, Categories: []string{"tech"}, Render: &renderTrue},
+	}
+
+	tests := []struct {
+		name  string
+		links []config.SiteLink
+		want  []string // final labels, in order
+	}{
+		{name: "no configured links", want: []string{"Tags", "Categories"}},
+		{name: "label match skips tags", links: []config.SiteLink{{Label: "Tags", URL: "/elsewhere"}}, want: []string{"Tags", "Categories"}},
+		{name: "case-insensitive label match", links: []config.SiteLink{{Label: "tags", URL: "/elsewhere"}}, want: []string{"tags", "Categories"}},
+		{name: "root-relative URL match", links: []config.SiteLink{{Label: "Archive", URL: "/tags/"}}, want: []string{"Archive", "Categories"}},
+		{name: "absolute URL match", links: []config.SiteLink{{Label: "Archive", URL: "https://example.com/tags/"}}, want: []string{"Archive", "Categories"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NavLinks(tt.links, fileMap)
+			if len(got) != len(tt.want) {
+				t.Fatalf("NavLinks(%v) returned %d links, want %d: %v", tt.links, len(got), len(tt.want), got)
+			}
+			for i, want := range tt.want {
+				if got[i].Label != want {
+					t.Errorf("NavLinks(%v)[%d].Label = %q, want %q (all: %v)", tt.links, i, got[i].Label, want, got)
+				}
+			}
+		})
+	}
+}
+
+// Issue #529: an article page must link each of its tags to that tag's archive.
+func TestPageTagLinks(t *testing.T) {
+	// The generator sanitizes content with a policy that keeps class
+	// attributes; mirror it here so the class-based assertions hold.
+	p := bluemonday.UGCPolicy()
+	p.AllowAttrs("class").Globally()
+
+	t.Run("nil for no tags", func(t *testing.T) {
+		if got := PageTagLinks(nil, "index.html", p); got != nil {
+			t.Errorf("PageTagLinks(nil) = %q, want nil", got)
+		}
+		if got := PageTagLinks([]string{"", "  "}, "index.html", p); got != nil {
+			t.Errorf("PageTagLinks(blank) = %q, want nil", got)
+		}
+	})
+
+	t.Run("root page gets archive-relative hrefs", func(t *testing.T) {
+		got := string(PageTagLinks([]string{"go", "web"}, "index.html", p))
+		if !strings.Contains(got, `class="tag-link" href="tags/go/"`) {
+			t.Errorf("PageTagLinks root = %q, want a tags/go/ link", got)
+		}
+		if !strings.Contains(got, `href="tags/web/"`) {
+			t.Errorf("PageTagLinks root = %q, want a tags/web/ link", got)
+		}
+	})
+
+	t.Run("nested page gets parent-relative hrefs", func(t *testing.T) {
+		got := string(PageTagLinks([]string{"meta"}, "blog/post/index.html", p))
+		if !strings.Contains(got, `href="../../tags/meta/"`) {
+			t.Errorf("PageTagLinks nested = %q, want a ../../tags/meta/ link", got)
+		}
+	})
+
+	t.Run("dedupes and trims", func(t *testing.T) {
+		got := string(PageTagLinks([]string{"go", "go", "  ", "web"}, "index.html", p))
+		if strings.Count(got, "tag-link") != 2 {
+			t.Errorf("PageTagLinks dedupe = %q, want exactly two tag links", got)
+		}
+	})
+
+	t.Run("escapes tag names and hrefs", func(t *testing.T) {
+		got := string(PageTagLinks([]string{"<x>"}, "index.html", p))
+		if strings.Contains(got, "<x>") || !strings.Contains(got, "&lt;x&gt;") {
+			t.Errorf("PageTagLinks escaping = %q, want &lt;x&gt; text", got)
+		}
+	})
+}

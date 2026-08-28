@@ -53,6 +53,21 @@ func TestDemoContentFilesSwitchAwayFromDefaultTheme(t *testing.T) {
 	}
 }
 
+// Issue #529: the scaffolded homepage carries a tag so a fresh init + build
+// demonstrates the tag archive flow (and the nav link) immediately, instead of
+// leaving a binary-only author to discover tags from build output.
+func TestDemoContentIndexCarriesTag(t *testing.T) {
+	demos := demoContentFiles("", time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC))
+	index, ok := demos["index.md"]
+	if !ok {
+		t.Fatalf("demo packet missing index.md")
+	}
+	body := string(index)
+	if !strings.Contains(body, "tags:") || !strings.Contains(body, "- welcome") {
+		t.Errorf("scaffolded index.md should carry a tags: list, got:\n%s", body)
+	}
+}
+
 func TestScaffoldDemoContentCreatesAndPreserves(t *testing.T) {
 	dir := t.TempDir()
 	demos := demoContentFiles("layout-octoburger", time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC))

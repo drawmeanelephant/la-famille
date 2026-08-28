@@ -84,6 +84,40 @@ Switch later without a source checkout:
 Every bundled layout is installed into the project's `templates/` directory by
 `init`, so switching is always a one-line change.
 
+## Authoring content
+
+Every page is a Markdown file under `content/`. YAML frontmatter at the top of
+the file drives the generated page:
+
+````markdown
+---
+title: "Hello"
+date: "2026-08-27"
+tags:
+  - writing
+  - meta
+categories:
+  - blog
+---
+
+# Hello
+````
+
+`la-famille new` scaffolds the same shape; pass tags or categories on the
+command line:
+
+```bash
+./la-famille new hello --title "Hello" --tags writing,meta --categories blog
+```
+
+Tags and categories become **archive pages**: a post tagged `writing`
+produces `public/tags/writing/`, and `public/tags/` lists every tag (categories
+work the same way under `public/categories/`). The scaffolded homepage already
+carries a `welcome` tag, so a fresh `init` + `build` shows the whole flow in
+action. When any page uses tags or categories, the site nav gains a **Tags**
+(or **Categories**) link to those archives automatically — no template edits
+needed.
+
 ## Release & changelog convention (decided 2026-08-20, #466)
 
 Hybrid: **GitHub Releases are the source of truth**.

@@ -14,6 +14,7 @@ This project is built and maintained primarily by **Jules** (AI assistant) along
 *   **RAG Export:** Native tools to extract your site's content and metadata into clean archives optimized for LLM context windows (`rag-system.md`, `rag-content.md`, etc.).
 *   **Ask This Site (experimental):** A local, citation-grounded Q&A assistant that runs entirely on your machine. Binds only to loopback, never sends content off-device, and supports the Ollama daemon out of the box.
 *   **Flexible Templating:** Support for multiple HTML layouts (e.g., standard, cyberpunk, minimal) easily overridden via YAML frontmatter.
+*   **Taxonomy Archives:** Add `tags:` or `categories:` to any page's YAML frontmatter and the build emits `/tags/` and `/categories/` archive pages — linked from each article and from the site nav, with no template edits required.
 *   **Built-in Local Server:** Instantly preview your site with `go run ./cmd/la-famille serve`.
 *   **Smart Graphing:** Automatically generates `graph.json`, `backlinks.json`, and handles non-existent internal links by generating helpful stub pages.
 *   **Interactive Knowledge Graph Explorer:** Every build emits a self-contained `/graph/index.html` page that visualizes the site as a directed graph — search by title, page ID, tag, category, or author, filter by render/raw/stub/orphan, jump into "focus mode" for a selected page plus its neighbors, and deep-link selections via `?node=`. No runtime server; just open the file. Disable with `graph_explorer: false` in `config.yaml`.

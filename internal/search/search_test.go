@@ -3,6 +3,7 @@ package search
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -78,11 +79,33 @@ func TestExtractHeadings(t *testing.T) {
 	}
 }
 
+// Issue #529: the gu field (per-term archive URLs, parallel to g) must be
+// omitted when a page has no taxonomy terms, so term-less pages keep the exact
+// wire shape older consumers expect.
+func TestItemJSONOmitsTagURLsWhenEmpty(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "search.json")
+	items := []Item{
+		{Title: "Plain", URL: "/plain"},
+	}
+	if err := WriteMinifiedJSON(path, items); err != nil {
+		t.Fatalf("WriteMinifiedJSON failed: %v", err)
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile failed: %v", err)
+	}
+	if got := string(b); strings.Contains(got, "gu") {
+		t.Errorf("search.json should omit gu for term-less items, got: %s", got)
+	}
+}
+
 func TestItemJSONSerialization(t *testing.T) {
 	itemWithHeadings := Item{
 		Title:    "Page Title",
 		URL:      "/page.html",
 		Tags:     []string{"go", "search"},
+		TagURLs:  []string{"/tags/go/", "/categories/search/"},
 		Snippet:  "Snippet text",
 		Headings: []string{"H1", "H2"},
 	}
@@ -104,7 +127,7 @@ func TestItemJSONSerialization(t *testing.T) {
 		t.Fatalf("failed to read json: %v", err)
 	}
 
-	expectedJSON := `[{"t":"Page Title","u":"/page.html","g":["go","search"],"s":"Snippet text","h":["H1","H2"]},{"t":"No Headings Page","u":"/none.html","s":"Snippet text"}]` + "\n"
+	expectedJSON := `[{"t":"Page Title","u":"/page.html","g":["go","search"],"gu":["/tags/go/","/categories/search/"],"s":"Snippet text","h":["H1","H2"]},{"t":"No Headings Page","u":"/none.html","s":"Snippet text"}]` + "\n"
 	if string(b) != expectedJSON {
 		t.Errorf("expected JSON:\n%s\ngot:\n%s", expectedJSON, string(b))
 	}

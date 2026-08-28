@@ -200,6 +200,11 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 
 	p := newContentSanitizer()
 
+	// Surface taxonomy archives in the site nav before any page renders, so
+	// /tags/ and /categories/ are reachable from every page rather than only
+	// from the sitemap (#529).
+	siteCfg.SiteLinks = taxonomy.NavLinks(siteCfg.SiteLinks, fileMap)
+
 	taxPaths, taxSearchItems, err := taxonomy.GenerateTaxonomies(cfg, siteCfg, fileMap, renderer, p)
 	if err != nil {
 		return result, err
@@ -329,17 +334,20 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 						outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
 
 						var taxonomyTerms []string
+						var taxonomyURLs []string
 						taxonomySeen := make(map[string]bool)
 						for _, tag := range meta.Tags {
 							if tag != "" && !taxonomySeen[tag] {
 								taxonomySeen[tag] = true
 								taxonomyTerms = append(taxonomyTerms, tag)
+								taxonomyURLs = append(taxonomyURLs, taxonomyArchiveURL(siteCfg, "tags", tag))
 							}
 						}
 						for _, cat := range meta.Categories {
 							if cat != "" && !taxonomySeen[cat] {
 								taxonomySeen[cat] = true
 								taxonomyTerms = append(taxonomyTerms, cat)
+								taxonomyURLs = append(taxonomyURLs, taxonomyArchiveURL(siteCfg, "categories", cat))
 							}
 						}
 
@@ -352,6 +360,7 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 							Title:    title,
 							URL:      urlPath,
 							Tags:     taxonomyTerms,
+							TagURLs:  taxonomyURLs,
 							Snippet:  search.ExtractSnippet(meta.Rest),
 							Headings: search.ExtractHeadings(meta.Rest),
 						}
@@ -408,6 +417,12 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 					}
 
 					sanitizedHTML := p.SanitizeBytes(buf.Bytes())
+
+					// Link the page's tags to their archives so a post leads back
+					// to /tags/ and each tag page (#529).
+					if tagLinks := taxonomy.PageTagLinks(meta.Tags, relOut, p); len(tagLinks) > 0 {
+						sanitizedHTML = append(sanitizedHTML, tagLinks...)
+					}
 
 					desc := meta.Description
 					if desc == "" {
@@ -608,6 +623,15 @@ func reservedOutputPaths(cfg config.Config) map[string]string {
 // prediction names a file the generator never writes.
 func usableSlug(slug string) bool {
 	return transform.IsUsableSlug(slug)
+}
+
+// taxonomyArchiveURL returns the public URL of a taxonomy term's archive page,
+// computed exactly as taxonomy.GenerateTaxonomies emits it and carrying the
+// siteurl base path, so search results can link each badge to the page that
+// exists (#529).
+func taxonomyArchiveURL(siteCfg config.Config, prefix, term string) string {
+	itemOut := transform.GetOutputURL(fmt.Sprintf("%s/%s/index.md", prefix, term), "", true)
+	return siteCfg.PublicPathForOutput(itemOut)
 }
 
 // outputOwner is a single writer's claim on a path in the output tree.

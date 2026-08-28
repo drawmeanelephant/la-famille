@@ -956,8 +956,8 @@ func TestTUIWorkResultWarningsPopulateDiagnostics(t *testing.T) {
 	}
 	// Check each warning has nextAction mapping
 	expectNext := map[string]string{
-		"broken.md":              "fix frontmatter in broken.md",
-		"case-insensitive":       "see docs/issues-420-422.md",
+		"broken.md":                "fix frontmatter in broken.md",
+		"case-insensitive":         "see docs/issues-420-422.md",
 		"missing referenced asset": "la-famille check --asset-health",
 	}
 	for i, diag := range m.diagnostics {

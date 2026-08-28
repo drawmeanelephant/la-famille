@@ -14,8 +14,31 @@ Here are the currently supported fields:
 
 * `title`: The title of the page. If omitted, it falls back to the filename.
 * `author`: The author of the post.
-* `date`: A date string.
+* `date`: A date string formatted as `YYYY-MM-DD` (e.g., `date: "2023-10-27"`).
+* `tags`: An array of strings grouping the page under tag archives
+  (e.g., `tags: [go, test]`). Each tag generates a `/tags/<tag>/` archive page,
+  and `/tags/` lists every tag.
+* `categories`: An array of strings grouping the page under category archives
+  (e.g., `categories: [blog]`), generating `/categories/` pages the same way.
 * `render`: A boolean (`true` or `false`).
+* `slug`: A custom URL path for the page.
+* `layout`: To specify a custom layout, provide the filename *without* the
+  `.html` extension (e.g., `layout: "layout-brutalist"`).
+
+```yaml
+---
+title: "Hello"
+date: "2026-08-27"
+tags: [go, test]
+categories: [blog]
+---
+# Hello
+```
+
+Pages using `tags:` or `categories:` link their terms to the archives, and the
+site navigation gains **Tags** / **Categories** links automatically, so every
+archive stays reachable without editing a template. `la-famille new --tags a,b`
+writes the same frontmatter from the command line.
 
 ### The `render` Flag
 
@@ -30,8 +53,3 @@ render: false
 ```
 
 This ensures we have maximum flexibility with how our content is processed.
-
-* `tags`: An array of strings representing tags for the post (e.g., `tags: [go, test]`).
-* `date`: A date string formatted as `YYYY-MM-DD` (e.g., `date: "2023-10-27"`).
-* `slug`: A custom URL path for the page.
-* `layout`: To specify a custom layout, provide the filename *without* the `.html` extension (e.g., `layout: "layout-brutalist"`).
