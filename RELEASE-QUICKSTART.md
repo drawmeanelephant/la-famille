@@ -121,7 +121,13 @@ below — `--help` lists them all, and none needs a source checkout:
 ### Tags
 
 Add a `tags:` list in a page's frontmatter and `build` renders the tag archive
-under `/tags/` (plus a per-tag listing and a `/tags/` index):
+under `/tags/` (plus a per-tag listing and a `/tags/` index); `categories:`
+works the same way under `/categories/`. `la-famille new` writes both keys
+from the command line:
+
+```bash
+./la-famille new hello --title Hello --tags writing,meta --categories blog
+```
 
 ```yaml
 ---
@@ -136,9 +142,11 @@ tags:
 Tag names are lowercased and reduced to `[a-z0-9-]` for the URL; a value that
 cannot survive that (`café ☕` → `caf`, a purely-non-ASCII tag) is reported as
 a warning, and one that normalizes to nothing is dropped with a warning. The
-bundled themes link a page's own articles but do not yet add `/tags/` to the
-nav, so visitors reach archives through the pages that tag them or a custom
-nav link.
+scaffolded homepage already carries a `welcome` tag, so a fresh `init` +
+`build` shows the flow in action. Bundled themes link a page's tags straight
+to their archives, and when any page uses tags or categories the site nav
+gains a **Tags** (or **Categories**) link automatically — no template edits
+needed.
 
 ## Release & changelog convention (decided 2026-08-20, #466)
 

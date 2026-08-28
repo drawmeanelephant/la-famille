@@ -73,7 +73,7 @@
   font-size: 0.875rem;
 }
 
-.search-result-link:last-child {
+#search-results-list > li:last-child .search-result-link {
   border-bottom: 0;
 }
 
@@ -113,9 +113,17 @@
 }
 
 .search-result-tag {
+  display: inline-block;
   font-size: 0.65rem;
   padding: 0.05rem 0.4rem;
   border: 1px solid var(--lf-border, rgba(127, 127, 127, 0.35));
   border-radius: 999px;
+  text-decoration: none;
   color: var(--lf-muted, inherit);
+}
+
+.search-result-tag:hover,
+.search-result-tag:focus-visible {
+  border-color: var(--lf-accent-strong, rgba(127, 127, 127, 0.7));
+  color: var(--lf-text, #222);
 }

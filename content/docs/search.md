@@ -16,6 +16,10 @@ Each item in `search.json` includes:
 *   `t`: Page title (or fallback filename)
 *   `u`: Page relative URL (validated against slugs)
 *   `g`: Combined taxonomy metadata terms (tags and categories)
+*   `gu`: Archive URL for each term in `g`, in the same order — `/tags/<tag>/`
+    or `/categories/<category>/` with the `siteurl` base path applied. The
+    client links every badge through this, so a category term never points at
+    a nonexistent `/tags/` page.
 *   `s`: Cleaned plaintext content excerpt snippet (up to 160 characters)
 *   `h`: Extracted ATX heading titles (# to ######)
 
@@ -54,7 +58,7 @@ Add the following HTML markup to your navigation bar or header to provide the se
 ## How It Works
 
 *   **Multi-Signal Matching:** The client filters across title (`t`), taxonomy metadata (`g`), content snippet (`s`), and headings (`h`).
-*   **Rich UI Rendering:** Results display titles, snippets, matched heading section badges, and taxonomy tag badges.
+*   **Rich UI Rendering:** Results display titles, snippets, matched heading section badges, and taxonomy tag badges — each badge links straight to that term's `/tags/` or `/categories/` archive.
 *   **Keyboard Shortcut:** The search input can be quickly focused from anywhere on the page by pressing the `/` key.
 *   **Lazy Loading:** To conserve bandwidth, `search.json` is only fetched the first time the search input receives focus. It is then cached in `window.LaFamilleSearchIndex`.
 *   **Debouncing:** The search query is debounced by 50ms to prevent excessive filtering during rapid typing.

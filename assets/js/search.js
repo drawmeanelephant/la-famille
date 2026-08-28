@@ -94,6 +94,7 @@
                     const snippet = item.s || "";
                     const headings = item.h || [];
                     const tags = item.g || [];
+                    const tagURLs = item.gu || [];
 
                     const li = document.createElement("li");
                     const a = document.createElement("a");
@@ -121,19 +122,27 @@
                         a.appendChild(snippetDiv);
                     }
 
+                    li.appendChild(a);
+
+                    // Taxonomy badges live beside the result link, not inside
+                    // it: each one jumps straight to its tag/category archive.
+                    // item.gu carries the archive URL for every term in item.g
+                    // (tags and categories are mixed there), with the siteurl
+                    // base path already applied; the /tags/ fallback only
+                    // serves indexes built before gu existed.
                     if (tags.length > 0) {
                         const tagsDiv = document.createElement("div");
                         tagsDiv.className = "search-result-tags";
-                        tags.forEach(tag => {
-                            const badge = document.createElement("span");
+                        tags.forEach((tag, i) => {
+                            const badge = document.createElement("a");
                             badge.className = "search-result-tag";
+                            badge.href = encodeURI(tagURLs[i] || "/tags/" + encodeURIComponent(tag) + "/");
                             badge.textContent = "#" + tag;
                             tagsDiv.appendChild(badge);
                         });
-                        a.appendChild(tagsDiv);
+                        li.appendChild(tagsDiv);
                     }
 
-                    li.appendChild(a);
                     resultsContainer.appendChild(li);
                 });
 

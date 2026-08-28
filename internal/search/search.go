@@ -9,9 +9,14 @@ import (
 )
 
 type Item struct {
-	Title    string   `json:"t"`
-	URL      string   `json:"u"`
-	Tags     []string `json:"g,omitempty"`
+	Title string   `json:"t"`
+	URL   string   `json:"u"`
+	Tags  []string `json:"g,omitempty"`
+	// TagURLs holds the archive URL for each term in Tags, in the same order
+	// (gu). `g` mixes tags and categories, so the client cannot infer the
+	// archive path from the term alone; without the URL a category badge would
+	// be linked to a nonexistent /tags/ page (#529).
+	TagURLs  []string `json:"gu,omitempty"`
 	Snippet  string   `json:"s,omitempty"`
 	Headings []string `json:"h,omitempty"`
 }
