@@ -54,6 +54,11 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		Use:          "la-famille",
 		Short:        "La Famille is a static site generator",
 		SilenceUsage: true,
+		// Errors are reported exactly once, by main, as a structured slog line.
+		// Without this, cobra prints its own "Error: ..." for every failure in
+		// a different shape, so a normal failure produced two lines in two
+		// formats on stderr (#534).
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !showVersion && versionJSON {
 				return fmt.Errorf("--json is only valid together with --version")
@@ -330,10 +335,29 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 			slog.Info("Press Ctrl+C to stop")
 
 			mux := http.NewServeMux()
-			mux.Handle("/", http.FileServer(http.Dir(dir)))
+			// When siteurl points at a subpath (a GitHub Pages project site), the
+			// rendered pages carry that base path on every root-relative URL, so
+			// the preview server must serve them under it too — otherwise the
+			// local preview 404s exactly like the hosted copy (#528). Root and
+			// `/`-rooted previews keep the historical behavior.
+			base := cfg.BasePath()
+			if base != "" && base != "/" {
+				cleanBase := strings.TrimSuffix(base, "/")
+				fileServer := http.StripPrefix(cleanBase, http.FileServer(http.Dir(dir)))
+				mux.Handle(cleanBase+"/", fileServer)
+				mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+					if r.URL.Path == "/" {
+						http.Redirect(w, r, cleanBase+"/", http.StatusFound)
+						return
+					}
+					http.NotFound(w, r)
+				})
+			} else {
+				mux.Handle("/", http.FileServer(http.Dir(dir)))
+			}
 
 			if watchMode {
-				mux.HandleFunc("/livereload", watcher.LiveReloadHandler)
+				mux.HandleFunc(strings.TrimSuffix(base, "/")+"/livereload", watcher.LiveReloadHandler)
 			}
 
 			server := &http.Server{
@@ -353,7 +377,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 
 			select {
 			case err := <-errChan:
-				return err
+				return serveBindHint(err, port)
 			case <-ctx.Done():
 				shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
@@ -386,7 +410,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	rootCmd.AddCommand(prCmd)
 	rootCmd.AddCommand(tuiCmd)
 	rootCmd.PersistentFlags().StringVar(&globalLogFile, "log-file", "", "Path to log file (default is stderr for CLI, la-famille.log for TUI)")
-	rootCmd.PersistentFlags().StringVar(&projectRoot, "project-root", cfg.ProjectRoot, "Project root for config-relative paths")
+	rootCmd.PersistentFlags().StringVar(&projectRoot, "project-root", cfg.ProjectRoot, "Project root for config-relative paths (default: the current directory)")
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", cfg.ConfigPath, "Path to config.yaml (default: <project-root>/config.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&showVersion, "version", false, "Print build identity and exit")
 	rootCmd.PersistentFlags().BoolVar(&versionJSON, "json", false, "Print machine-readable output (use with --version)")
@@ -467,6 +491,15 @@ func guardUnusableConfig(rootCmd *cobra.Command, configErr error) {
 
 func main() {
 	args := os.Args[1:]
+
+	// The CLI logger is normally configured in the root command's persistent
+	// pre-run hook, but that hook never runs when cobra itself rejects the
+	// invocation (an unknown flag, a wrong arg count). Without this, errors
+	// from those paths were the first slog output of the process and surfaced
+	// in the stdlib log format beside everything else's slog format. Setting
+	// up the default here makes every error line uniform; PersistentPreRunE
+	// re-applies the --log-file path once flags are parsed.
+	_, _ = logger.Setup("", false)
 	// Version output is intentionally independent of project state. This is
 	// what makes an unpacked release archive identifiable in an empty directory
 	// with no source tree, Go module, or network access.
@@ -492,7 +525,12 @@ func main() {
 	// `init --force` remains available as the repair path.
 	cfg, configErr := loadProjectConfig(args)
 	if configErr != nil {
-		slog.Error("selected config is unusable; only `la-famille init` and help remain available", "error", configErr)
+		// main reports the wrapped failure once via its single canonical
+		// slog.Error below; guardUnusableConfig already tells the operator the
+		// config is unusable and that init repairs it. Logging it again here
+		// tripled the output on stderr and left run before the CLI logger was
+		// set up, so it appeared in the stdlib log format next to the slog
+		// lines (#534).
 		fallback := config.DefaultConfig()
 		fallback.ProjectRoot = cfg.ProjectRoot
 		fallback.ConfigPath = cfg.ConfigPath
@@ -571,6 +609,20 @@ func writeInitialConfig(path string, force bool, theme string) error {
 		return fmt.Errorf("failed to write %s: %w", path, err)
 	}
 	return nil
+}
+
+// serveBindHint decorates the common "port already in use" failure with the
+// recovery paths the quickstart advertises, so `./la-famille serve` dying on a
+// busy 8080 tells the operator how to recover instead of ending at "address
+// already in use" (#525).
+func serveBindHint(err error, port int) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, syscall.EADDRINUSE) || strings.Contains(err.Error(), "address already in use") || strings.Contains(err.Error(), "bind:") {
+		return fmt.Errorf("cannot bind to port %d (%w); free the port, or use `serve -p <port>` (or set `port:` in config.yaml) to pick another", port, err)
+	}
+	return err
 }
 
 // isBundledTheme reports whether name is one of the release packet layouts.

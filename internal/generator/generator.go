@@ -137,9 +137,12 @@ func Build(cfg config.Config) (BuildResult, error) {
 		return result, err
 	}
 
-	if err := replaceOutputDirectory(outputDir, stagingDir); err != nil {
+	swapWarnings, err := replaceOutputDirectory(outputDir, stagingDir)
+	if err != nil {
 		return result, err
 	}
+	result.Warnings = append(result.Warnings, swapWarnings...)
+	sort.Strings(result.Warnings)
 	committed = true
 	return result, nil
 }
@@ -891,50 +894,62 @@ func createStagingOutput(configuredOutput string) (string, string, error) {
 // replaceOutputDirectory swaps a completed staging tree into place. The previous
 // output is renamed rather than deleted first so a failed replacement can be
 // restored without exposing a partially generated site.
-func replaceOutputDirectory(outputDir, stagingDir string) error {
+//
+// It returns non-fatal warnings alongside its error: a replaced output directory
+// whose old copy could not be deleted used to exit 0 with warnings=0 while
+// stranding a full copy of the previous site that the tool can no longer manage
+// (#533). That is now surfaced as a counted build warning.
+func replaceOutputDirectory(outputDir, stagingDir string) ([]string, error) {
 	parentDir := filepath.Dir(outputDir)
 	if filepath.Dir(stagingDir) != parentDir {
-		return fmt.Errorf("staging directory must be a sibling of the output directory")
+		return nil, fmt.Errorf("staging directory must be a sibling of the output directory")
 	}
 
 	outputExists := false
 	if info, err := os.Lstat(outputDir); err == nil {
 		if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
-			return fmt.Errorf("output directory changed while building: %q", outputDir)
+			return nil, fmt.Errorf("output directory changed while building: %q", outputDir)
 		}
 		outputExists = true
 	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("inspect output directory before replacement: %w", err)
+		return nil, fmt.Errorf("inspect output directory before replacement: %w", err)
 	}
 
 	backupDir, err := os.MkdirTemp(parentDir, "."+filepath.Base(outputDir)+".previous-")
 	if err != nil {
-		return fmt.Errorf("create output backup path: %w", err)
+		return nil, fmt.Errorf("create output backup path: %w", err)
 	}
 	if err := os.Remove(backupDir); err != nil {
-		return fmt.Errorf("prepare output backup path: %w", err)
+		return nil, fmt.Errorf("prepare output backup path: %w", err)
 	}
 
 	if outputExists {
 		if err := os.Rename(outputDir, backupDir); err != nil {
-			return fmt.Errorf("move existing output aside: %w", err)
+			return nil, fmt.Errorf("move existing output aside: %w", err)
 		}
 	}
 
 	if err := os.Rename(stagingDir, outputDir); err != nil {
 		if !outputExists {
-			return fmt.Errorf("replace output directory: %w", err)
+			return nil, fmt.Errorf("replace output directory: %w", err)
 		}
 		if restoreErr := os.Rename(backupDir, outputDir); restoreErr != nil {
-			return fmt.Errorf("replace output directory: %w; restore previous output: %v", err, restoreErr)
+			return nil, fmt.Errorf("replace output directory: %w; restore previous output: %v", err, restoreErr)
 		}
-		return fmt.Errorf("replace output directory: %w", err)
+		return nil, fmt.Errorf("replace output directory: %w", err)
 	}
 
 	if outputExists {
 		if err := os.RemoveAll(backupDir); err != nil {
-			slog.Warn("Failed to remove replaced output directory", "path", backupDir, "error", err)
+			// Retry once in case the first pass hit a transient failure before
+			// reporting the lingering copy; a read-only deploy mount fails both
+			// times.
+			if retryErr := os.RemoveAll(backupDir); retryErr != nil {
+				msg := fmt.Sprintf("build left a stale copy of the previous site at %s that could not be removed; delete it manually to avoid the disk-space leak", backupDir)
+				slog.Warn("Failed to remove replaced output directory", "path", backupDir, "error", retryErr)
+				return []string{msg}, nil
+			}
 		}
 	}
-	return nil
+	return nil, nil
 }

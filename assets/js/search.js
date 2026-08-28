@@ -18,9 +18,17 @@
 
         let fetchPromise = null;
 
+        // Under a siteurl subpath (e.g. GitHub Pages project sites), the rendered
+        // page carries a base path on every root-relative URL; the search index
+        // lives under that same base, not at the domain root (#528).
+        const searchBase = (() => {
+            const el = document.querySelector('meta[name="la-famille-base-path"]');
+            return el ? (el.getAttribute("content") || "") : "";
+        })();
+
         const fetchMetaData = () => {
             if (!fetchPromise) {
-                fetchPromise = fetch("/search.json")
+                fetchPromise = fetch(searchBase + "/search.json")
                     .then(response => {
                         if (!response.ok) throw new Error("Network response was not ok");
                         return response.json();

@@ -4,6 +4,7 @@ package feed
 import (
 	"encoding/xml"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -22,15 +23,28 @@ type Item struct {
 }
 
 // LocalURL converts a generated output path to the site's root-relative URL.
+// Segments are percent-escaped so a filename-derived slug with a space or
+// non-ASCII character stays a valid feed <link> and <guid> (#531).
 func LocalURL(outputPath string) string {
 	p := filepath.ToSlash(outputPath)
 	if p == "index.html" {
 		return "/"
 	}
 	if strings.HasSuffix(p, "/index.html") {
-		return "/" + strings.TrimSuffix(p, "index.html")
+		return "/" + escapeSegments(strings.TrimSuffix(p, "index.html"))
 	}
-	return "/" + strings.TrimSuffix(p, ".html") + "/"
+	return "/" + escapeSegments(strings.TrimSuffix(p, ".html")+"/")
+}
+
+func escapeSegments(p string) string {
+	parts := strings.Split(p, "/")
+	for i, seg := range parts {
+		if seg == "" {
+			continue
+		}
+		parts[i] = url.PathEscape(seg)
+	}
+	return strings.Join(parts, "/")
 }
 
 type rss struct {

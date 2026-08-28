@@ -199,6 +199,97 @@ func TestBuild_AuditConcurrentIsProcessLocal(t *testing.T) {
 	// per generator.go:51 comment. See content/jules/reports/*-build-audit.md.
 }
 
+// Issue #533: when the replaced output directory cannot be removed (a read-only
+// deploy mount, a full disk), build must not silently report success with
+// warnings=0 - and the stranded .public.previous-* copy must be named so an
+// operator can delete it.
+func TestReplaceOutputDirectoryReportsStrandedBackup(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("running as root: mode 0555 directories are still writable")
+	}
+
+	parent := t.TempDir()
+	outputDir := filepath.Join(parent, "public")
+	stagingDir := filepath.Join(parent, ".public.staging-test")
+
+	if err := os.MkdirAll(stagingDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	// A normal replacement deletes the old copy and reports no warning.
+	if err := os.MkdirAll(filepath.Join(outputDir, "sub"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "sub", "feed.xml"), []byte("x"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	warnings, err := replaceOutputDirectory(outputDir, stagingDir)
+	if err != nil {
+		t.Fatalf("replaceOutputDirectory: %v", err)
+	}
+	if len(warnings) != 0 {
+		t.Errorf("clean replacement reported warnings: %v", warnings)
+	}
+	entries, err := os.ReadDir(parent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if strings.Contains(e.Name(), ".previous-") {
+			t.Errorf("clean replacement left a .previous- dir: %s", e.Name())
+		}
+	}
+
+	// Now a replacement whose old copy cannot be deleted: a read-only
+	// subdirectory makes RemoveAll fail while the rename succeeds.
+	stagingDir = filepath.Join(parent, ".public.staging-test-2")
+	if err := os.MkdirAll(stagingDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(outputDir, "sub"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "sub", "feed.xml"), []byte("x"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(filepath.Join(outputDir, "sub"), 0555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		// The stranded backup is read-only; make it deletable again so the
+		// test framework's TempDir cleanup can remove it.
+		_ = os.Chmod(filepath.Join(outputDir, "sub"), 0755)
+		backups, _ := filepath.Glob(filepath.Join(parent, ".public.previous-*"))
+		for _, b := range backups {
+			_ = os.Chmod(filepath.Join(b, "sub"), 0755)
+		}
+	})
+
+	warnings, err = replaceOutputDirectory(outputDir, stagingDir)
+	if err != nil {
+		t.Fatalf("replaceOutputDirectory with read-only old output: %v", err)
+	}
+	if len(warnings) == 0 {
+		t.Fatal("expected a warning naming the stranded backup, got none")
+	}
+	if !strings.Contains(warnings[0], "stale copy") {
+		t.Errorf("warning does not describe the stranded backup: %q", warnings[0])
+	}
+	// The stranded copy must actually exist so the warning is truthful.
+	entries, err = os.ReadDir(parent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, e := range entries {
+		if strings.Contains(e.Name(), ".previous-") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("no .previous- directory left behind, but a warning claimed one was stranded")
+	}
+}
+
 func TestBuild_AuditAssetPathSafetyStillEnforced(t *testing.T) {
 	cfg, _ := setupTestSite(t)
 	// Asset copy must still reject paths that escape the output directory.

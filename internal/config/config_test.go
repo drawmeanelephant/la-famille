@@ -352,6 +352,26 @@ func TestLegacySiteURLValidation(t *testing.T) {
 	}
 }
 
+// Issue #531: the bare-string emit path (search.json, discovery fallbacks,
+// graph) must escape the same way URLForOutputPath's url.URL does, or a raw
+// space reaches JSON consumers unencoded.
+func TestPublicPathForOutputEscapesSegments(t *testing.T) {
+	tests := []struct{ name, site, output, want string }{
+		{"no siteurl", "", "about/index.html", "/about/"},
+		{"no siteurl spaced", "", "my post/index.html", "/my%20post/"},
+		{"no siteurl unicode", "", "über café/index.html", "/%C3%BCber%20caf%C3%A9/"},
+		{"base path", "https://example.com/my-site", "about/index.html", "/my-site/about/"},
+		{"base path spaced", "https://example.com/my-site", "my post/index.html", "/my-site/my%20post/"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := (Config{SiteURL: tt.site}).PublicPathForOutput(tt.output); got != tt.want {
+				t.Errorf("PublicPathForOutput = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestURLForOutputPath(t *testing.T) {
 	tests := []struct{ name, site, output, want string }{
 		{"root", "https://example.com", "index.html", "https://example.com/"},
@@ -361,6 +381,11 @@ func TestURLForOutputPath(t *testing.T) {
 		{"slug", "https://example.com///", "guides/quick-start/index.html", "https://example.com/guides/quick-start/"},
 		{"slug override output", "https://example.com", "posts/custom/index.html", "https://example.com/posts/custom/"},
 		{"empty", "", "about/index.html", ""},
+		// A filename-derived slug with a space or non-ASCII character must be
+		// percent-escaped once so the <loc> stays sitemaps-valid (#531).
+		{"spaced slug", "https://example.com", "my post/index.html", "https://example.com/my%20post/"},
+		{"unicode slug", "https://example.com", "über café/index.html", "https://example.com/%C3%BCber%20caf%C3%A9/"},
+		{"spaced slug under base", "https://example.com/my-site", "my post/index.html", "https://example.com/my-site/my%20post/"},
 		// Rejected siteurls must produce no URL at all, not a traversal- or
 		// query-bearing canonical that crawlers resolve elsewhere.
 		{"encoded traversal separator", "https://example.com/..%2F..%2Fetc", "about/index.html", ""},

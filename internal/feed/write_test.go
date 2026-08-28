@@ -58,6 +58,10 @@ func TestLocalURL(t *testing.T) {
 		{"index.html", "/"},
 		{"about/index.html", "/about/"},
 		{"docs/install/index.html", "/docs/install/"},
+		// A raw space or non-ASCII char in the slug must not reach the feed
+		// <link>/<guid> unencoded (#531).
+		{"my post/index.html", "/my%20post/"},
+		{"über café/index.html", "/%C3%BCber%20caf%C3%A9/"},
 	} {
 		if got := LocalURL(tc.path); got != tc.want {
 			t.Errorf("LocalURL(%q) = %q, want %q", tc.path, got, tc.want)

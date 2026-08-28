@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/generator"
 	"github.com/tbuddy/la-famille/internal/runtimeassets"
@@ -11,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -182,6 +184,22 @@ func TestInitCommand(t *testing.T) {
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		t.Fatalf("la-famille init did not create config.yaml")
+	}
+}
+
+// Issue #525: dying on a busy port should tell the operator how to recover,
+// and unrelated serve errors must pass through unchanged.
+func TestServeBindHint(t *testing.T) {
+	busy := syscall.EADDRINUSE
+	if got := serveBindHint(busy, 8080); !strings.Contains(got.Error(), "serve -p <port>") {
+		t.Errorf("serveBindHint(EADDRINUSE) = %v, want a `serve -p <port>` recovery hint", got)
+	}
+	if got := serveBindHint(fmt.Errorf("listen tcp 127.0.0.1:8080: bind: address already in use"), 8123); !strings.Contains(got.Error(), "port 8123") {
+		t.Errorf("serveBindHint(bind error) = %v, want the port named", got)
+	}
+	plain := fmt.Errorf("some other failure")
+	if got := serveBindHint(plain, 8080); got.Error() != plain.Error() {
+		t.Errorf("serveBindHint(non-bind error) = %v, want unchanged %v", got, plain)
 	}
 }
 

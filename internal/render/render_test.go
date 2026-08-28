@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -152,6 +153,58 @@ func TestHTMLLayoutSelection(t *testing.T) {
 			t.Errorf("expected 'Custom: Second', got '%s'", string(content2))
 		}
 	})
+}
+
+// Issue #528: a siteurl with a subpath must rebase the bundled themes' and
+// hand-written pages' root-relative URLs onto the base path, and publish that
+// base to client scripts via a meta tag. The empty-base case must pass through
+// untouched.
+func TestApplyBasePath(t *testing.T) {
+	in := `<head>
+<link rel="stylesheet" href="/assets/css/theme.css">
+</head>
+<body>
+<a href="/">Home</a>
+<a href="/about/">About</a>
+<a href="https://example.com/abs">abs</a>
+<a href="//cdn.example.com/x">proto-relative</a>
+<img src="/assets/img/a.png" srcset="/assets/img/a.png 1x, /assets/img/a@2x.png 2x">
+<script src="/assets/js/search.js"></script>
+<link rel="canonical" href="https://example.com/my-site/">
+</body>
+`
+
+	out := string(applyBasePath("/my-site", []byte(in)))
+	for _, want := range []string{
+		`href="/my-site/assets/css/theme.css"`,
+		`href="/my-site/"`,
+		`href="/my-site/about/"`,
+		`href="https://example.com/abs"`,
+		`href="//cdn.example.com/x"`,
+		`src="/my-site/assets/img/a.png"`,
+		`srcset="/my-site/assets/img/a.png 1x, /my-site/assets/img/a@2x.png 2x"`,
+		`src="/my-site/assets/js/search.js"`,
+		`href="https://example.com/my-site/"`,
+		`<meta name="la-famille-base-path" content="/my-site">`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("rebased HTML missing %q:\n%s", want, out)
+		}
+	}
+
+	// base-path meta must land inside <head>.
+	headClose := strings.Index(out, "</head>")
+	metaIdx := strings.Index(out, `name="la-famille-base-path"`)
+	if headClose < 0 || metaIdx < 0 || metaIdx > headClose {
+		t.Errorf("base-path meta not inside <head>:\n%s", out)
+	}
+
+	// Empty or whitespace base is a no-op, byte for byte.
+	for _, base := range []string{"", "   "} {
+		if got := string(applyBasePath(base, []byte(in))); got != in {
+			t.Errorf("applyBasePath(%q) changed a root page\n got: %q", base, got)
+		}
+	}
 }
 
 func TestDiscoverLayouts(t *testing.T) {

@@ -46,6 +46,9 @@ Back to [Page One](page1.md).
 
 	cfg := config.DefaultConfig()
 	cfg.ContentDir = contentDir
+	// With discovery files being generated, a siteurl is required for a valid
+	// sitemap; set one so this fixture stays a clean pass.
+	cfg.SiteURL = "https://example.com"
 
 	res, err := Validate(cfg)
 	if err != nil {
@@ -59,6 +62,48 @@ Back to [Page One](page1.md).
 	}
 	if res.WarnCount() != 0 {
 		t.Errorf("expected WarnCount() = 0, got %d", res.WarnCount())
+	}
+}
+
+// Issue #535: an unset siteurl must be a site-wide warning (root-relative
+// sitemap <loc> entries are protocol-invalid), and once set the warning must go.
+func TestValidate_WarnsOnEmptySiteURL(t *testing.T) {
+	dir := t.TempDir()
+	contentDir := filepath.Join(dir, "content")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("---\ntitle: Home\ndescription: ok\n---\n# Home\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	present := func(res *Result) bool {
+		for _, f := range res.Findings {
+			if strings.Contains(f.Message, "siteurl is unset") {
+				return true
+			}
+		}
+		return false
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.SiteURL = ""
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+	if !present(res) {
+		t.Errorf("expected an empty-siteurl warning, got: %v", res.Findings)
+	}
+
+	cfg.SiteURL = "https://example.com"
+	res, err = Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+	if present(res) {
+		t.Errorf("no empty-siteurl warning expected once siteurl is set, got: %v", res.Findings)
 	}
 }
 
@@ -365,6 +410,7 @@ Link to [rendered page](page1.md).
 
 	cfg := config.DefaultConfig()
 	cfg.ContentDir = contentDir
+	cfg.SiteURL = "https://example.com"
 
 	res, err := Validate(cfg)
 	if err != nil {

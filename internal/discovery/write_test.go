@@ -45,6 +45,22 @@ func TestWrite(t *testing.T) {
 	}
 }
 
+// Issue #531: a <loc> built from a filename-derived slug with a space must be
+// percent-escaped even with no siteurl, or the sitemap is invalid XML-for-crawlers.
+func TestWriteEncodesSpacedSlug(t *testing.T) {
+	outputDir := t.TempDir()
+	if err := Write(config.Config{OutputDir: outputDir}, []string{"my post/index.html"}); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(outputDir, "sitemap.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "<loc>/my%20post/</loc>") {
+		t.Errorf("sitemap must escape a spaced slug, got:\n%s", data)
+	}
+}
+
 func TestWriteWithoutSiteURL(t *testing.T) {
 	outputDir := t.TempDir()
 	if err := Write(config.Config{OutputDir: outputDir}, []string{"index.html"}); err != nil {
