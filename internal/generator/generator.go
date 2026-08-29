@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 
 	"github.com/tbuddy/la-famille/internal/asset"
@@ -147,6 +148,87 @@ func Build(cfg config.Config) (BuildResult, error) {
 	return result, nil
 }
 
+// indexedError pairs a worker error with the deterministic index of the page
+// that produced it, so render failures are reported in content order rather
+// than worker completion order.
+type indexedError struct {
+	err   error
+	index int
+}
+
+// job is one unit of render work: a content file and its position in the
+// deterministic key order.
+type job struct {
+	relPath string
+	index   int
+}
+
+// buildContext carries the state one build accumulates as it moves through
+// its phases. build() creates one and hands it to the phase methods below;
+// everything the render workers touch concurrently is guarded by mu.
+type buildContext struct {
+	cfg     config.Config // staging configuration: OutputDir points at the staging tree
+	siteCfg config.Config // the site's real configuration, used for public URLs
+
+	renderer  *render.Renderer
+	sanitizer *bluemonday.Policy
+
+	// mu guards the graph, the metadata maps and the result counters that
+	// render workers update from many goroutines. It is also handed to the
+	// link transformer, which records graph edges during conversion.
+	mu sync.Mutex
+
+	fileMap      map[string]*content.FileMeta
+	missingFiles map[string][]string
+	backlinks    map[string][]string
+	g            graph.Graph
+	metaData     map[string]map[string]interface{}
+	// pageOutputs maps a page id to the output-relative path its HTML was
+	// written to, so downstream consumers can build slug-aware public URLs
+	// instead of guessing them back from the id.
+	pageOutputs map[string]string
+
+	// Taxonomy listings and their search entries, produced before the render
+	// pass and folded into the final outputs by collectRenderOutputs.
+	taxPaths       []string
+	taxSearchItems []search.Item
+
+	// Per-key render outputs, indexed by the page's position in the
+	// deterministic key order, so workers fill them without locking.
+	searchIndexItems []search.Item
+	renderedPaths    []string
+	rssItems         []feed.Item
+	searchIndex      []search.Item
+
+	errs   []indexedError
+	claims *outputClaims
+
+	result *BuildResult
+}
+
+func newBuildContext(cfg, siteCfg config.Config, result *BuildResult) *buildContext {
+	return &buildContext{
+		cfg:          cfg,
+		siteCfg:      siteCfg,
+		renderer:     render.New(filepath.Dir(cfg.Template)),
+		sanitizer:    newContentSanitizer(),
+		missingFiles: make(map[string][]string),
+		backlinks:    make(map[string][]string),
+		g: graph.Graph{
+			Nodes: make(map[string]graph.Node),
+			Edges: [][2]string{},
+		},
+		metaData:    make(map[string]map[string]interface{}),
+		pageOutputs: make(map[string]string),
+		result:      result,
+	}
+}
+
+// build converts every content file and writes the staged site. It is the
+// orchestrator: each phase lives in a buildContext method with a single
+// responsibility, and the phases run in the order the output requires —
+// render everything, fold the results together, write stubs and assets,
+// write the derived artifacts, then record the cache entry.
 func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	start := time.Now()
 	var result BuildResult
@@ -155,83 +237,99 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	if err != nil {
 		return result, fmt.Errorf("failed to fingerprint build inputs: %w", err)
 	}
-	// 1. Pass 1: Walk content dir and gather metadata
-	fileMap, err := content.GatherMetadata(cfg.ContentDir)
-	if err != nil {
-		return result, fmt.Errorf("failed to gather metadata: %w", err)
+
+	bc := newBuildContext(cfg, siteCfg, &result)
+	if err := bc.gatherMetadata(); err != nil {
+		return result, err
 	}
+	if err := bc.prepareTaxonomies(); err != nil {
+		return result, err
+	}
+
+	bc.renderAll()
+
+	if err := bc.collectRenderOutputs(); err != nil {
+		return result, err
+	}
+	if err := bc.writeStubsAndAssets(); err != nil {
+		return result, err
+	}
+	if err := bc.writeDerivedArtifacts(); err != nil {
+		return result, err
+	}
+	if err := bc.cacheBuild(fingerprint); err != nil {
+		return result, err
+	}
+
+	result.Duration = time.Since(start)
+	return result, nil
+}
+
+// gatherMetadata walks the content directory and collects frontmatter and
+// body for every page. Per-file warnings surface on the build result, sorted
+// so repeated builds report them identically.
+func (bc *buildContext) gatherMetadata() error {
+	fileMap, err := content.GatherMetadata(bc.cfg.ContentDir)
+	if err != nil {
+		return fmt.Errorf("failed to gather metadata: %w", err)
+	}
+	bc.fileMap = fileMap
 
 	for _, meta := range fileMap {
 		if len(meta.Warnings) > 0 {
-			result.Warnings = append(result.Warnings, meta.Warnings...)
+			bc.result.Warnings = append(bc.result.Warnings, meta.Warnings...)
 		}
 	}
-	sort.Strings(result.Warnings)
+	sort.Strings(bc.result.Warnings)
+	return nil
+}
 
-	// Track missing files that need stubs. map[missingPath][]parentFiles
-	missingFiles := make(map[string][]string)
-	backlinks := make(map[string][]string)
-	g := graph.Graph{
-		Nodes: make(map[string]graph.Node),
-		Edges: [][2]string{},
-	}
-	metaData := make(map[string]map[string]interface{})
-	// pageOutputs maps a page id to the output-relative path its HTML was
-	// written to, so downstream consumers can build slug-aware public URLs
-	// instead of guessing them back from the id.
-	pageOutputs := make(map[string]string)
-	var searchIndex []search.Item
-
-	// 2. Pass 2: Process files in deterministic order
-	keys := make([]string, 0, len(fileMap))
-	for k := range fileMap {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Reusable buffer for markdown conversion
-	renderer := render.New(filepath.Dir(cfg.Template))
-
-	type indexedError struct {
-		err   error
-		index int
-	}
-	var errs []indexedError
-
-	p := newContentSanitizer()
-
+// prepareTaxonomies generates the taxonomy listing pages ahead of the render
+// pass, surfaces them in the site nav, and claims every output path known so
+// far so later writers cannot collide with one another.
+func (bc *buildContext) prepareTaxonomies() error {
 	// Surface taxonomy archives in the site nav before any page renders, so
 	// /tags/ and /categories/ are reachable from every page rather than only
 	// from the sitemap (#529).
-	siteCfg.SiteLinks = taxonomy.NavLinks(siteCfg.SiteLinks, fileMap)
+	bc.siteCfg.SiteLinks = taxonomy.NavLinks(bc.siteCfg.SiteLinks, bc.fileMap)
 
-	taxPaths, taxSearchItems, err := taxonomy.GenerateTaxonomies(cfg, siteCfg, fileMap, renderer, p)
+	taxPaths, taxSearchItems, err := taxonomy.GenerateTaxonomies(bc.cfg, bc.siteCfg, bc.fileMap, bc.renderer, bc.sanitizer)
 	if err != nil {
-		return result, err
+		return err
 	}
+	bc.taxPaths = taxPaths
+	bc.taxSearchItems = taxSearchItems
 
 	// Taxonomy listings share the output tree with content pages, so the guard
 	// can only see the whole picture once their paths are known. claims keeps
 	// the ownership map alive for the writers that run later in the build.
-	claims, err := validateOutputPaths(fileMap, cfg.OutputDir, reservedOutputPaths(cfg), taxPaths, detectCaseSensitivity(cfg.OutputDir))
+	claims, err := validateOutputPaths(bc.fileMap, bc.cfg.OutputDir, reservedOutputPaths(bc.cfg), taxPaths, detectCaseSensitivity(bc.cfg.OutputDir))
 	if err != nil {
-		return result, err
+		return err
 	}
+	bc.claims = claims
+	return nil
+}
 
-	var mu sync.Mutex
+// renderAll converts every content file with a pool of workers, one job per
+// page in deterministic key order. Results land in the per-key slices and the
+// shared graph and metadata maps; failures land in bc.errs for
+// collectRenderOutputs to order and join.
+func (bc *buildContext) renderAll() {
+	keys := make([]string, 0, len(bc.fileMap))
+	for k := range bc.fileMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	numWorkers := runtime.NumCPU()
 	if numWorkers < 1 {
 		numWorkers = 1
 	}
 
-	searchIndexItems := make([]search.Item, len(keys))
-	renderedPaths := make([]string, len(keys))
-	rssItems := make([]feed.Item, len(keys))
-
-	type job struct {
-		relPath string
-		index   int
-	}
+	bc.searchIndexItems = make([]search.Item, len(keys))
+	bc.renderedPaths = make([]string, len(keys))
+	bc.rssItems = make([]feed.Item, len(keys))
 
 	jobs := make(chan job, len(keys))
 	for i, k := range keys {
@@ -240,303 +338,326 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	close(jobs)
 
 	var wg sync.WaitGroup
-
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			// Reusable buffer for markdown conversion
 			var buf bytes.Buffer
 			for j := range jobs {
-				func() {
-					type jobUpdate struct {
-						meta      map[string]interface{}
-						outputRel string
-						errs      []error
-						node      graph.Node
-						errCount  int
-						pageCount int
-					}
-					var update jobUpdate
-
-					relPath := j.relPath
-					idx := j.index
-					meta := fileMap[relPath]
-					shouldRender := true
-					if meta.Render != nil && !*meta.Render {
-						shouldRender = false
-					}
-
-					id := strings.TrimSuffix(relPath, ".md")
-					if !shouldRender {
-						id = relPath
-					}
-
-					update.node = graph.Node{
-						Type:   "page",
-						Render: shouldRender,
-					}
-
-					m := make(map[string]interface{})
-					title := meta.Title
-					if title == "" {
-						title = filepath.Base(relPath)
-					}
-					m["title"] = title
-					if meta.Author != "" {
-						m["author"] = meta.Author
-					}
-					if meta.Date != "" {
-						m["date"] = meta.Date
-					}
-					if len(meta.Tags) > 0 {
-						m["tags"] = meta.Tags
-					}
-					if len(meta.Categories) > 0 {
-						m["categories"] = meta.Categories
-					}
-					m["word_count"] = len(strings.Fields(string(meta.Rest)))
-					m["render"] = shouldRender
-
-					update.meta = m
-
-					defer func() {
-						mu.Lock()
-						g.Nodes[id] = update.node
-						metaData[id] = update.meta
-						if update.outputRel != "" {
-							pageOutputs[id] = update.outputRel
-						}
-						if update.errCount > 0 {
-							result.ErrorCount += update.errCount
-						}
-						if update.pageCount > 0 {
-							result.PageCount += update.pageCount
-						}
-						if len(update.errs) > 0 {
-							for _, e := range update.errs {
-								errs = append(errs, indexedError{err: e, index: idx})
-							}
-						}
-						mu.Unlock()
-					}()
-
-					outDirClean := filepath.Clean(cfg.OutputDir)
-					outPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
-					var relOut string
-
-					if shouldRender {
-						slug := meta.Slug
-						if slug != "" && !usableSlug(slug) {
-							slog.Warn("Invalid slug. Ignoring.", "slug", slug, "file", relPath)
-							slug = ""
-						}
-						relOut = transform.GetOutputURL(relPath, slug, shouldRender)
-						outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
-
-						var taxonomyTerms []string
-						var taxonomyURLs []string
-						taxonomySeen := make(map[string]bool)
-						for _, tag := range meta.Tags {
-							if tag != "" && !taxonomySeen[tag] {
-								taxonomySeen[tag] = true
-								taxonomyTerms = append(taxonomyTerms, tag)
-								taxonomyURLs = append(taxonomyURLs, taxonomyArchiveURL(siteCfg, "tags", tag))
-							}
-						}
-						for _, cat := range meta.Categories {
-							if cat != "" && !taxonomySeen[cat] {
-								taxonomySeen[cat] = true
-								taxonomyTerms = append(taxonomyTerms, cat)
-								taxonomyURLs = append(taxonomyURLs, taxonomyArchiveURL(siteCfg, "categories", cat))
-							}
-						}
-
-						// siteCfg, not cfg: cfg is the staging configuration.
-						// PublicPathForOutput applies the siteurl base path and
-						// drops index.html, so a search hit navigates to the
-						// same URL the canonical link and sitemap advertise.
-						urlPath := siteCfg.PublicPathForOutput(relOut)
-						searchIndexItems[idx] = search.Item{
-							Title:    title,
-							URL:      urlPath,
-							Tags:     taxonomyTerms,
-							TagURLs:  taxonomyURLs,
-							Snippet:  search.ExtractSnippet(meta.Rest),
-							Headings: search.ExtractHeadings(meta.Rest),
-						}
-					}
-
-					// Validate the final outPath against directory escapes using IsSafePath
-					if !pathutil.IsSafePath(outDirClean, outPath) {
-						update.errCount++
-						slog.Warn("Potential path traversal in page loading detected. Skipping.", "path", outPath)
-						return
-					}
-
-					if err := os.MkdirAll(filepath.Dir(outPath), 0700); err != nil {
-						update.errs = append(update.errs, err)
-						return
-					}
-
-					// Set up goldmark with AST transformer. Unrendered pages are
-					// converted too: the conversion is what walks their links
-					// into the graph, the backlinks and the missing-file list.
-					// Their generated HTML is then discarded.
-					transformer := &transform.LinkTransformer{
-						CurrentFile:  relPath,
-						FileMap:      fileMap,
-						MissingFiles: missingFiles,
-						Backlinks:    backlinks,
-						Graph:        &g,
-						Mu:           &mu,
-					}
-
-					md := markdown.NewEngine(transformer)
-
-					buf.Reset()
-					convertErr := getConvertMarkdown()(md, meta.Rest, &buf)
-
-					if !shouldRender {
-						// The verbatim copy does not depend on the conversion,
-						// so a conversion failure here costs graph edges, not
-						// output, and must not fail a build that previously
-						// succeeded.
-						if convertErr != nil {
-							slog.Warn("Failed to scan links in unrendered page", "file", relPath, "error", convertErr)
-						}
-						if err := os.WriteFile(outPath, meta.Content, 0600); err != nil {
-							update.errs = append(update.errs, err)
-						}
-						return
-					}
-
-					if convertErr != nil {
-						update.errCount++
-						update.errs = append(update.errs, fmt.Errorf("error converting %s: %w", relPath, convertErr))
-						return
-					}
-
-					sanitizedHTML := p.SanitizeBytes(buf.Bytes())
-
-					// Link the page's tags to their archives so a post leads back
-					// to /tags/ and each tag page (#529).
-					if tagLinks := taxonomy.PageTagLinks(meta.Tags, relOut, p); len(tagLinks) > 0 {
-						sanitizedHTML = append(sanitizedHTML, tagLinks...)
-					}
-
-					desc := meta.Description
-					if desc == "" {
-						desc = cfg.DefaultDescription
-					}
-					img := meta.Image
-					if img == "" {
-						img = cfg.DefaultOGImage
-					}
-
-					page := page.Page{
-						Site:            siteCfg,
-						Title:           title,
-						Author:          meta.Author,
-						Date:            meta.Date,
-						VideoScript:     meta.VideoScript,
-						AnimationCues:   meta.AnimationCues,
-						SoundtrackTheme: meta.SoundtrackTheme,
-						Layout:          meta.Layout,
-						ComplianceModal: meta.ComplianceModal,
-						Content:         template.HTML(sanitizedHTML), // #nosec G203
-						Description:     desc,
-						Image:           img,
-						CanonicalURL:    cfg.URLForOutputPath(relOut),
-					}
-
-					if err := renderer.HTML(cfg, page, meta.Layout, outPath); err != nil {
-						update.errs = append(update.errs, err)
-						return
-					}
-					renderedPaths[idx] = relOut
-					update.outputRel = relOut
-					if meta.Date != "" {
-						itemURL := cfg.URLForOutputPath(relOut)
-						if itemURL == "" {
-							itemURL = feed.LocalURL(relOut)
-						}
-						rssItems[idx] = feed.Item{
-							Title:       title,
-							URL:         itemURL,
-							Date:        meta.Date,
-							Description: search.ExtractSnippet(meta.Rest),
-						}
-					}
-					update.pageCount++
-				}()
+				bc.processJob(j, &buf)
 			}
 		}()
 	}
 	wg.Wait()
+}
 
-	for _, tp := range taxPaths {
+// processJob renders a single content file. Per-page failures are recorded on
+// the local update and committed to the shared state under bc.mu in a defer,
+// so one bad page neither aborts the worker nor loses the work already done.
+func (bc *buildContext) processJob(j job, buf *bytes.Buffer) {
+	type jobUpdate struct {
+		meta      map[string]interface{}
+		outputRel string
+		errs      []error
+		node      graph.Node
+		errCount  int
+		pageCount int
+	}
+	var update jobUpdate
+
+	relPath := j.relPath
+	idx := j.index
+	meta := bc.fileMap[relPath]
+	shouldRender := true
+	if meta.Render != nil && !*meta.Render {
+		shouldRender = false
+	}
+
+	id := strings.TrimSuffix(relPath, ".md")
+	if !shouldRender {
+		id = relPath
+	}
+
+	update.node = graph.Node{
+		Type:   "page",
+		Render: shouldRender,
+	}
+
+	m := make(map[string]interface{})
+	title := meta.Title
+	if title == "" {
+		title = filepath.Base(relPath)
+	}
+	m["title"] = title
+	if meta.Author != "" {
+		m["author"] = meta.Author
+	}
+	if meta.Date != "" {
+		m["date"] = meta.Date
+	}
+	if len(meta.Tags) > 0 {
+		m["tags"] = meta.Tags
+	}
+	if len(meta.Categories) > 0 {
+		m["categories"] = meta.Categories
+	}
+	m["word_count"] = len(strings.Fields(string(meta.Rest)))
+	m["render"] = shouldRender
+
+	update.meta = m
+
+	defer func() {
+		bc.mu.Lock()
+		bc.g.Nodes[id] = update.node
+		bc.metaData[id] = update.meta
+		if update.outputRel != "" {
+			bc.pageOutputs[id] = update.outputRel
+		}
+		if update.errCount > 0 {
+			bc.result.ErrorCount += update.errCount
+		}
+		if update.pageCount > 0 {
+			bc.result.PageCount += update.pageCount
+		}
+		if len(update.errs) > 0 {
+			for _, e := range update.errs {
+				bc.errs = append(bc.errs, indexedError{err: e, index: idx})
+			}
+		}
+		bc.mu.Unlock()
+	}()
+
+	outDirClean := filepath.Clean(bc.cfg.OutputDir)
+	outPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
+	var relOut string
+
+	if shouldRender {
+		slug := meta.Slug
+		if slug != "" && !usableSlug(slug) {
+			slog.Warn("Invalid slug. Ignoring.", "slug", slug, "file", relPath)
+			slug = ""
+		}
+		relOut = transform.GetOutputURL(relPath, slug, shouldRender)
+		outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
+
+		var taxonomyTerms []string
+		var taxonomyURLs []string
+		taxonomySeen := make(map[string]bool)
+		for _, tag := range meta.Tags {
+			if tag != "" && !taxonomySeen[tag] {
+				taxonomySeen[tag] = true
+				taxonomyTerms = append(taxonomyTerms, tag)
+				taxonomyURLs = append(taxonomyURLs, taxonomyArchiveURL(bc.siteCfg, "tags", tag))
+			}
+		}
+		for _, cat := range meta.Categories {
+			if cat != "" && !taxonomySeen[cat] {
+				taxonomySeen[cat] = true
+				taxonomyTerms = append(taxonomyTerms, cat)
+				taxonomyURLs = append(taxonomyURLs, taxonomyArchiveURL(bc.siteCfg, "categories", cat))
+			}
+		}
+
+		// siteCfg, not cfg: cfg is the staging configuration.
+		// PublicPathForOutput applies the siteurl base path and
+		// drops index.html, so a search hit navigates to the
+		// same URL the canonical link and sitemap advertise.
+		urlPath := bc.siteCfg.PublicPathForOutput(relOut)
+		bc.searchIndexItems[idx] = search.Item{
+			Title:    title,
+			URL:      urlPath,
+			Tags:     taxonomyTerms,
+			TagURLs:  taxonomyURLs,
+			Snippet:  search.ExtractSnippet(meta.Rest),
+			Headings: search.ExtractHeadings(meta.Rest),
+		}
+	}
+
+	// Validate the final outPath against directory escapes using IsSafePath
+	if !pathutil.IsSafePath(outDirClean, outPath) {
+		update.errCount++
+		slog.Warn("Potential path traversal in page loading detected. Skipping.", "path", outPath)
+		return
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outPath), 0700); err != nil {
+		update.errs = append(update.errs, err)
+		return
+	}
+
+	// Set up goldmark with AST transformer. Unrendered pages are
+	// converted too: the conversion is what walks their links
+	// into the graph, the backlinks and the missing-file list.
+	// Their generated HTML is then discarded.
+	transformer := &transform.LinkTransformer{
+		CurrentFile:  relPath,
+		FileMap:      bc.fileMap,
+		MissingFiles: bc.missingFiles,
+		Backlinks:    bc.backlinks,
+		Graph:        &bc.g,
+		Mu:           &bc.mu,
+	}
+
+	md := markdown.NewEngine(transformer)
+
+	buf.Reset()
+	convertErr := getConvertMarkdown()(md, meta.Rest, buf)
+
+	if !shouldRender {
+		// The verbatim copy does not depend on the conversion,
+		// so a conversion failure here costs graph edges, not
+		// output, and must not fail a build that previously
+		// succeeded.
+		if convertErr != nil {
+			slog.Warn("Failed to scan links in unrendered page", "file", relPath, "error", convertErr)
+		}
+		if err := os.WriteFile(outPath, meta.Content, 0600); err != nil {
+			update.errs = append(update.errs, err)
+		}
+		return
+	}
+
+	if convertErr != nil {
+		update.errCount++
+		update.errs = append(update.errs, fmt.Errorf("error converting %s: %w", relPath, convertErr))
+		return
+	}
+
+	sanitizedHTML := bc.sanitizer.SanitizeBytes(buf.Bytes())
+
+	// Link the page's tags to their archives so a post leads back
+	// to /tags/ and each tag page (#529).
+	if tagLinks := taxonomy.PageTagLinks(meta.Tags, relOut, bc.sanitizer); len(tagLinks) > 0 {
+		sanitizedHTML = append(sanitizedHTML, tagLinks...)
+	}
+
+	desc := meta.Description
+	if desc == "" {
+		desc = bc.cfg.DefaultDescription
+	}
+	img := meta.Image
+	if img == "" {
+		img = bc.cfg.DefaultOGImage
+	}
+
+	pg := page.Page{
+		Site:            bc.siteCfg,
+		Title:           title,
+		Author:          meta.Author,
+		Date:            meta.Date,
+		VideoScript:     meta.VideoScript,
+		AnimationCues:   meta.AnimationCues,
+		SoundtrackTheme: meta.SoundtrackTheme,
+		Layout:          meta.Layout,
+		ComplianceModal: meta.ComplianceModal,
+		Content:         template.HTML(sanitizedHTML), // #nosec G203
+		Description:     desc,
+		Image:           img,
+		CanonicalURL:    bc.cfg.URLForOutputPath(relOut),
+	}
+
+	if err := bc.renderer.HTML(bc.cfg, pg, meta.Layout, outPath); err != nil {
+		update.errs = append(update.errs, err)
+		return
+	}
+	bc.renderedPaths[idx] = relOut
+	update.outputRel = relOut
+	if meta.Date != "" {
+		itemURL := bc.cfg.URLForOutputPath(relOut)
+		if itemURL == "" {
+			itemURL = feed.LocalURL(relOut)
+		}
+		bc.rssItems[idx] = feed.Item{
+			Title:       title,
+			URL:         itemURL,
+			Date:        meta.Date,
+			Description: search.ExtractSnippet(meta.Rest),
+		}
+	}
+	update.pageCount++
+}
+
+// collectRenderOutputs folds the per-key worker output into the final search
+// index, render path list and graph structures, and orders everything
+// deterministically. If any worker recorded an error they are joined here, in
+// content order, and the build stops before any generated content is written.
+func (bc *buildContext) collectRenderOutputs() error {
+	for _, tp := range bc.taxPaths {
 		if tp != "" {
-			renderedPaths = append(renderedPaths, tp)
+			bc.renderedPaths = append(bc.renderedPaths, tp)
 		}
 	}
-	result.PageCount += len(taxPaths)
+	bc.result.PageCount += len(bc.taxPaths)
 
-	for _, item := range searchIndexItems {
+	for _, item := range bc.searchIndexItems {
 		if item.URL != "" {
-			searchIndex = append(searchIndex, item)
+			bc.searchIndex = append(bc.searchIndex, item)
 		}
 	}
-	for _, item := range taxSearchItems {
+	for _, item := range bc.taxSearchItems {
 		if item.URL != "" {
-			searchIndex = append(searchIndex, item)
+			bc.searchIndex = append(bc.searchIndex, item)
 		}
 	}
 
 	// Sort searchIndex, edges, and other outputs to ensure deterministic output
-	sort.SliceStable(searchIndex, func(i, j int) bool {
-		if searchIndex[i].URL != searchIndex[j].URL {
-			return searchIndex[i].URL < searchIndex[j].URL
+	sort.SliceStable(bc.searchIndex, func(i, j int) bool {
+		if bc.searchIndex[i].URL != bc.searchIndex[j].URL {
+			return bc.searchIndex[i].URL < bc.searchIndex[j].URL
 		}
-		return searchIndex[i].Title < searchIndex[j].Title
+		return bc.searchIndex[i].Title < bc.searchIndex[j].Title
 	})
 
-	sort.SliceStable(g.Edges, func(i, j int) bool {
-		return g.Edges[i][0] < g.Edges[j][0]
+	sort.SliceStable(bc.g.Edges, func(i, j int) bool {
+		return bc.g.Edges[i][0] < bc.g.Edges[j][0]
 	})
 
-	for k := range backlinks {
-		sort.Strings(backlinks[k])
+	for k := range bc.backlinks {
+		sort.Strings(bc.backlinks[k])
 	}
 
 	// Sort errs for deterministic order
-	if len(errs) > 0 {
-		sort.SliceStable(errs, func(i, j int) bool {
-			return errs[i].index < errs[j].index
+	if len(bc.errs) > 0 {
+		sort.SliceStable(bc.errs, func(i, j int) bool {
+			return bc.errs[i].index < bc.errs[j].index
 		})
 
 		var joinErrs []error
-		for _, ie := range errs {
+		for _, ie := range bc.errs {
 			joinErrs = append(joinErrs, ie.err)
 		}
-		return result, errors.Join(joinErrs...)
+		return errors.Join(joinErrs...)
 	}
-	// 3. Generate stubs for missing files in deterministic order. Stubs run
-	// last and write with os.Create, so without claiming their paths a dangling
-	// link such as [all tags](tags.md) would overwrite the generated taxonomy
-	// listing at exit 0.
-	if err := stub.GenerateStubs(cfg, siteCfg, missingFiles, &g, p, fileMap, claims.stubClaimer()); err != nil {
-		return result, err
+	return nil
+}
+
+// writeStubsAndAssets runs the two writers that reserve paths in the output
+// tree after the render pass. Stubs run last and write with os.Create, so
+// without claiming their paths a dangling link such as [all tags](tags.md)
+// would overwrite the generated taxonomy listing at exit 0.
+func (bc *buildContext) writeStubsAndAssets() error {
+	// 3. Generate stubs for missing files in deterministic order.
+	if err := stub.GenerateStubs(bc.cfg, bc.siteCfg, bc.missingFiles, &bc.g, bc.sanitizer, bc.fileMap, bc.claims.stubClaimer()); err != nil {
+		return err
 	}
 
 	// 4. Verbatim Asset Copy Step
-	if err := asset.CopyAssets(cfg, claims.assetClaimer()); err != nil {
-		return result, err
+	if err := asset.CopyAssets(bc.cfg, bc.claims.assetClaimer()); err != nil {
+		return err
 	}
+	return nil
+}
 
+// writeDerivedArtifacts writes everything the build derives from the rendered
+// pages: the link graph files, site metadata, the graph explorer page and
+// payload, the search index, the RSS feed and the discovery files, computing
+// the content health summary on the way.
+func (bc *buildContext) writeDerivedArtifacts() error {
 	// Write graph structures via internal/graph
 	// 5. Write JSON outputs
-	if err := graph.WriteGraphFiles(cfg.OutputDir, g, backlinks); err != nil {
-		return result, err
+	if err := graph.WriteGraphFiles(bc.cfg.OutputDir, bc.g, bc.backlinks); err != nil {
+		return err
 	}
 
 	// Record each rendered page's public URL alongside its other metadata.
@@ -547,59 +668,62 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	// object, leaving every reader of title/date/tags untouched. Raw
 	// render:false pages and stubs get none, which is correct — they have no
 	// published URL to cite.
-	for id, out := range pageOutputs {
-		if m := metaData[id]; m != nil && out != "" {
-			m["url"] = siteCfg.PublicPathForOutput(out)
+	for id, out := range bc.pageOutputs {
+		if m := bc.metaData[id]; m != nil && out != "" {
+			m["url"] = bc.siteCfg.PublicPathForOutput(out)
 		}
 	}
 
-	if err := sitedata.Write(cfg.OutputDir, metaData); err != nil {
-		return result, err
+	if err := sitedata.Write(bc.cfg.OutputDir, bc.metaData); err != nil {
+		return err
 	}
 
 	// 5b. Knowledge Graph Explorer page and payload (static, no extra deps).
 	if _, err := graphexplorer.Write(graphexplorer.Input{
-		Config:      cfg,
-		Graph:       g,
-		Meta:        metaData,
-		PageOutputs: pageOutputs,
+		Config:      bc.cfg,
+		Graph:       bc.g,
+		Meta:        bc.metaData,
+		PageOutputs: bc.pageOutputs,
 	}); err != nil {
-		return result, err
+		return err
 	}
 
-	if err := search.WriteMinifiedJSON(filepath.Join(cfg.OutputDir, "search.json"), searchIndex); err != nil {
-		return result, err
+	if err := search.WriteMinifiedJSON(filepath.Join(bc.cfg.OutputDir, "search.json"), bc.searchIndex); err != nil {
+		return err
 	}
 	var datedItems []feed.Item
-	for _, item := range rssItems {
+	for _, item := range bc.rssItems {
 		if item.URL != "" {
 			datedItems = append(datedItems, item)
 		}
 	}
-	if err := feed.Write(cfg, datedItems); err != nil {
-		return result, err
+	if err := feed.Write(bc.cfg, datedItems); err != nil {
+		return err
 	}
-	result.Health = ComputeContentHealth(fileMap, g, backlinks)
+	bc.result.Health = ComputeContentHealth(bc.fileMap, bc.g, bc.backlinks)
 
-	if err := discovery.Write(cfg, renderedPaths); err != nil {
-		return result, err
+	if err := discovery.Write(bc.cfg, bc.renderedPaths); err != nil {
+		return err
 	}
+	return nil
+}
 
-	files, err := generatedFiles(cfg.OutputDir)
+// cacheBuild records the completed build in the on-disk cache so a later
+// build over unchanged inputs can be skipped entirely.
+func (bc *buildContext) cacheBuild(fingerprint string) error {
+	files, err := generatedFiles(bc.cfg.OutputDir)
 	if err != nil {
-		return result, fmt.Errorf("failed to collect generated files: %w", err)
+		return fmt.Errorf("failed to collect generated files: %w", err)
 	}
 	// Asset, stub, and page claims may have produced non-fatal case-only
 	// warnings during the passes above; surface them alongside the metadata
 	// warnings.
-	result.Warnings = append(result.Warnings, claims.Warnings()...)
-	sort.Strings(result.Warnings)
-	if err := writeBuildCache(cachePath(siteCfg), fingerprint, files, result.PageCount, result.Health, result.Warnings); err != nil {
-		return result, fmt.Errorf("failed to write build cache: %w", err)
+	bc.result.Warnings = append(bc.result.Warnings, bc.claims.Warnings()...)
+	sort.Strings(bc.result.Warnings)
+	if err := writeBuildCache(cachePath(bc.siteCfg), fingerprint, files, bc.result.PageCount, bc.result.Health, bc.result.Warnings); err != nil {
+		return fmt.Errorf("failed to write build cache: %w", err)
 	}
-
-	result.Duration = time.Since(start)
-	return result, nil
+	return nil
 }
 
 // reservedOutputPaths lists files the build generates itself, mapped to a
