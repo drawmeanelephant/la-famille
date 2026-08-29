@@ -98,6 +98,8 @@ func Load(filepath string) (Config, error) {
 	return config, nil
 }
 
+//go:generate go run ./gendefault
+
 // WriteDefault writes the default configuration to the specified filepath.
 func WriteDefault(filepath string) error {
 	return WriteDefaultWithLayout(filepath, "templates/layout.html")
@@ -116,58 +118,11 @@ func WriteDefaultWithLayout(filepath, layoutPath string) error {
 	return os.WriteFile(filepath, []byte(defaultYaml), 0600)
 }
 
-const defaultConfigYaml = `# La Famille Site Configuration
-#
-# site_name: The name of your site, used in the navbar and footer.
-site_name: "La Famille"
-
-# template: The path to the HTML layout file used to render pages.
-template: "templates/layout.html"
-
-# content_dir: The directory containing your markdown source files.
-content_dir: "content"
-
-# output_dir: The directory where the generated HTML site will be placed.
-output_dir: "public"
-
-# asset_dir: The directory containing static assets.
-asset_dir: "assets"
-
-# rag_dir: The directory where RAG markdown bundles will be exported.
-rag_dir: "rag-archive"
-
-# project_root: Optional root for all relative paths. The CLI --project-root
-# flag takes precedence over this value.
-# project_root: "."
-
-# theme: The built-in palette applied by the default layout
-# (retro, ink, sepia, slate, moss).
-theme: "retro"
-
-# default_description: A default description for SEO meta tags.
-# default_description: "A wonderful site built with La Famille"
-
-# default_og_image: A default OpenGraph image URL.
-# default_og_image: "/assets/default-og.png"
-
-# siteurl: The public base URL used for canonical links, og:url, and discovery files.
-# siteurl: "https://example.github.io/my-site"
-
-# site_links: Optional links for headers/footers
-# site_links:
-#   - label: "GitHub"
-#     url: "https://github.com"
-#   - label: "Twitter"
-#     url: "https://twitter.com"
-
-# port: The port on which the local development server will run.
-port: 8080
-
-# graph_explorer: Controls generation of the interactive Knowledge Graph page
-# at /graph/index.html. Defaults to true; set to false to skip emission (no
-# /graph/ output, no nav link).
-# graph_explorer: true
-`
+// defaultConfigYaml is generated from the repository's canonical config.yaml
+// by `go generate ./internal/config`; see default_config_gen.go. Keeping it
+// generated (rather than a second hand-written copy) is what prevents the
+// documented default and the config `la-famille init` writes from drifting
+// apart (#548).
 
 // URLForOutputPath returns the canonical public URL for an output path. An
 // unavailable or invalid SiteURL intentionally produces an empty result so
