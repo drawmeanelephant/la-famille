@@ -188,7 +188,7 @@ func TestPublisherStubDetectionContract(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	manifest, err := publisher.Check(dir)
+	manifest, err := publisher.Check(dir, "")
 	if err != nil {
 		t.Fatalf("Check failed: %v", err)
 	}

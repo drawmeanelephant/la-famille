@@ -24,7 +24,7 @@ func TestBuildKeepsCacheOutsidePublishArtifact(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(cfg.ProjectRoot, publisher.CacheFileName)); err != nil {
 		t.Fatalf("project cache missing beside project: %v", err)
 	}
-	if _, err := publisher.Check(cfg.OutputDir); err != nil {
+	if _, err := publisher.Check(cfg.OutputDir, ""); err != nil {
 		t.Fatalf("generated publish artifact failed validation: %v", err)
 	}
 }
