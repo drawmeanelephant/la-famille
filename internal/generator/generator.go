@@ -37,7 +37,7 @@ import (
 
 // convertMarkdown is a variable to allow mocking in tests.
 var (
-	convertMu       sync.RWMutex
+	convertMu       sync.Mutex
 	convertMarkdown = func(md goldmark.Markdown, source []byte, w *bytes.Buffer) error {
 		return md.Convert(source, w)
 	}
@@ -74,8 +74,11 @@ func lockOutputDir(outputDir string) func() {
 }
 
 func getConvertMarkdown() func(goldmark.Markdown, []byte, *bytes.Buffer) error {
-	convertMu.RLock()
-	defer convertMu.RUnlock()
+	// The reader takes a full lock (not an RLock) because it also needs to
+	// publish the write in setConvertMarkdown; an RWMutex with no concurrent
+	// readers just adds bookkeeping, so a plain Mutex is used (#549).
+	convertMu.Lock()
+	defer convertMu.Unlock()
 	return convertMarkdown
 }
 
@@ -1082,7 +1085,7 @@ func replaceOutputDirectory(outputDir, stagingDir string) ([]string, error) {
 			return nil, fmt.Errorf("replace output directory: %w", err)
 		}
 		if restoreErr := os.Rename(backupDir, outputDir); restoreErr != nil {
-			return nil, fmt.Errorf("replace output directory: %w; restore previous output: %v", err, restoreErr)
+			return nil, restoreFailedError(err, backupDir, restoreErr)
 		}
 		return nil, fmt.Errorf("replace output directory: %w", err)
 	}
@@ -1100,4 +1103,12 @@ func replaceOutputDirectory(outputDir, stagingDir string) ([]string, error) {
 		}
 	}
 	return nil, nil
+}
+
+// restoreFailedError builds the error for the case where both the live
+// replacement and the restore-from-backup fail. The previous site is stranded in
+// backupDir, so its path must be surfaced or recovery is impossible without
+// forensics on the filesystem (#545).
+func restoreFailedError(first error, backupDir string, restore error) error {
+	return fmt.Errorf("replace output directory: %w; restore previous output from %s failed: %v", first, backupDir, restore)
 }
