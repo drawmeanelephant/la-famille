@@ -89,7 +89,7 @@ port: 8081
 func TestLoadUnparsableConfigIsNotUsable(t *testing.T) {
 	tmpDir := t.TempDir()
 	testConfigFile := filepath.Join(tmpDir, "config.yaml")
-	// A quoted int is a routine YAML mistake: yaml.v2 applies site_name and
+	// A quoted int is a routine YAML mistake: the decoder applies site_name and
 	// output_dir before it fails on port, so the struct it filled in is half
 	// applied -- file values for some fields, defaults for the rest.
 	yamlContent := []byte("site_name: \"X\"\noutput_dir: content\nport: \"not-a-number\"\n")

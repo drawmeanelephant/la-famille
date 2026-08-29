@@ -2,12 +2,14 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -216,14 +218,25 @@ func (s gateSite) run(t *testing.T, args ...string) (int, string) {
 	return code, string(out)
 }
 
-func buildGateBinary(t *testing.T) string {
-	t.Helper()
-	exe := filepath.Join(t.TempDir(), "la-famille.bin")
+// sharedGateBinary builds the la-famille binary exactly once per test run.
+// Every exec-based test used to run its own `go build`, which dominated this
+// package's wall time (#552); the built binary is read-only and safe to share.
+var sharedGateBinary = sync.OnceValue(func() string {
+	dir, err := os.MkdirTemp("", "la-famille-testbin-")
+	if err != nil {
+		panic(fmt.Sprintf("create test binary dir: %v", err))
+	}
+	exe := filepath.Join(dir, "la-famille.bin")
 	build := exec.Command("go", "build", "-o", exe, "../../cmd/la-famille")
 	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("failed to build la-famille: %v\n%s", err, out)
+		panic(fmt.Sprintf("failed to build la-famille test binary: %v\n%s", err, out))
 	}
 	return exe
+})
+
+func buildGateBinary(t *testing.T) string {
+	t.Helper()
+	return sharedGateBinary()
 }
 
 const brokenYAML = "site_name: \"X\"\noutput_dir: content\nport: \"not-a-number\"\n"

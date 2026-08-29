@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/tbuddy/la-famille/internal/pathutil"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Config represents the site configuration.
@@ -87,8 +87,8 @@ func Load(filepath string) (Config, error) {
 
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		// yaml.v2 applies every key it read before the one that failed, so
-		// config is now a mix of file values and defaults. Discard it.
+		// The YAML decoder applies every key it read before the one that
+		// failed, so config is now a mix of file values and defaults. Discard it.
 		return Config{}, err
 	}
 

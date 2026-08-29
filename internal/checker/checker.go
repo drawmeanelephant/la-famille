@@ -15,7 +15,7 @@ import (
 	"github.com/adrg/frontmatter"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/tbuddy/la-famille/internal/asset"
 	"github.com/tbuddy/la-famille/internal/config"

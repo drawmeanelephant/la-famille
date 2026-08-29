@@ -73,12 +73,9 @@ title: Test Page
 		t.Fatalf("Failed to write layout.html: %v", err)
 	}
 
-	// Build la-famille executable first
-	exePath := filepath.Join(tmpDir, "la-famille.bin")
-	cmdBuild := exec.Command("go", "build", "-o", exePath, "../../cmd/la-famille")
-	if err := cmdBuild.Run(); err != nil {
-		t.Fatalf("failed to build la-famille: %v", err)
-	}
+	// Build la-famille executable once per test run and share it across the
+	// exec-based tests (#552).
+	exePath := sharedGateBinary()
 
 	cmdRun := exec.Command(exePath, "build",
 		"--content", contentDir,
@@ -168,11 +165,7 @@ title: Test Page
 func TestInitCommand(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	exePath := filepath.Join(tmpDir, "la-famille.bin")
-	cmdBuild := exec.Command("go", "build", "-o", exePath, "../../cmd/la-famille")
-	if err := cmdBuild.Run(); err != nil {
-		t.Fatalf("failed to build la-famille: %v", err)
-	}
+	exePath := sharedGateBinary()
 
 	cmdRun := exec.Command(exePath, "init")
 	cmdRun.Dir = tmpDir
@@ -185,6 +178,104 @@ func TestInitCommand(t *testing.T) {
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		t.Fatalf("la-famille init did not create config.yaml")
 	}
+}
+
+// The init repair contract at the file level, tested without compiling a
+// binary (#552). TestInitCommand covers the end-to-end invocation; these pin
+// writeInitialConfig's create / refuse / force-backup / theme behavior.
+func TestWriteInitialConfig(t *testing.T) {
+	t.Run("creates a loadable default config when absent", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "config.yaml")
+		if err := writeInitialConfig(path, false, ""); err != nil {
+			t.Fatalf("writeInitialConfig: %v", err)
+		}
+		cfg, err := config.Load(path)
+		if err != nil {
+			t.Fatalf("created config is unloadable: %v", err)
+		}
+		if cfg.SiteName != "La Famille" {
+			t.Errorf("SiteName = %q, want the default %q", cfg.SiteName, "La Famille")
+		}
+	})
+
+	t.Run("refuses to overwrite an existing config and names the repair path", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "config.yaml")
+		original := []byte("site_name: \"Customised\"\n")
+		if err := os.WriteFile(path, original, 0600); err != nil {
+			t.Fatal(err)
+		}
+
+		err := writeInitialConfig(path, false, "")
+		if err == nil {
+			t.Fatal("expected a refusal, got nil")
+		}
+		if !strings.Contains(err.Error(), initConfigBackup) || !strings.Contains(err.Error(), "--force") {
+			t.Errorf("refusal must name the %s backup and the --force repair path, got: %v", initConfigBackup, err)
+		}
+		got, readErr := os.ReadFile(path)
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+		if string(got) != string(original) {
+			t.Errorf("refused init modified the config: %q", got)
+		}
+	})
+
+	t.Run("--force replaces the config and keeps the original as a backup", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "config.yaml")
+		original := []byte("site_name: \"Customised\"\n")
+		if err := os.WriteFile(path, original, 0600); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := writeInitialConfig(path, true, ""); err != nil {
+			t.Fatalf("writeInitialConfig(force): %v", err)
+		}
+		cfg, err := config.Load(path)
+		if err != nil {
+			t.Fatalf("replaced config is unloadable: %v", err)
+		}
+		if cfg.SiteName != "La Famille" {
+			t.Errorf("SiteName = %q, want the default after --force", cfg.SiteName)
+		}
+		backup, err := os.ReadFile(filepath.Join(dir, initConfigBackup))
+		if err != nil {
+			t.Fatalf("expected %s backup: %v", initConfigBackup, err)
+		}
+		if string(backup) != string(original) {
+			t.Errorf("backup = %q, want the original %q", backup, original)
+		}
+	})
+
+	t.Run("a themed init selects the themed layout", func(t *testing.T) {
+		if len(runtimeassets.CuratedLayoutNames) == 0 {
+			t.Fatal("no curated themes to test with")
+		}
+		theme := runtimeassets.CuratedLayoutNames[0]
+		path := filepath.Join(t.TempDir(), "config.yaml")
+		if err := writeInitialConfig(path, false, theme); err != nil {
+			t.Fatalf("writeInitialConfig(themed): %v", err)
+		}
+		cfg, err := config.Load(path)
+		if err != nil {
+			t.Fatalf("themed config is unloadable: %v", err)
+		}
+		if want := filepath.Join("templates", theme+".html"); cfg.Template != want {
+			t.Errorf("Template = %q, want %q", cfg.Template, want)
+		}
+	})
+
+	t.Run("an unknown theme is refused", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "config.yaml")
+		err := writeInitialConfig(path, false, "not-a-real-theme")
+		if err == nil {
+			t.Fatal("expected an unknown-theme error, got nil")
+		}
+		if !strings.Contains(err.Error(), "unknown theme") {
+			t.Errorf("error = %v, want an 'unknown theme' refusal", err)
+		}
+	})
 }
 
 // Issue #525: dying on a busy port should tell the operator how to recover,
@@ -379,11 +470,7 @@ func TestCLICacheStatusLogging(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	exePath := filepath.Join(tmpDir, "la-famille.bin")
-	cmdBuildExe := exec.Command("go", "build", "-o", exePath, "../../cmd/la-famille")
-	if err := cmdBuildExe.Run(); err != nil {
-		t.Fatalf("failed to build la-famille: %v", err)
-	}
+	exePath := sharedGateBinary()
 
 	// First run: should log cache=miss
 	cmdRun1 := exec.Command(exePath, "build", "--content", contentDir, "--output", outputDir, "--template", filepath.Join(templateDir, "layout.html"))
