@@ -238,8 +238,6 @@ type IgnoreRule struct {
 	negated       bool
 }
 
-type ignoreRule = IgnoreRule
-
 func ParseIgnoreRules(contents string) []IgnoreRule {
 	var rules []IgnoreRule
 	for _, line := range strings.Split(contents, "\n") {
@@ -272,10 +270,6 @@ func ParseIgnoreRules(contents string) []IgnoreRule {
 		rules = append(rules, rule)
 	}
 	return rules
-}
-
-func parseIgnoreRules(contents string) []IgnoreRule {
-	return ParseIgnoreRules(contents)
 }
 
 func LoadIgnoreRules(projectRoot string) []IgnoreRule {
@@ -322,7 +316,7 @@ func IsIgnoredAsset(path string, isDir bool, relSlash string, projectRoot string
 	return false
 }
 
-func (rule ignoreRule) matches(segments []string, isDir bool) bool {
+func (rule IgnoreRule) matches(segments []string, isDir bool) bool {
 	if len(rule.pattern) == 1 && !rule.anchored {
 		for i, segment := range segments {
 			candidateIsDir := i < len(segments)-1 || isDir
