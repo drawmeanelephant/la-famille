@@ -36,7 +36,9 @@ func main() {
 		"\n" +
 		"const defaultConfigYaml = `" + string(data) + "`\n"
 
-	if err := os.WriteFile("default_config_gen.go", []byte(out), 0644); err != nil {
+	// 0600 per gosec G306: the generated file is a build artifact, not
+	// something other users of the module need to read.
+	if err := os.WriteFile("default_config_gen.go", []byte(out), 0600); err != nil {
 		fmt.Fprintf(os.Stderr, "gendefault: write default_config_gen.go: %v\n", err)
 		os.Exit(1)
 	}
