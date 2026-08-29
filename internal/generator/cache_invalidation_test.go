@@ -441,3 +441,17 @@ func TestCacheInvalidationMatrix(t *testing.T) {
 		}
 	})
 }
+
+// cacheFingerprint must not mutate the input Config.
+func TestCacheFingerprintDoesNotMutateConfig(t *testing.T) {
+	cfg, _ := setupTestSite(t)
+	cfg.WatchMode = true
+
+	_, err := cacheFingerprint(cfg)
+	if err != nil {
+		t.Fatalf("cacheFingerprint failed: %v", err)
+	}
+	if !cfg.WatchMode {
+		t.Error("cacheFingerprint mutated cfg.WatchMode to false")
+	}
+}

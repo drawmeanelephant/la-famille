@@ -87,8 +87,9 @@ var executableIdentity = sync.OnceValue(func() string {
 func cacheFingerprint(cfg config.Config, roots ...string) (string, error) {
 	h := sha256.New()
 	_, _ = io.WriteString(h, generatorIdentity()+"\x00")
-	// WatchMode is operational state and must not invalidate generated output.
-	cfg.WatchMode = false
+	// WatchMode is operational state and must not invalidate generated
+	// output. It is excluded from the fingerprint via yaml:"-" and
+	// json:"-" tags so it never enters the hash.
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return "", err
