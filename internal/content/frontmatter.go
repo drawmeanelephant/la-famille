@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // StringList decodes a YAML value that may be written either as a sequence or
@@ -20,17 +20,18 @@ import (
 // error rather than dropped silently.
 type StringList []string
 
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (s *StringList) UnmarshalYAML(unmarshal func(interface{}) error) error {
+// UnmarshalYAML implements yaml.Unmarshaler (yaml.v3 Node API; the sequence
+// and scalar shapes behave exactly as they did under yaml.v2).
+func (s *StringList) UnmarshalYAML(value *yaml.Node) error {
 	var list []string
-	listErr := unmarshal(&list)
+	listErr := value.Decode(&list)
 	if listErr == nil {
 		*s = StringList(list)
 		return nil
 	}
 
 	var scalar interface{}
-	if err := unmarshal(&scalar); err == nil {
+	if err := value.Decode(&scalar); err == nil {
 		if str, ok := scalar.(string); ok {
 			*s = StringList{str}
 			return nil

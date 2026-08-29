@@ -200,7 +200,7 @@ func TestDecodeFrontmatterWarnsOnUnusableValue(t *testing.T) {
 	if len(warnings) != 1 {
 		t.Fatalf("expected 1 warning for the unusable render value, got %d: %v", len(warnings), warnings)
 	}
-	// yaml.v2 reports the source line and the offending value but not the
+	// The decoder reports the source line and the offending value but not the
 	// destination field name, so that is the whole of what is guaranteed here.
 	if !strings.Contains(warnings[0], "true") || !strings.Contains(warnings[0], "line 1") {
 		t.Errorf("warning %q does not locate the offending value", warnings[0])
@@ -213,9 +213,9 @@ func TestDecodeFrontmatterWarnsOnUnusableValue(t *testing.T) {
 	if out.Title != "kept" {
 		t.Errorf("title = %q, want %q (a sibling type error must not discard good values)", out.Title, "kept")
 	}
-	// Unchanged from before this package reported anything: yaml.v2 allocates
-	// the pointer and leaves it at the zero value when the scalar will not
-	// decode. The warning is the only new signal.
+	// Unchanged from before this package reported anything: the decoder
+	// allocates the pointer and leaves it at the zero value when the scalar
+	// will not decode. The warning is the only new signal.
 	if out.Render == nil || *out.Render {
 		t.Errorf("render = %v, want a non-nil pointer to false", out.Render)
 	}
