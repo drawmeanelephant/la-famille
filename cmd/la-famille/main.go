@@ -24,7 +24,11 @@ import (
 	"github.com/tbuddy/la-famille/internal/watcher"
 )
 
-var (
+// cliState carries the cobra flag values and process-lifetime handles for one
+// command tree. Flags are bound to its fields instead of package globals, so
+// setupRootCmd, its handlers and main share state through the struct rather
+// than through mutable package variables (#547).
+type cliState struct {
 	globalLogFile string
 	contentDir    string
 	outputDir     string
@@ -35,22 +39,48 @@ var (
 	configPath    string
 	showVersion   bool
 	versionJSON   bool
-	// logFile holds the *os.File opened by logger.Setup during the CLI persistent
-	// pre-run hook so main can close it before the process exits (#546).
+	// logFile holds the *os.File opened by logger.Setup during the CLI
+	// persistent pre-run hook so main can close it before the process exits
+	// (#546).
 	logFile *os.File
-)
+}
+
+// closeLogFile releases the file handle opened for --log-file once the process
+// is done. It is a no-op when no log file was opened (#546).
+func (st *cliState) closeLogFile() {
+	if st.logFile != nil {
+		_ = st.logFile.Close()
+	}
+}
 
 func setupRootCmd(cfg config.Config) *cobra.Command {
+	cmd, _ := setupRootCmdState(cfg)
+	return cmd
+}
+
+// setupRootCmdState builds the command tree and returns the state it is bound
+// to, so main can close process-lifetime handles. Tests that only need the
+// tree keep calling setupRootCmd.
+func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
+	st := &cliState{
+		contentDir:   cfg.ContentDir,
+		outputDir:    cfg.OutputDir,
+		assetDir:     cfg.AssetDir,
+		templateFile: cfg.Template,
+		siteURL:      cfg.SiteURL,
+		projectRoot:  cfg.ProjectRoot,
+		configPath:   cfg.ConfigPath,
+	}
+
 	// The TUI command is shared for historical reasons, so pass the same
 	// bootstrapped configuration to it when the real binary constructs the
 	// command tree. Unit tests that call setupRootCmd with an ad-hoc Config keep
 	// the old direct-CWD loading behavior.
+	tuiCfg := config.Config{}
+	tuiCfgSet := false
 	if cfg.ConfigPath != "" {
-		tuiRuntimeConfig = cfg
-		tuiRuntimeConfigSet = true
-	} else {
-		tuiRuntimeConfig = config.Config{}
-		tuiRuntimeConfigSet = false
+		tuiCfg = cfg
+		tuiCfgSet = true
 	}
 
 	var rootCmd = &cobra.Command{
@@ -63,24 +93,24 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		// formats on stderr (#534).
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if !showVersion && versionJSON {
+			if !st.showVersion && st.versionJSON {
 				return fmt.Errorf("--json is only valid together with --version")
 			}
-			if showVersion {
-				return writeBuildInfo(cmd.OutOrStdout(), versionJSON)
+			if st.showVersion {
+				return writeBuildInfo(cmd.OutOrStdout(), st.versionJSON)
 			}
 			return cmd.Help()
 		},
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if cmd.Name() != "tui" {
-				f, setupErr := logger.Setup(globalLogFile, false)
+				f, setupErr := logger.Setup(st.globalLogFile, false)
 				if setupErr != nil {
 					// Non-fatal: Setup falls back to os.Stderr, so the operator just
 					// loses the file, not all output. Say so instead of dropping it.
-					slog.Warn("Failed to open log file; falling back to stderr", "path", globalLogFile, "error", setupErr)
+					slog.Warn("Failed to open log file; falling back to stderr", "path", st.globalLogFile, "error", setupErr)
 				}
 				if f != nil {
-					logFile = f
+					st.logFile = f
 				}
 			}
 			return nil
@@ -92,15 +122,15 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		Short: "Build the static site",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			// Update config from flags
-			if projectRoot != "" {
-				cfg.ProjectRoot = resolveProjectPath(cfg.ProjectRoot, projectRoot)
+			if st.projectRoot != "" {
+				cfg.ProjectRoot = resolveProjectPath(cfg.ProjectRoot, st.projectRoot)
 			}
-			cfg.ContentDir = resolveProjectPath(cfg.ProjectRoot, contentDir)
-			cfg.OutputDir = resolveProjectPath(cfg.ProjectRoot, outputDir)
-			cfg.AssetDir = resolveProjectPath(cfg.ProjectRoot, assetDir)
-			cfg.Template = resolveProjectPath(cfg.ProjectRoot, templateFile)
+			cfg.ContentDir = resolveProjectPath(cfg.ProjectRoot, st.contentDir)
+			cfg.OutputDir = resolveProjectPath(cfg.ProjectRoot, st.outputDir)
+			cfg.AssetDir = resolveProjectPath(cfg.ProjectRoot, st.assetDir)
+			cfg.Template = resolveProjectPath(cfg.ProjectRoot, st.templateFile)
 			if cmd.Flags().Changed("site-url") || cmd.Flags().Changed("siteurl") {
-				cfg.SiteURL = siteURL
+				cfg.SiteURL = st.siteURL
 				if err := cfg.ValidateSiteURL(); err != nil {
 					return fmt.Errorf("invalid configuration: %w", err)
 				}
@@ -146,12 +176,12 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		},
 	}
 
-	buildCmd.Flags().StringVarP(&contentDir, "content", "c", cfg.ContentDir, "Directory containing markdown files")
-	buildCmd.Flags().StringVarP(&outputDir, "output", "o", cfg.OutputDir, "Directory for generated static site")
-	buildCmd.Flags().StringVar(&assetDir, "asset-dir", cfg.AssetDir, "Directory containing static assets")
-	buildCmd.Flags().StringVarP(&templateFile, "template", "t", cfg.Template, "Path to HTML layout template")
-	buildCmd.Flags().StringVarP(&siteURL, "site-url", "s", cfg.SiteURL, "Public base URL of the site")
-	buildCmd.Flags().StringVar(&siteURL, "siteurl", cfg.SiteURL, "Public base URL of the site (alias for --site-url)")
+	buildCmd.Flags().StringVarP(&st.contentDir, "content", "c", cfg.ContentDir, "Directory containing markdown files")
+	buildCmd.Flags().StringVarP(&st.outputDir, "output", "o", cfg.OutputDir, "Directory for generated static site")
+	buildCmd.Flags().StringVar(&st.assetDir, "asset-dir", cfg.AssetDir, "Directory containing static assets")
+	buildCmd.Flags().StringVarP(&st.templateFile, "template", "t", cfg.Template, "Path to HTML layout template")
+	buildCmd.Flags().StringVarP(&st.siteURL, "site-url", "s", cfg.SiteURL, "Public base URL of the site")
+	buildCmd.Flags().StringVar(&st.siteURL, "siteurl", cfg.SiteURL, "Public base URL of the site (alias for --site-url)")
 
 	var initForce bool
 	var initTheme string
@@ -273,8 +303,8 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		Short: "Export project files into RAG-friendly markdown bundles",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			ragCfg := cfg
-			if projectRoot != "" {
-				ragCfg.ProjectRoot = resolveProjectPath(cfg.ProjectRoot, projectRoot)
+			if st.projectRoot != "" {
+				ragCfg.ProjectRoot = resolveProjectPath(cfg.ProjectRoot, st.projectRoot)
 			}
 			if ragContentDir != "" {
 				ragCfg.ContentDir = resolveProjectPath(ragCfg.ProjectRoot, ragContentDir)
@@ -419,12 +449,12 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	rootCmd.AddCommand(themesCmd)
 	rootCmd.AddCommand(ragCmd)
 	rootCmd.AddCommand(prCmd)
-	rootCmd.AddCommand(tuiCmd)
-	rootCmd.PersistentFlags().StringVar(&globalLogFile, "log-file", "", "Path to log file (default is stderr for CLI, la-famille.log for TUI)")
-	rootCmd.PersistentFlags().StringVar(&projectRoot, "project-root", cfg.ProjectRoot, "Project root for config-relative paths (default: the current directory)")
-	rootCmd.PersistentFlags().StringVar(&configPath, "config", cfg.ConfigPath, "Path to config.yaml (default: <project-root>/config.yaml)")
-	rootCmd.PersistentFlags().BoolVar(&showVersion, "version", false, "Print build identity and exit")
-	rootCmd.PersistentFlags().BoolVar(&versionJSON, "json", false, "Print machine-readable output (use with --version)")
+	rootCmd.AddCommand(setupTUICmd(st, tuiCfg, tuiCfgSet))
+	rootCmd.PersistentFlags().StringVar(&st.globalLogFile, "log-file", "", "Path to log file (default is stderr for CLI, la-famille.log for TUI)")
+	rootCmd.PersistentFlags().StringVar(&st.projectRoot, "project-root", cfg.ProjectRoot, "Project root for config-relative paths (default: the current directory)")
+	rootCmd.PersistentFlags().StringVar(&st.configPath, "config", cfg.ConfigPath, "Path to config.yaml (default: <project-root>/config.yaml)")
+	rootCmd.PersistentFlags().BoolVar(&st.showVersion, "version", false, "Print build identity and exit")
+	rootCmd.PersistentFlags().BoolVar(&st.versionJSON, "json", false, "Print machine-readable output (use with --version)")
 
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(setupCheckCmd(cfg))
@@ -432,7 +462,7 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 	rootCmd.AddCommand(setupNewCmd(cfg))
 	rootCmd.AddCommand(setupAskCmd(cfg))
 
-	return rootCmd
+	return rootCmd, st
 }
 
 // configIndependentCommands lists the top-level commands that stay available
@@ -479,7 +509,7 @@ func loadSiteConfig(path string) (config.Config, error) {
 // fail loudly when configErr is non-nil, while leaving the commands that
 // repair or do not need config.yaml reachable. Cobra handles --help and a bare
 // invocation before persistent hooks run, so help output stays available too.
-func guardUnusableConfig(rootCmd *cobra.Command, configErr error) {
+func guardUnusableConfig(rootCmd *cobra.Command, st *cliState, configErr error) {
 	if configErr == nil {
 		return
 	}
@@ -490,21 +520,13 @@ func guardUnusableConfig(rootCmd *cobra.Command, configErr error) {
 				return err
 			}
 		}
-		if showVersion {
+		if st.showVersion {
 			return nil
 		}
 		if requiresSiteConfig(cmd) {
 			return fmt.Errorf("%w (run `la-famille init` to regenerate config.yaml, or fix it by hand)", configErr)
 		}
 		return nil
-	}
-}
-
-// closeLogFile releases the file handle opened for --log-file once the process
-// is done. It is a no-op when no log file was opened (#546).
-func closeLogFile() {
-	if logFile != nil {
-		_ = logFile.Close()
 	}
 }
 
@@ -517,10 +539,10 @@ func main() {
 	// from those paths were the first slog output of the process and surfaced
 	// in the stdlib log format beside everything else's slog format. Setting
 	// up the default here makes every error line uniform; PersistentPreRunE
-	//	re-applies the --log-file path once flags are parsed (blank path so it writes
-	// to stderr and never opens a file). A signalled os.Exit can skip the deferred
-	// close in closeLogFile; that is acceptable since the process is terminating.
-	defer closeLogFile()
+	// re-applies the --log-file path once flags are parsed (blank path so it
+	// writes to stderr and never opens a file). A signalled os.Exit can skip
+	// the deferred close in cliState.closeLogFile; that is acceptable since
+	// the process is terminating.
 	if _, setupErr := logger.Setup("", false); setupErr != nil {
 		slog.Warn("Failed to initialize logging", "error", setupErr)
 	}
@@ -562,8 +584,9 @@ func main() {
 		cfg = fallback
 	}
 
-	rootCmd := setupRootCmd(cfg)
-	guardUnusableConfig(rootCmd, configErr)
+	rootCmd, st := setupRootCmdState(cfg)
+	defer st.closeLogFile()
+	guardUnusableConfig(rootCmd, st, configErr)
 
 	if err := rootCmd.Execute(); err != nil {
 		slog.Error("Application error", "error", err)

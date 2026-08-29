@@ -25,52 +25,54 @@ import (
 
 var p *tea.Program
 
-var (
-	tuiRuntimeConfig    config.Config
-	tuiRuntimeConfigSet bool
-)
+// setupTUICmd builds the tui command. The --log-file value and the bootstrapped
+// runtime configuration are passed through cliState and parameters rather than
+// package globals (#547): setupRootCmdState hands the real config over when the
+// binary builds the tree, and tests exercise the direct-CWD loading path with
+// an empty config.
+func setupTUICmd(st *cliState, runtimeCfg config.Config, runtimeCfgSet bool) *cobra.Command {
+	return &cobra.Command{
+		Use:   "tui",
+		Short: "Launch the semi-graphical user interface",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			logTarget := st.globalLogFile
+			if logTarget == "" {
+				logTarget = "la-famille.log"
+			}
+			f, _ := logger.Setup(logTarget, true)
+			defer func() {
+				if f != nil {
+					f.Close()
+				}
+			}()
 
-var tuiCmd = &cobra.Command{
-	Use:   "tui",
-	Short: "Launch the semi-graphical user interface",
-	RunE: func(_ *cobra.Command, _ []string) error {
-		logTarget := globalLogFile
-		if logTarget == "" {
-			logTarget = "la-famille.log"
-		}
-		f, _ := logger.Setup(logTarget, true)
-		defer func() {
-			if f != nil {
-				f.Close()
+			var cfg config.Config
+			if runtimeCfgSet {
+				cfg = runtimeCfg
+				if err := cfg.ValidateResolved(); err != nil {
+					return fmt.Errorf("configuration validation failed: %w", err)
+				}
+			} else {
+				// No defaults fallback here: config.Load only errors when config.yaml
+				// exists but is unreadable or unparsable, and substituting defaults
+				// for it would silently discard the operator's real settings.
+				var err error
+				cfg, err = config.Load("config.yaml")
+				if err != nil {
+					return fmt.Errorf("failed to load config.yaml: %w", err)
+				}
+				if err := cfg.Validate(); err != nil {
+					return fmt.Errorf("configuration validation failed: %w", err)
+				}
 			}
-		}()
 
-		var cfg config.Config
-		if tuiRuntimeConfigSet {
-			cfg = tuiRuntimeConfig
-			if err := cfg.ValidateResolved(); err != nil {
-				return fmt.Errorf("configuration validation failed: %w", err)
+			p = tea.NewProgram(initialModel(cfg), tea.WithAltScreen())
+			if _, err := p.Run(); err != nil {
+				return fmt.Errorf("tui error: %w", err)
 			}
-		} else {
-			// No defaults fallback here: config.Load only errors when config.yaml
-			// exists but is unreadable or unparsable, and substituting defaults
-			// for it would silently discard the operator's real settings.
-			var err error
-			cfg, err = config.Load("config.yaml")
-			if err != nil {
-				return fmt.Errorf("failed to load config.yaml: %w", err)
-			}
-			if err := cfg.Validate(); err != nil {
-				return fmt.Errorf("configuration validation failed: %w", err)
-			}
-		}
-
-		p = tea.NewProgram(initialModel(cfg), tea.WithAltScreen())
-		if _, err := p.Run(); err != nil {
-			return fmt.Errorf("tui error: %w", err)
-		}
-		return nil
-	},
+			return nil
+		},
+	}
 }
 
 // Rough approximation: 1 token ≈ 4 bytes (OpenAI tokenizer heuristic)

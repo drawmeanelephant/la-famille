@@ -118,8 +118,8 @@ func TestGuardUnusableConfigBlocksOnlyConfigConsumers(t *testing.T) {
 	}
 
 	// The guard must chain, not replace, the existing persistent hook.
-	guarded := setupRootCmd(config.Config{})
-	guardUnusableConfig(guarded, configErr)
+	guarded, guardedState := setupRootCmdState(config.Config{})
+	guardUnusableConfig(guarded, guardedState, configErr)
 	if guarded.PersistentPreRunE == nil {
 		t.Fatal("guardUnusableConfig removed the persistent pre-run hook")
 	}
@@ -141,8 +141,8 @@ func TestGuardUnusableConfigBlocksOnlyConfigConsumers(t *testing.T) {
 	}
 
 	// With a usable config the guard must be inert.
-	ungated := setupRootCmd(config.Config{})
-	guardUnusableConfig(ungated, nil)
+	ungated, ungatedState := setupRootCmdState(config.Config{})
+	guardUnusableConfig(ungated, ungatedState, nil)
 	if err := ungated.PersistentPreRunE(build, nil); err != nil {
 		t.Errorf("guard with nil configErr blocked `build`: %v", err)
 	}
@@ -160,7 +160,8 @@ func TestTUIRefusesToRunOnAnUnusableConfig(t *testing.T) {
 	}
 	t.Chdir(dir)
 
-	err := tuiCmd.RunE(tuiCmd, nil)
+	tui := setupTUICmd(&cliState{}, config.Config{}, false)
+	err := tui.RunE(tui, nil)
 	if err == nil {
 		t.Fatal("tui accepted an unparsable config.yaml")
 	}
