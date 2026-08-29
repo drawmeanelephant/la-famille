@@ -275,7 +275,7 @@ func TestCopyAssets_GitignorePathsAreProjectRelative(t *testing.T) {
 }
 
 func TestIsIgnored(t *testing.T) {
-	rules := parseIgnoreRules(`
+	rules := ParseIgnoreRules(`
 # Comments and blank lines do not create rules.
 
 Thumbs.db
