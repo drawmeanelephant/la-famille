@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/yaml.v2" // Using v2 to match the indirect dependency from frontmatter
+	"github.com/tbuddy/la-famille/internal/pathutil"
+	"gopkg.in/yaml.v2"
 )
 
 // Config represents the site configuration.
@@ -370,7 +371,7 @@ func (c Config) validate(allowAbsolutePaths bool) error {
 // The overlap is the thing to catch, because by the time the swap runs the
 // source is already gone.
 func (c Config) validateOutputIsolation() error {
-	output := canonicalDir(c.OutputDir)
+	output := resolveDir(c.OutputDir)
 	if output == "" {
 		return nil
 	}
@@ -378,11 +379,11 @@ func (c Config) validateOutputIsolation() error {
 	// Checked before the individual inputs: building over the project root
 	// would replace everything, and saying so plainly beats reporting whichever
 	// input happened to be compared first.
-	if root := canonicalDir(c.ProjectRoot); root != "" {
+	if root := resolveDir(c.ProjectRoot); root != "" {
 		if root == output {
 			return fmt.Errorf("OutputDir (%s) is the project root; a build would replace the entire project directory", c.OutputDir)
 		}
-		if isWithin(output, root) {
+		if pathutil.IsPathWithin(output, root) {
 			return fmt.Errorf("ProjectRoot (%s) is inside OutputDir (%s); a build would delete it when it replaces the output directory", c.ProjectRoot, c.OutputDir)
 		}
 	}
@@ -394,10 +395,10 @@ func (c Config) validateOutputIsolation() error {
 		{"RagDir", c.RagDir},
 	}
 
-	root := canonicalDir(c.ProjectRoot)
+	root := resolveDir(c.ProjectRoot)
 
 	for _, in := range inputs {
-		other := canonicalDir(in.path)
+		other := resolveDir(in.path)
 		if other == "" {
 			continue
 		}
@@ -416,7 +417,7 @@ func (c Config) validateOutputIsolation() error {
 		switch {
 		case other == output:
 			return fmt.Errorf("OutputDir (%s) is the same directory as %s (%s); a build would replace it and delete its contents", c.OutputDir, in.name, in.path)
-		case isWithin(output, other):
+		case pathutil.IsPathWithin(output, other):
 			if in.name == "RagDir" {
 				// RAG archives may intentionally be staged below public for a
 				// Pages artifact. The build does not read RagDir; a later `rag`
@@ -427,7 +428,7 @@ func (c Config) validateOutputIsolation() error {
 			// The input lives inside the output directory, so the swap takes
 			// it with the rest of the replaced tree.
 			return fmt.Errorf("%s (%s) is inside OutputDir (%s); a build would delete it when it replaces the output directory", in.name, in.path, c.OutputDir)
-		case isWithin(other, output):
+		case pathutil.IsPathWithin(other, output):
 			// The output lives inside an input. The swap only replaces the
 			// output subtree, so nothing is deleted, but generated files land
 			// among the sources and the next build reads them back as input.
@@ -441,11 +442,11 @@ func (c Config) validateOutputIsolation() error {
 	return nil
 }
 
-// canonicalDir resolves a configured directory for comparison. Symlinks are
+// resolveDir resolves a configured directory for comparison. Symlinks are
 // resolved where the path exists, so two names for one directory are not
 // mistaken for two directories; a path that does not exist yet is still
 // compared lexically rather than skipped.
-func canonicalDir(dir string) string {
+func resolveDir(dir string) string {
 	if strings.TrimSpace(dir) == "" {
 		return ""
 	}
@@ -457,17 +458,4 @@ func canonicalDir(dir string) string {
 		return resolved
 	}
 	return abs
-}
-
-// isWithin reports whether target sits inside base. Equal paths are not
-// "within" — the caller reports that case separately.
-func isWithin(base, target string) bool {
-	if base == "" || target == "" || base == target {
-		return false
-	}
-	rel, err := filepath.Rel(base, target)
-	if err != nil {
-		return false
-	}
-	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
 }
