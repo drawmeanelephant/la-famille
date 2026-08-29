@@ -39,7 +39,7 @@ type Config struct {
 	SiteLinks         []SiteLink `yaml:"site_links"`
 	Port              int        `yaml:"port"`
 	MaxAssetSizeBytes int64      `yaml:"max_asset_size_bytes"`
-	WatchMode         bool       `yaml:"-"`
+	WatchMode         bool       `yaml:"-" json:"-"`
 	CheckAssetHealth  bool       `yaml:"check_asset_health"`
 	GraphExplorer     bool       `yaml:"graph_explorer"`
 }
