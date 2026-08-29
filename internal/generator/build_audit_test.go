@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -301,5 +303,32 @@ func TestBuild_AuditAssetPathSafetyStillEnforced(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(cfg.OutputDir, "assets", "style.css")); err != nil {
 		t.Fatalf("asset not copied: %v", err)
+	}
+}
+
+// Issue #545: when replaceOutputDirectory fails to land the staging tree AND the
+// restore-from-backup also fails, the previous site is stranded. The error must
+// name the backup directory so an operator can recover it without forensics.
+// (Triggering both renames to fail through a real filesystem is not portable:
+// the move-aside must succeed first, which makes the restore succeed unless the
+// parent becomes unwritable mid-call. We therefore pin the exact composed
+// message, which is the behavior the data-loss report is about.)
+func TestRestoreFailedErrorNamesBackupDir(t *testing.T) {
+	moveErr := errors.New("rename failed for the staging tree")
+	restoreErr := errors.New("restore also failed")
+	const backup = ".zhome/.public.previous-abc123"
+
+	err := restoreFailedError(fmt.Errorf("replace output directory: %w", moveErr), backup, restoreErr)
+
+	sub := err.Error()
+	if !strings.Contains(sub, backup) {
+		t.Errorf("error does not surface the backup directory: %q", sub)
+	}
+	if !strings.Contains(sub, restoreErr.Error()) {
+		t.Errorf("error drops the restore cause: %q", sub)
+	}
+	// The primary cause must still be unwrappable so callers can errors.Is it.
+	if !errors.Is(err, moveErr) {
+		t.Errorf("primary cause is not wrapped: %q", sub)
 	}
 }

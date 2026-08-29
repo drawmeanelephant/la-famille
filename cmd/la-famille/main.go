@@ -35,6 +35,9 @@ var (
 	configPath    string
 	showVersion   bool
 	versionJSON   bool
+	// logFile holds the *os.File opened by logger.Setup during the CLI persistent
+	// pre-run hook so main can close it before the process exits (#546).
+	logFile *os.File
 )
 
 func setupRootCmd(cfg config.Config) *cobra.Command {
@@ -70,7 +73,15 @@ func setupRootCmd(cfg config.Config) *cobra.Command {
 		},
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if cmd.Name() != "tui" {
-				_, _ = logger.Setup(globalLogFile, false)
+				f, setupErr := logger.Setup(globalLogFile, false)
+				if setupErr != nil {
+					// Non-fatal: Setup falls back to os.Stderr, so the operator just
+					// loses the file, not all output. Say so instead of dropping it.
+					slog.Warn("Failed to open log file; falling back to stderr", "path", globalLogFile, "error", setupErr)
+				}
+				if f != nil {
+					logFile = f
+				}
 			}
 			return nil
 		},
@@ -489,6 +500,14 @@ func guardUnusableConfig(rootCmd *cobra.Command, configErr error) {
 	}
 }
 
+// closeLogFile releases the file handle opened for --log-file once the process
+// is done. It is a no-op when no log file was opened (#546).
+func closeLogFile() {
+	if logFile != nil {
+		_ = logFile.Close()
+	}
+}
+
 func main() {
 	args := os.Args[1:]
 
@@ -498,8 +517,14 @@ func main() {
 	// from those paths were the first slog output of the process and surfaced
 	// in the stdlib log format beside everything else's slog format. Setting
 	// up the default here makes every error line uniform; PersistentPreRunE
-	// re-applies the --log-file path once flags are parsed.
-	_, _ = logger.Setup("", false)
+	//	re-applies the --log-file path once flags are parsed (blank path so it writes
+	// to stderr and never opens a file). A signalled os.Exit can skip the deferred
+	// close in closeLogFile; that is acceptable since the process is terminating.
+	defer closeLogFile()
+	if _, setupErr := logger.Setup("", false); setupErr != nil {
+		slog.Warn("Failed to initialize logging", "error", setupErr)
+	}
+
 	// Version output is intentionally independent of project state. This is
 	// what makes an unpacked release archive identifiable in an empty directory
 	// with no source tree, Go module, or network access.

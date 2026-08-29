@@ -385,3 +385,48 @@ func TestCopyAssets_SkipSymlink(t *testing.T) {
 		t.Errorf("Expected symlink to be skipped")
 	}
 }
+
+// TestCopyFileCreatesFreshDestination guards the CopyFile flags (#543): the
+// destination must be created from scratch with O_WRONLY (not O_RDWR), so a
+// brand-new output path works without pre-existing MkdirAll and an overwritten
+// destination must not keep stale trailing bytes (O_TRUNC).
+func TestCopyFileCreatesFreshDestination(t *testing.T) {
+	parent := t.TempDir()
+	src := filepath.Join(parent, "src.txt")
+	srcData := []byte("hello familles")
+	if err := os.WriteFile(src, srcData, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Destination does not already exist: the copy must create the file from
+	// scratch (that is the #543 concern - O_CREATE|O_WRONLY, not O_RDWR). The
+	// parent directory already exists; CopyFile only opens the file itself.
+	dst := filepath.Join(parent, "dst.txt")
+	if err := CopyFile(src, dst); err != nil {
+		t.Fatalf("CopyFile to a non-existent destination: %v", err)
+	}
+	got, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatalf("read copied file: %v", err)
+	}
+	if string(got) != string(srcData) {
+		t.Errorf("copied content = %q, want %q", got, srcData)
+	}
+
+	// Destination already exists with longer content: O_TRUNC must drop the
+	// stale bytes so the shorter source fully replaces it.
+	longerDst := filepath.Join(parent, "longer.txt")
+	if err := os.WriteFile(longerDst, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaa"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := CopyFile(src, longerDst); err != nil {
+		t.Fatalf("CopyFile over an existing destination: %v", err)
+	}
+	got, err = os.ReadFile(longerDst)
+	if err != nil {
+		t.Fatalf("read overwritten file: %v", err)
+	}
+	if string(got) != string(srcData) {
+		t.Errorf("overwritten content = %q, want %q", got, srcData)
+	}
+}
