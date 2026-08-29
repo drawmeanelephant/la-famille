@@ -60,10 +60,13 @@ func (e *ValidationError) Error() string {
 var htmlReference = regexp.MustCompile(`(?is)(?:href|src)\s*=\s*["']([^"']+)["']`)
 
 // Check returns the complete output manifest and verifies that local HTML
-// references resolve within it. The cache policy is strict: a cache accidentally
-// copied into public is an error rather than a silently exposed implementation
-// detail.
-func Check(outputDir string) (Manifest, error) {
+// references resolve within it. basePath is the URL path prefix the artifact is
+// served under ("" or "/" for a root host): a project site deployed to
+// /repo/ renders root-relative links as /repo/assets/..., so the prefix must be
+// stripped before those references are resolved against the on-disk layout.
+// The cache policy is strict: a cache accidentally copied into public is an
+// error rather than a silently exposed implementation detail.
+func Check(outputDir, basePath string) (Manifest, error) {
 	root, err := filepath.Abs(outputDir)
 	if err != nil {
 		return Manifest{}, fmt.Errorf("resolve publish directory: %w", err)
@@ -131,7 +134,11 @@ func Check(outputDir string) (Manifest, error) {
 				if reference == "" || isExternalReference(reference) {
 					continue
 				}
-				if target, ok := resolveReference(rel, reference, files); !ok {
+				// The artifact may live behind a base path (a GitHub Pages project
+				// site); resolve it against the on-disk layout with that prefix
+				// stripped, while reporting the link as the page actually emits it.
+				localRef := stripBasePath(reference, basePath)
+				if target, ok := resolveReference(rel, localRef, files); !ok {
 					problems = append(problems, fmt.Sprintf("%s references missing local file %q", rel, reference))
 				} else if target == "" {
 					problems = append(problems, fmt.Sprintf("%s references invalid local file %q", rel, reference))
@@ -180,6 +187,28 @@ const stubBodyMarker = "Under Construction"
 
 func isStubPage(data []byte) bool {
 	return stubTitleRe.Match(data) && bytes.Contains(data, []byte(stubBodyMarker))
+}
+
+// stripBasePath removes a configured base path from a root-relative reference
+// so it can be checked against the artifact on disk. References that do not
+// carry the prefix (or that only resemble it, like /repo-other/) are left
+// untouched. Handles both "/repo/" and "/repo" spellings of the prefix.
+func stripBasePath(reference, basePath string) string {
+	if basePath == "" || basePath == "/" || !strings.HasPrefix(reference, "/") {
+		return reference
+	}
+	prefix := strings.TrimSuffix(basePath, "/")
+	if !strings.HasPrefix(reference, prefix) {
+		return reference
+	}
+	if len(reference) > len(prefix) && reference[len(prefix)] != '/' {
+		return reference
+	}
+	rest := reference[len(prefix):]
+	if rest == "" {
+		return "/"
+	}
+	return rest
 }
 
 func isExternalReference(reference string) bool {

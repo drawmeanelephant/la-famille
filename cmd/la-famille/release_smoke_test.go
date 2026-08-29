@@ -44,7 +44,7 @@ func TestReleaseSmoke(t *testing.T) {
 		t.Errorf("expected page count > 0, got %d", res.PageCount)
 	}
 
-	manifest, err := publisher.Check(outDir1)
+	manifest, err := publisher.Check(outDir1, "")
 	if err != nil {
 		t.Fatalf("generated publish artifact failed validation: %v", err)
 	}

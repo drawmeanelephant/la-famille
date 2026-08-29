@@ -22,6 +22,7 @@ func setupPublishCheckCmd(cfg config.Config) *cobra.Command {
 	var output string
 	var asJSON bool
 	var strict bool
+	var siteURLFlag string
 	cmd := &cobra.Command{
 		Use:   "publish-check",
 		Short: "Validate the static publish artifact and emit its file manifest",
@@ -30,7 +31,11 @@ func setupPublishCheckCmd(cfg config.Config) *cobra.Command {
 			"to fail on them so a typo'd internal link cannot reach deploy.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
-			manifest, err := publisher.Check(resolveProjectPath(cfg.ProjectRoot, output))
+			// A project site (siteurl with a subpath, e.g. a GitHub Pages
+			// project page) renders root-relative links as /repo/...; the check
+			// needs that prefix to resolve them against the on-disk artifact.
+			basePath := config.Config{SiteURL: siteURLFlag}.BasePath()
+			manifest, err := publisher.Check(resolveProjectPath(cfg.ProjectRoot, output), basePath)
 
 			if asJSON {
 				report := publishCheckReport{
@@ -85,6 +90,7 @@ func setupPublishCheckCmd(cfg config.Config) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&output, "output", "o", cfg.OutputDir, "Directory containing the generated publish artifact")
+	cmd.Flags().StringVar(&siteURLFlag, "site-url", cfg.SiteURL, "Public base URL of the site (used to resolve base-path links in the artifact)")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Emit the manifest as JSON")
 	cmd.Flags().BoolVar(&strict, "strict", false, "Treat generated Missing Page stubs as validation failures")
 	return cmd

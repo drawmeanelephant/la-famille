@@ -89,8 +89,16 @@ jobs:
           "$LA_FAMILLE_BIN" rag --project-root "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/public/rag-archive"
 
       - name: Validate publish artifact
+        env:
+          # publish-check needs the same base path the build rendered, or it
+          # treats every /repo/... link as a missing local file.
+          SITE_URL: ${{ inputs.site_url || vars.SITE_URL || steps.pages.outputs.base_url }}
         run: |
-          "$LA_FAMILLE_BIN" publish-check --project-root "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/public"
+          ARGS=(--project-root "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/public")
+          if [ -n "$SITE_URL" ]; then
+            ARGS+=(--site-url "$SITE_URL")
+          fi
+          "$LA_FAMILLE_BIN" publish-check "${ARGS[@]}"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5

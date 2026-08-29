@@ -14,7 +14,7 @@ func TestCheckValidatesCleanURLAndRelativeReferences(t *testing.T) {
 	writePublishFile(t, root, "assets/site.js", "console.log('ok')")
 	writeRequiredArtifacts(t, root)
 
-	manifest, err := Check(root)
+	manifest, err := Check(root, "")
 	if err != nil {
 		t.Fatalf("Check: %v", err)
 	}
@@ -27,7 +27,7 @@ func TestCheckRequiresGraphCompanionArtifacts(t *testing.T) {
 	root := t.TempDir()
 	writePublishFile(t, root, "index.html", "<html></html>")
 	writePublishFile(t, root, "graph/index.html", `<link rel="stylesheet" href="../assets/graph/explorer.css"><script src="../assets/graph/explorer.js"></script>`)
-	if _, err := Check(root); err == nil || !strings.Contains(err.Error(), "graph/data.json") {
+	if _, err := Check(root, ""); err == nil || !strings.Contains(err.Error(), "graph/data.json") {
 		t.Fatalf("Check error = %v, want missing graph/data.json", err)
 	}
 }
@@ -36,7 +36,7 @@ func TestCheckRejectsCacheInPublic(t *testing.T) {
 	root := t.TempDir()
 	writePublishFile(t, root, "index.html", "<html></html>")
 	writePublishFile(t, root, CacheFileName, "internal")
-	if _, err := Check(root); err == nil || !strings.Contains(err.Error(), CacheFileName) {
+	if _, err := Check(root, ""); err == nil || !strings.Contains(err.Error(), CacheFileName) {
 		t.Fatalf("Check error = %v, want cache policy error", err)
 	}
 }
@@ -44,7 +44,7 @@ func TestCheckRejectsCacheInPublic(t *testing.T) {
 func TestCheckReportsMissingLocalReference(t *testing.T) {
 	root := t.TempDir()
 	writePublishFile(t, root, "index.html", `<a href="missing/">Missing</a>`)
-	if _, err := Check(root); err == nil || !strings.Contains(err.Error(), "missing/") {
+	if _, err := Check(root, ""); err == nil || !strings.Contains(err.Error(), "missing/") {
 		t.Fatalf("Check error = %v, want missing-reference error", err)
 	}
 }
@@ -52,7 +52,7 @@ func TestCheckReportsMissingLocalReference(t *testing.T) {
 func TestCheckRequiresCoreArtifacts(t *testing.T) {
 	root := t.TempDir()
 	writePublishFile(t, root, "index.html", "<html></html>")
-	_, err := Check(root)
+	_, err := Check(root, "")
 	if err == nil {
 		t.Fatal("Check succeeded on a tree without sitemap/robots/search/graph/backlinks/meta")
 	}
@@ -70,12 +70,12 @@ func TestCheckFeedRequirementFollowsMetaData(t *testing.T) {
 		writeRequiredArtifacts(t, root)
 		writePublishFile(t, root, "meta.json", `{"posts/hello":{"title":"Hello","render":true,"date":"2026-07-15"}}`)
 
-		if _, err := Check(root); err == nil || !strings.Contains(err.Error(), "feed.xml") {
+		if _, err := Check(root, ""); err == nil || !strings.Contains(err.Error(), "feed.xml") {
 			t.Fatalf("Check error = %v, want missing feed.xml", err)
 		}
 
 		writePublishFile(t, root, "feed.xml", `<?xml version="1.0"?><rss/>`)
-		if _, err := Check(root); err != nil {
+		if _, err := Check(root, ""); err != nil {
 			t.Fatalf("Check with feed.xml present: %v", err)
 		}
 	})
@@ -86,7 +86,7 @@ func TestCheckFeedRequirementFollowsMetaData(t *testing.T) {
 		writeRequiredArtifacts(t, root)
 		writePublishFile(t, root, "meta.json", `{"index":{"title":"Home","render":true,"date":""}}`)
 
-		if _, err := Check(root); err != nil {
+		if _, err := Check(root, ""); err != nil {
 			t.Fatalf("Check error = %v, want undated artifact to pass without feed.xml", err)
 		}
 	})
@@ -97,7 +97,7 @@ func TestCheckFeedRequirementFollowsMetaData(t *testing.T) {
 		writeRequiredArtifacts(t, root)
 		writePublishFile(t, root, "meta.json", `{"notes/raw.md":{"title":"Raw","render":false,"date":"2026-07-15"}}`)
 
-		if _, err := Check(root); err != nil {
+		if _, err := Check(root, ""); err != nil {
 			t.Fatalf("Check error = %v, want render:false dated page to skip feed.xml", err)
 		}
 	})
@@ -109,7 +109,7 @@ func TestCheckRejectsStagingDirectories(t *testing.T) {
 	writeRequiredArtifacts(t, root)
 	writePublishFile(t, root, ".staging-build-123/partial/index.html", "<html></html>")
 
-	_, err := Check(root)
+	_, err := Check(root, "")
 	if err == nil || !strings.Contains(err.Error(), stagingDirPrefix) {
 		t.Fatalf("Check error = %v, want staging directory rejection", err)
 	}
@@ -121,7 +121,7 @@ func TestCheckResolvesHtmlToIndexFallback(t *testing.T) {
 		writePublishFile(t, root, "index.html", `<a href="/docs/setup.html">setup</a>`)
 		writePublishFile(t, root, "docs/setup/index.html", "<html>setup</html>")
 		writeRequiredArtifacts(t, root)
-		if _, err := Check(root); err != nil {
+		if _, err := Check(root, ""); err != nil {
 			t.Fatalf("Check = %v, want /docs/setup.html to resolve to docs/setup/index.html", err)
 		}
 	})
@@ -132,7 +132,7 @@ func TestCheckResolvesHtmlToIndexFallback(t *testing.T) {
 		writePublishFile(t, root, "docs/setup/index.html", "<html>setup</html>")
 		writeRequiredArtifacts(t, root)
 		writePublishFile(t, root, "index.html", "<html>home</html>")
-		if _, err := Check(root); err != nil {
+		if _, err := Check(root, ""); err != nil {
 			t.Fatalf("Check = %v, want relative setup.html to resolve to docs/setup/index.html", err)
 		}
 	})
@@ -142,7 +142,7 @@ func TestCheckResolvesHtmlToIndexFallback(t *testing.T) {
 		writePublishFile(t, root, "index.html", `<a href="/docs/setup.html?x=1#anchor">setup</a>`)
 		writePublishFile(t, root, "docs/setup/index.html", "<html>setup</html>")
 		writeRequiredArtifacts(t, root)
-		if _, err := Check(root); err != nil {
+		if _, err := Check(root, ""); err != nil {
 			t.Fatalf("Check = %v, want query/fragment html to resolve", err)
 		}
 	})
@@ -153,7 +153,7 @@ func TestCheckResolvesHtmlToIndexFallback(t *testing.T) {
 		writePublishFile(t, root, "docs/setup.html", "<html>direct</html>")
 		writePublishFile(t, root, "docs/setup/index.html", "<html>index</html>")
 		writeRequiredArtifacts(t, root)
-		if _, err := Check(root); err != nil {
+		if _, err := Check(root, ""); err != nil {
 			t.Fatalf("Check = %v, want direct html to pass", err)
 		}
 	})
@@ -162,7 +162,7 @@ func TestCheckResolvesHtmlToIndexFallback(t *testing.T) {
 		root := t.TempDir()
 		writePublishFile(t, root, "index.html", `<a href="/missing.html">missing</a>`)
 		writeRequiredArtifacts(t, root)
-		if _, err := Check(root); err == nil || !strings.Contains(err.Error(), "missing.html") {
+		if _, err := Check(root, ""); err == nil || !strings.Contains(err.Error(), "missing.html") {
 			t.Fatalf("Check error = %v, want missing html failure", err)
 		}
 	})
@@ -186,6 +186,52 @@ func TestResolveReferenceHtmlFallback(t *testing.T) {
 	files["docs/setup.html"] = struct{}{}
 	if target, ok := resolveReference("index.html", "/docs/setup.html", files); !ok || target != "docs/setup.html" {
 		t.Fatalf("direct file should be preferred, got %q ok=%v", target, ok)
+	}
+}
+
+// A project site deployed under a base path (a GitHub Pages project page)
+// renders every root-relative link with the prefix (/repo/...); the check must
+// strip it before resolving against the on-disk artifact.
+func TestCheckResolvesBasePathReferences(t *testing.T) {
+	root := t.TempDir()
+	writePublishFile(t, root, "index.html", `<link rel="stylesheet" href="/repo/assets/css/theme.css"><a href="/repo/">Home</a><a href="/repo/tags/">Tags</a><script src="/repo/assets/js/search.js"></script>`)
+	writePublishFile(t, root, "assets/css/theme.css", "body{}")
+	writePublishFile(t, root, "assets/js/search.js", "console.log(1)")
+	writePublishFile(t, root, "tags/index.html", `<a href="/repo/">Home</a>`)
+	writeRequiredArtifacts(t, root)
+
+	if _, err := Check(root, "/repo/"); err != nil {
+		t.Fatalf("Check with base path /repo/: %v", err)
+	}
+
+	// Without the base path the same artifact must still be rejected: the
+	// on-disk layout has no repo/ directory.
+	if _, err := Check(root, ""); err == nil {
+		t.Fatal("Check without a base path accepted /repo/ references")
+	}
+
+	// A genuinely missing base-path reference must still fail, and the
+	// reported link is the one the page actually emits.
+	writePublishFile(t, root, "broken.html", `<a href="/repo/not-there/">x</a>`)
+	if _, err := Check(root, "/repo/"); err == nil || !strings.Contains(err.Error(), "/repo/not-there/") {
+		t.Fatalf("Check error = %v, want a missing /repo/not-there/ reference", err)
+	}
+}
+
+func TestStripBasePath(t *testing.T) {
+	cases := []struct{ ref, base, want string }{
+		{"/repo/", "/repo/", "/"},
+		{"/repo", "/repo/", "/"},
+		{"/repo/assets/x.css", "/repo/", "/assets/x.css"},
+		{"/repo-other/x.css", "/repo/", "/repo-other/x.css"},
+		{"/assets/x.css", "/repo/", "/assets/x.css"},
+		{"/repo", "/", "/repo"},
+		{"relative/x", "/repo/", "relative/x"},
+	}
+	for _, tc := range cases {
+		if got := stripBasePath(tc.ref, tc.base); got != tc.want {
+			t.Errorf("stripBasePath(%q, %q) = %q, want %q", tc.ref, tc.base, got, tc.want)
+		}
 	}
 }
 
