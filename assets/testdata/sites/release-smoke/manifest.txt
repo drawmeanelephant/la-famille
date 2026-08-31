@@ -1,6 +1,7 @@
 about/index.html
 assets/css/layout-editorial.css
 assets/css/layout-midnight.css
+assets/css/layout-terminal.css
 assets/css/search.css
 assets/css/theme-foundations.css
 assets/css/theme.css
@@ -8,6 +9,7 @@ assets/graph/explorer.css
 assets/graph/explorer.js
 assets/img/jules-logo.png
 assets/img/mascot-default.jpeg
+assets/img/u1f419_u1f354.png
 assets/js/search.js
 assets/sample-image.png
 backlinks.json

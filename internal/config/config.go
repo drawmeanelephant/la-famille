@@ -45,11 +45,18 @@ type Config struct {
 	GraphExplorer     bool       `yaml:"graph_explorer"`
 }
 
+// DefaultLayoutPath is the layout the default configuration and freshly
+// initialised sites select. Octoburger is the flagship soul theme and the
+// global default; `init --theme <name>` swaps it for another bundled layout,
+// and the canonical config.yaml template line must match this value so
+// WriteDefaultWithLayout can string-replace it.
+const DefaultLayoutPath = "templates/layout-octoburger.html"
+
 // DefaultConfig returns a Config with sensible default values.
 func DefaultConfig() Config {
 	return Config{
 		SiteName:          "La Famille",
-		Template:          "templates/layout.html",
+		Template:          DefaultLayoutPath,
 		ContentDir:        "content",
 		OutputDir:         "public",
 		AssetDir:          "assets",
@@ -100,20 +107,23 @@ func Load(filepath string) (Config, error) {
 
 //go:generate go run ./gendefault
 
-// WriteDefault writes the default configuration to the specified filepath.
+// WriteDefault writes the default configuration to the specified filepath. The
+// global default template is DefaultLayoutPath (octoburger).
 func WriteDefault(filepath string) error {
-	return WriteDefaultWithLayout(filepath, "templates/layout.html")
+	return WriteDefaultWithLayout(filepath, DefaultLayoutPath)
 }
 
 // WriteDefaultWithLayout writes the default configuration using layoutPath as
 // the configured template path. It exists so `init --theme` can select a
 // bundled layout as the site default while preserving the commented config.
+// The replacement token is DefaultLayoutPath, which must match the template
+// line in the canonical config.yaml that defaultConfigYaml is generated from.
 func WriteDefaultWithLayout(filepath, layoutPath string) error {
 	// We use text templates to preserve comments, rather than yaml.Marshal
 	// which strips comments and ordering.
 
 	defaultYaml := strings.Replace(defaultConfigYaml,
-		`template: "templates/layout.html"`,
+		`template: "`+DefaultLayoutPath+`"`,
 		`template: "`+layoutPath+`"`, 1)
 	return os.WriteFile(filepath, []byte(defaultYaml), 0600)
 }

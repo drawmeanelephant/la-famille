@@ -1,0 +1,370 @@
+/* Terminal — a synthwave console for La Famille.
+ * Fully local-first: system monospace stack, flat hairline surfaces, neon
+ * accents from plain CSS. No frameworks, no CDN, works offline from disk. */
+
+:root {
+  color-scheme: dark;
+
+  --t-bg: #0d0e1a;
+  --t-edge: #1a1b33;
+  --t-window: #191b30;
+  --t-window-head: #13142a;
+  --t-text: #cdd2f2;
+  --t-bright: #f4f5ff;
+  --t-muted: #8b90ba;
+  --t-pink: #ff5fd0;
+  --t-cyan: #37f2f6;
+  --t-yellow: #f6d75c;
+  --t-green: #5cff9f;
+  --t-border: #2a2c53;
+  --t-border-strong: #43467f;
+  --t-measure: 70ch;
+
+  --t-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(900px 480px at 12% -8%, rgba(255, 95, 208, 0.10), transparent 60%),
+    radial-gradient(900px 520px at 100% 8%, rgba(55, 242, 246, 0.10), transparent 60%),
+    var(--t-bg);
+  color: var(--t-text);
+  font-family: var(--t-mono);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+::selection {
+  background: rgba(255, 95, 208, 0.35);
+  color: var(--t-bright);
+}
+
+/* ----------------------------------------------------------- skip link */
+
+.t-skip {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  z-index: 40;
+  padding: 0.6rem 1rem;
+  background: var(--t-pink);
+  color: #0d0e1a;
+}
+.t-skip:focus {
+  left: 0;
+}
+
+/* ------------------------------------------------------------ header */
+
+.t-masthead {
+  border-bottom: 1px solid var(--t-border);
+  background: rgba(10, 11, 22, 0.7);
+}
+
+.t-nav {
+  max-width: calc(var(--t-measure) + 4rem);
+  margin: 0 auto;
+  padding: 0.7rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.t-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--t-bright);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.t-brand .t-prompt {
+  color: var(--t-cyan);
+}
+
+.t-brand img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--t-border-strong);
+  filter: grayscale(30%) contrast(1.05);
+}
+
+.t-links {
+  list-style: none;
+  display: flex;
+  gap: 1.15rem;
+  margin: 0 0 0 auto;
+  padding: 0;
+  font-size: 0.9rem;
+}
+
+.t-links a {
+  color: var(--t-muted);
+  text-decoration: none;
+}
+.t-links a::before {
+  content: "$ ";
+  color: var(--t-green);
+}
+.t-links a:hover,
+.t-links a:focus-visible {
+  color: var(--t-cyan);
+}
+
+.t-links ~ .lf-search,
+.t-nav > .lf-search {
+  margin-left: 0;
+}
+
+.t-caret {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  margin-left: 0.1em;
+  vertical-align: text-bottom;
+  background: var(--t-green);
+  animation: t-blink 1.1s steps(1, end) infinite;
+}
+@keyframes t-blink {
+  50% { opacity: 0; }
+}
+
+/* ------------------------------------------------------------ window */
+
+.t-main {
+  max-width: calc(var(--t-measure) + 4rem);
+  margin: 0 auto;
+  padding: 2.25rem 1.25rem 4rem;
+}
+
+.t-window {
+  background: var(--t-window);
+  border: 1px solid var(--t-border);
+  border-radius: 10px;
+  box-shadow: 0 22px 50px -30px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+.t-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem;
+  background: var(--t-window-head);
+  border-bottom: 1px solid var(--t-border);
+  font-size: 0.78rem;
+  color: var(--t-muted);
+}
+
+.t-dots {
+  display: flex;
+  gap: 0.4rem;
+}
+.t-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.t-dot--r { background: #ff5f56; }
+.t-dot--y { background: #ffbd2e; }
+.t-dot--g { background: #27c93f; }
+
+.t-titlepath {
+  margin-left: 0.35rem;
+  color: var(--t-yellow);
+}
+
+.t-article-body {
+  padding: clamp(1.5rem, 4vw, 2.75rem);
+}
+
+.t-kicker {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t-muted);
+}
+
+.t-title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.7rem, 4.5vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--t-pink);
+}
+.t-title::before {
+  content: "> ";
+  color: var(--t-cyan);
+}
+
+.t-meta {
+  margin: 0 0 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px dashed var(--t-border-strong);
+  font-size: 0.85rem;
+  color: var(--t-muted);
+}
+.t-meta strong {
+  color: var(--t-text);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------ prose */
+
+.t-prose h2 {
+  margin: 2.1rem 0 0.75rem;
+  font-size: 1.2rem;
+  letter-spacing: -0.005em;
+  color: var(--t-cyan);
+}
+.t-prose h3 {
+  margin: 1.6rem 0 0.55rem;
+  font-size: 1.08rem;
+  color: var(--t-bright);
+}
+
+.t-prose a {
+  color: var(--t-cyan);
+  text-decoration-color: var(--t-pink);
+  text-underline-offset: 3px;
+}
+.t-prose a:hover {
+  color: var(--t-bright);
+}
+
+.t-prose blockquote {
+  margin: 1.5rem 0;
+  padding: 0.6rem 0 0.6rem 1.1rem;
+  border-left: 3px solid var(--t-yellow);
+  color: var(--t-muted);
+}
+
+.t-prose pre {
+  background: #0a0b16;
+  border: 1px solid var(--t-border);
+  border-radius: 6px;
+  padding: 1rem 1.15rem;
+  overflow-x: auto;
+  font-size: 0.85em;
+  line-height: 1.6;
+}
+
+.t-prose :not(pre) > code {
+  font-family: var(--t-mono);
+  font-size: 0.86em;
+  padding: 0.14em 0.4em;
+  background: #101126;
+  border: 1px solid var(--t-border);
+  border-radius: 4px;
+  color: var(--t-yellow);
+}
+
+.t-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.t-prose th,
+.t-prose td {
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--t-border);
+  text-align: left;
+}
+.t-prose th {
+  color: var(--t-muted);
+  border-bottom-color: var(--t-border-strong);
+}
+
+figure.lf-figure figcaption {
+  color: var(--t-muted);
+  font-size: 0.78rem;
+}
+
+/* ------------------------------------------------------------ footer */
+
+.t-mastfoot {
+  max-width: calc(var(--t-measure) + 4rem);
+  margin: -2.25rem auto 0;
+  padding: 0 1.25rem 2.5rem;
+}
+
+.t-foot-window {
+  background: var(--t-window-head);
+  border: 1px solid var(--t-border);
+  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--t-muted);
+}
+
+.t-foot-status {
+  color: var(--t-green);
+  letter-spacing: 0.08em;
+}
+
+/* ------------------------------------------------------ compliance */
+
+.t-compliance {
+  border: 1px solid var(--t-border-strong);
+  border-radius: 10px;
+  background: var(--t-window);
+  color: var(--t-text);
+  max-width: min(92vw, 30rem);
+  padding: 0;
+}
+
+.t-compliance::backdrop {
+  background: rgba(6, 7, 14, 0.75);
+}
+
+.t-compliance article {
+  padding: 1.4rem 1.6rem 1.6rem;
+}
+
+.t-compliance h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  color: var(--t-pink);
+}
+
+.t-compliance p {
+  margin: 0 0 1.25rem;
+  color: var(--t-muted);
+}
+
+.t-agree {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  background: var(--t-green);
+  color: #0d0e1a;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.t-agree:hover,
+.t-agree:focus-visible {
+  background: var(--t-cyan);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-caret { animation: none; opacity: 0.6; }
+}
+
+@media print {
+  .t-masthead, .t-mastfoot, .t-skip { display: none; }
+  .t-window { box-shadow: none; border-radius: 0; }
+}

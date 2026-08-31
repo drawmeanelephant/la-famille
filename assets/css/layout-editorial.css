@@ -60,17 +60,48 @@ body {
   text-decoration: none;
 }
 
+/* The search box is a normal flex child here (not absolutely positioned):
+ * absolutely-pinned it was taller than the nav row, so on pages without a
+ * wide nav it hung down through the masthead's 4px double rule. In-flow, the
+ * nav grows to contain it and the rule stays a clean divider underneath. */
+.ed-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 2rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--ed-rule);
+}
+
 .ed-nav ul {
   list-style: none;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 2rem;
-  margin: 0.75rem 0 0;
+  gap: 0.5rem 2rem;
+  margin: 0;
   padding: 0;
-  border-top: 1px solid var(--ed-rule);
   font-size: 0.85rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.ed-nav .lf-search {
+  width: min(13rem, 100%);
+  margin-left: auto;
+}
+
+@media (max-width: 42rem) {
+  .ed-nav {
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .ed-nav .lf-search {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 
 .ed-nav a {
@@ -205,6 +236,53 @@ figure.lf-figure figcaption {
 .ed-colophon p {
   margin: 0;
   padding: 1.25rem 1.5rem;
+}
+
+/* ------------------------------------------------------ compliance */
+
+.ed-compliance {
+  border: 2px solid var(--ed-rule-strong);
+  background: var(--ed-paper);
+  color: var(--ed-ink);
+  max-width: min(92vw, 30rem);
+  padding: 0;
+}
+
+.ed-compliance::backdrop {
+  background: rgb(25 23 19 / 0.55);
+}
+
+.ed-compliance article {
+  padding: 1.4rem 1.75rem 1.75rem;
+}
+
+.ed-compliance h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
+  font-family: Georgia, "Iowan Old Style", Palatino, serif;
+  letter-spacing: 0.02em;
+}
+
+.ed-compliance p {
+  margin: 0 0 1.25rem;
+  color: var(--ed-muted);
+}
+
+.ed-agree {
+  font: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.5rem 1.1rem;
+  background: var(--ed-accent);
+  color: var(--ed-paper);
+  border: 0;
+  cursor: pointer;
+}
+
+.ed-agree:hover,
+.ed-agree:focus-visible {
+  background: var(--ed-rule-strong);
 }
 
 @media print {

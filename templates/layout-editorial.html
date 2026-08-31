@@ -14,6 +14,7 @@
     <!-- Editorial: local-first, framework-free -->
     <link rel="stylesheet" href="/assets/css/theme-foundations.css">
     <link rel="stylesheet" href="/assets/css/layout-editorial.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
 </head>
 <body>
     <a href="#main-content" class="ed-skip">Skip to content</a>
@@ -27,6 +28,7 @@
                     {{range .Site.SiteLinks}}<li><a href="{{.URL}}">{{.Label}}</a></li>{{end}}
                 </ul>
                 {{end}}
+                {{ template "search_modal" . }}
             </nav>
         </div>
     </header>
@@ -50,7 +52,20 @@
     </main>
 
     <footer class="ed-colophon">
-        <p>Set in system serifs. Built with La Famille.</p>
+        {{if .Site.SiteName}}<p>Set in system serifs. Built with {{.Site.SiteName}}.</p>{{else}}<p>Set in system serifs. Built with La Famille.</p>{{end}}
     </footer>
+
+{{if .ComplianceModal}}
+    <dialog open class="ed-compliance" aria-labelledby="ed-compliance-title">
+        <article>
+            <h2 id="ed-compliance-title">Compliance Required</h2>
+            <p>{{.ComplianceModal}}</p>
+            <form method="dialog">
+                <button type="submit" class="ed-agree" autofocus>I Reluctantly Agree</button>
+            </form>
+        </article>
+    </dialog>
+{{end}}
+<script src="/assets/js/search.js"></script>
 </body>
 </html>

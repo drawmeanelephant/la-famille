@@ -93,6 +93,10 @@ body {
   text-decoration: none;
 }
 
+.mn-nav > .lf-search {
+  width: min(14rem, 100%);
+}
+
 .mn-links a:hover {
   color: var(--mn-accent-strong);
 }
@@ -215,4 +219,51 @@ figure.lf-figure figcaption {
   max-width: calc(var(--mn-measure) + 3rem);
   margin: 0 auto;
   padding: 1.4rem 1.5rem;
+}
+
+/* ------------------------------------------------------ compliance */
+
+.mn-compliance {
+  border: 1px solid var(--mn-border-strong);
+  border-radius: 8px;
+  background: var(--mn-surface);
+  color: var(--mn-text);
+  max-width: min(92vw, 30rem);
+  padding: 0;
+}
+
+.mn-compliance::backdrop {
+  background: rgb(10 13 17 / 0.7);
+}
+
+.mn-compliance article {
+  padding: 1.4rem 1.6rem 1.6rem;
+}
+
+.mn-compliance h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  color: var(--mn-bright);
+}
+
+.mn-compliance p {
+  margin: 0 0 1.25rem;
+  color: var(--mn-muted);
+}
+
+.mn-agree {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  background: var(--mn-accent);
+  color: var(--mn-bg);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mn-agree:hover,
+.mn-agree:focus-visible {
+  background: var(--mn-accent-strong);
+  color: var(--mn-bg);
 }

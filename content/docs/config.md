@@ -25,7 +25,10 @@ This will create a `config.yaml` file that looks something like this:
 site_name: "La Famille"
 
 # template: The path to the HTML layout file used to render pages.
-template: "templates/layout.html"
+# Octoburger (templates/layout-octoburger.html) is the flagship theme and the
+# global default of La Famille: fresh init sites and the project's own builds
+# render it.
+template: "templates/layout-octoburger.html"
 
 # content_dir: The directory containing your markdown source files.
 content_dir: "content"
@@ -57,7 +60,7 @@ port: 8080
 Here is a breakdown of each available field:
 
 *   **`site_name`** (string): The title of your website. This is often used by layouts in the header or footer navigation. *Default: "La Famille"*
-*   **`template`** (string): The default HTML layout used for rendering pages. You can override this on a per-page basis using [frontmatter](templates.md). *Default: "templates/layout.html"*
+*   **`template`** (string): The default HTML layout used for rendering pages. Octoburger (`templates/layout-octoburger.html`) is the flagship soul theme and the global default of La Famille — every fresh `init` site and the project's own builds render it. You can override this on a per-page basis using [frontmatter](templates.md). *Default: "templates/layout-octoburger.html"*
 *   **`content_dir`** (string): The source directory containing your Markdown `.md` files. *Default: "content"*
 *   **`output_dir`** (string): The destination directory where the fully generated static site (HTML, JSON graphs, etc.) will be placed. *Default: "public"*
 *   **`asset_dir`** (string): The directory containing static assets. *Default: "assets"*

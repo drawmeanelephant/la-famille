@@ -72,6 +72,11 @@ title: Test Page
 	if err := os.WriteFile(filepath.Join(templateDir, "layout.html"), htmlContent, 0600); err != nil {
 		t.Fatalf("Failed to write layout.html: %v", err)
 	}
+	// The serve phase runs on the default template (octoburger), which this
+	// config does not override, so it must exist too.
+	if err := os.WriteFile(filepath.Join(templateDir, filepath.Base(config.DefaultLayoutPath)), htmlContent, 0600); err != nil {
+		t.Fatalf("Failed to write %s: %v", config.DefaultLayoutPath, err)
+	}
 
 	// Build la-famille executable once per test run and share it across the
 	// exec-based tests (#552).
@@ -677,8 +682,8 @@ func TestInitCommand_PlainInitInstallsBundledThemes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(configBytes), `template: "templates/layout.html"`) {
-		t.Errorf("plain init must keep the default template in config.yaml, got:\n%s", configBytes)
+	if !strings.Contains(string(configBytes), `template: "templates/layout-octoburger.html"`) {
+		t.Errorf("plain init must keep the octoburger default template in config.yaml, got:\n%s", configBytes)
 	}
 	for _, rel := range []string{
 		filepath.Join("templates", "layout.html"),
@@ -736,7 +741,7 @@ func TestInitCommand_ScaffoldsDemoContent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected init to scaffold content/index.md: %v", err)
 	}
-	for _, want := range []string{"title:", "date:", "la-famille new", "la-famille serve --watch"} {
+	for _, want := range []string{"title:", "date:", "Welcome to your site", "about.md"} {
 		if !strings.Contains(string(indexBytes), want) {
 			t.Errorf("scaffolded index.md missing %q, got:\n%s", want, indexBytes)
 		}
@@ -851,7 +856,7 @@ func TestBuildSiteURLEnvironmentVariables(t *testing.T) {
 	if err := os.MkdirAll("templates", 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join("templates", "layout.html"), []byte("<html><body>{{.Content}}</body></html>"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join("templates", filepath.Base(config.DefaultLayoutPath)), []byte("<html><body>{{.Content}}</body></html>"), 0600); err != nil {
 		t.Fatal(err)
 	}
 

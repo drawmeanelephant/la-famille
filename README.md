@@ -62,6 +62,22 @@ builds to something real immediately:
 ./la-famille --project-root /path/to/site build
 ```
 
+### Octoburger 🍔🐙 — the soul theme
+
+**Octoburger is La Famille's flagship, soul theme — and the global default.**
+Every fresh `init` site, every build of this repository (local or GitHub
+Pages), and the released binary all render Octoburger out of the box. It
+translates the 🍔 OCTOBURGER MENU identity from the TUI into a site layout:
+Raoul(s) the octopus holds the burger while you write, with bun-yellow
+mastheads, pink highlights, Raoul-blue accents over charcoal panels, and a
+burger-stack card holding each article's content. It is embedded in the
+release binary alongside the default layout and installed by `init`, so a
+binary-only install gets it with no source checkout.
+
+Beautiful docs, an octopus, and a burger — Octoburger is how La Famille
+introduces itself to the world, and it is what the project's own deployed
+site renders.
+
 Switching looks works on a binary-only install, no source checkout required:
 
 *   **Site default:** change the `template:` line in `config.yaml` to another
@@ -182,7 +198,7 @@ steps:
       content-dir: 'content'
       output-dir: 'public'
       asset-dir: 'assets'
-      template: 'templates/layout.html'
+      template: 'templates/layout-octoburger.html'
       site-url: 'https://example.github.io/my-site'
       # Pin a release in production; omit for the source-build fallback.
       release-version: 'v1.2.3'

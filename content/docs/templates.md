@@ -12,7 +12,7 @@ La Famille uses standard Go HTML templates to structure the generated pages. Thi
 
 When La Famille converts a Markdown file into HTML, it injects the rendered Markdown content into an HTML layout template.
 
-By default, the generator uses `templates/layout.html` as the master template for every page.
+By default, the generator uses `templates/layout-octoburger.html` — the flagship octoburger soul theme, Raoul(s) the octopus holding the burger while you write — as the master template for every page.
 
 ### The Standard Layout Structure
 
@@ -44,11 +44,15 @@ A basic layout template looks something like this:
 
 The `templates/` directory contains a library of unique HTML templates. The default layout is fully local-first: it ships its own CSS token system with five built-in palettes and loads no frameworks or CDN assets.
 
-*   `layout.html` - The default layout. Local-first, framework-free, styled by `assets/css/theme.css` tokens.
-*   `layout-editorial.html` - A serif gazette with a centered masthead, hairline rules, and drop caps.
-*   `layout-midnight.html` - A restrained dark theme for technical writing, with monospaced metadata.
+*   `layout-octoburger.html` - **The flagship soul theme.** Raoul(s) the octopus holds the burger while you write, in the 🍔 OCTOBURGER MENU palette from the TUI (bun-yellow mastheads, pink highlights, Raoul-blue accents over charcoal panels). Embedded in the release binary as part of the curated theme packet, and the default look of La Famille's own deployed GitHub Pages site. Select it with `init --theme layout-octoburger`.
+*   `layout.html` - The default layout. Local-first, framework-free, styled by `assets/css/theme.css` tokens, with five themed palettes (retro, ink, sepia, slate, moss).
+*   `layout-editorial.html` - A serif gazette with a centered masthead, hairline rules, and drop caps. Local-first and offline.
+*   `layout-midnight.html` - A restrained dark theme for technical writing, with monospaced metadata. Local-first and offline.
+*   `layout-terminal.html` - A self-contained synthwave console: monospace stack, neon accents, and a framed terminal-window article. Local-first and offline.
 
-The gallery also includes showcase layouts (cyberpunk, devlog, magazine grid, terminal, and more). Most of these are DaisyUI-based demos that pull CSS from a CDN; they live in the repository but are not embedded in release binaries.
+Every one of these bundled layouts is local-first and framework-free: no CDN, no frameworks, and it works offline from a file preview. They make up the curated theme packet embedded in release binaries and installed by `init`.
+
+The repository also includes a wider gallery of showcase layouts (cyberpunk, devlog, magazine grid, dashboard, and more). Most of these are DaisyUI-based demos that pull CSS from a CDN; they live in the repository as references but are not embedded in release binaries.
 
 *Note: You can easily create your own layouts by adding new `.html` files to the `templates/` directory.*
 

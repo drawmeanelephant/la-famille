@@ -13,9 +13,7 @@
     <meta property="og:type" content="website">
     {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
     <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="/assets/css/theme-foundations.css">
-    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <link rel="stylesheet" href="/assets/css/search.css">
     <style>
         :root {
@@ -32,12 +30,22 @@
         }
         html { scroll-behavior: smooth; }
         body.ob-body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 1rem;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
             min-height: 100vh;
             background-color: var(--ob-ink);
             background-image:
                 radial-gradient(circle at 12% -10%, rgba(108, 108, 229, 0.18), transparent 42%),
                 radial-gradient(circle at 88% 110%, rgba(244, 114, 182, 0.10), transparent 46%);
             color: #ecebf4;
+        }
+        /* Replace Tailwind's form-typography preflight locally. */
+        .ob-body input, .ob-body button, .ob-body select, .ob-body textarea {
+            font: inherit;
+            color: inherit;
         }
         body.ob-body :focus-visible {
             outline: 2px solid var(--ob-pink);
@@ -69,6 +77,19 @@
                 linear-gradient(180deg, var(--ob-bun) 0%, var(--ob-bun-toast) 100%);
             color: #33261a;
         }
+        /* Raoul(s) peeks over the masthead's top edge, arms curling beside
+           the wordmark. Purely decorative and screen-reader hidden. */
+        .ob-brand-box { position: relative; }
+        .ob-arm {
+            position: absolute;
+            pointer-events: none;
+            filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
+            overflow: visible;
+        }
+        /* Dangle clear of the wordmark/tagline letters: over the empty
+           masthead on either side of the brand text. */
+        .ob-arm--a { top: -26px; right: -48px; width: 46px; }
+        .ob-arm--b { top: -20px; left: -30px;  width: 34px; transform: scaleX(-1) rotate(-8deg); }
         .ob-wordmark {
             display: inline-flex;
             align-items: center;
@@ -80,24 +101,139 @@
             color: inherit;
         }
         .ob-wordmark:focus-visible { outline-color: #33261a; }
-        .ob-wordmark .ob-glyph { font-size: 1.35rem; line-height: 1; }
         .ob-tagline {
             margin: 0;
             font-size: 0.78rem;
             letter-spacing: 0.08em;
             opacity: 0.75;
         }
-        .ob-navlink {
-            color: inherit;
+        /* Octopus-burger menu toggle: the hybrid mascot IS the menu. */
+        .ob-navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem 1.5rem;
+            max-width: 72rem;
+            margin: 0 auto;
+            padding: 0.75rem 1rem;
+            position: relative;
+        }
+        .ob-nav-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 46px;
+            height: 46px;
+            padding: 0;
+            border: 2px solid rgba(51, 38, 26, 0.35);
+            border-radius: 9999px;
+            background: var(--ob-panel);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 0 0 2px rgba(255, 224, 138, 0.18);
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        .ob-nav-toggle img {
+            width: 34px;
+            height: 34px;
+            border-radius: 9999px;
+            object-fit: cover;
+            transform-origin: 50% 62%;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: ob-sway 4.5s ease-in-out infinite;
+        }
+        .ob-nav-toggle:hover { transform: translateY(-1px) scale(1.04); }
+        .ob-nav-toggle:hover img { animation-play-state: paused; }
+        .ob-nav-toggle:focus-visible {
+            outline: 2px solid var(--ob-pink);
+            outline-offset: 3px;
+        }
+        .ob-nav-toggle[aria-expanded="true"] {
+            border-color: var(--ob-pink);
+            box-shadow: 0 6px 22px rgba(244, 114, 182, 0.45), 0 0 0 4px rgba(244, 114, 182, 0.18);
+        }
+        .ob-nav-toggle[aria-expanded="true"] img {
+            animation: none;
+            transform: rotate(360deg) scale(1.07);
+        }
+        @keyframes ob-sway {
+            0%, 100% { transform: rotate(-7deg); }
+            50% { transform: rotate(7deg); }
+        }
+
+        /* Patty-drop menu: bun strip on top, links below. */
+        .ob-menu {
+            position: absolute;
+            top: calc(100% + 0.6rem);
+            right: 0;
+            width: min(24rem, calc(100vw - 2rem));
+            padding: 0 0 0.75rem;
+            background: var(--ob-panel);
+            border: 1px solid var(--ob-panel-edge);
+            border-radius: 1rem;
+            box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55);
+            z-index: 50;
+            --lf-surface: #fff;
+            --lf-surface-2: #f4f1ea;
+            --lf-text: #1c1c23;
+            --lf-muted: rgba(28, 28, 35, 0.72);
+            --lf-border: rgba(28, 28, 35, 0.25);
+            --lf-border-strong: rgba(28, 28, 35, 0.5);
+            --lf-accent-strong: #f43f5e;
+            --lf-radius: 8px;
+            --lf-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.5);
+        }
+        .ob-menu::before {
+            content: "";
+            display: block;
+            height: 0.55rem;
+            background: linear-gradient(180deg, var(--ob-bun), var(--ob-bun-toast));
+            border-radius: 1rem 1rem 0 0;
+        }
+        .ob-menu.is-open { animation: ob-drop 0.32s cubic-bezier(0.22, 1.2, 0.36, 1) both; }
+        @keyframes ob-drop {
+            from { opacity: 0; transform: translateY(-10px) rotate(-1.2deg) scale(0.98); }
+            to { opacity: 1; transform: none; }
+        }
+        .ob-menu-body { padding: 0.9rem 1rem 0.6rem; }
+        .ob-menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            margin-top: 0.85rem;
+            padding-top: 0.75rem;
+            border-top: 1px dashed rgba(108, 108, 229, 0.55);
+        }
+        .ob-menu-link {
+            color: #ecebf4;
             font-weight: 600;
-            padding: 0.25rem 0.35rem;
+            font-size: 1.02rem;
+            padding: 0.55rem 0.6rem;
+            border-radius: 0.6rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        .ob-navlink:hover, .ob-navlink:focus-visible {
-            background: rgba(51, 38, 26, 0.16);
-            outline-color: #33261a;
+        .ob-menu-link:hover, .ob-menu-link:focus-visible {
+            background: rgba(108, 108, 229, 0.16);
+            outline-color: var(--ob-pink);
         }
-        .ob-navlink::before { content: ""; font-weight: 800; color: #33261a; }
-        .ob-navlink:hover::before, .ob-navlink:focus-visible::before { content: "> "; }
+        .ob-menu-link::before { content: ""; font-weight: 800; color: var(--ob-pink); }
+        .ob-menu-link:hover::before, .ob-menu-link:focus-visible::before { content: "> "; }
+        .ob-menu.is-open .ob-menu-link {
+            animation: ob-rise 0.4s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+        }
+        .ob-menu.is-open .ob-menu-link:nth-child(1) { animation-delay: 0.04s; }
+        .ob-menu.is-open .ob-menu-link:nth-child(2) { animation-delay: 0.09s; }
+        .ob-menu.is-open .ob-menu-link:nth-child(3) { animation-delay: 0.14s; }
+        .ob-menu.is-open .ob-menu-link:nth-child(4) { animation-delay: 0.19s; }
+        .ob-menu.is-open .ob-menu-link:nth-child(5) { animation-delay: 0.24s; }
+        .ob-menu.is-open .ob-menu-link:nth-child(6) { animation-delay: 0.29s; }
+        @keyframes ob-rise {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: none; }
+        }
 
         /* Patty card: layered burger between buns. */
         .ob-card {
@@ -145,13 +281,107 @@
             padding-bottom: 1.1rem;
             margin-bottom: 1.6rem;
         }
-        .ob-article a { color: var(--ob-blue); }
+        /* Hand-rolled typography for rendered content, replacing the
+           Tailwind `prose` plugin so the theme ships no framework. */
+        .ob-article {
+            font-size: 1.125rem;
+            line-height: 1.75;
+            color: rgba(236, 235, 244, 0.92);
+            max-width: 65ch;
+        }
+        .ob-article h1 {
+            font-size: 2.25em;
+            font-weight: 800;
+            line-height: 1.2;
+            margin: 0 0 0.7em;
+            color: #ecebf4;
+        }
+        .ob-article h2 {
+            font-size: 1.5em;
+            font-weight: 800;
+            line-height: 1.25;
+            margin: 1.7em 0 0.6em;
+            color: #ecebf4;
+        }
+        .ob-article h3 {
+            font-size: 1.25em;
+            font-weight: 700;
+            line-height: 1.3;
+            margin: 1.6em 0 0.55em;
+            color: var(--ob-bun);
+        }
+        .ob-article h4, .ob-article h5, .ob-article h6 {
+            font-size: 1.1em;
+            font-weight: 700;
+            line-height: 1.35;
+            margin: 1.4em 0 0.5em;
+            color: var(--ob-bun);
+        }
+        .ob-article p { margin: 0 0 1.25em; }
+        .ob-article a {
+            color: var(--ob-blue);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            text-decoration-thickness: 1px;
+        }
         .ob-article a:hover { color: var(--ob-pink); }
+        .ob-article strong { color: #ffffff; font-weight: 700; }
+        .ob-article em { color: #f9a8d4; }
+        .ob-article ul { list-style: disc; padding-left: 1.5em; margin: 0 0 1.25em; }
+        .ob-article ol { list-style: decimal; padding-left: 1.5em; margin: 0 0 1.25em; }
+        .ob-article ul ul, .ob-article ol ul, .ob-article ul ol, .ob-article ol ol { margin: 0.4em 0 0.5em; }
+        .ob-article li { margin: 0.45em 0; }
+        .ob-article li::marker { color: var(--ob-pink); }
+        .ob-article code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.875em;
+            background: rgba(108, 108, 229, 0.18);
+            color: #f9a8d4;
+            padding: 0.15em 0.4em;
+            border-radius: 0.375rem;
+        }
+        .ob-article pre {
+            background: #16161c;
+            border: 1px solid rgba(108, 108, 229, 0.35);
+            border-radius: 0.75rem;
+            padding: 1rem 1.15rem;
+            margin: 0 0 1.5em;
+            overflow-x: auto;
+        }
+        .ob-article pre code {
+            background: none;
+            padding: 0;
+            color: #e2e8f0;
+            font-size: 0.9em;
+        }
         .ob-article blockquote {
             border-left: 4px solid var(--ob-lettuce);
             background: rgba(125, 216, 125, 0.07);
+            border-radius: 0 0.6rem 0.6rem 0;
             padding: 0.75rem 1rem;
+            margin: 0 0 1.5em;
+            font-style: italic;
+            color: rgba(236, 235, 244, 0.88);
         }
+        .ob-article blockquote p { margin: 0 0 0.5em; }
+        .ob-article blockquote p:last-child { margin: 0; }
+        .ob-article hr {
+            border: 0;
+            height: 1px;
+            background: rgba(108, 108, 229, 0.4);
+            margin: 2em 0;
+        }
+        .ob-article table { width: 100%; border-collapse: collapse; margin: 0 0 1.5em; font-size: 0.95em; }
+        .ob-article th, .ob-article td {
+            border: 1px solid rgba(108, 108, 229, 0.3);
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+            vertical-align: top;
+        }
+        .ob-article th { background: rgba(108, 108, 229, 0.12); font-weight: 700; }
+        .ob-article figure { margin: 0 0 1.5em; }
+        .ob-article figcaption { text-align: center; }
+        .ob-article img { border-radius: 0.75rem; }
         .ob-footer {
             max-width: 56rem;
             margin: 2.25rem auto 0;
@@ -161,24 +391,105 @@
             color: rgba(236, 235, 244, 0.66);
         }
         .ob-footer .ob-mascot-line { letter-spacing: 0.06em; }
+
+        /* Compliance overlay: self-contained, no DaisyUI. Shown by the
+           hidden checkbox via :checked sibling selector. */
+        .ob-compliance-toggle { display: none; }
+        .ob-compliance {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(15, 15, 20, 0.72);
+            backdrop-filter: blur(3px);
+        }
+        .ob-compliance-toggle:checked + .ob-compliance { display: flex; }
+        .ob-compliance-box {
+            width: min(30rem, 100%);
+            background: var(--ob-panel);
+            border: 2px solid var(--ob-panel-edge);
+            border-radius: 1rem;
+            padding: 1.4rem 1.7rem 1.6rem;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+        }
+        .ob-compliance-title {
+            margin: 0 0 0.6rem;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--ob-bun);
+        }
+        .ob-compliance-text {
+            margin: 0;
+            font-size: 0.95rem;
+            line-height: 1.55;
+            color: rgba(236, 235, 244, 0.9);
+        }
+        .ob-compliance-actions { margin-top: 1.25rem; text-align: right; }
+        .ob-compliance-button {
+            display: inline-block;
+            padding: 0.6rem 1.1rem;
+            font-weight: 700;
+            color: #1c1c23;
+            background: linear-gradient(180deg, var(--ob-bun), var(--ob-bun-toast));
+            border: 0;
+            border-radius: 0.6rem;
+            cursor: pointer;
+        }
+        .ob-compliance-button:hover { filter: brightness(1.06); }
+        .ob-compliance-button:focus-visible { outline: 2px solid var(--ob-pink); outline-offset: 3px; }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .ob-nav-toggle img { animation: none; }
+            .ob-menu.is-open,
+            .ob-menu.is-open .ob-menu-link { animation: none; }
+        }
     </style>
 </head>
-<body class="ob-body prose-a:focus-visible:outline prose-a:focus-visible:outline-2">
+<body class="ob-body">
     <a href="#main-content" class="ob-skip">Skip to content</a>
 
     <header class="ob-masthead">
-        <nav id="site-navigation" aria-label="Main navigation" class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3">
-            <div>
+        <nav id="site-navigation" aria-label="Main navigation" class="ob-navbar">
+            <div class="ob-brand-box">
+                <svg class="ob-arm ob-arm--a" viewBox="0 0 60 132" aria-hidden="true" focusable="false">
+                    <defs>
+                        <linearGradient id="obArmA" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0" stop-color="#ff5faf"/>
+                            <stop offset="1" stop-color="#b23f83"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M30 2 C 38 26, 8 48, 20 74 C 28 96, 13 112, 24 130" fill="none" stroke="url(#obArmA)" stroke-width="17" stroke-linecap="round"/>
+                    <circle cx="20" cy="36" r="3.4" fill="#fff" opacity="0.55"/>
+                    <circle cx="17" cy="60" r="3.2" fill="#fff" opacity="0.5"/>
+                    <circle cx="19" cy="84" r="3.2" fill="#fff" opacity="0.5"/>
+                    <circle cx="20" cy="109" r="3" fill="#fff" opacity="0.45"/>
+                </svg>
+                <svg class="ob-arm ob-arm--b" viewBox="0 0 60 132" aria-hidden="true" focusable="false">
+                    <path d="M30 2 C 38 26, 8 48, 20 74 C 28 96, 13 112, 24 130" fill="none" stroke="#c95eaa" stroke-width="13" stroke-linecap="round"/>
+                    <circle cx="20" cy="40" r="2.6" fill="#fff" opacity="0.5"/>
+                    <circle cx="18" cy="68" r="2.6" fill="#fff" opacity="0.45"/>
+                    <circle cx="20" cy="96" r="2.4" fill="#fff" opacity="0.4"/>
+                </svg>
                 <a class="ob-wordmark" href="/">
-                    <span class="ob-glyph" aria-hidden="true">🍔</span>
-                    <img src="/assets/img/mascot-default.jpeg" alt="Raoul(s), the La Famille octopus mascot" width="34" height="34" style="border-radius:9999px;" />
                     <span>{{if .Site.SiteName}}{{.Site.SiteName}}{{else}}Octoburger{{end}}</span>
                 </a>
-                <p class="ob-tagline">held together by eight arms and one burger</p>
+                <p class="ob-tagline">eight arms, one burger, infinite enthusiasm</p>
             </div>
-            <div class="flex items-center gap-3">
-                {{range .Site.SiteLinks}}<a class="ob-navlink" href="{{.URL}}">{{.Label}}</a>{{end}}
-                {{ template "search_modal" . }}
+            <button id="ob-nav-toggle" class="ob-nav-toggle" type="button"
+                    aria-expanded="false" aria-controls="ob-menu-panel" aria-label="Open site menu">
+                <img src="/assets/img/u1f419_u1f354.png" alt="" width="534" height="534" aria-hidden="true" />
+            </button>
+            <div id="ob-menu-panel" class="ob-menu" hidden>
+                <div class="ob-menu-body">
+                    {{ template "search_modal" . }}
+                    <div class="ob-menu-links">
+                        {{range .Site.SiteLinks}}<a class="ob-menu-link" href="{{.URL}}">{{.Label}}</a>{{end}}
+                    </div>
+                </div>
             </div>
         </nav>
     </header>
@@ -197,7 +508,7 @@
                 {{if .Date}}<span><strong>Date:</strong> {{.Date}}</span>{{end}}
             </div>
             {{end}}
-            <div class="ob-article prose prose-invert prose-lg max-w-none">
+            <div class="ob-article">
                 {{.Content}}
             </div>
         </article>
@@ -205,21 +516,244 @@
 
     <footer class="ob-footer">
         <p class="ob-mascot-line"><span aria-hidden="true">🐙</span> × <span aria-hidden="true">🍔</span> Octoburger — a La Famille theme</p>
-        <p>Built in Go and Jules, with Raoul(s) on burger duty.</p>
+        <p>Raoul(s) holds the burger so you can write your site.</p>
     </footer>
 
 {{if .ComplianceModal}}
-    <input type="checkbox" id="compliance-modal" class="modal-toggle" checked />
-    <div class="modal" role="dialog">
-        <div class="modal-box">
-            <h2 class="font-bold text-lg">Compliance Required</h2>
-            <p class="py-4">{{.ComplianceModal}}</p>
-            <div class="modal-action">
-                <label for="compliance-modal" class="btn btn-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">I Reluctantly Agree</label>
+    <input type="checkbox" id="ob-compliance-toggle" class="ob-compliance-toggle" checked />
+    <div class="ob-compliance" role="dialog" aria-modal="true" aria-labelledby="ob-compliance-title">
+        <div class="ob-compliance-box">
+            <h2 id="ob-compliance-title" class="ob-compliance-title">Compliance Required</h2>
+            <p class="ob-compliance-text">{{.ComplianceModal}}</p>
+            <div class="ob-compliance-actions">
+                <button type="button" class="ob-compliance-button" id="ob-compliance-agree">I Reluctantly Agree</button>
             </div>
         </div>
     </div>
 {{end}}
-<script src="/assets/js/search.js"></script>
+<script>
+/* Site search widget, inlined from assets/js/search.js so the page ships
+   zero external JavaScript. Behavior is identical to the shared asset. */
+(function() {
+    document.addEventListener("DOMContentLoaded", () => {
+        const searchInput = document.getElementById("site-search");
+        const resultsContainer = document.getElementById("search-results-list");
+
+        if (!searchInput) return; // Search not available on this page
+
+        // Global keydown listener for `/` and `Escape`
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable) {
+                e.preventDefault();
+                searchInput.focus();
+            } else if (e.key === "Escape" && resultsContainer && !resultsContainer.classList.contains("hidden")) {
+                resultsContainer.classList.add("hidden");
+                searchInput.blur();
+            }
+        });
+
+        let fetchPromise = null;
+
+        // Under a siteurl subpath (e.g. GitHub Pages project sites), the rendered
+        // page carries a base path on every root-relative URL; the search index
+        // lives under that same base, not at the domain root (#528).
+        const searchBase = (() => {
+            const el = document.querySelector('meta[name="la-famille-base-path"]');
+            return el ? (el.getAttribute("content") || "") : "";
+        })();
+
+        const fetchMetaData = () => {
+            if (!fetchPromise) {
+                fetchPromise = fetch(searchBase + "/search.json")
+                    .then(response => {
+                        if (!response.ok) throw new Error("Network response was not ok");
+                        return response.json();
+                    })
+                    .then(data => {
+                        window.LaFamilleSearchIndex = data;
+                        return data;
+                    })
+                    .catch(e => {
+                        console.error("Failed to fetch search index:", e);
+                        fetchPromise = null;
+                    });
+            }
+            return fetchPromise;
+        };
+
+        // Attach `{ once: true }` focus listener
+        searchInput.addEventListener("focus", fetchMetaData, { once: true });
+
+        let debounceTimeout;
+
+        searchInput.addEventListener("input", (e) => {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(async () => {
+                const query = e.target.value.toLowerCase().trim();
+
+                if (!resultsContainer) return; // Search results container not found
+
+                if (!query) {
+                    resultsContainer.classList.add("hidden");
+                    resultsContainer.innerHTML = "";
+                    return;
+                }
+
+                await fetchMetaData();
+
+                if (!window.LaFamilleSearchIndex) {
+                    resultsContainer.classList.add("hidden");
+                    resultsContainer.innerHTML = "";
+                    return;
+                }
+
+                const results = window.LaFamilleSearchIndex.filter(item => {
+                    const titleMatch = (item.t || "").toLowerCase().includes(query);
+                    const tagMatch = (item.g || []).some(tag => tag.toLowerCase().includes(query));
+                    const snippetMatch = (item.s || "").toLowerCase().includes(query);
+                    const headingMatch = (item.h || []).some(h => h.toLowerCase().includes(query));
+                    return titleMatch || tagMatch || snippetMatch || headingMatch;
+                }).slice(0, 7);
+
+                resultsContainer.innerHTML = "";
+                if (results.length === 0) {
+                    const li = document.createElement("li");
+                    li.className = "search-no-results";
+                    li.textContent = "No results found";
+                    resultsContainer.appendChild(li);
+                    resultsContainer.classList.remove("hidden");
+                    return;
+                }
+
+                results.forEach(item => {
+                    const title = item.t || "Untitled";
+                    const snippet = item.s || "";
+                    const headings = item.h || [];
+                    const tags = item.g || [];
+                    const tagURLs = item.gu || [];
+
+                    const li = document.createElement("li");
+                    const a = document.createElement("a");
+                    // encodeURI on interpolated variables to prevent DOM-based XSS
+                    a.href = encodeURI(item.u);
+                    a.className = "search-result-link";
+
+                    const titleDiv = document.createElement("div");
+                    titleDiv.className = "search-result-title";
+                    titleDiv.textContent = title;
+                    a.appendChild(titleDiv);
+
+                    const matchedHeading = headings.find(h => h.toLowerCase().includes(query));
+                    if (matchedHeading) {
+                        const headingDiv = document.createElement("div");
+                        headingDiv.className = "search-result-section";
+                        headingDiv.textContent = "Section: " + matchedHeading;
+                        a.appendChild(headingDiv);
+                    }
+
+                    if (snippet) {
+                        const snippetDiv = document.createElement("div");
+                        snippetDiv.className = "search-result-snippet";
+                        snippetDiv.textContent = snippet;
+                        a.appendChild(snippetDiv);
+                    }
+
+                    li.appendChild(a);
+
+                    // Taxonomy badges live beside the result link, not inside
+                    // it: each one jumps straight to its tag/category archive.
+                    // item.gu carries the archive URL for every term in item.g
+                    // (tags and categories are mixed there), with the siteurl
+                    // base path already applied; the /tags/ fallback only
+                    // serves indexes built before gu existed.
+                    if (tags.length > 0) {
+                        const tagsDiv = document.createElement("div");
+                        tagsDiv.className = "search-result-tags";
+                        tags.forEach((tag, i) => {
+                            const badge = document.createElement("a");
+                            badge.className = "search-result-tag";
+                            badge.href = encodeURI(tagURLs[i] || "/tags/" + encodeURIComponent(tag) + "/");
+                            badge.textContent = "#" + tag;
+                            tagsDiv.appendChild(badge);
+                        });
+                        li.appendChild(tagsDiv);
+                    }
+
+                    resultsContainer.appendChild(li);
+                });
+
+                resultsContainer.classList.remove("hidden");
+            }, 50); // 50ms debounce
+        });
+
+        document.addEventListener("click", (e) => {
+            if (resultsContainer && !searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.classList.add("hidden");
+            }
+        });
+    });
+})();
+</script>
+<script>
+/* Octopus-burger menu: inline, no external JS. */
+(function () {
+    "use strict";
+    var toggle = document.getElementById("ob-nav-toggle");
+    var panel = document.getElementById("ob-menu-panel");
+    if (!toggle || !panel) return;
+
+    var open = function () {
+        panel.hidden = false;
+        panel.classList.remove("is-open");
+        void panel.offsetWidth; /* restart the drop animation */
+        panel.classList.add("is-open");
+        toggle.setAttribute("aria-expanded", "true");
+        toggle.setAttribute("aria-label", "Close site menu");
+    };
+    var close = function () {
+        panel.classList.remove("is-open");
+        panel.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "Open site menu");
+    };
+
+    toggle.addEventListener("click", function () {
+        if (toggle.getAttribute("aria-expanded") === "true") { close(); toggle.focus(); }
+        else { open(); }
+    });
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            if (!panel.hidden) {
+                close(); toggle.focus();
+            } else {
+                var cb = document.getElementById("ob-compliance-toggle");
+                if (cb && cb.checked) cb.checked = false;
+            }
+        } else if (e.key === "/" &&
+                   !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName) &&
+                   !document.activeElement.isContentEditable) {
+            open();
+            var input = document.getElementById("site-search");
+            if (input) window.setTimeout(function () { input.focus(); }, 80);
+        }
+    });
+
+    var agree = document.getElementById("ob-compliance-agree");
+    if (agree) agree.addEventListener("click", function () {
+        var cb = document.getElementById("ob-compliance-toggle");
+        if (cb) cb.checked = false;
+    });
+
+    document.addEventListener("click", function (e) {
+        if (panel.hidden) return;
+        if (!panel.contains(e.target) && !toggle.contains(e.target)) close();
+    });
+
+    panel.addEventListener("click", function (e) {
+        if (e.target.closest && e.target.closest("a")) close();
+    });
+})();
+</script>
 </body>
 </html>

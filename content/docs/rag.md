@@ -28,7 +28,7 @@ The archive destination and source root are explicit CLI contracts:
 ```bash
 la-famille --project-root /path/to/site rag \
   --output /path/to/site/public/rag-archive \
-  --content content --asset-dir assets --template templates/layout.html
+  --content content --asset-dir assets --template templates/layout-octoburger.html
 ```
 
 This is the Pages-friendly form: it writes only to the selected archive
