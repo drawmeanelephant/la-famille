@@ -20,7 +20,7 @@ inputs:
   template:
     description: 'Path to HTML layout template'
     required: false
-    default: 'templates/layout.html'
+    default: 'templates/layout-octoburger.html'
   asset-dir:
     description: 'Directory containing static assets'
     required: false

@@ -76,8 +76,10 @@ jobs:
           SITE_URL: ${{ inputs.site_url || vars.SITE_URL || steps.pages.outputs.base_url }}
         run: |
           # public/ is the complete Pages artifact root. No gh-pages branch is
-          # used by this workflow.
-          ARGS=(--project-root "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/public")
+          # used by this workflow. The deployed site uses the octoburger
+          # flagship theme; pinned here so Pages stays octoburger even if the
+          # project's config.yaml default is changed later.
+          ARGS=(--project-root "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/public" -t "templates/layout-octoburger.html")
           if [ -n "$SITE_URL" ]; then
             ARGS+=(--site-url "$SITE_URL")
           fi

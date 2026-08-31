@@ -14,6 +14,7 @@
     <!-- Midnight: local-first, framework-free -->
     <link rel="stylesheet" href="/assets/css/theme-foundations.css">
     <link rel="stylesheet" href="/assets/css/layout-midnight.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
 </head>
 <body>
     <a href="#main-content" class="mn-skip">Skip to content</a>
@@ -26,6 +27,7 @@
                 {{range .Site.SiteLinks}}<li><a href="{{.URL}}">{{.Label}}</a></li>{{end}}
             </ul>
             {{end}}
+            {{ template "search_modal" . }}
         </nav>
     </header>
 
@@ -45,7 +47,20 @@
     </main>
 
     <footer class="mn-footer">
-        <p>La Famille &mdash; static sites in pure Go.</p>
+        {{if .Site.SiteName}}<p>Built with {{.Site.SiteName}} &mdash; static sites in pure Go.</p>{{else}}<p>La Famille &mdash; static sites in pure Go.</p>{{end}}
     </footer>
+
+{{if .ComplianceModal}}
+    <dialog open class="mn-compliance" aria-labelledby="mn-compliance-title">
+        <article>
+            <h2 id="mn-compliance-title">Compliance Required</h2>
+            <p>{{.ComplianceModal}}</p>
+            <form method="dialog">
+                <button type="submit" class="mn-agree" autofocus>I Reluctantly Agree</button>
+            </form>
+        </article>
+    </dialog>
+{{end}}
+<script src="/assets/js/search.js"></script>
 </body>
 </html>

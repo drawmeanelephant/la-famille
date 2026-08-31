@@ -79,7 +79,7 @@ go run ./cmd/la-famille build [flags]
 *   **Flags:**
     *   `--content`, `-c` (string): The path to the directory containing your Markdown source files. Defaults to `content`.
     *   `--output`, `-o` (string): The path to the directory where the generated HTML should be placed. Defaults to `public`.
-    *   `--template`, `-t` (string): The path to the default HTML layout template to use. Defaults to `templates/layout.html`.
+    *   `--template`, `-t` (string): The path to the default HTML layout template to use. Defaults to `templates/layout-octoburger.html`, the flagship octoburger theme.
     *   `--asset-dir` (string): The directory containing static assets. Defaults to `assets`.
     *   `--site-url` / `--siteurl` (`-s`) (string): The public base URL of the site. Used for canonical links, `og:url`, and absolute URLs in the sitemap, feed, and Knowledge Graph page. Defaults to unset (root-relative URLs only).
 

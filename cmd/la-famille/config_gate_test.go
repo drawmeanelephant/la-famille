@@ -196,8 +196,10 @@ func newGateSite(t *testing.T, exe, configYAML string) gateSite {
 		t.Fatalf("mkdir templates: %v", err)
 	}
 	layout := "<!DOCTYPE html>\n<html lang=\"en\"><body>{{.Content}}</body></html>\n"
-	if err := os.WriteFile(filepath.Join(dir, "templates", "layout.html"), []byte(layout), 0600); err != nil {
-		t.Fatalf("write layout.html: %v", err)
+	// The default config points at the octoburger flagship layout, so the
+	// binary looks for it when no config.yaml overrides the template.
+	if err := os.WriteFile(filepath.Join(dir, "templates", filepath.Base(config.DefaultLayoutPath)), []byte(layout), 0600); err != nil {
+		t.Fatalf("write %s: %v", config.DefaultLayoutPath, err)
 	}
 	return gateSite{dir: dir, exe: exe}
 }

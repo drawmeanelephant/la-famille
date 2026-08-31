@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/runtimeassets"
 )
 
@@ -29,9 +30,12 @@ func TestDemoContentFilesSwitchAwayFromDefaultTheme(t *testing.T) {
 			t.Fatalf("theme %q: demo packet missing theming.md", theme)
 		}
 		body := string(theming)
+		// Mirror demoContentFiles: an empty --theme resolves to the config
+		// default layout (octoburger), not a hardcoded name — the switch demo
+		// must differ from whatever the site default actually is.
 		defaultLayout := theme
 		if defaultLayout == "" {
-			defaultLayout = "layout"
+			defaultLayout = strings.TrimSuffix(filepath.Base(config.DefaultLayoutPath), ".html")
 		}
 		pinned := ""
 		for _, name := range runtimeassets.CuratedLayoutNames {
@@ -65,6 +69,21 @@ func TestDemoContentIndexCarriesTag(t *testing.T) {
 	body := string(index)
 	if !strings.Contains(body, "tags:") || !strings.Contains(body, "- welcome") {
 		t.Errorf("scaffolded index.md should carry a tags: list, got:\n%s", body)
+	}
+}
+
+// The starter pages must read like a site, not tool documentation: no CLI
+// command chips or scaffold meta-talk on the homepage/about pages (they are
+// what a fresh init site looks like on first open).
+func TestDemoContentReadsLikeASite(t *testing.T) {
+	demos := demoContentFiles("", time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC))
+	for _, name := range []string{"index.md", "about.md"} {
+		body := string(demos[name])
+		for _, needle := range []string{"la-famille init", "la-famille new", "la-famille serve", "scaffolded by"} {
+			if strings.Contains(body, needle) {
+				t.Errorf("%s should read like a site, found tool documentation %q:\n%s", name, needle, body)
+			}
+		}
 	}
 }
 

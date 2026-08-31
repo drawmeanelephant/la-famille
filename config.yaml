@@ -4,7 +4,13 @@
 site_name: "La Famille"
 
 # template: The path to the HTML layout file used to render pages.
-template: "templates/layout.html"
+# Octoburger is the flagship soul theme and the global default of La Famille —
+# fresh init sites and this project's own builds (local and GitHub Pages)
+# render it. This value must match internal/config.DefaultLayoutPath; the
+# Pages workflow also pins it via -t templates/layout-octoburger.html. Swap
+# it for another bundled layout (e.g. "templates/layout.html") anytime, or
+# re-run init --theme <name>.
+template: "templates/layout-octoburger.html"
 
 # content_dir: The directory containing your markdown source files.
 content_dir: "content"

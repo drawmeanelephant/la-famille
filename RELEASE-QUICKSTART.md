@@ -92,9 +92,9 @@ setting `port:` in `config.yaml` — the bind error now says exactly that.
 
 Switch later without a source checkout:
 
-- **Site default:** edit the `template:` line in `config.yaml`
-  (`templates/layout.html`, `templates/layout-octoburger.html`,
-  `templates/layout-terminal.html`), or re-run
+- **Site default:** octoburger is the global default of La Famille. Edit the
+  `template:` line in `config.yaml` (`templates/layout-octoburger.html`,
+  `templates/layout.html`, `templates/layout-terminal.html`), or re-run
   `init --force --theme <name>`; the previous config is kept as
   `config.yaml.bak`.
 - **Single page:** set `layout:` in that page's frontmatter — the scaffolded

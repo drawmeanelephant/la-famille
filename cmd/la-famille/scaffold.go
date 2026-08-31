@@ -8,83 +8,98 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/runtimeassets"
 )
 
 // demoContentFiles builds the starter pages `init` writes into an empty
-// content directory. The index page exercises ordinary frontmatter and links,
-// and the theming page switches layout via per-page frontmatter so a fresh
-// site demonstrates both picking and switching themes without reading source.
+// content directory: a homepage and an about page that read like a real site
+// (not tool documentation), plus a theming page pinned to a different bundled
+// layout so a fresh site visibly demonstrates per-page theme switching.
 func demoContentFiles(theme string, now time.Time) map[string][]byte {
-	// An empty --theme means the default config, whose template is the plain
-	// bundled layout — normalize so the switch demo always differs from it.
+	// An empty --theme means the default config. Resolve the actual default
+	// (octoburger) rather than assuming a hardcoded layout name: since the
+	// default changed, the alternative picker must still switch away from it.
 	if theme == "" {
-		theme = "layout"
+		theme = config.DefaultLayoutPath
 	}
-	alternative := alternativeBundledTheme(theme)
+	defaultName := strings.TrimSuffix(filepath.Base(theme), ".html")
+	alternative := alternativeBundledTheme(defaultName)
 	date := now.Format("2006-01-02")
 
 	index := fmt.Sprintf(`---
 title: "Home"
-description: "Starter homepage scaffolded by la-famille init."
+description: "The homepage of a site built with La Famille."
 date: "%s"
 tags:
   - welcome
 ---
 
-# Welcome to La Famille
+# Welcome to your site
 
-This page was scaffolded by `+"`la-famille init`"+`. Edit it in place, or create
-a new post:
+This is your homepage. Replace this draft with real words about what you make,
+write, or care about: a proper welcome, a paragraph on what this site is for,
+and links to the pages you care about.
 
-`+"```"+`sh
-la-famille new my-first-post --title "My First Post"
-`+"```"+`
+Say hello on the [About](about.md) page, and peek at [Theming](theming.md) —
+a page that uses a different bundled layout.
+`, date)
 
-Then preview your site with live reloading:
+	about := fmt.Sprintf(`---
+title: "About"
+description: "About this site and the person behind it."
+date: "%s"
+---
 
-`+"```"+`sh
-la-famille serve --watch
-`+"```"+`
+# About this site
 
-## Themes
-
-The binary ships with a small packet of layouts. Run `+"`la-famille themes`"+`
-to list them with descriptions. The site default is the `+"`template:`"+` line in
-config.yaml; [Theming](theming.md) shows how to switch layout for a single
-page.
+Who are you, and what is this site for? Write a proper introduction here —
+this draft is a placeholder until you make it yours.
 `, date)
 
 	theming := fmt.Sprintf(`---
 title: "Theming"
-description: "How to switch a page or the whole site to another bundled layout."
+description: "A demo page pinned to a different bundled layout."
 date: "%s"
 layout: %s
 ---
 
 # Theming
 
-This page does not use the site default template. Its frontmatter pins a
-different bundled layout:
+Every other page on this site renders with the site default layout, `+"`%s`"+`.
+This page is pinned to a different bundled layout in its frontmatter:
 
 `+"```"+`yaml
 layout: %s
 `+"```"+`
 
-Every layout in the release packet is installed into templates/ by
-`+"`la-famille init`"+`, so switching is a one-line change and works on a
-binary-only install. Run `+"`la-famille themes`"+` to see what ships.
-`, date, alternative, alternative)
+That is the whole trick: one line of frontmatter per page. The site-wide
+default lives in the `+"`template:`"+` line of config.yaml, and
+`+"`la-famille themes`"+` lists every layout in the packet.
+`, date, alternative, defaultName, alternative)
 
 	return map[string][]byte{
 		"index.md":   []byte(index),
+		"about.md":   []byte(about),
 		"theming.md": []byte(theming),
 	}
 }
 
-// alternativeBundledTheme picks a bundled layout different from theme so the
-// scaffolded theming page visibly switches away from the site default.
+// alternativeBundledTheme picks the bundled layout the theming demo pins: one
+// that differs from the site default and reads as a deliberate showcase.
+// Octoburger is the flagship, so it is the showcase when the site default is
+// anything else; when the default *is* octoburger, editorial gives the most
+// distinct designed contrast (the plain look is a poor first impression).
 func alternativeBundledTheme(theme string) string {
+	preferred := "layout-editorial"
+	if theme != "layout-octoburger" {
+		preferred = "layout-octoburger"
+	}
+	for _, candidate := range runtimeassets.CuratedLayoutNames {
+		if candidate == preferred {
+			return preferred
+		}
+	}
 	for _, candidate := range runtimeassets.CuratedLayoutNames {
 		if candidate != theme {
 			return candidate

@@ -11,8 +11,10 @@ import (
 	templateassets "github.com/tbuddy/la-famille/templates"
 )
 
-// DefaultTemplatePath is the path used by the default configuration.
-const DefaultTemplatePath = "templates/layout.html"
+// DefaultTemplatePath is the layout the default configuration points at.
+// Octoburger is the global default (see internal/config.DefaultLayoutPath);
+// kept in sync here so no part of the packet claims otherwise.
+const DefaultTemplatePath = "templates/layout-octoburger.html"
 
 // DefaultTemplate returns the release-owned default layout.
 func DefaultTemplate() ([]byte, error) {
@@ -91,10 +93,11 @@ func DefaultAssetFiles() (map[string][]byte, error) {
 		"css/theme.css",
 		"css/layout-editorial.css",
 		"css/layout-midnight.css",
+		"css/layout-terminal.css",
 		"css/search.css",
-		"js/search.js",
-		"img/mascot-default.jpeg",
+		"js/search.js", "img/mascot-default.jpeg",
 		"img/jules-logo.png",
+		"img/u1f419_u1f354.png",
 	}
 	files := make(map[string][]byte, len(paths))
 	for _, name := range paths {
