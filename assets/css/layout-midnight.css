@@ -19,7 +19,7 @@
   --mn-measure: 70ch;
 
   --mn-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
-  --mn-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mn-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 body {
