@@ -33,7 +33,11 @@
   --lf-shadow: 0 1px 2px rgb(44 38 29 / 0.06), 0 8px 24px -12px rgb(44 38 29 / 0.18);
 }
 
-[data-theme="ink"] {
+/* "dark" is kept as an alias of the ink palette: configs and tests have used
+   theme: dark, which previously matched no palette and silently fell back to
+   the retro :root defaults. */
+[data-theme="ink"],
+[data-theme="dark"] {
   color-scheme: dark;
 
   --lf-bg: #14161a;
