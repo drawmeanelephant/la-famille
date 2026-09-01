@@ -128,6 +128,30 @@ func TestScaffoldDemoContentCreatesAndPreserves(t *testing.T) {
 	}
 }
 
+// The markdown demo page must exist, credit goldmark, and actually exercise
+// the elements goldmark renders (tables, task lists, strikethrough, figures,
+// Emoji Kitchen) so a fresh site doubles as a living showcase.
+func TestDemoContentMarkdownShowcase(t *testing.T) {
+	demos := demoContentFiles("", time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC))
+	body, ok := demos["markdown.md"]
+	if !ok {
+		t.Fatal("demo packet missing markdown.md showcase page")
+	}
+	text := string(body)
+	for _, needle := range []string{
+		"goldmark",
+		"https://goldmark.dev",
+		"| Feature | Status |",
+		"- [x]",
+		"~~strikethrough~~",
+		"!ek[",
+	} {
+		if !strings.Contains(text, needle) {
+			t.Errorf("markdown.md showcase missing %q:\n%s", needle, text)
+		}
+	}
+}
+
 func TestFormatThemeChoicesListsEveryTheme(t *testing.T) {
 	choices := formatThemeChoices()
 	for _, name := range runtimeassets.CuratedLayoutNames {

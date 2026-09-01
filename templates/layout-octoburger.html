@@ -332,6 +332,19 @@
         .ob-article ul ul, .ob-article ol ul, .ob-article ul ol, .ob-article ol ol { margin: 0.4em 0 0.5em; }
         .ob-article li { margin: 0.45em 0; }
         .ob-article li::marker { color: var(--ob-pink); }
+        .ob-article del { color: rgba(236, 235, 244, 0.6); }
+        .ob-article ul.contains-task-list { list-style: none; padding-left: 0.25rem; }
+        .ob-article li.task-list-item {
+            list-style: none;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+        .ob-article li.task-list-item input[type="checkbox"] {
+            accent-color: var(--ob-lettuce);
+            flex: none;
+            margin: 0;
+        }
         .ob-article code {
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
             font-size: 0.875em;

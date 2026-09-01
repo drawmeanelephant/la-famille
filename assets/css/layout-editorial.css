@@ -170,6 +170,57 @@ body {
   font-style: italic;
 }
 
+.ed-prose h4, .ed-prose h5, .ed-prose h6 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.ed-prose p {
+  margin: 0 0 1.25em;
+}
+
+.ed-prose ul, .ed-prose ol {
+  margin: 0 0 1.25em;
+  padding-left: 1.6em;
+}
+
+.ed-prose li {
+  margin: 0.4em 0;
+}
+
+.ed-prose hr {
+  border: 0;
+  border-top: 1px solid var(--ed-rule);
+  margin: 2.5rem auto;
+  max-width: 12rem;
+}
+
+.ed-prose img {
+  border-radius: 4px;
+}
+
+.ed-prose del {
+  color: var(--ed-muted);
+}
+
+.ed-prose ul.contains-task-list {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+
+.ed-prose li.task-list-item {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.ed-prose li.task-list-item input[type="checkbox"] {
+  accent-color: var(--ed-accent);
+  flex: none;
+  margin: 0;
+}
+
 .ed-prose a {
   color: var(--ed-accent);
 }

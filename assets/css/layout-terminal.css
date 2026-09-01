@@ -230,6 +230,61 @@ body {
   color: var(--t-bright);
 }
 
+.t-prose h4, .t-prose h5, .t-prose h6 {
+  margin: 1.4rem 0 0.5rem;
+  font-size: 1.02rem;
+  color: var(--t-bright);
+}
+
+.t-prose p {
+  margin: 0 0 1.25em;
+}
+
+.t-prose ul, .t-prose ol {
+  margin: 0 0 1.25em;
+  padding-left: 1.6em;
+}
+
+.t-prose li {
+  margin: 0.4em 0;
+}
+
+.t-prose li::marker {
+  color: var(--t-cyan);
+}
+
+.t-prose hr {
+  border: 0;
+  border-top: 1px dashed var(--t-border-strong);
+  margin: 2.5rem 0;
+}
+
+.t-prose img {
+  border-radius: 6px;
+}
+
+.t-prose del {
+  color: var(--t-muted);
+}
+
+.t-prose ul.contains-task-list {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+
+.t-prose li.task-list-item {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.t-prose li.task-list-item input[type="checkbox"] {
+  accent-color: var(--t-cyan);
+  flex: none;
+  margin: 0;
+}
+
 .t-prose a {
   color: var(--t-cyan);
   text-decoration-color: var(--t-pink);

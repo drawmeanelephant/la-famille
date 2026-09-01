@@ -150,6 +150,57 @@ body {
   color: var(--mn-bright);
 }
 
+.mn-prose h4, .mn-prose h5, .mn-prose h6 {
+  margin: 1.4rem 0 0.5rem;
+  font-size: 1.05rem;
+  color: var(--mn-bright);
+}
+
+.mn-prose p {
+  margin: 0 0 1.25em;
+}
+
+.mn-prose ul, .mn-prose ol {
+  margin: 0 0 1.25em;
+  padding-left: 1.6em;
+}
+
+.mn-prose li {
+  margin: 0.4em 0;
+}
+
+.mn-prose hr {
+  border: 0;
+  border-top: 1px solid var(--mn-border);
+  margin: 2.5rem 0;
+}
+
+.mn-prose img {
+  border-radius: 6px;
+}
+
+.mn-prose del {
+  color: var(--mn-muted);
+}
+
+.mn-prose ul.contains-task-list {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+
+.mn-prose li.task-list-item {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.mn-prose li.task-list-item input[type="checkbox"] {
+  accent-color: var(--mn-accent);
+  flex: none;
+  margin: 0;
+}
+
 .mn-prose a {
   color: var(--mn-accent-strong);
   text-decoration-color: var(--mn-accent);
