@@ -285,6 +285,29 @@ main.page-container {
   margin-block: 0.3rem;
 }
 
+.prose del,
+.prose s {
+  color: var(--lf-muted);
+}
+
+.prose ul.contains-task-list {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+
+.prose li.task-list-item {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.prose li.task-list-item input[type="checkbox"] {
+  accent-color: var(--lf-accent);
+  flex: none;
+  margin: 0;
+}
+
 .prose blockquote {
   margin: 1.5rem 0;
   padding: 0.25rem 0 0.25rem 1.25rem;

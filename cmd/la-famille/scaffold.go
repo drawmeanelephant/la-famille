@@ -14,8 +14,10 @@ import (
 
 // demoContentFiles builds the starter pages `init` writes into an empty
 // content directory: a homepage and an about page that read like a real site
-// (not tool documentation), plus a theming page pinned to a different bundled
-// layout so a fresh site visibly demonstrates per-page theme switching.
+// (not tool documentation), a theming page pinned to a different bundled
+// layout so a fresh site visibly demonstrates per-page theme switching, and
+// a markdown page that showcases every element the goldmark engine renders
+// (credit included) so a new author sees the full palette at first glance.
 func demoContentFiles(theme string, now time.Time) map[string][]byte {
 	// An empty --theme means the default config. Resolve the actual default
 	// (octoburger) rather than assuming a hardcoded layout name: since the
@@ -41,8 +43,9 @@ This is your homepage. Replace this draft with real words about what you make,
 write, or care about: a proper welcome, a paragraph on what this site is for,
 and links to the pages you care about.
 
-Say hello on the [About](about.md) page, and peek at [Theming](theming.md) —
-a page that uses a different bundled layout.
+Say hello on the [About](about.md) page, peek at [Theming](theming.md) —
+a page that uses a different bundled layout — and browse the
+[Markdown](markdown.md) page to see every element this site can render.
 `, date)
 
 	about := fmt.Sprintf(`---
@@ -78,10 +81,88 @@ default lives in the `+"`template:`"+` line of config.yaml, and
 `+"`la-famille themes`"+` lists every layout in the packet.
 `, date, alternative, defaultName, alternative)
 
+	markdown := fmt.Sprintf(`---
+title: "Markdown"
+description: "A living showcase of every markdown element this site can render."
+date: "%s"
+---
+
+## Headings
+
+Use `+"`#`"+` through `+"`######`"+` for headings. This page's title is the h1; the
+sections below start at h2 so the outline stays tidy.
+
+## Inline styles
+
+This is **bold**, this is *italic*, and this is ~~strikethrough~~. You can
+combine **bold and *nested* emphasis**, and mark `+"`code`"+` inline like so.
+
+## Links
+
+Here is a [relative link](about.md) and an absolute one:
+[https://goldmark.dev](https://goldmark.dev). Bare URLs like
+https://example.com are linked automatically (GFM linkify).
+
+## Quotes
+
+> A blockquote pulls a passage aside. Markdown engines like goldmark make it
+> a first-class element, so the theme can dress it up properly.
+
+## Lists
+
+- unordered item
+- another item
+  - nested item
+
+1. ordered item
+2. ordered item
+
+And task lists, straight from GitHub Flavored Markdown:
+
+- [x] shipped
+- [ ] in progress
+
+## Code
+
+Fenced code blocks keep their language and get a dark, readable surface:
+
+`+"```"+`go
+func hello() string {
+    return "hello, world"
+}
+`+"```"+`
+
+## Tables
+
+| Feature | Status |
+| ------- | ------ |
+| Tables  | works  |
+| Figures | works  |
+
+## Rules and images
+
+A horizontal rule splits long pages:
+
+---
+
+![Raoul(s), the La Famille octopus mascot](/assets/img/mascot-default.jpeg "Standalone images become figures with captions")
+
+Emoji Kitchen blends are first-class too: !ek[🐢+🔥]
+
+## The engine behind this page
+
+Everything above is rendered by [goldmark](https://goldmark.dev), the
+Markdown parser La Famille is built on — a complete CommonMark
+implementation with GitHub Flavored Markdown (tables, strikethrough, task
+lists, autolinks) and smart punctuation layered on top. What you see here is
+what every theme ships with, no plugins required.
+`, date)
+
 	return map[string][]byte{
-		"index.md":   []byte(index),
-		"about.md":   []byte(about),
-		"theming.md": []byte(theming),
+		"index.md":    []byte(index),
+		"about.md":    []byte(about),
+		"theming.md":  []byte(theming),
+		"markdown.md": []byte(markdown),
 	}
 }
 
