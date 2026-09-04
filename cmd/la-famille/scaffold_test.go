@@ -165,3 +165,103 @@ func TestFormatThemeChoicesListsEveryTheme(t *testing.T) {
 		}
 	}
 }
+
+func TestDemoContentAboutLinksToHome(t *testing.T) {
+	demos := demoContentFiles("", time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC))
+	about, ok := demos["about.md"]
+	if !ok {
+		t.Fatal("demo packet missing about.md")
+	}
+	if !strings.Contains(string(about), "[Home](index.md)") {
+		t.Errorf("expected about.md to link back to index.md, got:\n%s", string(about))
+	}
+}
+
+func TestScaffoldProjectRootFilesCreatesAndPreserves(t *testing.T) {
+	dir := t.TempDir()
+	created, err := scaffoldProjectRootFiles(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedFiles := []string{
+		".agents/plans/README.md",
+		".github/copilot-instructions.md",
+		".github/workflows/deploy.yml",
+		".gitignore",
+		"AGENTS.md",
+		"README.md",
+	}
+	if len(created) != len(expectedFiles) {
+		t.Errorf("expected %d files created, got %v", len(expectedFiles), created)
+	}
+	for _, rel := range expectedFiles {
+		target := filepath.Join(dir, filepath.FromSlash(rel))
+		if _, err := os.Stat(target); err != nil {
+			t.Errorf("expected scaffolded %s to exist: %v", rel, err)
+		}
+	}
+
+	// Re-run must preserve existing operator files
+	customContent := "# My Custom Agents Instructions\n"
+	if err := os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte(customContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+	created2, err := scaffoldProjectRootFiles(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(created2) != 0 {
+		t.Errorf("expected 0 files created on re-run, got %v", created2)
+	}
+	got, err := os.ReadFile(filepath.Join(dir, "AGENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != customContent {
+		t.Errorf("re-run clobbered operator AGENTS.md, got %q", string(got))
+	}
+}
+
+func TestProjectRootFilesContentIntegrity(t *testing.T) {
+	files := projectRootFiles()
+	gitignore := string(files[".gitignore"])
+	if !strings.Contains(gitignore, "/public/") || !strings.Contains(gitignore, ".la-famille-cache.json") {
+		t.Errorf(".gitignore missing critical patterns:\n%s", gitignore)
+	}
+
+	agents := string(files["AGENTS.md"])
+	for _, needle := range []string{
+		"La Famille",
+		"Content Authoring Rules",
+		"la-famille check",
+		"la-famille build",
+		"la-famille serve",
+		"Execution Guardrails",
+	} {
+		if !strings.Contains(agents, needle) {
+			t.Errorf("AGENTS.md missing key section %q", needle)
+		}
+	}
+
+	readme := string(files["README.md"])
+	for _, needle := range []string{
+		"Quickstart",
+		"la-famille serve --watch",
+		"Project Layout",
+		"Theming",
+	} {
+		if !strings.Contains(readme, needle) {
+			t.Errorf("README.md missing section %q", needle)
+		}
+	}
+
+	copilot := string(files[".github/copilot-instructions.md"])
+	if !strings.Contains(copilot, "GitHub Copilot Instructions") || !strings.Contains(copilot, "AGENTS.md") {
+		t.Errorf(".github/copilot-instructions.md missing expected references:\n%s", copilot)
+	}
+
+	workflow := string(files[".github/workflows/deploy.yml"])
+	if !strings.Contains(workflow, "actions/deploy-pages") || !strings.Contains(workflow, "la-famille build") {
+		t.Errorf("deploy.yml missing expected workflow steps:\n%s", workflow)
+	}
+}

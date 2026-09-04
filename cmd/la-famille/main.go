@@ -188,7 +188,7 @@ func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
 	var initCmd = &cobra.Command{
 		Use:   "init",
 		Short: "Initialize default configuration",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			root := cfg.ProjectRoot
 			if root == "" {
 				root = "."
@@ -292,6 +292,39 @@ func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
 			if len(created) > 0 {
 				slog.Info("Scaffolded demo content", "files", strings.Join(created, ", "))
 			}
+
+			// Developer and agent guidance files are missing-only.
+			rootCreated, err := scaffoldProjectRootFiles(root)
+			if err != nil {
+				return err
+			}
+			if len(rootCreated) > 0 {
+				slog.Info("Scaffolded project files", "files", strings.Join(rootCreated, ", "))
+			}
+
+			out := cmd.OutOrStdout()
+			displayRoot := displayPathFromCwd(root)
+			if displayRoot == "" || displayRoot == "." {
+				displayRoot = "the current directory"
+			}
+			fmt.Fprintln(out, "🐙 🍔 Welcome to La Famille!")
+			fmt.Fprintf(out, "Your cozy corner of the web is ready in %s.\n\n", displayRoot)
+			fmt.Fprintln(out, "Next steps to make it your home:")
+			serveCmd := "la-famille serve --watch"
+			newCmd := `la-famille new hello --title "Hello World"`
+			checkCmd := "la-famille check"
+			buildCmd := "la-famille build"
+			if rootHint := projectRootHint(root); rootHint != "" {
+				serveCmd = fmt.Sprintf("la-famille --project-root %s serve --watch", rootHint)
+				newCmd = fmt.Sprintf(`la-famille --project-root %s new hello --title "Hello World"`, rootHint)
+				checkCmd = fmt.Sprintf("la-famille --project-root %s check", rootHint)
+				buildCmd = fmt.Sprintf("la-famille --project-root %s build", rootHint)
+			}
+			fmt.Fprintf(out, "  1. Preview your new space:   %s\n", serveCmd)
+			fmt.Fprintf(out, "  2. Write your first story:   %s\n", newCmd)
+			fmt.Fprintf(out, "  3. Tend your links & garden: %s\n", checkCmd)
+			fmt.Fprintf(out, "  4. Bake the static site:     %s\n\n", buildCmd)
+			fmt.Fprintln(out, "Tip: Open http://localhost:8080 once served — Raoul has the burgers ready.")
 
 			return nil
 		},
