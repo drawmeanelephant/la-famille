@@ -45,17 +45,19 @@ theme: "retro"
 # default_description: "A wonderful site built with La Famille"
 
 # default_og_image: A default OpenGraph image URL.
-# default_og_image: "/assets/default-og.png"
+# default_og_image: "/assets/img/mascot-default.jpeg"
 
 # siteurl: The public base URL used for canonical links, og:url, sitemap.xml, and robots.txt.
 # siteurl: "https://example.github.io/my-site"
 
-# site_links: Optional links for headers/footers
+# site_links: Optional navigation links in the header/footer
 # site_links:
+#   - label: "RSS Feed"
+#     url: "/feed.xml"
+#   - label: "Knowledge Graph"
+#     url: "/graph/"
 #   - label: "GitHub"
 #     url: "https://github.com"
-#   - label: "Twitter"
-#     url: "https://twitter.com"
 
 # port: The port on which the local development server will run.
 port: 8080

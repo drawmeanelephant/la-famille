@@ -565,14 +565,34 @@ func TestInitCommand_FreshProject(t *testing.T) {
 
 	cfg := config.DefaultConfig()
 	rootCmd := setupRootCmd(cfg)
+	var out bytes.Buffer
+	rootCmd.SetOut(&out)
 	rootCmd.SetArgs([]string{"init"})
 
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("expected init to succeed, got: %v", err)
 	}
 
+	outStr := out.String()
+	if !strings.Contains(outStr, "Welcome to La Famille!") || !strings.Contains(outStr, "Next steps") {
+		t.Errorf("expected stdout to contain initialization banner and next steps, got:\n%s", outStr)
+	}
+
 	if _, err := os.Stat("config.yaml"); os.IsNotExist(err) {
 		t.Errorf("expected config.yaml to exist")
+	}
+
+	for _, rel := range []string{
+		".gitignore",
+		"README.md",
+		"AGENTS.md",
+		".github/copilot-instructions.md",
+		".github/workflows/deploy.yml",
+		".agents/plans/README.md",
+	} {
+		if _, err := os.Stat(filepath.FromSlash(rel)); os.IsNotExist(err) {
+			t.Errorf("expected %s to be created by init", rel)
+		}
 	}
 
 	tmplPath := filepath.Join("templates", "layout.html")

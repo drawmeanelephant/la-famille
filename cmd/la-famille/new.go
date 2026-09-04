@@ -15,22 +15,24 @@ import (
 )
 
 type frontmatterData struct {
-	Title      string   `yaml:"title"`
-	Date       string   `yaml:"date"`
-	Layout     string   `yaml:"layout,omitempty"`
-	Tags       []string `yaml:"tags,omitempty"`
-	Categories []string `yaml:"categories,omitempty"`
+	Title       string   `yaml:"title"`
+	Description string   `yaml:"description,omitempty"`
+	Date        string   `yaml:"date"`
+	Layout      string   `yaml:"layout,omitempty"`
+	Tags        []string `yaml:"tags,omitempty"`
+	Categories  []string `yaml:"categories,omitempty"`
 }
 
 func setupNewCmd(cfg config.Config) *cobra.Command {
 	var (
-		newTitle      string
-		newTags       []string
-		newCategories []string
-		newLayout     string
-		newDate       string
-		newForce      bool
-		newContentDir string
+		newTitle       string
+		newDescription string
+		newTags        []string
+		newCategories  []string
+		newLayout      string
+		newDate        string
+		newForce       bool
+		newContentDir  string
 	)
 
 	var newCmd = &cobra.Command{
@@ -99,12 +101,18 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 				titleStr = deriveTitle(inputPath)
 			}
 
+			descStr := newDescription
+			if !cmd.Flags().Changed("description") && descStr == "" {
+				descStr = deriveDescription(titleStr)
+			}
+
 			fm := frontmatterData{
-				Title:      titleStr,
-				Date:       dateStr,
-				Tags:       newTags,
-				Categories: newCategories,
-				Layout:     newLayout,
+				Title:       titleStr,
+				Description: descStr,
+				Date:        dateStr,
+				Tags:        newTags,
+				Categories:  newCategories,
+				Layout:      newLayout,
 			}
 
 			yamlBytes, err := yaml.Marshal(fm)
@@ -112,7 +120,7 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 				return fmt.Errorf("failed to generate frontmatter: %w", err)
 			}
 
-			content := fmt.Sprintf("---\n%s---\n\n# %s\n", string(yamlBytes), titleStr)
+			content := fmt.Sprintf("---\n%s---\n\n# %s\n\nWrite your thoughts here. It doesn't have to be long or finished — a quick note,\na bookmark with commentary, a recipe, or a dispatch from your day.\n", string(yamlBytes), titleStr)
 
 			if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
 				return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(targetPath), err)
@@ -154,6 +162,7 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 	}
 
 	newCmd.Flags().StringVarP(&newTitle, "title", "t", "", "Title of the content file")
+	newCmd.Flags().StringVarP(&newDescription, "description", "d", "", "Description for SEO meta tags and social cards")
 	newCmd.Flags().StringSliceVar(&newTags, "tags", nil, "Tags for the content file (comma-separated or multiple flags)")
 	newCmd.Flags().StringSliceVar(&newCategories, "categories", nil, "Categories for the content file (comma-separated or multiple flags)")
 	newCmd.Flags().StringVar(&newLayout, "layout", "", "Custom layout template for the content file")
@@ -162,6 +171,10 @@ func setupNewCmd(cfg config.Config) *cobra.Command {
 	newCmd.Flags().StringVarP(&newContentDir, "content", "c", cfg.ContentDir, "Directory containing markdown files")
 
 	return newCmd
+}
+
+func deriveDescription(title string) string {
+	return fmt.Sprintf("A post about %s.", title)
 }
 
 func deriveTitle(input string) string {
