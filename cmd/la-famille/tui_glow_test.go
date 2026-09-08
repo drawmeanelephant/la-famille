@@ -80,7 +80,9 @@ func TestConfettiWidthClampsNarrowTerminals(t *testing.T) {
 }
 
 func TestFunFlavorDeterministicAndCoversPhases(t *testing.T) {
-	if funFlavor("Rendering pages", 0) != funFlavor("Rendering pages", 0) {
+	a := funFlavor("Rendering pages", 0)
+	b := funFlavor("Rendering pages", 0)
+	if a != b {
 		t.Fatal("flavor must be deterministic")
 	}
 	for _, phase := range []string{"Preparing build", "Rendering pages", "Writing assets and indexes", "Checking provider & corpus", "", "Unknown"} {
@@ -97,7 +99,9 @@ func TestPulseDotsCycle(t *testing.T) {
 	if pulseDots(0) == pulseDots(1) {
 		t.Fatal("pulse dots should change between frames")
 	}
-	if pulseDots(2) != pulseDots(2) {
+	a := pulseDots(2)
+	b := pulseDots(2)
+	if a != b {
 		t.Fatal("pulse dots must be deterministic")
 	}
 }
