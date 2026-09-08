@@ -4,6 +4,7 @@
 rag-archive/
 .la-famille-cache.json
 SUPPORT/
+la-famille.log
 
 # macOS hidden files
 .DS_Store
