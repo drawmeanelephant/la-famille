@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/progress"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
@@ -151,6 +153,13 @@ type model struct {
 	width             int
 	height            int
 	menuOpen          bool
+	spinner           spinner.Model
+	progress          progress.Model
+	confetti          int
+}
+
+func (m model) workDone() bool {
+	return strings.Contains(m.workMsg, "complete") || m.workErr != nil
 }
 
 func initialModel(cfg config.Config) model {
@@ -169,6 +178,8 @@ func initialModel(cfg config.Config) model {
 			{"Just Raoul"},
 		},
 		menuOpen: true,
+		spinner:  newCookSpinner(),
+		progress: newGlowProgress(40),
 	}
 }
 
@@ -318,7 +329,7 @@ func runServer(server *http.Server, report func(tea.Msg)) {
 }
 
 func tickCmd() tea.Cmd {
-	return tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
+	return tea.Tick(time.Millisecond*250, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }
@@ -354,6 +365,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.progress.Width = clampGlowWidth(msg.Width - 18)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -416,7 +428,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.stopServing()
 				return m, tea.Quit
 			}
-			if m.screen != screenWorking || strings.Contains(m.workMsg, "complete") || m.workErr != nil || m.screen == screenServe {
+			if m.screen != screenWorking || m.workDone() || m.screen == screenServe {
 				m.stopServing()
 				m.screen = screenMenu
 				return m, nil
@@ -471,15 +483,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.workPhase = "Preparing build"
 					m.workCompleted, m.workTotal = 0, 4
 					m.workEvents = nil
-					return m, buildProgressCmd(m.cfg)
+					m.progress.SetPercent(0)
+					return m, tea.Batch(buildProgressCmd(m.cfg), m.spinner.Tick)
 				case "RAG Export":
 					m.screen = screenWorking
 					m.workMsg = "Exporting RAG data..."
 					m.workErr = nil
-					return m, func() tea.Msg {
+					m.workPhase = ""
+					m.workCompleted, m.workTotal = 0, 0
+					m.workEvents = nil
+					m.progress.SetPercent(0)
+					return m, tea.Batch(func() tea.Msg {
 						err := ragexport.RunExport(m.cfg)
 						return workResultMsg{err: err, msg: "RAG Export complete"}
-					}
+					}, m.spinner.Tick)
 				case "Ask This Site":
 					m.screen = screenWorking
 					m.workMsg = "Preparing Ask This Site assistant..."
@@ -487,7 +504,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.workPhase = "Checking provider & corpus"
 					m.workCompleted, m.workTotal = 0, 4
 					m.workEvents = nil
-					return m, launchAskServer(m.cfg)
+					m.progress.SetPercent(0)
+					return m, tea.Batch(launchAskServer(m.cfg), m.spinner.Tick)
 				case "Serve Site", "Serve Site with Watch":
 					isWatch := choice == "Serve Site with Watch" || m.cfg.WatchMode
 					if choice == "Serve Site with Watch" {
@@ -559,16 +577,34 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tickCmd()
 				}
 			} else if m.screen == screenWorking {
-				if strings.Contains(m.workMsg, "complete") || m.workErr != nil {
+				if m.workDone() {
 					m.screen = screenMenu
 				}
 			}
 		}
 
+	case spinner.TickMsg:
+		if m.screen == screenWorking && !m.workDone() {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
+		}
+
+	case progress.FrameMsg:
+		pm, cmd := m.progress.Update(msg)
+		m.progress = pm.(progress.Model)
+		return m, cmd
+
 	case tickMsg:
-		if m.screen == screenRaoul || m.screen == screenServe {
-			m.frame = (m.frame + 1) % 2
+		switch m.screen {
+		case screenRaoul, screenServe, screenAsk:
+			m.frame = (m.frame + 1) % len(raoulPoses)
 			return m, tickCmd()
+		case screenWorking:
+			if m.confetti > 0 {
+				m.confetti--
+				return m, tickCmd()
+			}
 		}
 
 	case statsUpdateMsg:
@@ -605,6 +641,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.workEvents = append(m.workEvents, fmt.Sprintf("Warning: %d warning(s) — open diagnostics (d) for next actions", len(msg.res.Warnings)))
 			}
 		}
+		if msg.err == nil {
+			m.confetti = confettiTotalFrames
+			return m, tickCmd()
+		}
 
 	case workProgressMsg:
 		m.workPhase = msg.phase
@@ -612,6 +652,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.workTotal = msg.total
 		if msg.detail != "" {
 			m.workEvents = append(m.workEvents, msg.detail)
+		}
+		if m.workTotal > 0 {
+			return m, m.progress.SetPercent(float64(m.workCompleted) / float64(m.workTotal))
 		}
 
 	case serverErrorMsg:
@@ -645,6 +688,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.screen = screenAsk
 		m.frame = 0
+		m.workCompleted, m.workTotal = 4, 4
+		m.progress.SetPercent(1)
 		askFlagBundle.port = msg.port
 		return m, tickCmd()
 
@@ -701,7 +746,8 @@ var (
 func (m model) renderStatusPanel(maxWidth int) string {
 	var sb strings.Builder
 
-	sb.WriteString(headerStyle.Render("📊 DASHBOARD STATUS") + "\n\n")
+	sb.WriteString(headerStyle.Render("📊 DASHBOARD STATUS ✨") + "\n")
+	sb.WriteString(accentStyle.Render(strings.Repeat("─", 24)) + "\n\n")
 
 	// 1. Watch Mode
 	watchStr := offBadge.Render("DISABLED")
@@ -799,8 +845,8 @@ func (m model) View() string {
 
 		var leftBuf strings.Builder
 		leftBuf.WriteString(accentStyle.Render(staticRaoul()) + "\n\n")
-		leftBuf.WriteString(titleStyle.Render("Welcome to La Famille TUI") + "\n\n")
-		leftBuf.WriteString(headerStyle.Render("🍔 OCTOBURGER MENU") + "\n")
+		leftBuf.WriteString(titleStyle.Render("Welcome to La Famille TUI ✨") + "\n\n")
+		leftBuf.WriteString(headerStyle.Render("🍔 OCTOBURGER MENU 🍔") + "\n")
 
 		if !m.menuOpen {
 			leftBuf.WriteString("\nMenu closed. Press m to open • d: Diagnostics • w: Watch • ?: Help • q: Quit")
@@ -809,7 +855,7 @@ func (m model) View() string {
 				cursor := "  "
 				style := subtleStyle
 				if m.cursor == i {
-					cursor = "> "
+					cursor = "✦ "
 					// focus-visible: mirror templates/layout.html focus-visible:outline pattern with underline + background highlight for a11y
 					style = lipgloss.NewStyle().Foreground(lipgloss.Color("212")).Bold(true).Underline(true).Background(lipgloss.Color("236"))
 				}
@@ -1013,6 +1059,7 @@ func (m model) View() string {
 		s += "  • Toggle Watch Mode: Automatically rebuilds site on content change (w).\n"
 		s += "  • Diagnostics: Inspect error logs, warnings, and next CLI actions (d → Next: …).\n\n"
 		s += "Press d for diagnostics • Press Esc, q, ? or h to return • w: Toggle watch"
+		s += "\n" + subtleStyle.Render("Raoul is watching. Always. 💅")
 		if m.width > 0 {
 			return boxBorder.MaxWidth(m.width).Render(s)
 		}
@@ -1020,9 +1067,18 @@ func (m model) View() string {
 
 	case screenWorking:
 		s := titleStyle.Render("Task Progress") + "\n\n"
+		if m.confetti > 0 {
+			s = confettiRain(confettiTotalFrames-m.confetti, confettiWidth(m.width)) + "\n" + s
+		}
+		if !m.workDone() {
+			s += m.spinner.View() + " " + flavorView(m.workPhase, len(m.workEvents)) + "\n"
+		}
 		s += m.workMsg + "\n"
 		if m.workPhase != "" && m.workTotal > 0 {
 			s += fmt.Sprintf("Phase: %s (%d/%d)\n", m.workPhase, m.workCompleted, m.workTotal)
+			if !m.workDone() {
+				s += m.progress.ViewAs(float64(m.workCompleted)/float64(m.workTotal)) + "\n"
+			}
 		}
 		if len(m.workEvents) > 0 {
 			s += "\nEvents:\n"
@@ -1037,7 +1093,7 @@ func (m model) View() string {
 				s += warningBadge.Render("Recovery Guidance: ") + guidance + "\n"
 			}
 		} else if strings.Contains(m.workMsg, "complete") {
-			s += "\n" + successBadge.Render("Success!") + "\n"
+			s += "\n" + successBanner() + "\n"
 			if m.stats != nil && m.stats.ErrorCount > 0 {
 				s += warningBadge.Render(fmt.Sprintf("Warning: Build completed with %d error(s). Press 'd' to view diagnostics.", m.stats.ErrorCount)) + "\n"
 			}
@@ -1061,7 +1117,7 @@ func (m model) View() string {
 		} else {
 			s += subtleStyle.Render("Watch Mode: DISABLED") + "\n"
 		}
-		s += infoBadge.Render("Server Status: RUNNING") + "\n\n"
+		s += infoBadge.Render("Server Status: RUNNING") + " " + pulseDots(m.frame) + "\n\n"
 		s += "Press d for diagnostics • Press ?/h for help • Press w to toggle watch • Press Esc or q to stop serving and return to menu"
 		if m.width > 0 {
 			return lipgloss.NewStyle().MaxWidth(m.width).Render(s)
@@ -1086,7 +1142,7 @@ func (m model) View() string {
 		if m.askServerErr != nil {
 			s += errorBadge.Render(fmt.Sprintf("Server error: %v", m.askServerErr)) + "\n"
 		} else {
-			s += infoBadge.Render("Server Status: RUNNING") + "\n"
+			s += infoBadge.Render("Server Status: RUNNING") + " " + pulseDots(m.frame) + "\n"
 		}
 		s += "\nPress d for diagnostics • Press ?/h for help • Press Esc or q to stop the assistant and return to menu"
 		if m.width > 0 {
@@ -1096,28 +1152,4 @@ func (m model) View() string {
 	}
 
 	return "Unknown screen"
-}
-
-func staticRaoul() string {
-	return "  .---." + "\n" +
-		" ( @ @ )" + "\n" +
-		"  )   (" + "\n" +
-		" (v|v|v)"
-}
-
-func animatedRaoul(frame int) string {
-	if frame == 0 {
-		return "  .---." + "\n" +
-			" ( @ @ )" + "\n" +
-			"  )   (" + "\n" +
-			" (v|v|v)" + "\n" +
-			"  \\ | /" + "\n" +
-			"   \\|/"
-	}
-	return "  .---." + "\n" +
-		" ( @ @ )" + "\n" +
-		"  )   (" + "\n" +
-		" (v|v|v)" + "\n" +
-		"  / | \\" + "\n" +
-		"   /|\\"
 }
