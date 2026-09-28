@@ -173,6 +173,28 @@ The commands above will get you started, but La Famille has a lot more to offer.
 ### CI/Testing
 La Famille uses a comprehensive automated testing pipeline. All code merges are gated by passing `go test` and static analysis provided by `golangci-lint` to ensure security and code quality.
 
+To run the same quality checks before each local commit, activate the
+checked-in hook once after cloning:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The hook runs `format_check.sh`, which checks formatting, `go vet`, module
+hygiene, issue-linked technical-debt markers, and `golangci-lint` when it is
+installed.
+
+The repository also provides `lefthook.yml` for contributors who use
+Lefthook:
+
+```bash
+lefthook install
+```
+
+No environment variables are required for local build, test, or preview
+commands. Optional GitHub automation uses `GITHUB_TOKEN`; see
+`.env.example`.
+
 ## GitHub Action 🤖
 
 You can easily build your La Famille site in CI using our GitHub Action:

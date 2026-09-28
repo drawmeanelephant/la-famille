@@ -11,7 +11,13 @@ linters:
     - revive
     - staticcheck
     - unused
+    - gocyclo
+    - dupl
   settings:
+    gocyclo:
+      min-complexity: 30
+    dupl:
+      threshold: 100
     gosec:
       excludes:
         - G701

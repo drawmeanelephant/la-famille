@@ -1,0 +1,9 @@
+#!/bin/sh
+# Keep local commits aligned with the same checks used by the repository's
+# formatting and dependency-hygiene workflow.
+set -eu
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+exec "$repo_root/format_check.sh"

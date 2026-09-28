@@ -1,0 +1,32 @@
+# Repository label policy. Keep these names stable so agents can filter work
+# by urgency, kind, and package area.
+priority:
+  - name: p0
+    description: Production outage, data loss, or security emergency
+    color: b60205
+  - name: p1
+    description: High-impact defect or release blocker
+    color: d93f0b
+  - name: p2
+    description: Normal planned work
+    color: fbca04
+type:
+  - name: bug
+    description: Something is not working
+    color: d73a4a
+  - name: enhancement
+    description: New feature or improvement
+    color: a2eeef
+  - name: chore
+    description: Maintenance or tooling work
+    color: cfd3d7
+area:
+  - name: area-cli
+    description: Command-line interface and TUI
+    color: 5319e7
+  - name: area-generator
+    description: Static-site generation pipeline
+    color: 1d76db
+  - name: area-docs
+    description: Documentation and agent workflow
+    color: 0e8a16
