@@ -1,18 +1,21 @@
 #!/bin/bash
 # Formatting, vet and dependency hygiene check. Exits non-zero if anything
-# drifts, so it is safe for local use and for CI.
+# drifts, so it is safe for local use, pre-commit hooks, and CI.
 #   - gofmt: Go source must be formatted
 #   - go vet: suspicious constructs are rejected
 #   - go mod tidy -diff: go.mod / go.sum must already be tidy
+#   - technical-debt markers: TODO/FIXME/HACK/XXX must link to an issue
 #   - golangci-lint run: runs when the binary is installed
 set -euo pipefail
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
 
-# 1. gofmt: go fmt rewrites in place; any resulting diff to tracked files means
-#    a contributor skipped formatting. --quiet guards against a dirty porcelain
-#    caused by unrelated untracked files (e.g. .freebuff/).
+# 1. gofmt: list unformatted Go files without rewriting the working tree. This
+#    keeps the check safe when a contributor has unrelated local changes.
 echo ">> formatting (go fmt)"
-go fmt ./...
-if ! git diff --exit-code --quiet; then
+unformatted="$(gofmt -l .)"
+if [ -n "$unformatted" ]; then
+  printf '%s\n' "$unformatted"
   echo "Go files need formatting." >&2
   exit 1
 fi
@@ -32,7 +35,11 @@ if ! go mod tidy -diff; then
   exit 1
 fi
 
-# 4. golangci-lint when available
+# 4. technical-debt markers
+echo ">> technical-debt markers"
+bash "$repo_root/.github/scripts/quality/check-tech-debt.sh"
+
+# 5. golangci-lint when available
 if command -v golangci-lint >/dev/null 2>&1; then
   echo ">> lint (golangci-lint run)"
   if ! golangci-lint run; then

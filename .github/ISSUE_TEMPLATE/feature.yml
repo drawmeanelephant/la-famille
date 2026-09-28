@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose a focused improvement to La Famille.
+title: "[feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or maintainer problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest useful behavior and its user-facing contract.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches or workarounds have you considered?
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation plan
+      description: Explain the tests or CLI checks that should prove the change.

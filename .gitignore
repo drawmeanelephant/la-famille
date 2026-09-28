@@ -5,6 +5,21 @@ rag-archive/
 .la-famille-cache.json
 SUPPORT/
 la-famille.log
+coverage/
+*.coverprofile
+build/
+target/
+.gradle/
+*.class
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# IDE and editor state
+.idea/
+.vscode/
 
 # macOS hidden files
 .DS_Store

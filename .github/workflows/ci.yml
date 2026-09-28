@@ -20,13 +20,65 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - name: Verify Code and Run Tests
+      - name: Cache Go build and module data
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Run tests and record timing
+        env:
+          TEST_METRICS_FILE: ${{ runner.temp }}/la-famille-test.jsonl
         run: |
-          go test -v ./...
+          bash .github/scripts/quality/test-duration.sh
+
+      - name: Upload test timing
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-performance
+          path: ${{ runner.temp }}/la-famille-test.jsonl
+          if-no-files-found: ignore
 
       - name: Run Tests with Race Detector
         run: |
           go test -race ./...
+
+      - name: Run randomized stability suite
+        run: |
+          go test -shuffle=on -count=2 -parallel=4 ./...
+
+      - name: Verify module hygiene
+        run: |
+          go mod tidy -diff
+
+      - name: Verify Go vet
+        run: |
+          go vet ./...
+
+      - name: Enforce coverage threshold
+        env:
+          COVERAGE_THRESHOLD: '75.0'
+        run: |
+          bash .github/scripts/quality/check-coverage.sh
+
+      - name: Measure build duration
+        env:
+          BUILD_METRICS_FILE: ${{ runner.temp }}/la-famille-build-duration.txt
+        run: |
+          bash .github/scripts/quality/build-duration.sh
+
+      - name: Upload build timing
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-performance
+          path: ${{ runner.temp }}/la-famille-build-duration.txt
+          if-no-files-found: ignore
 
       - name: Validate release tag helper
         run: |

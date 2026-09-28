@@ -31,3 +31,16 @@ To ensure high-quality PRs and maintain codebase health, agents must adhere to t
   go test ./...
   go vet ./...
 ```
+
+### Local Git Hook
+- Activate the checked-in quality hook after cloning:
+```bash
+git config core.hooksPath .githooks
+```
+- The pre-commit hook runs `format_check.sh`, including formatting, vet,
+  module-hygiene, and available `golangci-lint` checks.
+- Technical-debt markers in source and configuration files must link to an
+  issue, for example `TODO(#123): explain the deferred work`.
+- No environment variables are required for local build, test, or preview.
+  Optional `GITHUB_TOKEN` is needed only for `la-famille pr sync`; see
+  `.env.example`.

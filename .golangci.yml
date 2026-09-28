@@ -12,6 +12,10 @@ linters:
     - staticcheck
     - unused
   settings:
+    gocyclo:
+      min-complexity: 30
+    dupl:
+      threshold: 100
     gosec:
       excludes:
         - G701

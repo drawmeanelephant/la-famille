@@ -17,3 +17,13 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.13.1
+      - name: Report complexity and duplication baseline
+        run: golangci-lint run --enable=gocyclo,dupl --issues-exit-code=0
+      - name: Check technical-debt markers
+        run: bash .github/scripts/quality/check-tech-debt.sh
+      - name: Check tracked file sizes
+        run: bash .github/scripts/quality/check-file-sizes.sh
+      - name: Validate AGENTS.md
+        run: bash .github/scripts/quality/check-agents-md.sh
+      - name: Guard Ask log scrubbing
+        run: bash .github/scripts/quality/check-log-scrub.sh

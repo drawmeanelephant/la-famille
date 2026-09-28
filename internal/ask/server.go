@@ -637,6 +637,11 @@ func (s *Server) handleAsk(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, llm.ErrCancelled) || errors.Is(err, context.Canceled) {
 			status = http.StatusRequestTimeout
 		}
+		slog.Warn("ask request failed",
+			"method", r.Method,
+			"path", scrubLogText(r.URL.Path),
+			"error", scrubLogText(err.Error()),
+		)
 		writeJSON(w, status, map[string]any{"error": err.Error()})
 		return
 	}
