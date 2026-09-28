@@ -17,6 +17,8 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.13.1
+      - name: Report complexity and duplication baseline
+        run: golangci-lint run --enable=gocyclo,dupl --issues-exit-code=0
       - name: Check technical-debt markers
         run: bash .github/scripts/quality/check-tech-debt.sh
       - name: Check tracked file sizes

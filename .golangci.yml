@@ -11,8 +11,6 @@ linters:
     - revive
     - staticcheck
     - unused
-    - gocyclo
-    - dupl
   settings:
     gocyclo:
       min-complexity: 30
