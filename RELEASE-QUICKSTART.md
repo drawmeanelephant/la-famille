@@ -139,12 +139,16 @@ tags:
 ---
 ```
 
-Tag names are lowercased and reduced to `[a-z0-9-]` for the URL; a value that
-cannot survive that (`café ☕` → `caf`, a purely-non-ASCII tag) is reported as
-a warning, and one that normalizes to nothing is dropped with a warning. The
-scaffolded homepage already carries a `welcome` tag, so a fresh `init` +
-`build` shows the flow in action. Bundled themes link a page's tags straight
-to their archives, and when any page uses tags or categories the site nav
+Tag names are lowercased, preserving letters and digits from any language
+(`tags: [起始]` generates `/tags/起始/`); spaces and most punctuation are
+removed, but hyphens are kept (`café ☕` becomes `café`). Links and sitemap
+URLs percent-encode non-ASCII paths. A term that normalizes to nothing or
+exceeds 255 bytes cannot produce an archive: `build` drops it with a warning,
+and `check` reports an error so you can fix it before publishing. Existing
+sites using accented terms may need redirects from old ASCII-stripped archive
+URLs. The scaffolded homepage already carries a `welcome` tag, so a fresh
+`init` + `build` shows the flow in action. Bundled themes link a page's tags
+straight to their archives, and when any page uses tags or categories the site nav
 gains a **Tags** (or **Categories**) link automatically — no template edits
 needed.
 

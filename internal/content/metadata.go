@@ -7,14 +7,12 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/adrg/frontmatter"
 )
-
-var validTagRegex = regexp.MustCompile(`^[a-z0-9-]+$`)
 
 // MaxTaxonomyValueLen bounds the length of a normalized tag or category.
 // A taxonomy value becomes a single path component in the output tree
@@ -201,9 +199,11 @@ func extractStringSlice(val interface{}) []string {
 	return nil
 }
 
-// NormalizeTaxonomyValue reduces one raw tag or category to the [a-z0-9-] form
-// used for output paths. The second return value reports whether the result is
-// usable: an empty result, or one longer than MaxTaxonomyValueLen, is not.
+// NormalizeTaxonomyValue reduces one raw tag or category to lowercase letters,
+// numbers, combining marks, and hyphens for a single output path component.
+// Unlike transliteration, this keeps native-language terms readable on disk.
+// The second return value reports whether the result is usable: an empty
+// result, or one longer than MaxTaxonomyValueLen bytes, is not.
 //
 // Exported so internal/checker can validate against the same rules the
 // generator publishes with, instead of its own copy of them.
@@ -213,18 +213,24 @@ func NormalizeTaxonomyValue(item string) (string, bool) {
 		return "", false
 	}
 
-	norm := item
-	if !validTagRegex.MatchString(item) {
-		lower := strings.ToLower(item)
-		var sb strings.Builder
-		for _, r := range lower {
-			if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
-				sb.WriteRune(r)
-			}
+	var sb strings.Builder
+	sb.Grow(len(item))
+	attachedToWord := false
+	for _, r := range strings.ToLower(item) {
+		switch {
+		case unicode.IsLetter(r) || unicode.IsDigit(r):
+			sb.WriteRune(r)
+			attachedToWord = true
+		case unicode.IsMark(r) && attachedToWord:
+			sb.WriteRune(r)
+		case r == '-':
+			sb.WriteRune(r)
+			attachedToWord = false
+		default:
+			attachedToWord = false
 		}
-		norm = sb.String()
 	}
-
+	norm := sb.String()
 	if norm == "" || len(norm) > MaxTaxonomyValueLen {
 		return norm, false
 	}
@@ -242,9 +248,6 @@ func normalizeTaxonomyList(items []string, relPath, kind string, warnings *[]str
 		}
 		norm, usable := NormalizeTaxonomyValue(item)
 		if !usable {
-			// A tag that normalizes to an empty string used to vanish with only
-			// a log line while the build summary stayed at warnings=0, so a
-			// purely non-ASCII tag silently lost its taxonomy page (#532).
 			// Dropping one is lossy, so it must be counted, naming the file.
 			if len(norm) > MaxTaxonomyValueLen {
 				msg := fmt.Sprintf("dropped over-long %s in %s: %q normalizes to %d bytes, over the %d-byte limit", kind, relPath, item, len(norm), MaxTaxonomyValueLen)
@@ -258,10 +261,8 @@ func normalizeTaxonomyList(items []string, relPath, kind string, warnings *[]str
 			continue
 		}
 		if norm != item {
-			// The current normalization strips runs of non-ASCII characters
-			// ("café ☕" → "caf"), so this line doubles as the signal that a
-			// value was mangled. Counting it makes the lossy rewrite visible in
-			// the build summary instead of living only in a log line (#532).
+			// Punctuation is still stripped ("café ☕" → "café"), so count
+			// any rewrite in the build summary instead of only logging it.
 			warnMsg := fmt.Sprintf("normalized %s in %s: %q became %q", kind, relPath, item, norm)
 			*warnings = append(*warnings, warnMsg)
 			slog.Warn("Normalized "+kind, "original", item, "normalized", norm, "file", relPath)

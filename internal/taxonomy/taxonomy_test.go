@@ -406,4 +406,11 @@ func TestPageTagLinks(t *testing.T) {
 			t.Errorf("PageTagLinks escaping = %q, want &lt;x&gt; text", got)
 		}
 	})
+
+	t.Run("encodes native-language archive href", func(t *testing.T) {
+		got := string(PageTagLinks([]string{"起始"}, "zh/page/index.html", p))
+		if !strings.Contains(got, `href="../../tags/%E8%B5%B7%E5%A7%8B/"`) || !strings.Contains(got, ">起始</a>") {
+			t.Errorf("PageTagLinks unicode = %q, want encoded href and readable label", got)
+		}
+	})
 }
