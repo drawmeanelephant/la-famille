@@ -209,6 +209,7 @@ type buildContext struct {
 	renderedPaths    []string
 	rssItems         []feed.Item
 	searchIndex      []search.Item
+	generatedStubIDs []string
 
 	errs   []indexedError
 	claims *outputClaims
@@ -261,6 +262,9 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 	bc.renderAll()
 
 	if err := bc.collectRenderOutputs(); err != nil {
+		return result, err
+	}
+	if err := bc.renderBacklinksPanels(); err != nil {
 		return result, err
 	}
 	if err := bc.writeStubsAndAssets(); err != nil {
@@ -339,6 +343,7 @@ func (bc *buildContext) prepareTaxonomies() error {
 	// /tags/ and /categories/ are reachable from every page rather than only
 	// from the sitemap (#529).
 	bc.siteCfg.SiteLinks = taxonomy.NavLinks(bc.siteCfg.SiteLinks, bc.fileMap)
+	bc.addUnresolvedNotesNavLink()
 
 	taxPaths, taxSearchItems, err := taxonomy.GenerateTaxonomies(bc.cfg, bc.siteCfg, bc.fileMap, bc.renderer, bc.sanitizer)
 	if err != nil {
@@ -687,12 +692,23 @@ func (bc *buildContext) collectRenderOutputs() error {
 // would overwrite the generated taxonomy listing at exit 0.
 func (bc *buildContext) writeStubsAndAssets() error {
 	// 3. Generate stubs for missing files in deterministic order.
-	if err := stub.GenerateStubs(bc.cfg, bc.siteCfg, bc.missingFiles, bc.missingTitles, &bc.g, bc.sanitizer, bc.fileMap, bc.claims.stubClaimer()); err != nil {
+	claimStub := bc.claims.stubClaimer()
+	if err := stub.GenerateStubs(bc.cfg, bc.siteCfg, bc.missingFiles, bc.missingTitles, &bc.g, bc.sanitizer, bc.fileMap, func(missingRelPath, relOut string) (string, bool) {
+		owner, ok := claimStub(missingRelPath, relOut)
+		if ok {
+			bc.generatedStubIDs = append(bc.generatedStubIDs, strings.TrimSuffix(missingRelPath, ".md"))
+		}
+		return owner, ok
+	}); err != nil {
 		return err
 	}
 	for missingPath, title := range bc.missingTitles {
 		id := strings.TrimSuffix(missingPath, ".md")
 		bc.metaData[id] = map[string]interface{}{"title": "Unresolved Note: " + title}
+	}
+
+	if err := bc.writeUnresolvedNotesIndex(); err != nil {
+		return err
 	}
 
 	// 4. Verbatim Asset Copy Step
@@ -800,7 +816,8 @@ func (bc *buildContext) cacheBuild(fingerprint string) error {
 // turns that into an actionable build failure.
 func reservedOutputPaths(cfg config.Config) map[string]string {
 	reserved := map[string]string{
-		filepath.Clean(filepath.Join(cfg.OutputDir, sitedata.ManifestFileName)): "the site manifest",
+		filepath.Clean(filepath.Join(cfg.OutputDir, sitedata.ManifestFileName)):        "the site manifest",
+		filepath.Clean(filepath.Join(cfg.OutputDir, "unresolved-notes", "index.html")): "the unresolved-notes index",
 	}
 	if cfg.GraphExplorer {
 		owner := "the knowledge graph explorer (disable with graph_explorer: false)"

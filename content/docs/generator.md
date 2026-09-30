@@ -17,9 +17,10 @@ The build process is executed in several distinct passes to ensure accurate link
 3.  **AST Transform:** The Markdown content is parsed into an Abstract Syntax Tree (AST). A custom transformer walks the AST, converting relative `.md` and `[[wiki]]` links into their output URLs, and tracking internal links to build the site's graph.
 4.  **HTML Render:** The processed Markdown is converted to safe, sanitized HTML and injected into the appropriate layout templates.
 5.  **Stub Generation:** For any internal links pointing to non-existent pages, HTML stubs are automatically generated. Wiki-link stubs are titled `Unresolved Note: <target>` and appear as stub nodes in the graph with their inbound links.
-6.  **Asset Copy:** Static assets like images and CSS are copied verbatim into the output directory, respecting any ignore patterns.
-7.  **JSON Output:** Finally, site metadata and graph structures are exported as JSON for advanced client-side functionality.
-8.  **Discovery Feeds:** If any rendered page has a valid `date` in its frontmatter, the build emits a deterministic `feed.xml` RSS 2.0 feed. Pages marked `render: false` are excluded. Feed links use `siteurl` when configured and root-relative URLs for local builds; no feed is retained when there are no dated rendered pages.
+6.  **Vault Navigation:** Every build emits `unresolved-notes/index.html`, listing generated stubs. Rendered content pages include a “Linked from” panel populated from the backlinks already collected by the build.
+7.  **Asset Copy:** Static assets like images and CSS are copied verbatim into the output directory, respecting any ignore patterns.
+8.  **JSON Output:** Finally, site metadata and graph structures are exported as JSON for advanced client-side functionality.
+9.  **Discovery Feeds:** If any rendered page has a valid `date` in its frontmatter, the build emits a deterministic `feed.xml` RSS 2.0 feed. Pages marked `render: false` are excluded. Feed links use `siteurl` when configured and root-relative URLs for local builds; no feed is retained when there are no dated rendered pages.
 
 ## Wiki Links
 
@@ -38,6 +39,7 @@ The generator's functionality is cleanly separated into several internal package
 *   **`internal/transform`**: Houses the `LinkTransformer`, which visits AST nodes during Markdown parsing to rewrite links, enforce clean URLs (using the `url.go` utilities), and record missing files for stub generation. It also implements custom inline Goldmark parser structures, specifically the `EmojiKitchenParser` for mutating inline CDN emoji stickers.
 *   **`internal/render`**: Manages the loading, parsing, and execution of HTML templates and partials. It caches templates for performance and injects the live-reload script when running in watch mode.
 *   **`internal/stub`**: Handles the creation of stub pages for missing files detected during the transform phase. It lists the parent pages that linked to the missing content.
+*   **`internal/generator`**: Reuses collected backlinks to render “Linked from” panels and the unresolved-notes index.
 *   **`internal/asset`**: Safely copies static files from the asset directory to the output folder while skipping Go files, `testdata`, and paths matched by `.gitignore`.
 *   **`internal/jsonutil`**: A simple utility package providing `WriteJSON` to easily write Go structures out as nicely indented JSON files.
 
@@ -47,6 +49,7 @@ As part of the JSON Output step, the generator produces a few specialized files 
 
 *   **`graph.json`**: Describes the entire site structure as a directed graph. It lists every page (node) and the links between them (edges), which is very useful for visualizing the structure or feeding into a knowledge graph system.
 *   **`backlinks.json`**: A mapping of pages to the list of pages that link *to* them. This makes it easy to build "Mentioned In" features at the bottom of articles.
+*   **`unresolved-notes/index.html`**: A generated to-write list linking to every missing-note stub. Rebuilding after a real note is added removes it from this index.
 *   **`meta.json`**: Provides global site metadata mapped to page IDs, such as page titles, word counts, and tags.
 *   **`search.json`**: Contains a minified array of `SearchItem` structs, providing a compressed plaintext snippet of each page's content for client-side search discovery.
 *   **`feed.xml`**: An RSS 2.0 feed of dated rendered pages, ordered newest first and then by URL. It is omitted when no rendered page has a date.

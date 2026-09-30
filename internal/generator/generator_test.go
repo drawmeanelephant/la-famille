@@ -705,8 +705,8 @@ func TestBuild_CacheHitMissStats(t *testing.T) {
 	if res1.CacheHit {
 		t.Errorf("Build 1 CacheHit = true, want false (cache miss)")
 	}
-	if res1.PageCount != 2 {
-		t.Errorf("Build 1 PageCount = %d, want 2", res1.PageCount)
+	if res1.PageCount != 3 {
+		t.Errorf("Build 1 PageCount = %d, want 3 (content pages plus unresolved-notes index)", res1.PageCount)
 	}
 
 	// 2. Repeat build with no changes: cache hit
@@ -717,8 +717,8 @@ func TestBuild_CacheHitMissStats(t *testing.T) {
 	if !res2.CacheHit {
 		t.Errorf("Build 2 CacheHit = false, want true (cache hit)")
 	}
-	if res2.PageCount != 2 {
-		t.Errorf("Build 2 PageCount = %d, want 2", res2.PageCount)
+	if res2.PageCount != 3 {
+		t.Errorf("Build 2 PageCount = %d, want 3 (content pages plus unresolved-notes index)", res2.PageCount)
 	}
 
 	// 3. Modify source file: cache miss (invalidation)
@@ -930,9 +930,9 @@ render: false
 		t.Fatalf("Build failed: %v", err)
 	}
 
-	// 2 rendered pages + 3 tag pages (tags/index, tags/go, tags/web) + 3 category pages (categories/index, categories/news, categories/tech) = 8 pages total
-	if res.PageCount != 8 {
-		t.Errorf("expected PageCount = 8, got %d", res.PageCount)
+	// 2 rendered pages + 3 tag pages + 3 category pages + unresolved-notes index = 9 pages total.
+	if res.PageCount != 9 {
+		t.Errorf("expected PageCount = 9, got %d", res.PageCount)
 	}
 
 	// Verify tag index page exists

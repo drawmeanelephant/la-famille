@@ -97,9 +97,14 @@ func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, paren
 	}
 	htmlContent.WriteString("    <div>\n      <h3 class=\"font-bold\">" + heading + "</h3>\n")
 	htmlContent.WriteString("      <div class=\"text-xs\">We are still working on this content. Please check back later!</div>\n    </div>\n  </div>\n</div>\n")
-	htmlContent.WriteString("<h3>Where did you come from?</h3>\n<ul class=\"menu bg-base-100 border border-base-300 rounded-box w-full\">\n")
+	htmlContent.WriteString("<section class=\"backlinks-panel\" aria-labelledby=\"backlinks-heading\">\n")
+	htmlContent.WriteString("<h3 id=\"backlinks-heading\">Linked from</h3>\n<ul class=\"menu bg-base-100 border border-base-300 rounded-box w-full\">\n")
 
 	for _, parent := range parents {
+		parentTitle := parent
+		if meta, ok := fileMap[parent]; ok && meta != nil && strings.TrimSpace(meta.Title) != "" {
+			parentTitle = meta.Title
+		}
 		parentSlug := ""
 		if meta, ok := fileMap[parent]; ok && meta != nil && usableSlug(meta.Slug) {
 			// An unusable slug is discarded when the parent is rendered, so
@@ -128,12 +133,12 @@ func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, paren
 					relParentSlash = strings.TrimSuffix(relParentSlash, "index.html")
 				}
 			}
-			htmlContent.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", html.EscapeString(relParentSlash), html.EscapeString(parent)))
+			htmlContent.WriteString(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", html.EscapeString(relParentSlash), html.EscapeString(parentTitle)))
 		} else {
-			htmlContent.WriteString(fmt.Sprintf("<li>%s</li>\n", html.EscapeString(parent)))
+			htmlContent.WriteString(fmt.Sprintf("<li>%s</li>\n", html.EscapeString(parentTitle)))
 		}
 	}
-	htmlContent.WriteString("</ul>\n")
+	htmlContent.WriteString("</ul></section>\n")
 
 	pageStruct := page.Page{
 		Site:         siteCfg,

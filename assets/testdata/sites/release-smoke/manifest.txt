@@ -29,3 +29,4 @@ tags/release/index.html
 tags/smoke/index.html
 tags/updates/index.html
 unrendered.md
+unresolved-notes/index.html
