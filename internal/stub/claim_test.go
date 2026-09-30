@@ -52,7 +52,7 @@ func TestGenerateStubs_SkipsClaimedPaths(t *testing.T) {
 		return "", true
 	}
 
-	if err := GenerateStubs(cfg, cfg, missingFiles, g, p, map[string]*content.FileMeta{}, claim); err != nil {
+	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, p, map[string]*content.FileMeta{}, claim); err != nil {
 		t.Fatalf("GenerateStubs() error = %v", err)
 	}
 
@@ -94,7 +94,7 @@ func TestGenerateStubs_ParentLinkIgnoresUnusableSlug(t *testing.T) {
 	missingFiles := map[string][]string{"ghost.md": {"parent.md"}}
 	g := &graph.Graph{Nodes: make(map[string]graph.Node)}
 
-	if err := GenerateStubs(cfg, cfg, missingFiles, g, bluemonday.UGCPolicy(), fileMap, nil); err != nil {
+	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, bluemonday.UGCPolicy(), fileMap, nil); err != nil {
 		t.Fatalf("GenerateStubs() error = %v", err)
 	}
 
@@ -107,5 +107,27 @@ func TestGenerateStubs_ParentLinkIgnoresUnusableSlug(t *testing.T) {
 	}
 	if !strings.Contains(string(got), "../parent/") {
 		t.Errorf("stub = %q, want a link to the parent's real output path ../parent/", got)
+	}
+}
+
+func TestGenerateStubsLabelsUnresolvedWikiNote(t *testing.T) {
+	cfg := stubTestConfig(t)
+	missingFiles := map[string][]string{"future-note.md": {"parent.md"}}
+	missingTitles := map[string]string{"future-note.md": "Future Note"}
+	g := &graph.Graph{Nodes: make(map[string]graph.Node)}
+
+	if err := GenerateStubs(cfg, cfg, missingFiles, missingTitles, g, bluemonday.UGCPolicy(), nil, nil); err != nil {
+		t.Fatalf("GenerateStubs() error = %v", err)
+	}
+	output, err := os.ReadFile(filepath.Join(cfg.OutputDir, "future-note", "index.html"))
+	if err != nil {
+		t.Fatalf("read unresolved-note stub: %v", err)
+	}
+	if !strings.Contains(string(output), "Unresolved Note: Future Note") {
+		t.Errorf("stub = %q, want visible unresolved-note title", output)
+	}
+	if node, ok := g.Nodes["future-note"]; !ok || node.Type != "stub" ||
+		!node.Missing || !strings.Contains(strings.Join(node.ReferencedBy, ","), "parent.md") {
+		t.Errorf("graph node = %+v, ok=%v, want unresolved stub with inbound parent", node, ok)
 	}
 }

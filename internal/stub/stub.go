@@ -31,7 +31,7 @@ import (
 // means "nothing else writes here" and every stub is written.
 type ClaimOutput func(missingRelPath, relOut string) (owner string, ok bool)
 
-func GenerateStubs(cfg, siteCfg config.Config, missingFiles map[string][]string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, claim ClaimOutput) error {
+func GenerateStubs(cfg, siteCfg config.Config, missingFiles map[string][]string, missingTitles map[string]string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, claim ClaimOutput) error {
 	missingKeys := make([]string, 0, len(missingFiles))
 	for k := range missingFiles {
 		missingKeys = append(missingKeys, k)
@@ -41,14 +41,14 @@ func GenerateStubs(cfg, siteCfg config.Config, missingFiles map[string][]string,
 	partials, _ := render.DiscoverPartials(filepath.Dir(cfg.Template))
 
 	for _, missingRelPath := range missingKeys {
-		if err := generateSingleStub(cfg, siteCfg, missingRelPath, missingFiles[missingRelPath], g, p, fileMap, partials, claim); err != nil {
+		if err := generateSingleStub(cfg, siteCfg, missingRelPath, missingFiles[missingRelPath], missingTitles[missingRelPath], g, p, fileMap, partials, claim); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, parents []string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, partials map[string]string, claim ClaimOutput) error {
+func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, parents []string, missingTitle string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, partials map[string]string, claim ClaimOutput) error {
 	outDirClean := filepath.Clean(cfg.OutputDir)
 	relOut := transform.GetOutputURL(missingRelPath, "", true)
 	outPath := filepath.Join(outDirClean, filepath.FromSlash(relOut))
@@ -89,7 +89,13 @@ func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, paren
 	var htmlContent strings.Builder
 	htmlContent.WriteString("<div class=\"alert alert-warning shadow-lg mb-8\">\n  <div>\n")
 	htmlContent.WriteString("    <svg xmlns=\"http://www.w3.org/2000/svg\" class=\"stroke-current flex-shrink-0 h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z\" /></svg>\n")
-	htmlContent.WriteString("    <div>\n      <h3 class=\"font-bold\">🚧 Under Construction</h3>\n")
+	title := "Missing Page"
+	heading := "🚧 Under Construction"
+	if missingTitle != "" {
+		title = "Unresolved Note: " + missingTitle
+		heading = "📝 " + html.EscapeString(title)
+	}
+	htmlContent.WriteString("    <div>\n      <h3 class=\"font-bold\">" + heading + "</h3>\n")
 	htmlContent.WriteString("      <div class=\"text-xs\">We are still working on this content. Please check back later!</div>\n    </div>\n  </div>\n</div>\n")
 	htmlContent.WriteString("<h3>Where did you come from?</h3>\n<ul class=\"menu bg-base-100 border border-base-300 rounded-box w-full\">\n")
 
@@ -131,7 +137,7 @@ func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, paren
 
 	pageStruct := page.Page{
 		Site:         siteCfg,
-		Title:        "Missing Page",
+		Title:        title,
 		Content:      template.HTML(p.SanitizeBytes([]byte(htmlContent.String()))), // #nosec G203
 		CanonicalURL: siteCfg.URLForOutputPath(relOut),
 	}

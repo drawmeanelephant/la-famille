@@ -15,15 +15,17 @@ import (
 )
 
 type LinkTransformer struct {
-	FileMap      map[string]*content.FileMeta
-	MissingFiles map[string][]string
-	Backlinks    map[string][]string
-	Graph        *graph.Graph
-	Mu           *sync.Mutex
-	CurrentFile  string
+	FileMap            map[string]*content.FileMeta
+	MissingFiles       map[string][]string
+	MissingTitles      map[string]string
+	Backlinks          map[string][]string
+	WikiHeadingTargets map[string]map[string]bool
+	Graph              *graph.Graph
+	Mu                 *sync.Mutex
+	CurrentFile        string
 }
 
-func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
+func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, _ parser.Context) {
 	if t == nil {
 		return
 	}
@@ -39,6 +41,10 @@ func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.
 
 		if link, ok := n.(*ast.Link); ok {
 			dest := string(link.Destination)
+			if target, heading, isWikiLink := ParseWikiLinkDestination(dest); isWikiLink {
+				t.transformWikiLink(link, target, heading)
+				return ast.WalkContinue, nil
+			}
 			u, err := url.Parse(dest)
 			// Ignore if parse fails, or it's an absolute url (like http://...), or not a .md file
 			if err != nil || u.IsAbs() || strings.HasPrefix(dest, "//") || !strings.HasSuffix(u.Path, ".md") {
@@ -167,4 +173,120 @@ func (t *LinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.
 
 		return ast.WalkContinue, nil
 	})
+	if reader != nil && t.WikiHeadingTargets != nil {
+		t.addWikiHeadingIDs(node, reader.Source())
+	}
+}
+
+func (t *LinkTransformer) addWikiHeadingIDs(node ast.Node, source []byte) {
+	wanted := t.WikiHeadingTargets[t.CurrentFile]
+	if len(wanted) == 0 {
+		return
+	}
+	ids := parser.NewContext().IDs()
+	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		heading, ok := n.(*ast.Heading)
+		if !ok {
+			return ast.WalkContinue, nil
+		}
+		lines := heading.Lines()
+		var text []byte
+		if lines != nil && lines.Len() > 0 {
+			segment := lines.At(lines.Len() - 1)
+			text = segment.Value(source)
+		}
+		id := string(ids.Generate(text, ast.KindHeading))
+		if wanted[id] {
+			heading.SetAttributeString("id", id)
+		}
+		return ast.WalkContinue, nil
+	})
+}
+
+func (t *LinkTransformer) transformWikiLink(link *ast.Link, target, heading string) {
+	targetRelPath, meta, exists := ResolveWikiTarget(t.CurrentFile, target, t.FileMap)
+	if !exists {
+		targetRelPath = UnresolvedWikiTargetPath(t.CurrentFile, target)
+	}
+
+	targetID := strings.TrimSuffix(targetRelPath, ".md")
+	targetRender := true
+	slug := ""
+	if exists && meta != nil {
+		if meta.Render != nil && !*meta.Render {
+			targetID = targetRelPath
+			targetRender = false
+		} else {
+			slug = meta.Slug
+		}
+	}
+
+	if t.Mu != nil {
+		t.Mu.Lock()
+	}
+	t.Graph.Edges = append(t.Graph.Edges, [2]string{t.sourceID(), targetID})
+	t.Backlinks[targetID] = append(t.Backlinks[targetID], t.sourceID())
+	if !exists {
+		if t.MissingFiles != nil {
+			parents := t.MissingFiles[targetRelPath]
+			if !containsString(parents, t.CurrentFile) {
+				t.MissingFiles[targetRelPath] = append(parents, t.CurrentFile)
+			}
+		}
+		if t.MissingTitles != nil {
+			title := WikiTargetTitle(target)
+			if current := t.MissingTitles[targetRelPath]; current == "" || title < current {
+				t.MissingTitles[targetRelPath] = title
+			}
+		}
+	}
+	if t.Mu != nil {
+		t.Mu.Unlock()
+	}
+
+	currentRender := true
+	currentSlug := ""
+	if currentMeta, ok := t.FileMap[t.CurrentFile]; ok && currentMeta != nil {
+		currentRender = currentMeta.Render == nil || *currentMeta.Render
+		currentSlug = currentMeta.Slug
+	}
+	currentOut := GetOutputURL(t.CurrentFile, currentSlug, currentRender)
+	targetOut := GetOutputURL(targetRelPath, slug, targetRender)
+	currentDir := filepath.Dir(currentOut)
+	if currentDir == "." {
+		currentDir = ""
+	}
+	relative, err := filepath.Rel(currentDir, targetOut)
+	if err != nil {
+		return
+	}
+	if targetRender && strings.HasSuffix(filepath.ToSlash(relative), "index.html") {
+		relative = strings.TrimSuffix(filepath.ToSlash(relative), "index.html")
+		if relative == "index.html" {
+			relative = "./"
+		}
+	}
+	destination := url.URL{Path: filepath.ToSlash(relative)}
+	destination.Fragment = WikiHeadingFragment(heading)
+	link.Destination = []byte(destination.String())
+}
+
+func (t *LinkTransformer) sourceID() string {
+	id := strings.TrimSuffix(t.CurrentFile, ".md")
+	if meta, ok := t.FileMap[t.CurrentFile]; ok && meta != nil && meta.Render != nil && !*meta.Render {
+		return t.CurrentFile
+	}
+	return id
+}
+
+func containsString(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }

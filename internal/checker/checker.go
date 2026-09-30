@@ -342,6 +342,20 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 				}
 
 				dest := string(link.Destination)
+				if wikiTarget, _, isWikiLink := transform.ParseWikiLinkDestination(dest); isWikiLink {
+					if _, _, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, fileMap); resolved {
+						return ast.WalkContinue, nil
+					}
+					targetRelPath := transform.UnresolvedWikiTargetPath(relPath, wikiTarget)
+					findings = append(findings, Finding{
+						File:     relPath,
+						Line:     findLinkLine(meta.Content, meta.Rest, n, dest),
+						Level:    LevelError,
+						Category: CategoryBrokenLink,
+						Message:  fmt.Sprintf("broken internal link %q -> %q", wikiTarget, targetRelPath),
+					})
+					return ast.WalkContinue, nil
+				}
 				u, err := url.Parse(dest)
 				if err != nil || u.IsAbs() || strings.HasPrefix(dest, "//") || u.Path == "" {
 					return ast.WalkContinue, nil
@@ -527,6 +541,20 @@ func detectOrphans(fileMap map[string]*content.FileMeta) []Finding {
 				return ast.WalkContinue, nil
 			}
 			dest := string(link.Destination)
+			if wikiTarget, _, isWikiLink := transform.ParseWikiLinkDestination(dest); isWikiLink {
+				targetRelPath, targetMeta, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, fileMap)
+				if !resolved {
+					return ast.WalkContinue, nil
+				}
+				targetID := strings.TrimSuffix(targetRelPath, ".md")
+				if targetMeta != nil && targetMeta.Render != nil && !*targetMeta.Render {
+					targetID = targetRelPath
+				}
+				if _, ok := inbound[targetID]; ok {
+					inbound[targetID]++
+				}
+				return ast.WalkContinue, nil
+			}
 			u, err := url.Parse(dest)
 			if err != nil || u.IsAbs() || strings.HasPrefix(dest, "//") || !strings.HasSuffix(u.Path, ".md") {
 				return ast.WalkContinue, nil
@@ -957,6 +985,11 @@ func findLinkLine(fullContent []byte, restBytes []byte, node ast.Node, dest stri
 	if startOffset >= 0 {
 		searchFrom := restOffset + startOffset
 		if searchFrom < len(fullContent) {
+			if target, _, ok := transform.ParseWikiLinkDestination(dest); ok {
+				if idx := bytes.Index(fullContent[searchFrom:], []byte("[["+target)); idx >= 0 {
+					return lineFromOffset(fullContent, searchFrom+idx)
+				}
+			}
 			if idx := bytes.Index(fullContent[searchFrom:], []byte(dest)); idx >= 0 {
 				return lineFromOffset(fullContent, searchFrom+idx)
 			}

@@ -99,6 +99,7 @@ runtime, set `include_unused_theme_assets: true` in `config.yaml`.
 - **`graph.json`**: Contains `nodes` map (keyed by page ID) and `edges` list of directed wikilink pairs `[source, target]`. Nodes include `"type": "page"` and `"render": true|false`.
 - **`backlinks.json`**: Map of target page ID -> sorted array of referencing parent page IDs.
 - **`meta.json`**: Map of page ID -> metadata object (`title`, `author`, `date`, `tags`, `word_count`, `render`, `categories`). Unknown fields are forward-compatible additions.
+- Wiki links (`[[target]]`, aliases, and `[[target#heading]]`) are resolved during build and contribute to the same graph and backlinks. Missing targets create visible `Unresolved Note: <target>` stubs; their titles are included in `meta.json`.
 
 ### 8. Knowledge Graph Explorer (`graph/index.html`)
 

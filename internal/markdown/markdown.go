@@ -24,6 +24,7 @@ func NewEngine(transformer *transform.LinkTransformer) goldmark.Markdown {
 				util.Prioritized(&transform.FigureTransformer{}, 200),
 			),
 			parser.WithInlineParsers(
+				util.Prioritized(&transform.WikiLinkParser{}, 150),
 				util.Prioritized(&transform.EmojiKitchenParser{}, 100),
 			),
 		),

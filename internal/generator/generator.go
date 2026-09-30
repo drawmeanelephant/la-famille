@@ -16,6 +16,8 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/text"
 
 	"github.com/tbuddy/la-famille/internal/asset"
 	"github.com/tbuddy/la-famille/internal/checker"
@@ -182,11 +184,13 @@ type buildContext struct {
 	// link transformer, which records graph edges during conversion.
 	mu sync.Mutex
 
-	fileMap      map[string]*content.FileMeta
-	missingFiles map[string][]string
-	backlinks    map[string][]string
-	g            graph.Graph
-	metaData     map[string]map[string]interface{}
+	fileMap            map[string]*content.FileMeta
+	missingFiles       map[string][]string
+	missingTitles      map[string]string
+	backlinks          map[string][]string
+	wikiHeadingTargets map[string]map[string]bool
+	g                  graph.Graph
+	metaData           map[string]map[string]interface{}
 	// pageOutputs maps a page id to the output-relative path its HTML was
 	// written to, so downstream consumers can build slug-aware public URLs
 	// instead of guessing them back from the id.
@@ -213,12 +217,14 @@ type buildContext struct {
 
 func newBuildContext(cfg, siteCfg config.Config, result *BuildResult) *buildContext {
 	return &buildContext{
-		cfg:          cfg,
-		siteCfg:      siteCfg,
-		renderer:     render.New(filepath.Dir(cfg.Template)),
-		sanitizer:    newContentSanitizer(),
-		missingFiles: make(map[string][]string),
-		backlinks:    make(map[string][]string),
+		cfg:                cfg,
+		siteCfg:            siteCfg,
+		renderer:           render.New(filepath.Dir(cfg.Template)),
+		sanitizer:          newContentSanitizer(),
+		missingFiles:       make(map[string][]string),
+		missingTitles:      make(map[string]string),
+		backlinks:          make(map[string][]string),
+		wikiHeadingTargets: make(map[string]map[string]bool),
 		g: graph.Graph{
 			Nodes: make(map[string]graph.Node),
 			Edges: [][2]string{},
@@ -285,8 +291,42 @@ func (bc *buildContext) gatherMetadata() error {
 			bc.result.Warnings = append(bc.result.Warnings, meta.Warnings...)
 		}
 	}
+	bc.collectWikiHeadingTargets()
 	sort.Strings(bc.result.Warnings)
 	return nil
+}
+
+func (bc *buildContext) collectWikiHeadingTargets() {
+	engine := markdown.NewEngine(nil)
+	for relPath, meta := range bc.fileMap {
+		if meta == nil || len(meta.Rest) == 0 {
+			continue
+		}
+		doc := engine.Parser().Parse(text.NewReader(meta.Rest))
+		_ = ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+			if !entering {
+				return ast.WalkContinue, nil
+			}
+			link, ok := node.(*ast.Link)
+			if !ok {
+				return ast.WalkContinue, nil
+			}
+			target, heading, isWikiLink := transform.ParseWikiLinkDestination(string(link.Destination))
+			if !isWikiLink || heading == "" {
+				return ast.WalkContinue, nil
+			}
+			targetPath, _, resolved := transform.ResolveWikiTarget(relPath, target, bc.fileMap)
+			if !resolved {
+				return ast.WalkContinue, nil
+			}
+			id := transform.WikiHeadingFragment(heading)
+			if bc.wikiHeadingTargets[targetPath] == nil {
+				bc.wikiHeadingTargets[targetPath] = make(map[string]bool)
+			}
+			bc.wikiHeadingTargets[targetPath][id] = true
+			return ast.WalkContinue, nil
+		})
+	}
 }
 
 // prepareTaxonomies generates the taxonomy listing pages ahead of the render
@@ -496,12 +536,14 @@ func (bc *buildContext) processJob(j job, buf *bytes.Buffer) {
 	// into the graph, the backlinks and the missing-file list.
 	// Their generated HTML is then discarded.
 	transformer := &transform.LinkTransformer{
-		CurrentFile:  relPath,
-		FileMap:      bc.fileMap,
-		MissingFiles: bc.missingFiles,
-		Backlinks:    bc.backlinks,
-		Graph:        &bc.g,
-		Mu:           &bc.mu,
+		CurrentFile:        relPath,
+		FileMap:            bc.fileMap,
+		MissingFiles:       bc.missingFiles,
+		MissingTitles:      bc.missingTitles,
+		Backlinks:          bc.backlinks,
+		WikiHeadingTargets: bc.wikiHeadingTargets,
+		Graph:              &bc.g,
+		Mu:                 &bc.mu,
 	}
 
 	md := markdown.NewEngine(transformer)
@@ -643,8 +685,12 @@ func (bc *buildContext) collectRenderOutputs() error {
 // would overwrite the generated taxonomy listing at exit 0.
 func (bc *buildContext) writeStubsAndAssets() error {
 	// 3. Generate stubs for missing files in deterministic order.
-	if err := stub.GenerateStubs(bc.cfg, bc.siteCfg, bc.missingFiles, &bc.g, bc.sanitizer, bc.fileMap, bc.claims.stubClaimer()); err != nil {
+	if err := stub.GenerateStubs(bc.cfg, bc.siteCfg, bc.missingFiles, bc.missingTitles, &bc.g, bc.sanitizer, bc.fileMap, bc.claims.stubClaimer()); err != nil {
 		return err
+	}
+	for missingPath, title := range bc.missingTitles {
+		id := strings.TrimSuffix(missingPath, ".md")
+		bc.metaData[id] = map[string]interface{}{"title": "Unresolved Note: " + title}
 	}
 
 	// 4. Verbatim Asset Copy Step

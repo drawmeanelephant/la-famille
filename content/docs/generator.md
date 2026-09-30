@@ -14,12 +14,21 @@ The build process is executed in several distinct passes to ensure accurate link
 
 1.  **Content Walk:** The `content/` directory is recursively scanned for all `.md` files.
 2.  **Frontmatter Parse:** The frontmatter of each file is parsed to extract metadata such as title, layout, render flag, and description.
-3.  **AST Transform:** The Markdown content is parsed into an Abstract Syntax Tree (AST). A custom transformer walks the AST, converting relative `.md` links into their `.html` output equivalents, and tracking missing internal links to build the site's graph.
+3.  **AST Transform:** The Markdown content is parsed into an Abstract Syntax Tree (AST). A custom transformer walks the AST, converting relative `.md` and `[[wiki]]` links into their output URLs, and tracking internal links to build the site's graph.
 4.  **HTML Render:** The processed Markdown is converted to safe, sanitized HTML and injected into the appropriate layout templates.
-5.  **Stub Generation:** For any internal links pointing to non-existent pages, simple HTML "stubs" are automatically generated. This ensures there are no broken links on the site and provides clear entry points for future content.
+5.  **Stub Generation:** For any internal links pointing to non-existent pages, HTML stubs are automatically generated. Wiki-link stubs are titled `Unresolved Note: <target>` and appear as stub nodes in the graph with their inbound links.
 6.  **Asset Copy:** Static assets like images and CSS are copied verbatim into the output directory, respecting any ignore patterns.
 7.  **JSON Output:** Finally, site metadata and graph structures are exported as JSON for advanced client-side functionality.
 8.  **Discovery Feeds:** If any rendered page has a valid `date` in its frontmatter, the build emits a deterministic `feed.xml` RSS 2.0 feed. Pages marked `render: false` are excluded. Feed links use `siteurl` when configured and root-relative URLs for local builds; no feed is retained when there are no dated rendered pages.
+
+## Wiki Links
+
+Use `[[Page Name]]` to link to a page by source filename or frontmatter title.
+Use `[[target|alias]]` to choose the displayed link text, or
+`[[target#Heading Name]]` to link to an automatically generated heading ID.
+Targets resolve relative to the current page first, then the content root.
+Unknown targets generate a stub titled `Unresolved Note: <target>`; its graph
+node records the referring pages and its title is included in `meta.json`.
 
 ## Key Internal Packages
 
