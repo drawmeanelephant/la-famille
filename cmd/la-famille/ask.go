@@ -34,6 +34,7 @@ var askFlagBundle = struct {
 	port      int
 	maxCtx    int
 	eval      string
+	evalK     int
 	rebuild   bool
 	noBrowser bool
 	verbose   bool
@@ -78,6 +79,8 @@ golden questions without starting the web server.`),
 		"Maximum context characters fed to the provider per request (overrides the default).")
 	cmd.Flags().StringVar(&askFlagBundle.eval, "eval", "",
 		"Run the BM25-lite retrieval evaluation against a golden-question JSON dataset.")
+	cmd.Flags().IntVar(&askFlagBundle.evalK, "eval-k", 0,
+		"Override eval chunk depth (1-100); zero uses the dataset depth.")
 	cmd.Flags().BoolVar(&askFlagBundle.verbose, "verbose", false,
 		"Verbose logging of retrieval/generation timings.")
 	cmd.Flags().BoolVar(&askFlagBundle.expose, "expose-host", false,
@@ -104,6 +107,7 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 				DatasetPath: datasetPath,
 				ProjectRoot: projectRoot,
 				Provider:    provider,
+				K:           askFlagBundle.evalK,
 			})
 			if err != nil {
 				return err
@@ -112,7 +116,7 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 				return err
 			}
 			if !report.Passed {
-				return fmt.Errorf("ask eval: %d golden questions failed", report.FailedCount)
+				return fmt.Errorf("ask eval: regression gates failed (%d questions failed, recall floor passed=%t, precision floor passed=%t)", report.FailedCount, report.BaselineOK, report.PrecisionOK)
 			}
 			return nil
 		}
