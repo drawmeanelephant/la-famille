@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "pages": [
+    {
+      "identity": "existing-orphan",
+      "source_path": "existing-orphan.md",
+      "rendered": true,
+      "url": "/existing-orphan/",
+      "title": "Existing Orphan",
+      "date": "",
+      "tags": [],
+      "categories": [],
+      "outbound_links": [],
+      "inbound_link_count": 0,
+      "links": [],
+      "asset_references": []
+    },
+    {
+      "identity": "index",
+      "source_path": "index.md",
+      "rendered": true,
+      "url": "/",
+      "title": "Home",
+      "date": "",
+      "tags": [],
+      "categories": [],
+      "outbound_links": [
+        "old"
+      ],
+      "inbound_link_count": 0,
+      "links": [
+        {
+          "destination": "old.md",
+          "target": "old.md",
+          "graph_target": "old",
+          "line": 4,
+          "resolved": true
+        }
+      ],
+      "asset_references": []
+    },
+    {
+      "identity": "old",
+      "source_path": "old.md",
+      "rendered": true,
+      "url": "/old/",
+      "title": "Renamed Note",
+      "date": "2025-01-01",
+      "tags": [
+        "archive",
+        "shared"
+      ],
+      "categories": [
+        "notes"
+      ],
+      "outbound_links": [
+        "target"
+      ],
+      "inbound_link_count": 1,
+      "links": [
+        {
+          "destination": "target.md",
+          "target": "target.md",
+          "graph_target": "target",
+          "line": 8,
+          "resolved": true
+        }
+      ],
+      "asset_references": []
+    },
+    {
+      "identity": "target",
+      "source_path": "target.md",
+      "rendered": true,
+      "url": "/target/",
+      "title": "Target",
+      "date": "",
+      "tags": [],
+      "categories": [],
+      "outbound_links": [],
+      "inbound_link_count": 1,
+      "links": [],
+      "asset_references": []
+    }
+  ]
+}

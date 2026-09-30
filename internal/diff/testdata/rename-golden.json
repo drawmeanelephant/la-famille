@@ -1,0 +1,132 @@
+{
+  "added_pages": [],
+  "removed_pages": [],
+  "changed_pages": [
+    {
+      "kind": "modified",
+      "before": {
+        "identity": "index",
+        "source_path": "index.md",
+        "url": "/",
+        "title": "Home"
+      },
+      "after": {
+        "identity": "index",
+        "source_path": "index.md",
+        "url": "/",
+        "title": "Home"
+      }
+    },
+    {
+      "kind": "renamed",
+      "before": {
+        "identity": "old",
+        "source_path": "old.md",
+        "url": "/old/",
+        "title": "Renamed Note"
+      },
+      "after": {
+        "identity": "new",
+        "source_path": "new.md",
+        "url": "/new/",
+        "title": "Renamed Note"
+      }
+    },
+    {
+      "kind": "modified",
+      "before": {
+        "identity": "target",
+        "source_path": "target.md",
+        "url": "/target/",
+        "title": "Target"
+      },
+      "after": {
+        "identity": "target",
+        "source_path": "target.md",
+        "url": "/target/",
+        "title": "Target"
+      }
+    }
+  ],
+  "metadata_changes": [
+    {
+      "page": "new",
+      "field": "date",
+      "before": "2025-01-01",
+      "after": "2025-02-01"
+    },
+    {
+      "page": "new",
+      "field": "url",
+      "before": "/old/",
+      "after": "/new/"
+    }
+  ],
+  "taxonomy_changes": [
+    {
+      "page": "new",
+      "kind": "tag",
+      "term": "archive",
+      "action": "removed"
+    },
+    {
+      "page": "new",
+      "kind": "tag",
+      "term": "new",
+      "action": "added"
+    }
+  ],
+  "added_links": [
+    {
+      "page": "index",
+      "destination": "new.md",
+      "target": "new.md"
+    },
+    {
+      "page": "target",
+      "destination": "missing.md",
+      "target": "missing.md"
+    }
+  ],
+  "removed_links": [
+    {
+      "page": "index",
+      "destination": "old.md",
+      "target": "old.md"
+    }
+  ],
+  "added_edges": [
+    {
+      "from": "index",
+      "to": "new"
+    },
+    {
+      "from": "new",
+      "to": "target"
+    },
+    {
+      "from": "target",
+      "to": "missing"
+    }
+  ],
+  "removed_edges": [
+    {
+      "from": "index",
+      "to": "old"
+    },
+    {
+      "from": "old",
+      "to": "target"
+    }
+  ],
+  "orphan_changes": [],
+  "new_broken_links": [
+    {
+      "page": "target",
+      "destination": "missing.md",
+      "target": "missing.md",
+      "line": 9
+    }
+  ],
+  "resolved_broken_links": []
+}

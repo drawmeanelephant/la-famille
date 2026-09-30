@@ -122,3 +122,20 @@ func TestNewManifestSortsPagesAndReferences(t *testing.T) {
 		t.Fatalf("ReadManifest() = %#v, want %#v", parsed, manifest)
 	}
 }
+
+func TestParseManifestValidatesAndNormalizesJSON(t *testing.T) {
+	manifest, err := ParseManifest([]byte(`{"version":1,"pages":[]}`))
+	if err != nil {
+		t.Fatalf("ParseManifest(valid) error = %v", err)
+	}
+	if manifest.Pages == nil {
+		t.Fatal("ParseManifest(valid) left Pages nil")
+	}
+
+	if _, err := ParseManifest([]byte(`{"version":`)); err == nil {
+		t.Fatal("ParseManifest(invalid JSON) succeeded")
+	}
+	if _, err := ParseManifest([]byte(`{"version":99,"pages":[]}`)); err == nil {
+		t.Fatal("ParseManifest(unsupported version) succeeded")
+	}
+}

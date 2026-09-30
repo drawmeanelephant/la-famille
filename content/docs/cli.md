@@ -93,6 +93,25 @@ remain the explicit override. Run `publish-check --output public` before
 uploading an artifact to get a deterministic file manifest and validate local
 HTML references.
 
+### `diff`
+
+Compares the semantic site manifests from two builds:
+
+```bash
+la-famille diff public-before public
+la-famille diff public-before/site-manifest.json public/site-manifest.json --json
+la-famille diff ref:v1.0.0 ref:HEAD
+```
+
+Each input can be an output directory, a `site-manifest.json` file, or a Git
+revision. Git revisions read `<output_dir>/site-manifest.json` from that
+revision in the selected project repository. Prefix a revision with `ref:` to
+force Git interpretation when it matches a local path. The default output is a
+readable summary; `--json` writes the structured change report. The command
+reports page and metadata changes, tag/category membership, internal link and
+graph-edge deltas, orphan transitions, and newly broken or resolved links. It
+does not build a site or write generated files.
+
 ### `serve`
 
 Starts a local HTTP server to preview your generated site.

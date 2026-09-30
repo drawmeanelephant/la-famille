@@ -80,14 +80,14 @@ func TestGuardUnusableConfigBlocksOnlyConfigConsumers(t *testing.T) {
 	// Names are checked against the live command tree so a renamed or newly
 	// added command cannot silently drift out of the blocked set.
 	blocked := []string{"build", "serve", "rag", "check", "new", "ask", "tui"}
-	allowed := []string{"init", "pr", "help"}
+	allowed := []string{"init", "pr", "diff", "help"}
 
 	root := setupRootCmd(config.Config{})
 	byName := map[string]*cobra.Command{}
 	for _, c := range root.Commands() {
 		byName[c.Name()] = c
 	}
-	for _, name := range append(append([]string{}, blocked...), "pr") {
+	for _, name := range append(append([]string{}, blocked...), "pr", "diff") {
 		if byName[name] == nil {
 			t.Fatalf("command %q is not registered on the root command; update this test", name)
 		}
