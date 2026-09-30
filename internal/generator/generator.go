@@ -18,6 +18,7 @@ import (
 	"github.com/yuin/goldmark"
 
 	"github.com/tbuddy/la-famille/internal/asset"
+	"github.com/tbuddy/la-famille/internal/checker"
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/discovery"
@@ -195,6 +196,7 @@ type buildContext struct {
 	// pass and folded into the final outputs by collectRenderOutputs.
 	taxPaths       []string
 	taxSearchItems []search.Item
+	manifest       sitedata.Manifest
 
 	// Per-key render outputs, indexed by the page's position in the
 	// deterministic key order, so workers fill them without locking.
@@ -681,6 +683,20 @@ func (bc *buildContext) writeDerivedArtifacts() error {
 		return err
 	}
 
+	links, assetReferences := checker.ExtractManifestReferences(bc.fileMap, bc.siteCfg.GraphExplorer)
+	bc.manifest = sitedata.NewManifest(
+		bc.siteCfg,
+		bc.fileMap,
+		bc.g,
+		bc.backlinks,
+		bc.pageOutputs,
+		links,
+		assetReferences,
+	)
+	if err := sitedata.WriteManifest(bc.cfg.OutputDir, bc.manifest); err != nil {
+		return err
+	}
+
 	// 5b. Knowledge Graph Explorer page and payload (static, no extra deps).
 	if _, err := graphexplorer.Write(graphexplorer.Input{
 		Config:      bc.cfg,
@@ -723,7 +739,7 @@ func (bc *buildContext) cacheBuild(fingerprint string) error {
 	// warnings.
 	bc.result.Warnings = append(bc.result.Warnings, bc.claims.Warnings()...)
 	sort.Strings(bc.result.Warnings)
-	if err := writeBuildCache(cachePath(bc.siteCfg), fingerprint, files, bc.result.PageCount, bc.result.Health, bc.result.Warnings); err != nil {
+	if err := writeBuildCache(cachePath(bc.siteCfg), fingerprint, files, bc.result.PageCount, bc.result.Health, bc.result.Warnings, bc.manifest); err != nil {
 		return fmt.Errorf("failed to write build cache: %w", err)
 	}
 	return nil
@@ -735,7 +751,9 @@ func (bc *buildContext) cacheBuild(fingerprint string) error {
 // no error and no missing-page report. Treating them as collisions up front
 // turns that into an actionable build failure.
 func reservedOutputPaths(cfg config.Config) map[string]string {
-	reserved := make(map[string]string)
+	reserved := map[string]string{
+		filepath.Clean(filepath.Join(cfg.OutputDir, sitedata.ManifestFileName)): "the site manifest",
+	}
 	if cfg.GraphExplorer {
 		owner := "the knowledge graph explorer (disable with graph_explorer: false)"
 		reserved[filepath.Clean(graphexplorer.IndexPath(cfg.OutputDir))] = owner

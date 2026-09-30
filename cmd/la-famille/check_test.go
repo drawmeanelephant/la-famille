@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/generator"
 )
 
 func TestCheckCommand_ValidContent(t *testing.T) {
@@ -113,6 +114,61 @@ Link to [missing](missing.md).
 	}
 	if !strings.Contains(errBuf.String(), "broken internal link") {
 		t.Errorf("expected stderr to contain 'broken internal link', got: %s", errBuf.String())
+	}
+}
+
+func TestCheckCommand_ManifestReferences(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	templateDir := filepath.Join(tempDir, "templates")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(templateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(templateDir, "layout.html"), []byte("{{.Content}}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for name, body := range map[string]string{
+		"index.md":  "---\ntitle: Home\ndescription: Home page\n---\n[About](about.md)\n[Missing](missing.md)\n",
+		"about.md":  "---\ntitle: About\ndescription: About page\n---\n[Home](index.md)\n",
+		"orphan.md": "---\ntitle: Orphan\ndescription: Orphan page\n---\nNo inbound links.\n",
+	} {
+		if err := os.WriteFile(filepath.Join(contentDir, name), []byte(body), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ProjectRoot = tempDir
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = filepath.Join(tempDir, "public")
+	cfg.Template = filepath.Join(templateDir, "layout.html")
+	cfg.SiteURL = "https://example.com"
+	if _, err := generator.Build(cfg); err != nil {
+		t.Fatalf("generator.Build() error = %v", err)
+	}
+
+	oldManifest, oldContent, oldSummary := checkManifest, checkContentDir, checkSummary
+	t.Cleanup(func() {
+		checkManifest, checkContentDir, checkSummary = oldManifest, oldContent, oldSummary
+	})
+	rootCmd := setupRootCmd(cfg)
+	var outBuf, errBuf bytes.Buffer
+	rootCmd.SetOut(&outBuf)
+	rootCmd.SetErr(&errBuf)
+	rootCmd.SetArgs([]string{"check", "--manifest", "public/site-manifest.json", "--content", "content", "--summary=false"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("check succeeded despite a manifest-recorded broken link")
+	}
+	if !strings.Contains(errBuf.String(), "broken internal link") {
+		t.Errorf("stderr = %q, want manifest-backed broken-link finding", errBuf.String())
+	}
+	if !strings.Contains(outBuf.String(), "orphaned page: no inbound links") {
+		t.Errorf("stdout = %q, want manifest-backed orphan finding", outBuf.String())
 	}
 }
 

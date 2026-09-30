@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "pages": [
+    {
+      "identity": "care-guide",
+      "source_path": "care-guide.md",
+      "rendered": true,
+      "url": "/ceramics/care-guide/",
+      "title": "Ceramic Ware Care \u0026 Preservation Guide",
+      "date": "2026-07-12",
+      "tags": [
+        "care",
+        "ceramics",
+        "guide"
+      ],
+      "categories": [
+        "guides"
+      ],
+      "outbound_links": [
+        "collection/wheel-thrown-vessels",
+        "journal/2026-07-15-glazing-techniques"
+      ],
+      "inbound_link_count": 3,
+      "links": [
+        {
+          "destination": "collection/wheel-thrown-vessels.md",
+          "target": "collection/wheel-thrown-vessels.md",
+          "graph_target": "collection/wheel-thrown-vessels",
+          "line": 24,
+          "resolved": true
+        },
+        {
+          "destination": "journal/2026-07-15-glazing-techniques.md",
+          "target": "journal/2026-07-15-glazing-techniques.md",
+          "graph_target": "journal/2026-07-15-glazing-techniques",
+          "line": 24,
+          "resolved": true
+        }
+      ],
+      "asset_references": []
+    },
+    {
+      "identity": "collection/wheel-thrown-vessels",
+      "source_path": "collection/wheel-thrown-vessels.md",
+      "rendered": true,
+      "url": "/ceramics/collection/wheel-thrown-vessels/",
+      "title": "Wheel-Thrown Vessels Collection",
+      "date": "2026-07-10",
+      "tags": [
+        "ceramics",
+        "collection",
+        "wheel-thrown"
+      ],
+      "categories": [
+        "crafts"
+      ],
+      "outbound_links": [
+        "care-guide",
+        "index"
+      ],
+      "inbound_link_count": 3,
+      "links": [
+        {
+          "destination": "../care-guide.md",
+          "target": "care-guide.md",
+          "graph_target": "care-guide",
+          "line": 24,
+          "resolved": true
+        },
+        {
+          "destination": "../index.md",
+          "target": "index.md",
+          "graph_target": "index",
+          "line": 24,
+          "resolved": true
+        }
+      ],
+      "asset_references": [
+        "ceramic-vase.png"
+      ]
+    },
+    {
+      "identity": "index",
+      "source_path": "index.md",
+      "rendered": true,
+      "url": "/ceramics/",
+      "title": "Kintsugi \u0026 Co. Studio",
+      "date": "2026-07-01",
+      "tags": [
+        "ceramics",
+        "homepage",
+        "studio"
+      ],
+      "categories": [
+        "studio"
+      ],
+      "outbound_links": [
+        "care-guide",
+        "collection/wheel-thrown-vessels",
+        "journal/2026-07-15-glazing-techniques"
+      ],
+      "inbound_link_count": 1,
+      "links": [
+        {
+          "destination": "collection/wheel-thrown-vessels.md",
+          "target": "collection/wheel-thrown-vessels.md",
+          "graph_target": "collection/wheel-thrown-vessels",
+          "line": 20,
+          "resolved": true
+        },
+        {
+          "destination": "care-guide.md",
+          "target": "care-guide.md",
+          "graph_target": "care-guide",
+          "line": 21,
+          "resolved": true
+        },
+        {
+          "destination": "journal/2026-07-15-glazing-techniques.md",
+          "target": "journal/2026-07-15-glazing-techniques.md",
+          "graph_target": "journal/2026-07-15-glazing-techniques",
+          "line": 22,
+          "resolved": true
+        }
+      ],
+      "asset_references": [
+        "ceramic-vase.png"
+      ]
+    },
+    {
+      "identity": "journal/2026-07-15-glazing-techniques",
+      "source_path": "journal/2026-07-15-glazing-techniques.md",
+      "rendered": true,
+      "url": "/ceramics/journal/2026-07-15-glazing-techniques/",
+      "title": "Studio Notes: Ash Glazes \u0026 Reduction Firing",
+      "date": "2026-07-15",
+      "tags": [
+        "craft",
+        "glazing",
+        "journal"
+      ],
+      "categories": [
+        "journal"
+      ],
+      "outbound_links": [
+        "care-guide",
+        "collection/wheel-thrown-vessels"
+      ],
+      "inbound_link_count": 2,
+      "links": [
+        {
+          "destination": "../care-guide.md",
+          "target": "care-guide.md",
+          "graph_target": "care-guide",
+          "line": 24,
+          "resolved": true
+        },
+        {
+          "destination": "../collection/wheel-thrown-vessels.md",
+          "target": "collection/wheel-thrown-vessels.md",
+          "graph_target": "collection/wheel-thrown-vessels",
+          "line": 24,
+          "resolved": true
+        }
+      ],
+      "asset_references": [
+        "ceramic-vase.png"
+      ]
+    },
+    {
+      "identity": "notes/unrendered-formulas.md",
+      "source_path": "notes/unrendered-formulas.md",
+      "rendered": false,
+      "url": "/ceramics/notes/unrendered-formulas.md",
+      "title": "Studio Glaze Formulations \u0026 Kiln Logs",
+      "date": "2026-07-16",
+      "tags": [
+        "internal",
+        "raw"
+      ],
+      "categories": [
+        "technical"
+      ],
+      "outbound_links": [],
+      "inbound_link_count": 0,
+      "links": [],
+      "asset_references": []
+    }
+  ]
+}

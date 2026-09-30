@@ -15,13 +15,14 @@ import (
 	"time"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/sitedata"
 )
 
 const cacheFileName = ".la-famille-cache.json"
 
-// cacheVersion is bumped whenever the on-disk shape changes. Version 2 records
-// a content hash per generated file instead of a bare path.
-const cacheVersion = 2
+// cacheVersion is bumped whenever the on-disk shape changes. Version 3
+// retains the canonical site manifest alongside generated-file hashes.
+const cacheVersion = 3
 
 // generatedFile is one file the previous build left in the output directory.
 // The hash is what makes a cache hit safe: a hit republishes those bytes
@@ -32,12 +33,13 @@ type generatedFile struct {
 }
 
 type buildCache struct {
-	Fingerprint    string          `json:"fingerprint"`
-	GeneratedFiles []generatedFile `json:"generated_files"`
-	Warnings       []string        `json:"warnings,omitempty"`
-	Health         ContentHealth   `json:"health,omitempty"`
-	Version        int             `json:"version"`
-	PageCount      int             `json:"page_count"`
+	Fingerprint    string            `json:"fingerprint"`
+	GeneratedFiles []generatedFile   `json:"generated_files"`
+	Warnings       []string          `json:"warnings,omitempty"`
+	Health         ContentHealth     `json:"health,omitempty"`
+	Manifest       sitedata.Manifest `json:"manifest"`
+	Version        int               `json:"version"`
+	PageCount      int               `json:"page_count"`
 }
 
 // cachePath keeps incremental state beside the project, never inside the
@@ -270,8 +272,16 @@ func generatedFiles(outputDir string) ([]generatedFile, error) {
 	return files, nil
 }
 
-func writeBuildCache(path, fingerprint string, files []generatedFile, pageCount int, health ContentHealth, warnings []string) error {
-	cache := buildCache{Version: cacheVersion, Fingerprint: fingerprint, GeneratedFiles: files, PageCount: pageCount, Health: health, Warnings: warnings}
+func writeBuildCache(path, fingerprint string, files []generatedFile, pageCount int, health ContentHealth, warnings []string, manifest sitedata.Manifest) error {
+	cache := buildCache{
+		Version:        cacheVersion,
+		Fingerprint:    fingerprint,
+		GeneratedFiles: files,
+		PageCount:      pageCount,
+		Health:         health,
+		Warnings:       warnings,
+		Manifest:       manifest,
+	}
 	data, err := json.MarshalIndent(cache, "", "  ")
 	if err != nil {
 		return err

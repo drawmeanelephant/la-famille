@@ -21,6 +21,7 @@ posts/first-post/index.html
 posts/second-post/index.html
 robots.txt
 search.json
+site-manifest.json
 sitemap.xml
 tags/index.html
 tags/info/index.html
