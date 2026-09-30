@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "name": "ask-this-site-phase-1",
+  "k": 5,
+  "baseline_recall_at_5": 1,
+  "sites": [
+    {
+      "id": "anchor-links",
+      "fixture": "assets/testdata/sites/anchor-links",
+      "content_dir": "content",
+      "questions": [
+        {
+          "id": "other-page-heading",
+          "question": "What is the heading on the other linked page?",
+          "acceptable_pages": ["other"],
+          "minimum_recall_at_k": 1
+        },
+        {
+          "id": "unanswerable",
+          "question": "Which quuxivorzz blarghmolecule certifies zindlefex?",
+          "unanswerable": true
+        }
+      ]
+    },
+    {
+      "id": "artisanal-ceramics",
+      "fixture": "assets/testdata/sites/artisanal-ceramics",
+      "content_dir": "content",
+      "questions": [
+        {
+          "id": "shino-glaze",
+          "question": "What glaze is used on the Shino Tea Bowls?",
+          "acceptable_pages": ["collection/wheel-thrown-vessels"],
+          "minimum_recall_at_k": 1
+        },
+        {
+          "id": "washing-stoneware",
+          "question": "How should I wash handmade stoneware without damaging it?",
+          "acceptable_pages": ["care-guide"],
+          "minimum_recall_at_k": 1
+        },
+        {
+          "id": "pine-ash-firing",
+          "question": "What happens to pine ash glaze during firing at 1280 degrees Celsius?",
+          "acceptable_pages": ["journal/2026-07-15-glazing-techniques"],
+          "minimum_recall_at_k": 1
+        }
+      ]
+    },
+    {
+      "id": "clean-urls",
+      "fixture": "assets/testdata/sites/clean-urls",
+      "content_dir": "content",
+      "questions": [
+        {
+          "id": "author-is-cool",
+          "question": "Who says they are cool?",
+          "acceptable_pages": ["bio"],
+          "minimum_recall_at_k": 1
+        },
+        {
+          "id": "blog-post",
+          "question": "What does the My Blog Post page say?",
+          "acceptable_pages": ["blog/post"],
+          "minimum_recall_at_k": 1
+        }
+      ]
+    },
+    {
+      "id": "ask-eval-deep-chain",
+      "fixture": "assets/testdata/sites/ask-eval-deep-chain",
+      "content_dir": "content",
+      "questions": [
+        {
+          "id": "northern-kiln-temperature",
+          "question": "What temperature did the northern kiln reach during blue-glass firing?",
+          "acceptable_pages": ["observations/archive/blue-glass-run"],
+          "minimum_recall_at_k": 1
+        }
+      ]
+    },
+    {
+      "id": "ask-eval-research-branch",
+      "fixture": "assets/testdata/sites/ask-eval-research-branch",
+      "content_dir": "content",
+      "questions": [
+        {
+          "id": "cobalt-concentration",
+          "question": "What cobalt concentration does the blue-clay assay report?",
+          "acceptable_pages": ["study/samples/cobalt-clay"],
+          "minimum_recall_at_k": 1
+        }
+      ]
+    }
+  ]
+}

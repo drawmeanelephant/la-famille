@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/tbuddy/la-famille/internal/ask"
+	"github.com/tbuddy/la-famille/internal/askeval"
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/ragexport"
 )
@@ -32,6 +33,7 @@ var askFlagBundle = struct {
 	outputDir string
 	port      int
 	maxCtx    int
+	eval      string
 	rebuild   bool
 	noBrowser bool
 	verbose   bool
@@ -43,13 +45,16 @@ var askFlagBundle = struct {
 func setupAskCmd(cfg config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ask",
-		Short: "Serve a local citation-grounded question-answering UI for this site",
+		Short: "Serve the local assistant UI or evaluate retrieval quality",
 		Long: strings.TrimSpace(`ask serves a small loopback-only web UI that answers
 questions using only the contents of your RAG archive plus generated site
 metadata. It runs entirely on the local machine and never sends your content
 to a remote service. Use --provider ollama with a local Ollama daemon to get
 an LLM in front of the corpus. Set --provider fake to exercise the pipeline
-without a model.`),
+without a model.
+
+Run --eval <dataset.json> to measure the current BM25-lite retrieval against
+golden questions without starting the web server.`),
 		RunE: runAsk(cfg),
 	}
 
@@ -71,6 +76,8 @@ without a model.`),
 		"Do not try to open the local UI in a browser.")
 	cmd.Flags().IntVar(&askFlagBundle.maxCtx, "max-context", 0,
 		"Maximum context characters fed to the provider per request (overrides the default).")
+	cmd.Flags().StringVar(&askFlagBundle.eval, "eval", "",
+		"Run the BM25-lite retrieval evaluation against a golden-question JSON dataset.")
 	cmd.Flags().BoolVar(&askFlagBundle.verbose, "verbose", false,
 		"Verbose logging of retrieval/generation timings.")
 	cmd.Flags().BoolVar(&askFlagBundle.expose, "expose-host", false,
@@ -82,10 +89,34 @@ without a model.`),
 	return cmd
 }
 
-// runAsk returns a Cobra RunE that loads flags, validates them, optionally
-// rebuilds the RAG archive, and starts the ask server.
+// runAsk returns a Cobra RunE that either runs the retrieval evaluation or
+// validates flags, optionally rebuilds the RAG archive, and starts the server.
 func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
+		if evalPath := strings.TrimSpace(askFlagBundle.eval); evalPath != "" {
+			projectRoot := firstNonEmpty(cfg.ProjectRoot, ".")
+			datasetPath := resolveProjectPath(projectRoot, evalPath)
+			provider := askFlagBundle.provider
+			if !cmd.Flags().Changed("provider") {
+				provider = "fake"
+			}
+			report, err := askeval.Run(cmd.Context(), askeval.Options{
+				DatasetPath: datasetPath,
+				ProjectRoot: projectRoot,
+				Provider:    provider,
+			})
+			if err != nil {
+				return err
+			}
+			if err := askeval.WriteReport(cmd.OutOrStdout(), report); err != nil {
+				return err
+			}
+			if !report.Passed {
+				return fmt.Errorf("ask eval: %d golden questions failed", report.FailedCount)
+			}
+			return nil
+		}
+
 		host := strings.TrimSpace(askFlagBundle.host)
 		if host == "" {
 			host = "127.0.0.1"

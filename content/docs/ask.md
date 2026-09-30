@@ -84,8 +84,25 @@ Flags:
   --rebuild               Regenerate the RAG archive inline before starting the server.
   --no-browser            Do not try to open the UI in a browser.
   --max-context int       Maximum context characters per request (default 6000).
+  --eval string           Run the BM25-lite retrieval evaluation against a golden-question JSON dataset.
   --verbose               Verbose logs.
   --expose-host           Allow non-loopback binds. Warnings are emitted at startup.
+```
+
+### Retrieval evaluation
+
+Pass `--eval <dataset.json>` to run the checked-in golden-question harness
+instead of starting the assistant UI. Fixture paths in the dataset are
+resolved from the project root. The report shows each question's recall@K,
+its minimum threshold, the aggregate recall@K, and the recorded BM25-lite
+recall@5 baseline. The command exits with an error if any question misses its
+threshold or an unanswerable question fails to return the canonical no-answer
+fallback. It uses retrieval only and does not send prompts to an LLM.
+
+```bash
+go run ./cmd/la-famille ask \
+  --eval assets/testdata/ask-eval/golden-questions.json \
+  --provider fake
 ```
 
 ### Examples
