@@ -35,7 +35,6 @@ type cliState struct {
 	assetDir      string
 	templateFile  string
 	siteURL       string
-	projectRoot   string
 	configPath    string
 	showVersion   bool
 	versionJSON   bool
@@ -68,7 +67,6 @@ func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
 		assetDir:     cfg.AssetDir,
 		templateFile: cfg.Template,
 		siteURL:      cfg.SiteURL,
-		projectRoot:  cfg.ProjectRoot,
 		configPath:   cfg.ConfigPath,
 	}
 
@@ -121,10 +119,9 @@ func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
 		Use:   "build",
 		Short: "Build the static site",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			// Update config from flags
-			if st.projectRoot != "" {
-				cfg.ProjectRoot = resolveProjectPath(cfg.ProjectRoot, st.projectRoot)
-			}
+			// loadProjectConfig already resolved --project-root from the
+			// invocation directory; resolving the flag again would nest a
+			// relative root under itself.
 			cfg.ContentDir = resolveProjectPath(cfg.ProjectRoot, st.contentDir)
 			cfg.OutputDir = resolveProjectPath(cfg.ProjectRoot, st.outputDir)
 			cfg.AssetDir = resolveProjectPath(cfg.ProjectRoot, st.assetDir)
@@ -336,9 +333,6 @@ func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
 		Short: "Export project files into RAG-friendly markdown bundles",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			ragCfg := cfg
-			if st.projectRoot != "" {
-				ragCfg.ProjectRoot = resolveProjectPath(cfg.ProjectRoot, st.projectRoot)
-			}
 			if ragContentDir != "" {
 				ragCfg.ContentDir = resolveProjectPath(ragCfg.ProjectRoot, ragContentDir)
 			}
@@ -484,7 +478,9 @@ func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
 	rootCmd.AddCommand(prCmd)
 	rootCmd.AddCommand(setupTUICmd(st, tuiCfg, tuiCfgSet))
 	rootCmd.PersistentFlags().StringVar(&st.globalLogFile, "log-file", "", "Path to log file (default is stderr for CLI, la-famille.log for TUI)")
-	rootCmd.PersistentFlags().StringVar(&st.projectRoot, "project-root", cfg.ProjectRoot, "Project root for config-relative paths (default: the current directory)")
+	// The bootstrapper applies --project-root before constructing the command
+	// tree; Cobra still parses the flag, but must not apply it a second time.
+	rootCmd.PersistentFlags().String("project-root", cfg.ProjectRoot, "Project root for config-relative paths (default: the current directory)")
 	rootCmd.PersistentFlags().StringVar(&st.configPath, "config", cfg.ConfigPath, "Path to config.yaml (default: <project-root>/config.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&st.showVersion, "version", false, "Print build identity and exit")
 	rootCmd.PersistentFlags().BoolVar(&st.versionJSON, "json", false, "Print machine-readable output (use with --version)")

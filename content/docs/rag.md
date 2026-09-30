@@ -35,6 +35,11 @@ This is the Pages-friendly form: it writes only to the selected archive
 directory and does not copy files into or mutate the source checkout. Relative
 values are resolved from `--project-root`.
 
+From a parent directory, use `--project-root sites/zai rag --output public/rag-archive`
+to write to `sites/zai/public/rag-archive`. Do not repeat `sites/zai` in the
+relative `--output` value: it is already relative to the selected project root,
+not the current directory.
+
 **Using the TUI:**
 1. Run `go run ./cmd/la-famille tui`
 2. Select **RAG Export** from the main menu.
