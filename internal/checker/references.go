@@ -12,6 +12,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/markdown"
 	"github.com/tbuddy/la-famille/internal/sitedata"
+	"github.com/tbuddy/la-famille/internal/transform"
 )
 
 // ExtractManifestReferences returns the internal links and local asset
@@ -75,6 +76,28 @@ func manifestLinkReference(
 	dest string,
 	node ast.Node,
 ) (sitedata.ManifestLink, bool) {
+	if wikiTarget, heading, ok := transform.ParseWikiLinkDestination(dest); ok {
+		targetRelPath, targetMeta, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, fileMap)
+		if !resolved {
+			targetRelPath = transform.UnresolvedWikiTargetPath(relPath, wikiTarget)
+		}
+		targetID := strings.TrimSuffix(targetRelPath, ".md")
+		if resolved && targetMeta != nil && targetMeta.Render != nil && !*targetMeta.Render {
+			targetID = targetRelPath
+		}
+		destination := wikiTarget
+		if heading != "" {
+			destination += "#" + heading
+		}
+		return sitedata.ManifestLink{
+			Destination: destination,
+			Target:      targetRelPath,
+			GraphTarget: targetID,
+			Line:        findLinkLine(meta.Content, meta.Rest, node, dest),
+			Resolved:    resolved,
+		}, true
+	}
+
 	u, err := url.Parse(dest)
 	if err != nil || u.IsAbs() || strings.HasPrefix(dest, "//") || u.Path == "" {
 		return sitedata.ManifestLink{}, false

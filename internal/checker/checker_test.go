@@ -66,6 +66,45 @@ Back to [Page One](page1.md).
 	}
 }
 
+func TestValidateWikiLinksFeedBrokenLinkAndOrphanChecks(t *testing.T) {
+	contentDir := filepath.Join(t.TempDir(), "content")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"index.md":  "---\ntitle: Home\ndescription: Home\n---\n[[Target]] and [[Missing Note]].\n",
+		"target.md": "---\ntitle: Target\ndescription: Target\n---\n# Target\n",
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(contentDir, name), []byte(body), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.SiteURL = "https://example.com"
+
+	result, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate() error = %v", err)
+	}
+	var broken, targetOrphan bool
+	for _, finding := range result.Findings {
+		if finding.Category == CategoryBrokenLink && strings.Contains(finding.Message, "Missing Note") {
+			broken = true
+		}
+		if finding.Category == CategoryOrphan && finding.File == "target.md" {
+			targetOrphan = true
+		}
+	}
+	if !broken {
+		t.Errorf("missing wiki target not reported as broken: %+v", result.Findings)
+	}
+	if targetOrphan {
+		t.Errorf("wiki-linked target reported as orphan: %+v", result.Findings)
+	}
+}
+
 // Issue #535: an unset siteurl must be a site-wide warning (root-relative
 // sitemap <loc> entries are protocol-invalid), and once set the warning must go.
 func TestValidate_WarnsOnEmptySiteURL(t *testing.T) {

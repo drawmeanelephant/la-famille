@@ -58,3 +58,40 @@ image: /assets/cover.png
 		t.Errorf("asset references = %v, want %v", got, want)
 	}
 }
+
+func TestExtractManifestReferencesResolvesWikiTitlesAndMissingTargets(t *testing.T) {
+	contentDir := t.TempDir()
+	files := map[string]string{
+		"index.md": "Known [[Wiki Links]] and unresolved [[Future Note]].\n",
+		"wiki.md":  "---\ntitle: Wiki Links\n---\n# Wiki Links\n",
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(contentDir, name), []byte(body), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fileMap, err := content.GatherMetadata(contentDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	links, _ := ExtractManifestReferences(fileMap, false)
+	if len(links["index.md"]) != 2 {
+		t.Fatalf("wiki links = %+v, want 2", links["index.md"])
+	}
+	var resolved, unresolved bool
+	for _, link := range links["index.md"] {
+		switch link.Target {
+		case "wiki.md":
+			resolved = link.Resolved && link.GraphTarget == "wiki"
+		case "future-note.md":
+			unresolved = !link.Resolved && link.GraphTarget == "future-note"
+		}
+	}
+	if !resolved {
+		t.Errorf("known title wiki link missing or unresolved: %+v", links["index.md"])
+	}
+	if !unresolved {
+		t.Errorf("unresolved wiki link missing or misclassified: %+v", links["index.md"])
+	}
+}
