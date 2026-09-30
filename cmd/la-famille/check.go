@@ -13,6 +13,7 @@ import (
 var (
 	checkContentDir  string
 	checkAssetDir    string
+	checkManifest    string
 	checkAssetHealth bool
 	checkSummary     bool
 )
@@ -20,7 +21,7 @@ var (
 func setupCheckCmd(cfg config.Config) *cobra.Command {
 	var checkCmd = &cobra.Command{
 		Use:   "check",
-		Short: "Validate frontmatter, dates, tags, slugs, internal markdown links, and optional asset health",
+		Short: "Validate frontmatter, dates, tags, slugs, internal links, and optional asset health",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			checkCfg := cfg
 			if checkContentDir != "" {
@@ -29,11 +30,15 @@ func setupCheckCmd(cfg config.Config) *cobra.Command {
 			if checkAssetDir != "" {
 				checkCfg.AssetDir = resolveProjectPath(cfg.ProjectRoot, checkAssetDir)
 			}
+			manifestPath := ""
+			if checkManifest != "" {
+				manifestPath = resolveProjectPath(cfg.ProjectRoot, checkManifest)
+			}
 			if cmd.Flags().Changed("asset-health") {
 				checkCfg.CheckAssetHealth = checkAssetHealth
 			}
 
-			res, err := checker.Validate(checkCfg)
+			res, err := checker.ValidateWithManifest(checkCfg, manifestPath)
 			if err != nil {
 				return fmt.Errorf("content check failed: %w", err)
 			}
@@ -70,6 +75,7 @@ func setupCheckCmd(cfg config.Config) *cobra.Command {
 
 	checkCmd.Flags().StringVarP(&checkContentDir, "content", "c", cfg.ContentDir, "Directory containing markdown files")
 	checkCmd.Flags().StringVarP(&checkAssetDir, "asset", "a", cfg.AssetDir, "Directory containing static asset files")
+	checkCmd.Flags().StringVar(&checkManifest, "manifest", "", "Use a site-manifest.json for internal-link and orphan checks")
 	checkCmd.Flags().BoolVar(&checkAssetHealth, "asset-health", cfg.CheckAssetHealth, "Enable asset health diagnostics")
 	checkCmd.Flags().BoolVar(&checkSummary, "summary", true, "Show summary footer")
 	return checkCmd

@@ -453,6 +453,9 @@ func TestCommandFlags(t *testing.T) {
 	if checkCmd.Flags().Lookup("content") == nil {
 		t.Errorf("checkCmd is missing expected flag: content")
 	}
+	if checkCmd.Flags().Lookup("manifest") == nil {
+		t.Errorf("checkCmd is missing expected flag: manifest")
+	}
 }
 
 func TestCLICacheStatusLogging(t *testing.T) {

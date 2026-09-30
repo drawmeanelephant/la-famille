@@ -23,6 +23,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/markdown"
 	"github.com/tbuddy/la-famille/internal/pathutil"
 	"github.com/tbuddy/la-famille/internal/runtimeassets"
+	"github.com/tbuddy/la-famille/internal/sitedata"
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
@@ -126,9 +127,42 @@ func taxonomyFindings(relPath, kind string, values []string, line int) []Finding
 // missing metadata (title/description), invalid render/slug combinations, path collisions,
 // broken internal links, orphaned pages, and optional asset health.
 func Validate(cfg config.Config) (*Result, error) {
+	return ValidateWithManifest(cfg, "")
+}
+
+// ValidateWithManifest performs the same content checks as Validate, using
+// the supplied build manifest for internal-link and orphan checks when one is
+// provided. Other validation continues to use the current source tree.
+func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, error) {
 	fileMap, err := content.GatherMetadata(cfg.ContentDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to gather metadata: %w", err)
+	}
+
+	var manifestPages map[string]sitedata.ManifestPage
+	if manifestPath != "" {
+		manifest, err := sitedata.ReadManifest(manifestPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read site manifest: %w", err)
+		}
+		if len(manifest.Pages) != len(fileMap) {
+			return nil, fmt.Errorf("site manifest has %d pages; current content has %d", len(manifest.Pages), len(fileMap))
+		}
+		manifestPages = make(map[string]sitedata.ManifestPage, len(manifest.Pages))
+		for _, page := range manifest.Pages {
+			if _, exists := fileMap[page.SourcePath]; !exists {
+				return nil, fmt.Errorf("site manifest contains unknown source page %q", page.SourcePath)
+			}
+			if _, duplicate := manifestPages[page.SourcePath]; duplicate {
+				return nil, fmt.Errorf("site manifest contains duplicate source page %q", page.SourcePath)
+			}
+			manifestPages[page.SourcePath] = page
+		}
+		for sourcePath := range fileMap {
+			if _, exists := manifestPages[sourcePath]; !exists {
+				return nil, fmt.Errorf("site manifest does not contain source page %q", sourcePath)
+			}
+		}
 	}
 
 	var findings []Finding
@@ -281,7 +315,21 @@ func Validate(cfg config.Config) (*Result, error) {
 		}
 
 		// 2. Internal Markdown links validation
-		if len(meta.Rest) > 0 {
+		if manifestPages != nil {
+			page := manifestPages[relPath]
+			for _, link := range page.Links {
+				if link.Resolved {
+					continue
+				}
+				findings = append(findings, Finding{
+					File:     relPath,
+					Line:     link.Line,
+					Level:    LevelError,
+					Category: CategoryBrokenLink,
+					Message:  fmt.Sprintf("broken internal link %q -> %q", link.Destination, link.Target),
+				})
+			}
+		} else if len(meta.Rest) > 0 {
 			doc := mdEngine.Parser().Parse(text.NewReader(meta.Rest))
 			_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 				if !entering {
@@ -391,7 +439,12 @@ func Validate(cfg config.Config) (*Result, error) {
 	}
 
 	// 4. Orphan detection — zero-inbound rendered pages, exempting index (Explorer Orphan Rule)
-	orphanFindings := detectOrphans(fileMap)
+	var orphanFindings []Finding
+	if manifestPages != nil {
+		orphanFindings = detectManifestOrphans(fileMap, manifestPages)
+	} else {
+		orphanFindings = detectOrphans(fileMap)
+	}
 	findings = append(findings, orphanFindings...)
 
 	// 5. Asset health diagnostics (optional)
@@ -418,6 +471,26 @@ func Validate(cfg config.Config) (*Result, error) {
 	})
 
 	return &Result{Findings: findings}, nil
+}
+
+func detectManifestOrphans(fileMap map[string]*content.FileMeta, pages map[string]sitedata.ManifestPage) []Finding {
+	var findings []Finding
+	for relPath, meta := range fileMap {
+		if meta == nil || (meta.Render != nil && !*meta.Render) {
+			continue
+		}
+		identity := strings.TrimSuffix(relPath, ".md")
+		page := pages[relPath]
+		if page.InboundLinkCount == 0 && identity != "index" {
+			findings = append(findings, Finding{
+				File:     relPath,
+				Level:    LevelWarn,
+				Category: CategoryOrphan,
+				Message:  "orphaned page: no inbound links",
+			})
+		}
+	}
+	return findings
 }
 
 // detectOrphans reuses the markdown link graph to find rendered pages with zero inbound links.
