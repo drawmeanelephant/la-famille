@@ -1,5 +1,11 @@
 # La Famille — Moonshots
 
+> **Read the [adversarial review](#adversarial-review-2026-09-29) before acting
+> on this catalogue.** The original proposals below are preserved so their
+> claims, costs, and ranking can be inspected. The review challenges them
+> against the code and current publishing evidence; the old scorecard is not
+> a validated investment recommendation.
+
 *Strategic, moonshot-level bets for la-famille. This document proposes; it
 implements nothing.*
 
@@ -1421,3 +1427,402 @@ this thread:
 **The one-sentence version:** ship a real site, make every build explain
 itself, measure the assistant, then bet on the corpus — and let the real site
 tell you which bets were worth it.
+
+---
+
+## Adversarial review: 2026-09-29
+
+**The assignment here is the attack, not another list.** The original run
+considered **12 candidates and ranked 5**. This review examines all twelve,
+retains their names, and asks whether the original top five deserve resources.
+Proposed commands remain proposals. No subsystem is implemented by this PR.
+
+### Verdict
+
+**The direction survives; the certainty, estimates, and claimed leverage do
+not.** Homestead still wins as a decision about what to do next, but its
+three-site bake-off is the wrong first move. The Ledger and retrieval eval
+are useful experiments, not yet validated moonshots. Packs and Vault have
+plausible audiences, but their write-ups borrow capabilities the code does
+not have and omit the costliest boundary work. Nothing below justifies five
+parallel implementation epics.
+
+The worst vapor is not a far-fetched idea. It is the repeated argument that
+“the hard part already exists” when the named package solves a materially
+different problem. The code is useful raw material, not a prepaid future.
+
+### What this review checked
+
+README, the full original catalogue, `content/docs/`, the roadmap and
+aspirations, the actual `cmd/la-famille` and `internal/` layout, relevant
+implementation and regression tests, deployment/PR workflows, and current
+GitHub issues. Code references below are relative to the repository root.
+
+The project's own [Pages URL](https://drawmeanelephant.github.io/la-famille/)
+returned HTTP 200 during this review. Open issues
+[#570](https://github.com/drawmeanelephant/la-famille/issues/570),
+[#571](https://github.com/drawmeanelephant/la-famille/issues/571), and
+[#572](https://github.com/drawmeanelephant/la-famille/issues/572) report a real
+bilingual site's RAG path-resolution failure, dropped CJK taxonomy, and unused
+default-theme assets. These are issue-reported observations; this review has
+not reproduced or root-caused those three bugs. The reports do not establish
+an independently verified production URL for that site.
+
+`go test ./...` and `go vet ./...` pass on the reviewed checkout. This verifies
+the current implementation, **not** the original feasibility or cost claims.
+
+### First, remove the false premises
+
+| Original claim | What contact with the code/evidence actually establishes |
+| --- | --- |
+| “0 open issues” / “no queue” | Stale as of this review: #570–#572 are concrete workload feedback. A momentarily empty tracker never establishes that strategy, rather than execution, is the bottleneck. |
+| “Never built a site about anything else” | Too strong: the bilingual-site reports are counterevidence. A repository survey cannot prove a negative about external users. The honest unknown is independent production use and ongoing usefulness. |
+| “Fixed 17-field struct” | `internal/content/metadata.go` defines **18** fields in `FileMeta`; the original document even lists eighteen. Missing pagination/series/translation support is real, but “every real site hits all of these in week one” is an invented requirement. |
+| “Incremental” cache as per-page reuse / retained world model | `internal/generator/cache.go` holds one fingerprint, generated-file hashes, warnings, counts, and health. `Build` skips the whole build on a hit and runs the build pipeline on a miss. It is not a per-page dependency index, old source store, or semantic revision history. |
+| “Citation grounding already solved” | `internal/retrieval/citation.go:Citations.Verify` checks numeric key membership. `internal/ask/server.go:Answer` accepts prose with a valid key; neither checks that the cited passage supports the assertion. Valid citation identity is not entailment or truth. |
+| “Stable chunk IDs” as anchors through history | `chunker.go:chunkID` uses page path, heading text, and position. Same-input determinism is useful; rename a page or insert an earlier section and identities can change. An annotation, delta, or historic answer needs a separate identity policy. |
+| `render: false` as a way to publish a private subset | **Unsafe.** `content/docs/raw.md` and generator behavior say raw Markdown is copied into output. Graph and metadata retain it; RAG content export is not a private-public filter. Retrieval excluding raw pages does not make the published bytes private. |
+| Explorer “just open the file” as a general portability guarantee | `internal/graphexplorer` writes `graph/data.json`; `assets/graph/explorer.js` loads it with `fetch`. Static HTTP hosting needs no application backend, but browser `file://` restrictions still matter. Test browser behavior or use loopback serving; do not inherit the prose claim. |
+
+These corrections matter more than the scorecard. Privacy and citation claims
+are promises to readers; they cannot be hand-waved as implementation detail.
+
+### The cost model is not honest enough to fund
+
+“Dishonest” here describes the accounting, not the prior author's intent.
+The document claims to include the boring 40%, but never decomposes that work,
+assigns an owner, measures throughput, or includes maintaining what ships.
+Multiplying subjective “High” labels and dividing by days does not produce
+ratios such as **0.85**. Those numbers are decoration, not analysis.
+
+The most consequential omissions:
+
+- **Homestead, 22–30 days:** three sites with 40+ real pages each, assets,
+  taxonomy, deployment, and reader evidence are priced as 6–8 first-phase
+  days. Content authoring is excluded later while “full content” is mandatory
+  earlier. The largest input is simultaneously required and off-budget.
+  Waiting for readers, choosing an owner, and retaining editorial attention
+  are calendar/human costs, not interchangeable agent-days.
+- **Ledger, 10–14:** a basic manifest diff might fit a small job. Git-ref
+  reconstruction, reliable identity, semantic changes, regression policy,
+  source-to-output consistency, CI baselines, and an accessible TUI are not
+  “mostly plumbing.” `publisher.Manifest` already provides a file list, but
+  no existing package supplies the whole proposed comparison model.
+- **Retrieval, 14–20:** human question labeling, held-out evaluation,
+  unsupported-claim assessment, multilingual segmentation, machine/model
+  variability, and embedding cache/version behavior are missing. Calling a
+  fake provider cannot measure generative answer quality. Embeddings need
+  a new capability; `llm.Provider` exposes `Complete`, not `Embed`.
+- **Packs, 16–24:** the estimate is for an archive, a new compatibility
+  contract, a member/chunk diff format, a delta application system, multiple
+  transports, an updater, an `ask` reader, and hostile-input handling. The
+  exporter currently emits monolithic bundle files: a one-page edit changes
+  `rag-content.md`, not an independently addressable per-page member. The
+  promised tiny delta depends on a payload redesign not priced in phase one.
+- **Vault, 12–16:** the cheap version is a restricted wiki-link importer.
+  Duplicate note names, relative resolution, heading/block references,
+  aliases, embeds, attachments, migration diagnostics, and safe selective
+  publication are a different bill. “Already does half the hard part” is not
+  a justified effort estimate; generated stubs are not editable source notes.
+- **Studio / Routines / Shared Brain:** the UI, repository mutations,
+  metric-gaming defenses, synchronization, durable anchors, contributor
+  identity, and untrusted-input boundaries are product work. A happy-path
+  demonstration is not the supported lifecycle the proposals price.
+
+**Do not replace these ranges with equally invented larger ranges.** Before
+funding a full phase, name one bounded artifact, its compatibility/security
+work, the human review input, and what is explicitly deferred. Record actual
+elapsed implementation and review effort from that slice; re-estimate the
+rest afterward. Full delivery and a phase-one proof have different budgets.
+
+### Top-five attack: what survives and what must be cut
+
+#### Homestead: keep #1; kill the bake-off
+
+Its core is the most honest proposal: a real site makes requirements stop
+being guesses. Its first phase is the least honest expression of that core.
+Three simultaneous destinations, 120+ real pages, and reader-based selection
+turn “ship one thing” into a miniature content studio. Page count exercises
+scale, not demand. “Publish all three” also assumes destinations and ownership
+that have not been chosen.
+
+The requirement to remove **every** workaround before finishing phase three
+is another trap: workarounds can be reasonable, and a requirement like i18n
+might be disproportionately costly. The listed data/pagination/redirect
+features preselect the solution before the promised discovery happens.
+
+**Repair, using the same bet:**
+
+1. **Publish or verify one independent site now**, preferably the bilingual
+   workload if its owner and source are available; otherwise pick one narrow
+   corpus the maintainer actually wants to maintain. Use the release binary
+   and existing `check`, `build`, `rag`, and `publish-check`. Ship useful
+   content at an actual HTTPS URL, recording source revision, compiler
+   version, nonempty intended archive coverage, and known workarounds.
+   A six-page useful release can beat three forty-page performances.
+2. **Observe use and close only encountered gaps.** Record a reader completing
+   a task, a real content correction, and reproducible generator failures.
+   Fix high-impact friction with same-package tests; no requirement to erase
+   every workaround, and no speculative helper layer before a workload needs it.
+3. **Demonstrate maintenance by someone else.** A second contributor makes
+   a correction through the released-binary path; the owner keeps the URL
+   current through two review cycles. A dated evidence log is the artifact,
+   not a promise of perpetual scheduled content generation.
+
+That is the original ladder to a shipped site, made executable. There is no
+claim this docs PR has shipped the independent site. **Stop** if no person
+will own the corpus or no reader gains anything from it. The project already
+publishes itself; another self-referential showcase does not clear this gate.
+
+**What it obsoletes:** speculative backlog generation and showcase-only
+credibility. Shipping a site alone is not a new subsystem or a moonshot under
+the document's own definition; sustained agent-maintained useful publishing
+is the larger bet. Keep the first step deliberately small.
+
+#### Change Ledger: keep #2 as an experiment, not cheap inevitability
+
+The strongest leverage claim is partially right: page URLs, metadata, graph
+adjacency, categorized findings, and actual output files are available. A
+reviewer can benefit from a before/after report. But the cache does not retain
+the prior content model, and `search.json` carries snippets/headings, not full
+page text. Existing outputs cannot magically explain every semantic edit.
+
+The proposed phase-one manifest records title/date/taxonomy/links, **not page
+body content hashes**. Editing a paragraph can leave it unchanged, despite
+the phase-two “modified page” claim. CSS/template-only output changes also
+need a byte-level signal. A graph diff is not a render diff.
+
+The “broken link and new orphan” example is wrong as a general gate: a missing
+target is an unresolved edge/stub; the newly added source is an orphan only
+if nothing links **to it**. One condition does not imply the other.
+`publisher.Check` lists stubs separately from artifact errors. A stub can make
+an HTML target resolve while `checker.Validate` still reports missing source;
+choose and report both semantics rather than conflating them. Neither checker
+output nor an artifact alone is the entire world model.
+
+**Repair:** (1) compare two explicit source/output snapshots, with source-body
+and output-byte hashes plus current metadata; (2) report known page/link/stub
+and content changes, leaving ambiguous renames and unknowns explicit; (3)
+add opt-in regression policy with intentional-change acknowledgments, then a
+TUI view only if reviewers use the CLI report. Archive/ref reconstruction is
+separate work. Each rung yields a usable report without the next.
+
+**Gate / kill:** can the report expose a real missed consequence and make ten
+actual agent patches easier to review? If not, stop at the small diff tool.
+Do not fail publication merely because a taxonomy term was deliberately
+retired or a legitimately isolated page is new. The current table elevates
+policy preference to regression fact.
+
+**What it obsoletes:** reviewers reconstructing reader impact from scattered
+artifacts—not Git diff. Alone it is a substantial feature; its moonshot ceiling
+is evidence-based human oversight of agent-maintained publications, which the
+original ranking barely names.
+
+#### Retrieval, Revisited: keep #3; attack the alleged solved half
+
+The golden-question harness is the best independently shippable first phase
+in the original feature proposals. The chosen headline—better retrieval—is
+not sufficient. `Citations.Verify` allows a model to attach a valid `[1]` to
+an unsupported assertion. “Refuses to make things up” is an instruction and
+fallback policy, not a property established by key checking.
+
+There is a more immediate bottleneck: `BuildAnswerPrompt` in
+`internal/retrieval/prompt.go` sends **160-rune excerpts**, not complete
+selected chunk text. Increasing recall will not help if the supporting fact
+is beyond the excerpt. Its context budget does not make omitted text appear.
+Audit the evidence the model actually sees before buying a new ranker.
+
+Additional underpriced seams:
+
+- The graph is untyped `[source, target]` link pairs, and `LinkTransformer`
+  currently records internal `.md` link destinations. It is not a complete
+  navigational graph or a semantic evidence graph. Walking A→C→B does not
+  establish that C answers the question or that A and B agree.
+- A hybrid fusion method cannot guarantee embeddings “can only help.” A
+  graph expansion cannot promise precision remains flat on every question.
+  Improvements are measurements, including failures, not design axioms.
+- Corpus size is not bounded “by construction.” No site-page cap justifies
+  flat-vector latency/memory promises. Set a supported envelope and benchmark.
+- The tokenizer splits Unicode words by whitespace; it does not supply CJK
+  word segmentation. The bilingual workload is a reason to test real questions,
+  not assume an English fixture set represents readers.
+- Chunk identity is repeatable for unchanged inputs, not stable under editing;
+  `Corpus.Version` is loaded as the literal `v1`, not an edition/content hash.
+  A displayed version does not currently prove archive freshness.
+
+**Repair:** (1) commit real/held-out questions and source expectations,
+including unanswerable cases, and measure retrieval without a model; (2)
+measure assertion support, abstention, evidence coverage, URL correctness,
+and latency with pinned model/machine details, fixing the prompt evidence
+budget first; (3) try bounded graph expansion and optional embeddings only
+against that baseline. Keep lexical/evidence-only use available. A fake
+provider tests wiring, not support judgments.
+
+**Gate / kill:** a reader should complete a task more reliably than with
+ordinary search, not just see recall@5 rise. Include a valid citation with a
+false assertion in evaluations. If synthesis makes audit harder, keep the
+retrieved evidence and stop polishing the answer. Quote existence, semantic
+support, and the source's factual truth need distinct labels.
+
+**What it obsoletes:** “cited means correct” and demo-only retrieval decisions.
+It need not obsolete browsing or require the maintainer to run a public AI
+endpoint. The current assistant is a local author/reader companion, **not**
+the hosted site's search service; Homestead cannot silently assume every
+visitor has a daemon and model installed.
+
+#### Corpus Packs: keep #4 on probation; most of the transport story is vapor
+
+A coherent portable publication is a plausible identity-changing bet. The
+original leaps from exporter-plus-cache to a signed, versioned subscription
+system as though the format were nearly done. It is not:
+
+- RAG exports are monolithic bundles generated separately from HTML. There
+  is no same-revision binding between the source corpus and output tree.
+  #570 illustrates why “files created” is not even proof of content coverage.
+- The build cache is private implementation state, includes operational path
+  inputs, and is not an interchange contract or an edition archive. `graph.json`
+  has no explicit schema-version field; the explorer payload's deterministic
+  sorting is not proof every generated artifact is globally reproducible.
+- A file-member delta must include a changed monolithic content bundle unless
+  phase one creates finer-grained members. The promised one-page chunk delta
+  cannot be obtained from the existing payload by merely diffing files.
+- Fetching a full current pack **and then** diffing locally does not save
+  download bytes. A real delta protocol needs published base/target IDs,
+  delta availability, mismatch handling, deletion semantics, and a full-fetch
+  fallback. “95% shared” is not a transport implementation.
+- `ask` uses a loose-file loader and generated metadata for URL enrichment.
+  A pack reader must preserve that contract and serve or map its citation
+  targets; it is not just a filename change. Signatures appear in the headline
+  but not in these four phases; the cut Verified Corpus proposal owns them.
+
+**Repair:** (1) ship an ordinary downloadable archive of one real site with
+explicitly public source, output, license, edition identity, and content
+hashes; (2) demonstrate local reading/search/graph/citations on a second machine
+without contacting the origin, using loopback serving if needed; (3) preserve
+and compare two complete editions. Only afterward propose updates/deltas if
+actual reader usage and size justify them. Do not invent a new extension or
+protocol as the price of testing whether anyone wants the files.
+
+**Gate / kill:** a second person must actually use a downloaded edition. If
+that does not happen, no updater. Archive extraction needs path/symlink and
+size limits; downloaded active HTML needs origin isolation; source selection
+must exclude nonpublic repository/config bundles. Checksums prove integrity,
+not publisher identity or truth. This boundary work is absent from the price.
+
+**What it obsoletes:** incoherent downloads and dependence on one live host,
+not a hosted workspace merely because an archive has a special extension.
+The portability spine survives; the signed subscription platform remains an
+unearned extrapolation.
+
+#### Vault Mode: demote #5 from funded bet to conditional reserve
+
+A folder of linked notes is a credible workload. The claim that the generator
+already implements Obsidian's core loop is not. `internal/stub/stub.go` writes
+“Missing Page” **output HTML** and a graph node. It does not create a note in
+the source vault, edit that note, or synchronize missing-note state back to an
+editor. Filling a generated stub is not a supported authoring loop.
+
+The graph explorer also does not expose a browsable URL for raw nodes/stubs
+without `pageOutputs` entries. “Unresolved index links every stub” needs new
+identity/output-path work. Existing normalization drops non-Latin taxonomy;
+#571 is relevant to real vaults too. Body `#tags` need actual parsing rules
+that do not confuse headings, code, URLs, and punctuation with taxonomy.
+
+A native vault importer additionally needs to decide how duplicate basenames,
+relative links, alias syntax, attachment embeds, heading/block links, and
+existing assets resolve. Choose a restricted subset and show unsupported
+syntax; “any folder” is an interoperability promise, not a minimum phase.
+
+**Most dangerous gate:** phase three treats `render: false` or exclusions as
+though safe selective publication already exists. Raw bytes can ship; the
+RAG exporter walks source content independently of rendering. Correct public
+selection must apply before every output writer and export, with tests for
+private text, titles, paths, metadata, graph edges, and linked assets. A
+zero-orphan requirement is unrelated to preventing leakage.
+
+**Repair:** (1) import one volunteer's explicitly public vault non-destructively,
+with a documented supported-syntax subset and ambiguity report; (2) produce
+useful linked/searchable output and a source-level unresolved-note report;
+(3) demonstrate local questions or publication of that public corpus. Private
+subset publication is a separately scoped security promise, not a flag in
+that third rung. Stop if the author does not prefer the output to the existing
+publishing workflow.
+
+**What it obsoletes:** a hand-maintained duplicate of that author's public
+notes. It does not obsolete Obsidian or existing vault publishers. The claim
+that no Markdown SSG/editor can publish navigable linked notes is unsupported
+and unnecessary. An importer alone is a feature, not a product transformation.
+
+### The seven runners-up: short verdicts, not second proposals
+
+| Original candidate | Attack and disposition |
+| --- | --- |
+| **The Studio (16–22 days)** | Real operator fit, but it assumes incremental accept/rebuild, editing, durable proposal state, diff review, and safe publishing are nearly assembled. TUI menus/diagnostics are a shell, not an editorial console. `RunSync` local publishing stages **all** working-tree changes via `AddAll`; it is not a scoped “ship this proposal” API. The merge policy can actually merge with approval gates; “never auto-merge” needs an explicit path. Keep a CLI receipt/editor escape hatch; fund UI only after an observed review bottleneck. |
+| **Time Travel (12–18)** | A manifest plus hash/timestamp cannot reconstruct a previous page's prose, assets, or rendering inputs. Its scrubber needs retained content or full editions, identity across renames, retention semantics, and correct old URLs. `--as-of` cannot infer historical beliefs from current chunk IDs. Keep behind real edition retention; the file-opening guarantee is unproven here too. |
+| **Media Pipeline (10–14)** | Useful table stakes, explicitly not a moonshot. `image/jpeg`, `image/png`, and `image/gif` decode/encode; they do not provide a resizing filter, EXIF parser/orientation policy, or text layout for social cards. Dependency minimalism does not make those algorithms free. Asset-specific invalidation also does not exist in the whole-build cache. Do the workload-required slice, not the advertised three-phase subsystem on its stated budget. |
+| **Routines (14–20)** | Can game findings by deleting pages, descriptions, or links. Closing a stub does not inherently lower orphan count. “Improves or holds” admits arbitrary churn; a sandboxed copy is not an OS/process/network sandbox. The existing publishing/merge loop is not a prove-value gate. Kill unattended content production; keep reproducible diagnostics and bounded human-reviewed corrections. |
+| **The Workshop (14–20)** | Theme tokens, slots, and a previewer are the “chores with ambition cosplay” the brief forbids. No audience or concrete plugin/component demand, and the roadmap explicitly defers large redesigns. The TUI has serving/watch, not a layout/token preview abstraction. Cut as a strategic bet. |
+| **Verified Corpus (10–14)** | Integrity is worth doing when consuming somebody else's edition, but hashing must use content hashes distinct from position-derived IDs. Key custody, trust roots, revocation/rotation, and failure modes are unpriced. Signing cannot establish factual truth or eliminate prompt injection. Fold ordinary integrity into a real pack; optional signatures follow a real verification need. It is not an independent moonshot. |
+| **Shared Brain (28–40)** | Source edits can break today's chunk anchors; immutable annotation records alone do not define edit/delete/conflict behavior or a CRDT. Distributed merge needs a specified operation model. Identity, contribution transport, moderation, licensing, and prompt-injected annotation evidence are absent. Local-first collaboration is not inherently a privacy contradiction—the original argument is overstated—but this still solves too much unrelated product work. Cut until actual collaborators ask for it. |
+
+### What the original document is missing
+
+1. **A named reader and owner, not just a plausible market.** Who maintains
+   the first independent corpus? Which task warrants local questions, a pack,
+   or a vault importer? “Real demand” in the catalogue is asserted, not shown.
+   A human directing agents remains responsible for editorial decisions;
+   cheap code does not create cheap attention or reliable content.
+2. **The difference between source, public output, and assistant corpus.**
+   They are built through different paths and include/exclude different
+   material. `publish-check` checks the output contract/references and reports
+   stubs; it does not require RAG or verify its completeness. A valid artifact
+   can still contain a stale/empty corpus or exposed source. This needs explicit
+   coverage and same-revision evidence, not a green build banner.
+3. **Identity and compatibility policy.** Page paths, slugs, chunk positions,
+   content hashes, publisher identity, and historical edition identity are
+   different things. New manifests must be additive/opt-in, versioned, and
+   tested with old consumers. Packs do not require Ledger to land first merely
+   because both need hashes; avoid inventing dependencies that block a demo.
+4. **Threat models at the new boundaries.** Local loopback hosting constrains
+   exposure, not prompt injection from corpus text. Import/download/update
+   adds hostile paths, active HTML, oversized files, privacy leaks, and origin
+   trust. A routine spec that can execute arbitrary checks adds a different
+   boundary again. “No SaaS” is not a security proof.
+5. **Adoption, migration, and continuing ownership.** Install/upgrade paths,
+   supported corpus sizes and machines, plain-file export, retirement of
+   unused surfaces, and time spent reviewing agent output belong in the budget.
+   The repository's black-box release review (#500) already found real friction;
+   repeated external-style validation is better grounding than uniqueness claims.
+6. **Falsifiable promotion/stop rules and what gets obsoleted.** The original
+   candidates have risks but mostly no point at which we stop. More files,
+   higher recall, or more PRs are not reader outcomes. Put the old workflow and
+   the proposed artifact side by side; retain the latter only if someone uses it.
+
+These are holes in the existing bets, not a request for six additional epics.
+
+### Does the ranking survive?
+
+| Revised priority | Original candidate | One-line verdict after the attack |
+| --- | --- | --- |
+| **1 — do the first rung** | Homestead | Still beats everything: one owned, useful live site answers questions that another speculative subsystem cannot; its three-site bake-off does not survive. |
+| **2 — bounded proof** | Change Ledger | Actual reviewer-visible consequences use the code well; keep the comparison experiment, drop automatic policy and TUI scope until someone benefits. |
+| **3 — measure before extending** | Retrieval, Revisited | Eval-first survives, but prompt evidence and unsupported assertions outrank embeddings; no “grounding solved” claim survives. |
+| **4 — demand-gated** | Corpus Packs | Portable coherent editions have real leverage; signed subscriptions and deltas are vapor until a second reader uses an ordinary archive. |
+| **5 — reserve, not funded** | Vault Mode | A public-vault trial remains plausible, but existing stubs are not a note workflow and selective publication is unsafe as specified. |
+
+**The ordinal order narrowly survives as a sequence of experiments. It does
+not survive as a cost-adjusted top-five investment case.** No runner-up earns
+promotion merely because Vault weakens; leaving the fifth slot unfunded is
+better than manufacturing certainty. The original twelve include several
+ordinary features and enabling layers; meeting the count did not mean twelve
+moonshots were actually found. Studio could move up if real review time,
+rather than public reading, becomes the demonstrated bottleneck—not because
+agent-forward branding makes an inbox automatically valuable.
+
+**Recommendation to the owner:** authorize Homestead's one-site first rung,
+keep current bug fixing ordinary, and demand actual reader/reviewer evidence
+before authorizing the next phase of any other proposal. Do not build Ledger
+before allowing the site to ship; do not require a new pack format before
+allowing anyone to download it; do not improve retrieval before observing
+what evidence the model was given. If the first site is useful, these bets get
+better inputs. If it isn't, the stop is information—not a failed pitch deck.
