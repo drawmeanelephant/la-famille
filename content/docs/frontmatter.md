@@ -40,6 +40,14 @@ site navigation gains **Tags** / **Categories** links automatically, so every
 archive stays reachable without editing a template. `la-famille new --tags a,b`
 writes the same frontmatter from the command line.
 
+Taxonomy terms can use native-language letters and digits, for example
+`tags: [起始]` and `categories: [说明]` generate `/tags/起始/` and
+`/categories/说明/`. Public links percent-encode those path segments.
+Spaces and most punctuation are removed, but hyphens are kept; uppercase
+letters are lowercased.
+`check` reports an error when a term would disappear altogether or its
+normalized path component would exceed 255 bytes.
+
 ### The `render` Flag
 
 If you set `render: false` in the frontmatter, La Famille will *not* convert the file to HTML. Instead, it will simply copy the raw `.md` file directly to the `public/` folder. This is useful for exposing raw assets or documentation you want visitors to download rather than view.

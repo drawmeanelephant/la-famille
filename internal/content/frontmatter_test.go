@@ -40,8 +40,8 @@ func TestGatherMetadataTagShapes(t *testing.T) {
 
 		// Every shape below already worked before the scalar support was
 		// added and must keep working byte for byte: yaml coerces non string
-		// scalars inside a sequence, and those tags are legal under
-		// validTagRegex, so dropping them would delete published taxonomy URLs.
+		// scalars inside a sequence, and those tags are legal taxonomy path
+		// components, so dropping them would delete published taxonomy URLs.
 		{"flow sequence of strings", "tags: [go, rust]", []string{"go", "rust"}},
 		{"flow sequence with int", "tags: [2024, golang]", []string{"2024", "golang"}},
 		{"flow sequence all ints", "tags: [2024, 2025]", []string{"2024", "2025"}},
@@ -106,8 +106,15 @@ func TestNormalizeTaxonomyValue(t *testing.T) {
 		{"golang", "golang", true},
 		{"Inv@lid_Tag", "invlidtag", true},
 		{"  spaced  ", "spaced", true},
+		{"起始", "起始", true},
+		{"  説明  ", "説明", true},
+		{"CAFÉ ☕", "café", true},
+		{"हिन्दी", "हिन्दी", true},
+		{"１２３", "１２３", true},
 		{"", "", false},
 		{"!!!", "", false},
+		{strings.Repeat("界", 85), strings.Repeat("界", 85), true},
+		{strings.Repeat("界", 86), strings.Repeat("界", 86), false},
 		{strings.Repeat("c", MaxTaxonomyValueLen), strings.Repeat("c", MaxTaxonomyValueLen), true},
 		{strings.Repeat("c", MaxTaxonomyValueLen+1), strings.Repeat("c", MaxTaxonomyValueLen+1), false},
 	}

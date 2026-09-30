@@ -137,3 +137,88 @@ func TestBuild_TaxonomyArchivesReachable(t *testing.T) {
 		}
 	})
 }
+
+func TestBuild_NativeLanguageTaxonomyArchives(t *testing.T) {
+	dir := t.TempDir()
+	contentDir := filepath.Join(dir, "content")
+	if err := os.MkdirAll(filepath.Join(contentDir, "zh"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	doc := "---\ntitle: 中文\ndescription: Localized page\ntags: [起始]\ncategories: [说明]\n---\n正文\n"
+	if err := os.WriteFile(filepath.Join(contentDir, "zh", "page.md"), []byte(doc), 0600); err != nil {
+		t.Fatal(err)
+	}
+	templatePath := filepath.Join(dir, "layout.html")
+	if err := os.WriteFile(templatePath, []byte(`<html><head><link rel="canonical" href="{{.CanonicalURL}}"></head><body>{{.Content}}</body></html>`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.OutputDir = filepath.Join(dir, "public")
+	cfg.Template = templatePath
+	cfg.ProjectRoot = dir
+	cfg.SiteURL = "https://example.com/site"
+	result, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if len(result.Warnings) != 0 {
+		t.Errorf("native-language taxonomy terms produced warnings: %v", result.Warnings)
+	}
+
+	for _, tc := range []struct{ output, label, href string }{
+		{"tags/起始/index.html", "起始", "https://example.com/site/tags/%E8%B5%B7%E5%A7%8B/"},
+		{"categories/说明/index.html", "说明", "https://example.com/site/categories/%E8%AF%B4%E6%98%8E/"},
+	} {
+		archive := readOutput(t, cfg, tc.output)
+		if !strings.Contains(archive, `href="`+tc.href+`"`) || !strings.Contains(archive, tc.label) {
+			t.Errorf("%s missing canonical URL or label: %s", tc.output, archive)
+		}
+	}
+	post := readOutput(t, cfg, "zh/page/index.html")
+	if !strings.Contains(post, `href="../../tags/%E8%B5%B7%E5%A7%8B/"`) {
+		t.Errorf("article missing encoded tag archive link: %s", post)
+	}
+	for _, tc := range []struct{ output, href string }{
+		{"tags/index.html", `href="%E8%B5%B7%E5%A7%8B/"`},
+		{"categories/index.html", `href="%E8%AF%B4%E6%98%8E/"`},
+	} {
+		index := readOutput(t, cfg, tc.output)
+		if !strings.Contains(index, tc.href) {
+			t.Errorf("%s missing encoded archive link %q: %s", tc.output, tc.href, index)
+		}
+	}
+
+	searchBytes, err := os.ReadFile(filepath.Join(cfg.OutputDir, "search.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var items []search.Item
+	if err := json.Unmarshal(searchBytes, &items); err != nil {
+		t.Fatal(err)
+	}
+	var foundPost, foundTag, foundCategory bool
+	for _, item := range items {
+		switch item.URL {
+		case "/site/zh/page/":
+			foundPost = slices.Equal(item.Tags, []string{"起始", "说明"}) &&
+				slices.Equal(item.TagURLs, []string{"/site/tags/%E8%B5%B7%E5%A7%8B/", "/site/categories/%E8%AF%B4%E6%98%8E/"})
+		case "/site/tags/%E8%B5%B7%E5%A7%8B/":
+			foundTag = item.Title == "Tag: 起始"
+		case "/site/categories/%E8%AF%B4%E6%98%8E/":
+			foundCategory = item.Title == "Category: 说明"
+		}
+	}
+	if !foundPost || !foundTag || !foundCategory {
+		t.Errorf("search index missing native-language archive URLs: post=%v tag=%v category=%v", foundPost, foundTag, foundCategory)
+	}
+	sitemapBytes, err := os.ReadFile(filepath.Join(cfg.OutputDir, "sitemap.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"https://example.com/site/tags/%E8%B5%B7%E5%A7%8B/", "https://example.com/site/categories/%E8%AF%B4%E6%98%8E/"} {
+		if !strings.Contains(string(sitemapBytes), want) {
+			t.Errorf("sitemap missing %s: %s", want, sitemapBytes)
+		}
+	}
+}

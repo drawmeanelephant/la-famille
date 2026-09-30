@@ -3,6 +3,7 @@ package content
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -330,7 +331,7 @@ func TestGatherMetadataClosedFrontmatterDoesNotWarnUnterminated(t *testing.T) {
 	}
 }
 
-// Issue #532: normalizing a value is lossy ("café ☕" → "caf") and dropping one
+// Issue #532: normalizing a value is lossy ("café ☕" → "café") and dropping one
 // that normalizes to empty ("☕") used to leave the build summary at warnings=0.
 // Both must land in FileMeta.Warnings so the summary counts them.
 func TestGatherMetadataCountsLossyTaxonomyWarnings(t *testing.T) {
@@ -338,8 +339,8 @@ func TestGatherMetadataCountsLossyTaxonomyWarnings(t *testing.T) {
 
 	// "plain" is already slug-safe and passes through; only the lossy pair is
 	// mangled and the empty-normalized one dropped.
-	if len(meta.Tags) != 3 || meta.Tags[0] != "caf" || meta.Tags[1] != "travellog" || meta.Tags[2] != "plain" {
-		t.Errorf("tags = %v, want [caf travellog plain]", meta.Tags)
+	if len(meta.Tags) != 3 || meta.Tags[0] != "café" || meta.Tags[1] != "travellog" || meta.Tags[2] != "plain" {
+		t.Errorf("tags = %v, want [café travellog plain]", meta.Tags)
 	}
 
 	var sawMangled, sawEmpty bool
@@ -356,6 +357,19 @@ func TestGatherMetadataCountsLossyTaxonomyWarnings(t *testing.T) {
 	}
 	if !sawEmpty {
 		t.Errorf("warnings = %v, want a counted warning for the empty-normalized tag", meta.Warnings)
+	}
+}
+
+func TestGatherMetadataPreservesNativeLanguageTaxonomies(t *testing.T) {
+	meta := writeContentFile(t, "---\ntitle: 中文\ntags: [起始, 東京]\ncategories: [说明]\n---\n正文\n")
+	if strings.Join(meta.Tags, ",") != "起始,東京" {
+		t.Errorf("tags = %v, want [起始 東京]", meta.Tags)
+	}
+	if strings.Join(meta.Categories, ",") != "说明" {
+		t.Errorf("categories = %v, want [说明]", meta.Categories)
+	}
+	if len(meta.Warnings) != 0 {
+		t.Errorf("native-language terms must not be warned about: %v", meta.Warnings)
 	}
 }
 

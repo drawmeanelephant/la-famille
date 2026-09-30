@@ -26,8 +26,6 @@ import (
 	"github.com/tbuddy/la-famille/internal/transform"
 )
 
-var validTagRegex = regexp.MustCompile(`^[a-z0-9-]+$`)
-
 type Level string
 
 const (
@@ -94,6 +92,34 @@ func (r *Result) CountByCategory(category string) int {
 		}
 	}
 	return count
+}
+
+func taxonomyFindings(relPath, kind string, values []string, line int) []Finding {
+	var findings []Finding
+	for _, value := range values {
+		norm, usable := content.NormalizeTaxonomyValue(value)
+		if usable && norm == value {
+			continue
+		}
+		finding := Finding{
+			File:     relPath,
+			Line:     line,
+			Level:    LevelWarn,
+			Category: CategoryMissingMetadata,
+		}
+		switch {
+		case len(norm) > content.MaxTaxonomyValueLen:
+			finding.Level = LevelError
+			finding.Message = fmt.Sprintf("%s %q cannot be published: normalized value is %d bytes (limit %d); shorten it", kind, value, len(norm), content.MaxTaxonomyValueLen)
+		case !usable:
+			finding.Level = LevelError
+			finding.Message = fmt.Sprintf("%s %q cannot be published: normalization removes every character; use letters, digits, or hyphens", kind, value)
+		default:
+			finding.Message = fmt.Sprintf("malformed %s %q (normalized to %q)", kind, value, norm)
+		}
+		findings = append(findings, finding)
+	}
+	return findings
 }
 
 // Validate checks content files for frontmatter errors, invalid dates, malformed tags/categories,
@@ -183,57 +209,12 @@ func Validate(cfg config.Config) (*Result, error) {
 					}
 				}
 
-				// Tags validation
-				for _, tag := range []string(matter.Tags) {
-					if !validTagRegex.MatchString(tag) {
-						lower := strings.ToLower(tag)
-						var sb strings.Builder
-						for _, r := range lower {
-							if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
-								sb.WriteRune(r)
-							}
-						}
-						norm := sb.String()
-						line := findFieldLine(meta.Content, "tags")
-						findings = append(findings, Finding{
-							File:     relPath,
-							Line:     line,
-							Level:    LevelWarn,
-							Category: CategoryMissingMetadata,
-							Message:  fmt.Sprintf("malformed tag %q (normalized to %q)", tag, norm),
-						})
-					}
-				}
-
-				// Categories validation — mirrors tags (^[a-z0-9-]+$)
-				allCategories := append([]string(nil), []string(matter.Categories)...)
-				allCategories = append(allCategories, []string(matter.Category)...)
-				for _, cat := range allCategories {
-					if !validTagRegex.MatchString(cat) {
-						lower := strings.ToLower(cat)
-						var sb strings.Builder
-						for _, r := range lower {
-							if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
-								sb.WriteRune(r)
-							}
-						}
-						norm := sb.String()
-						line := findFieldLine(meta.Content, "categories")
-						if findFieldLine(meta.Content, "category") != 1 || strings.Contains(strings.ToLower(string(meta.Content)), "category:") {
-							// Prefer the line of the key that actually appears; fall back to categories
-							if strings.Contains(strings.ToLower(string(meta.Content)), "\ncategory:") || strings.HasPrefix(strings.ToLower(strings.TrimSpace(string(meta.Content))), "category:") {
-								line = findFieldLine(meta.Content, "category")
-							}
-						}
-						findings = append(findings, Finding{
-							File:     relPath,
-							Line:     line,
-							Level:    LevelWarn,
-							Category: CategoryMissingMetadata,
-							Message:  fmt.Sprintf("malformed category %q (normalized to %q)", cat, norm),
-						})
-					}
-				}
+				// Validate with the same normalization and byte limit as
+				// GatherMetadata. A term that cannot produce an archive must
+				// not pass check with only a warning.
+				findings = append(findings, taxonomyFindings(relPath, "tag", []string(matter.Tags), findFieldLine(meta.Content, "tags"))...)
+				findings = append(findings, taxonomyFindings(relPath, "category", []string(matter.Categories), findFieldLine(meta.Content, "categories"))...)
+				findings = append(findings, taxonomyFindings(relPath, "category", []string(matter.Category), findFieldLine(meta.Content, "category"))...)
 
 				// Render & Slug combination check
 				if matter.Render != nil && !*matter.Render && matter.Slug != "" {

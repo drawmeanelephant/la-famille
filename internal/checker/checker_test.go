@@ -1,6 +1,7 @@
 package checker
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -200,6 +201,47 @@ tags:
 	}
 	if !hasTagWarn {
 		t.Errorf("missing tag warning in findings: %v", res.Findings)
+	}
+}
+
+func TestValidateUnicodeAndUnpublishableTaxonomies(t *testing.T) {
+	dir := t.TempDir()
+	contentDir := filepath.Join(dir, "content")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	doc := fmt.Sprintf("---\ntitle: 中文\ndescription: Localized terms\ntags: [起始, ☕, %q]\ncategories: [说明]\ncategory: 🎉\n---\n正文\n", strings.Repeat("界", 86))
+	if err := os.WriteFile(filepath.Join(contentDir, "page.md"), []byte(doc), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.SiteURL = "https://example.com"
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rejected int
+	for _, f := range res.Findings {
+		if strings.Contains(f.Message, "起始") || strings.Contains(f.Message, "说明") {
+			t.Errorf("usable CJK taxonomy must not be flagged: %v", f)
+		}
+		if strings.Contains(f.Message, "☕") || strings.Contains(f.Message, "🎉") || strings.Contains(f.Message, strings.Repeat("界", 86)) {
+			rejected++
+			if f.Level != LevelError || !strings.Contains(f.Message, "cannot be published") {
+				t.Errorf("unpublishable term must be an actionable error: %v", f)
+			}
+			wantLine := 4
+			if strings.Contains(f.Message, "🎉") {
+				wantLine = 6
+			}
+			if f.Line != wantLine {
+				t.Errorf("taxonomy finding line = %d, want %d: %v", f.Line, wantLine, f)
+			}
+		}
+	}
+	if rejected != 3 || res.ErrorCount() != 3 {
+		t.Errorf("got %d rejected terms and %d errors, want 3 each: %v", rejected, res.ErrorCount(), res.Findings)
 	}
 }
 
