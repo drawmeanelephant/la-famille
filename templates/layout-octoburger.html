@@ -625,7 +625,8 @@
                     const tagMatch = (item.g || []).some(tag => tag.toLowerCase().includes(query));
                     const snippetMatch = (item.s || "").toLowerCase().includes(query);
                     const headingMatch = (item.h || []).some(h => h.toLowerCase().includes(query));
-                    return titleMatch || tagMatch || snippetMatch || headingMatch;
+                    const wikiLinkMatch = (item.w || []).some(target => target.toLowerCase().includes(query));
+                    return titleMatch || tagMatch || snippetMatch || headingMatch || wikiLinkMatch;
                 }).slice(0, 7);
 
                 resultsContainer.innerHTML = "";

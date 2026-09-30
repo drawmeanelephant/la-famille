@@ -102,12 +102,13 @@ func TestItemJSONOmitsTagURLsWhenEmpty(t *testing.T) {
 
 func TestItemJSONSerialization(t *testing.T) {
 	itemWithHeadings := Item{
-		Title:    "Page Title",
-		URL:      "/page.html",
-		Tags:     []string{"go", "search"},
-		TagURLs:  []string{"/tags/go/", "/categories/search/"},
-		Snippet:  "Snippet text",
-		Headings: []string{"H1", "H2"},
+		Title:       "Page Title",
+		URL:         "/page.html",
+		Tags:        []string{"go", "search"},
+		TagURLs:     []string{"/tags/go/", "/categories/search/"},
+		Snippet:     "Snippet text",
+		Headings:    []string{"H1", "H2"},
+		WikiTargets: []string{"Note Target"},
 	}
 	itemWithoutHeadings := Item{
 		Title:   "No Headings Page",
@@ -127,7 +128,7 @@ func TestItemJSONSerialization(t *testing.T) {
 		t.Fatalf("failed to read json: %v", err)
 	}
 
-	expectedJSON := `[{"t":"Page Title","u":"/page.html","g":["go","search"],"gu":["/tags/go/","/categories/search/"],"s":"Snippet text","h":["H1","H2"]},{"t":"No Headings Page","u":"/none.html","s":"Snippet text"}]` + "\n"
+	expectedJSON := `[{"t":"Page Title","u":"/page.html","g":["go","search"],"gu":["/tags/go/","/categories/search/"],"s":"Snippet text","h":["H1","H2"],"w":["Note Target"]},{"t":"No Headings Page","u":"/none.html","s":"Snippet text"}]` + "\n"
 	if string(b) != expectedJSON {
 		t.Errorf("expected JSON:\n%s\ngot:\n%s", expectedJSON, string(b))
 	}

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/search"
 	"github.com/tbuddy/la-famille/internal/sitedata"
 )
 
@@ -107,6 +108,24 @@ func TestBuildWikiLinksResolveAndGenerateUnresolvedNote(t *testing.T) {
 	}
 	if !slices.Contains(backlinks["future-note"], "index") {
 		t.Errorf("future-note backlinks = %v, want index", backlinks["future-note"])
+	}
+
+	var searchIndex []search.Item
+	if err := json.Unmarshal([]byte(readOutput(t, cfg, "search.json")), &searchIndex); err != nil {
+		t.Fatalf("parse search.json: %v", err)
+	}
+	searchSourceFound := false
+	for _, item := range searchIndex {
+		if item.Title == "Home" {
+			searchSourceFound = true
+			if !slices.Contains(item.WikiTargets, "Future Note") {
+				t.Errorf("wiki source search item targets = %v, want Future Note", item.WikiTargets)
+			}
+			break
+		}
+	}
+	if !searchSourceFound {
+		t.Fatal("search.json has no source item for the wiki-link page")
 	}
 
 	var meta map[string]map[string]interface{}

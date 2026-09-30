@@ -22,6 +22,7 @@ Each item in `search.json` includes:
     a nonexistent `/tags/` page.
 *   `s`: Cleaned plaintext content excerpt snippet (up to 160 characters)
 *   `h`: Extracted ATX heading titles (# to ######)
+*   `w`: Explicit `[[wiki-link]]` targets referenced by the page
 
 The client-side JavaScript (`assets/js/search.js`) fetches this file, caches it in memory, and provides instant, debounce-optimized search results as you type.
 
@@ -57,7 +58,7 @@ Add the following HTML markup to your navigation bar or header to provide the se
 
 ## How It Works
 
-*   **Multi-Signal Matching:** The client filters across title (`t`), taxonomy metadata (`g`), content snippet (`s`), and headings (`h`).
+*   **Multi-Signal Matching:** The client filters across title (`t`), taxonomy metadata (`g`), content snippet (`s`), headings (`h`), and wiki-link destinations (`w`). This lets readers find a source page by a linked note name even when an alias hides that name from the page's prose.
 *   **Rich UI Rendering:** Results display titles, snippets, matched heading section badges, and taxonomy tag badges — each badge links straight to that term's `/tags/` or `/categories/` archive.
 *   **Keyboard Shortcut:** The search input can be quickly focused from anywhere on the page by pressing the `/` key.
 *   **Lazy Loading:** To conserve bandwidth, `search.json` is only fetched the first time the search input receives focus. It is then cached in `window.LaFamilleSearchIndex`.
