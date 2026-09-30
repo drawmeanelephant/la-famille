@@ -1,39 +1,42 @@
-// Package askeval runs a deterministic golden-question evaluation against
-// La Famille's current retrieval ranker.
+// Package askeval runs deterministic golden-question evaluations against
+// La Famille's current retrieval ranker without changing production scoring.
 package askeval
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/tbuddy/la-famille/internal/ask"
-	"github.com/tbuddy/la-famille/internal/ragfmt"
+	"github.com/tbuddy/la-famille/internal/graph"
 	"github.com/tbuddy/la-famille/internal/retrieval"
 )
 
 const noAnswerFallbackMessage = "This site does not provide enough information to answer that question."
 
-// Dataset is the checked-in, provider-independent retrieval quality contract.
-// Recall is averaged across answerable questions; unanswerable questions are
-// checked separately against the ask command's no-answer fallback.
+// Dataset is the provider-independent retrieval contract. Macro averages
+// exclude unanswerable questions. AcceptablePages names all required evidence,
+// not interchangeable alternatives. The original version-1 schema is retained.
 type Dataset struct {
-	Version           int      `json:"version"`
-	Name              string   `json:"name"`
-	K                 int      `json:"k"`
-	BaselineRecallAt5 *float64 `json:"baseline_recall_at_5,omitempty"`
-	Sites             []Site   `json:"sites"`
+	Version             int      `json:"version"`
+	Name                string   `json:"name"`
+	K                   int      `json:"k"`
+	BaselineRecallAt5   *float64 `json:"baseline_recall_at_5,omitempty"`
+	Sites               []Site   `json:"sites"`
+	MinimumPrecisionAtK float64  `json:"minimum_precision_at_k,omitempty"`
 }
 
-// Site identifies a fixture tree relative to the project root.
+// Site identifies read-only source content relative to the project root.
 type Site struct {
 	ID         string     `json:"id"`
 	Fixture    string     `json:"fixture"`
@@ -41,25 +44,31 @@ type Site struct {
 	Questions  []Question `json:"questions"`
 }
 
-// Question records relevant source pages and the minimum acceptable recall.
-// Unanswerable questions must have no acceptable pages and must produce the
-// canonical no-answer response when the ranker has no matches.
+// Question records evidence floors and optional graph-route labels. A zero
+// recall floor requires MeasurementOnly so known misses are not success claims.
+// Strict unanswerable controls require zero retrieval and canonical fallback.
 type Question struct {
-	ID               string   `json:"id"`
-	Text             string   `json:"question"`
-	AcceptablePages  []string `json:"acceptable_pages,omitempty"`
-	MinimumRecallAtK float64  `json:"minimum_recall_at_k,omitempty"`
-	Unanswerable     bool     `json:"unanswerable,omitempty"`
+	ID                  string   `json:"id"`
+	Text                string   `json:"question"`
+	AcceptablePages     []string `json:"acceptable_pages,omitempty"`
+	MinimumRecallAtK    float64  `json:"minimum_recall_at_k"`
+	Unanswerable        bool     `json:"unanswerable,omitempty"`
+	Class               string   `json:"class,omitempty"`
+	PathPages           []string `json:"path_pages,omitempty"`
+	MinimumPrecisionAtK *float64 `json:"minimum_precision_at_k,omitempty"`
+	MeasurementOnly     bool     `json:"measurement_only,omitempty"`
 }
 
-// Options configures a single eval run.
+// Options configures an eval run. A zero K uses the dataset's original depth.
 type Options struct {
 	DatasetPath string
 	ProjectRoot string
 	Provider    string
+	K           int
 }
 
-// QuestionResult is the measured outcome for one golden question.
+// QuestionResult keeps known misses visible independently of passing floors.
+// PathCoverage measures retrieved route pages, not generated answer provenance.
 type QuestionResult struct {
 	SiteID           string
 	QuestionID       string
@@ -72,9 +81,21 @@ type QuestionResult struct {
 	NoAnswer         bool
 	NoAnswerMessage  string
 	Passed           bool
+	Class            string
+	MissingPages     []string
+	PrecisionAtK     float64
+	PathCoverage     *float64
 }
 
-// Report contains the per-question outcomes and aggregate answerable recall.
+// Metrics are macro averages over answerable questions only.
+type Metrics struct {
+	RecallAtK    float64
+	PrecisionAtK float64
+	Questions    int
+}
+
+// Report retains the original recall fields and adds precision and diagnostics.
+// Baseline comparison is meaningful only at K=5; improvements are permitted.
 type Report struct {
 	DatasetName       string
 	K                 int
@@ -86,11 +107,14 @@ type Report struct {
 	FailedCount       int
 	Questions         []QuestionResult
 	Passed            bool
+	PrecisionAtK      float64
+	BaselineOK        bool
+	PrecisionOK       bool
+	Classes           map[string]Metrics
 }
 
-// Run loads and validates the dataset, exports each fixture to a temporary
-// RAG archive, and evaluates the existing retrieval ranker without modifying
-// its scoring or index.
+// Run builds and exports content-only fixtures in disposable projects, then
+// measures the unchanged ranker. Nothing is written into source fixtures.
 func Run(ctx context.Context, opts Options) (Report, error) {
 	if strings.TrimSpace(opts.DatasetPath) == "" {
 		return Report{}, errors.New("ask eval: dataset path is required")
@@ -101,7 +125,6 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 	if strings.TrimSpace(opts.Provider) == "" {
 		opts.Provider = "fake"
 	}
-
 	data, err := readDataset(opts.DatasetPath)
 	if err != nil {
 		return Report{}, err
@@ -109,119 +132,142 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 	if err := data.Validate(); err != nil {
 		return Report{}, err
 	}
-
+	if opts.K < 0 || opts.K > 100 {
+		return Report{}, errors.New("ask eval: k override must be between 1 and 100 (or zero for dataset default)")
+	}
+	if opts.K > 0 {
+		data.K = opts.K
+	}
+	if opts.Provider != "fake" && opts.Provider != "ollama" {
+		return Report{}, fmt.Errorf("ask eval: unsupported provider %q", opts.Provider)
+	}
 	projectRoot, err := filepath.Abs(opts.ProjectRoot)
 	if err != nil {
 		return Report{}, fmt.Errorf("ask eval: resolve project root: %w", err)
 	}
-
 	report := Report{
-		DatasetName:       data.Name,
-		K:                 data.K,
-		Provider:          opts.Provider,
-		BaselineRecallAt5: data.BaselineRecallAt5,
-		Passed:            true,
+		DatasetName: data.Name, K: data.K, Provider: opts.Provider,
+		BaselineRecallAt5: data.BaselineRecallAt5, BaselineOK: true,
+		Classes: make(map[string]Metrics),
 	}
-	recallTotal := 0.0
-
 	for _, site := range data.Sites {
-		fixtureRoot := filepath.Join(projectRoot, filepath.FromSlash(site.Fixture))
-		if !isWithin(projectRoot, fixtureRoot) {
-			return Report{}, fmt.Errorf("ask eval: site %q fixture escapes project root: %q", site.ID, site.Fixture)
+		if err := ctx.Err(); err != nil {
+			return Report{}, err
 		}
-		info, err := os.Stat(fixtureRoot)
+		tmp, err := os.MkdirTemp("", "la-famille-ask-eval-*")
 		if err != nil {
-			return Report{}, fmt.Errorf("ask eval: site %q fixture: %w", site.ID, err)
+			return Report{}, fmt.Errorf("ask eval: create temporary project: %w", err)
 		}
-		if !info.IsDir() {
-			return Report{}, fmt.Errorf("ask eval: site %q fixture is not a directory: %s", site.ID, fixtureRoot)
-		}
-
-		ragDir, err := os.MkdirTemp("", "la-famille-ask-eval-*")
-		if err != nil {
-			return Report{}, fmt.Errorf("ask eval: create temporary archive: %w", err)
-		}
-		err = evaluateSite(ctx, site, fixtureRoot, ragDir, opts.Provider, data.K, &report, &recallTotal)
-		removeErr := os.RemoveAll(ragDir)
+		err = evaluateSite(ctx, site, projectRoot, tmp, opts.Provider, data.K, data.MinimumPrecisionAtK, &report)
+		removeErr := os.RemoveAll(tmp)
 		if err != nil {
 			return Report{}, err
 		}
 		if removeErr != nil {
-			return Report{}, fmt.Errorf("ask eval: remove temporary archive: %w", removeErr)
+			return Report{}, fmt.Errorf("ask eval: remove temporary project: %w", removeErr)
 		}
 	}
-
 	if report.AnswerableCount > 0 {
-		report.RecallAtK = recallTotal / float64(report.AnswerableCount)
+		report.RecallAtK /= float64(report.AnswerableCount)
+		report.PrecisionAtK /= float64(report.AnswerableCount)
 	}
-	report.Passed = report.FailedCount == 0
+	for class, metrics := range report.Classes {
+		metrics.RecallAtK /= float64(metrics.Questions)
+		metrics.PrecisionAtK /= float64(metrics.Questions)
+		report.Classes[class] = metrics
+	}
+	if report.K == 5 && report.BaselineRecallAt5 != nil {
+		report.BaselineOK = report.RecallAtK+1e-9 >= *report.BaselineRecallAt5
+	}
+	report.PrecisionOK = report.PrecisionAtK+1e-9 >= data.MinimumPrecisionAtK
+	report.Passed = report.FailedCount == 0 && report.BaselineOK && report.PrecisionOK
 	return report, nil
 }
 
-func evaluateSite(ctx context.Context, site Site, fixtureRoot, ragDir, provider string, k int, report *Report, recallTotal *float64) error {
-	if err := writeContentArchive(fixtureRoot, site.ContentDir, ragDir); err != nil {
-		return fmt.Errorf("ask eval: export site %q: %w", site.ID, err)
+func evaluateSite(ctx context.Context, site Site, projectRoot, tmp, provider string, k int, precisionFloor float64, report *Report) error {
+	cfg, err := prepareSite(projectRoot, tmp, site)
+	if err != nil {
+		return fmt.Errorf("ask eval: build fixture %q: %w", site.ID, err)
 	}
-
 	loaded, err := retrieval.Load(retrieval.LoadOptions{
-		RagDir:     ragDir,
-		ContentDir: site.ContentDir,
+		RagDir: cfg.RagDir, OutputDir: cfg.OutputDir, ContentDir: "content",
 	})
 	if err != nil {
 		return fmt.Errorf("ask eval: load site %q corpus: %w", site.ID, err)
 	}
 	ranker := retrieval.NewRanker(loaded.Corpus)
-
+	graphBytes, err := os.ReadFile(filepath.Join(cfg.OutputDir, "graph.json"))
+	if err != nil {
+		return err
+	}
+	var g graph.Graph
+	if err := json.Unmarshal(graphBytes, &g); err != nil {
+		return err
+	}
 	var server *ask.Server
 	for _, question := range site.Questions {
-		if question.Unanswerable {
-			server, err = ask.NewServer(ask.Config{
-				ProviderName: provider,
-				RagDir:       ragDir,
-				ContentDir:   site.ContentDir,
-				OutputDir:    filepath.Join(ragDir, "no-generated-site"),
-				DisableUI:    true,
-			})
-			if err != nil {
-				return fmt.Errorf("ask eval: prepare no-answer check for site %q: %w", site.ID, err)
-			}
-			break
+		if err := ctx.Err(); err != nil {
+			return err
 		}
-	}
-
-	for _, question := range site.Questions {
+		if err := validateLabels(question, loaded.Corpus, g); err != nil {
+			return fmt.Errorf("ask eval: site %s: %w", site.ID, err)
+		}
 		scored := ranker.Rank(question.Text, k)
 		pages := uniquePages(scored)
 		result := QuestionResult{
-			SiteID:           site.ID,
-			QuestionID:       question.ID,
-			Text:             question.Text,
-			AcceptablePages:  append([]string(nil), question.AcceptablePages...),
-			RetrievedPages:   pages,
-			MinimumRecallAtK: question.MinimumRecallAtK,
-			Unanswerable:     question.Unanswerable,
+			SiteID: site.ID, QuestionID: question.ID, Text: question.Text,
+			AcceptablePages: slices.Clone(question.AcceptablePages), RetrievedPages: pages,
+			MinimumRecallAtK: question.MinimumRecallAtK, Unanswerable: question.Unanswerable, Class: question.Class,
 		}
-
 		if question.Unanswerable {
-			if len(scored) == 0 && server != nil {
-				answer, err := server.Answer(ctx, ask.AnswerRequest{Question: question.Text})
+			// Nonempty retrieval already fails this strict gate. Do not invoke a
+			// model whose synthetic/semantic fallback could mask that failure.
+			if len(scored) == 0 {
+				if server == nil {
+					server, err = ask.NewServer(ask.Config{
+						ProviderName: provider, RagDir: cfg.RagDir, ContentDir: "content",
+						OutputDir: cfg.OutputDir, DisableUI: true, LoopbackOnly: true,
+					})
+					if err != nil {
+						return err
+					}
+				}
+				answer, err := server.Answer(ctx, ask.AnswerRequest{Question: question.Text, MaxChunks: k})
 				if err != nil {
 					return fmt.Errorf("ask eval: no-answer check %s/%s: %w", site.ID, question.ID, err)
 				}
-				result.NoAnswer = answer.NoAnswer &&
-					answer.Status == "no_answer" &&
-					answer.Diagnostics.ChunksRetrieved == 0 &&
-					answer.NoAnswerMessage == noAnswerFallbackMessage
+				result.NoAnswer = answer.NoAnswer && answer.Status == "no_answer" &&
+					answer.Diagnostics.ChunksRetrieved == 0 && answer.NoAnswerMessage == noAnswerFallbackMessage
 				result.NoAnswerMessage = answer.NoAnswerMessage
 			}
 			result.Passed = len(scored) == 0 && result.NoAnswer
 		} else {
 			result.RecallAtK = recallAtK(pages, question.AcceptablePages)
-			result.Passed = result.RecallAtK >= question.MinimumRecallAtK
+			result.PrecisionAtK = precisionAtK(pages, question.AcceptablePages)
+			floor := precisionFloor
+			if question.MinimumPrecisionAtK != nil {
+				floor = *question.MinimumPrecisionAtK
+			}
+			result.Passed = result.RecallAtK+1e-9 >= question.MinimumRecallAtK && result.PrecisionAtK+1e-9 >= floor
+			for _, page := range question.AcceptablePages {
+				if !slices.Contains(pages, page) {
+					result.MissingPages = append(result.MissingPages, page)
+				}
+			}
+			if len(question.PathPages) > 0 {
+				coverage := recallAtK(pages, question.PathPages)
+				result.PathCoverage = &coverage
+			}
+			class := firstClass(question.Class)
+			metrics := report.Classes[class]
+			metrics.RecallAtK += result.RecallAtK
+			metrics.PrecisionAtK += result.PrecisionAtK
+			metrics.Questions++
+			report.Classes[class] = metrics
+			report.RecallAtK += result.RecallAtK
+			report.PrecisionAtK += result.PrecisionAtK
 			report.AnswerableCount++
-			*recallTotal += result.RecallAtK
 		}
-
 		report.Questions = append(report.Questions, result)
 		if result.Passed {
 			report.PassedCount++
@@ -232,76 +278,56 @@ func evaluateSite(ctx context.Context, site Site, fixtureRoot, ragDir, provider 
 	return nil
 }
 
-func writeContentArchive(projectRoot, contentDir, ragDir string) error {
-	contentRoot := filepath.Join(projectRoot, filepath.FromSlash(contentDir))
-	info, err := os.Stat(contentRoot)
-	if err != nil {
-		return fmt.Errorf("read content directory: %w", err)
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("content path is not a directory: %s", contentRoot)
-	}
-
-	julesDir := filepath.Join(contentRoot, "jules")
-	var markdownFiles []string
-	err = filepath.WalkDir(contentRoot, func(path string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() {
-			if path == julesDir {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if filepath.Ext(path) == ".md" {
-			markdownFiles = append(markdownFiles, path)
-		}
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("walk content directory: %w", err)
-	}
-	if len(markdownFiles) == 0 {
-		return fmt.Errorf("content directory contains no Markdown pages: %s", contentRoot)
-	}
-	sort.Strings(markdownFiles)
-
-	archive, err := os.Create(filepath.Join(ragDir, "rag-content.md"))
-	if err != nil {
-		return fmt.Errorf("create content archive: %w", err)
-	}
-	defer archive.Close()
-	for _, path := range markdownFiles {
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("read %s: %w", path, err)
-		}
-		relPath, err := filepath.Rel(projectRoot, path)
-		if err != nil {
-			return fmt.Errorf("make archive path relative: %w", err)
-		}
-		if _, err := fmt.Fprintf(archive, "<file path=\"%s\">\n<content>\n%s\n</content>\n</file>\n\n",
-			filepath.ToSlash(relPath), ragfmt.EscapeContent(string(content))); err != nil {
-			return fmt.Errorf("write content archive: %w", err)
-		}
-	}
-	return nil
-}
-
 func readDataset(path string) (Dataset, error) {
-	raw, err := os.ReadFile(path)
+	f, err := os.Open(path)
 	if err != nil {
 		return Dataset{}, fmt.Errorf("ask eval: read dataset: %w", err)
 	}
+	defer f.Close()
+	raw, err := io.ReadAll(io.LimitReader(f, (4<<20)+1))
+	if err != nil {
+		return Dataset{}, err
+	}
+	if len(raw) > 4<<20 {
+		return Dataset{}, errors.New("ask eval: dataset exceeds 4 MiB")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
 	var data Dataset
-	if err := json.Unmarshal(raw, &data); err != nil {
+	if err := decoder.Decode(&data); err != nil {
 		return Dataset{}, fmt.Errorf("ask eval: parse dataset: %w", err)
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		return Dataset{}, errors.New("ask eval: expected one JSON document")
+	}
+	// Keep the exported float64 field compatible with #587, but distinguish
+	// explicit zero from an omitted/null JSON floor for measurement probes.
+	var presence struct {
+		Sites []struct {
+			Questions []struct {
+				MinimumRecallAtK *float64 `json:"minimum_recall_at_k"`
+			} `json:"questions"`
+		} `json:"sites"`
+	}
+	if err := json.Unmarshal(raw, &presence); err != nil {
+		return Dataset{}, err
+	}
+	for i, site := range data.Sites {
+		for j, q := range site.Questions {
+			if !q.Unanswerable && presence.Sites[i].Questions[j].MinimumRecallAtK == nil {
+				return Dataset{}, fmt.Errorf("ask eval: question %s/%s requires an explicit non-null recall threshold", site.ID, q.ID)
+			}
+		}
 	}
 	return data, nil
 }
 
-// Validate checks the dataset structure before any fixture is exported.
+func fraction(f float64) bool {
+	return !math.IsNaN(f) && !math.IsInf(f, 0) && f >= 0 && f <= 1
+}
+
+// Validate checks schema before reading fixtures. Run also validates evidence
+// and graph-hop labels against the real generated corpus and graph.
 func (d Dataset) Validate() error {
 	if d.Version != 1 {
 		return fmt.Errorf("ask eval: unsupported dataset version %d", d.Version)
@@ -309,11 +335,11 @@ func (d Dataset) Validate() error {
 	if strings.TrimSpace(d.Name) == "" {
 		return errors.New("ask eval: dataset name is required")
 	}
-	if d.K < 1 {
-		return errors.New("ask eval: k must be at least 1")
+	if d.K < 1 || d.K > 100 {
+		return errors.New("ask eval: k must be between 1 and 100")
 	}
-	if d.BaselineRecallAt5 != nil && (*d.BaselineRecallAt5 < 0 || *d.BaselineRecallAt5 > 1) {
-		return errors.New("ask eval: baseline_recall_at_5 must be between 0 and 1")
+	if !fraction(d.MinimumPrecisionAtK) || (d.BaselineRecallAt5 != nil && !fraction(*d.BaselineRecallAt5)) {
+		return errors.New("ask eval: dataset metrics must be between 0 and 1")
 	}
 	if d.BaselineRecallAt5 != nil && d.K != 5 {
 		return errors.New("ask eval: baseline_recall_at_5 requires k=5")
@@ -321,16 +347,11 @@ func (d Dataset) Validate() error {
 	if len(d.Sites) == 0 {
 		return errors.New("ask eval: dataset must contain at least one site")
 	}
-
 	siteIDs := make(map[string]bool)
-	questionCount := 0
 	answerableCount := 0
 	for _, site := range d.Sites {
-		if strings.TrimSpace(site.ID) == "" {
-			return errors.New("ask eval: site id is required")
-		}
-		if siteIDs[site.ID] {
-			return fmt.Errorf("ask eval: duplicate site id %q", site.ID)
+		if strings.TrimSpace(site.ID) == "" || siteIDs[site.ID] {
+			return fmt.Errorf("ask eval: invalid or duplicate site id %q", site.ID)
 		}
 		siteIDs[site.ID] = true
 		if !filepath.IsLocal(site.Fixture) || filepath.Clean(site.Fixture) == "." {
@@ -342,46 +363,43 @@ func (d Dataset) Validate() error {
 		if len(site.Questions) == 0 {
 			return fmt.Errorf("ask eval: site %q must contain at least one question", site.ID)
 		}
-
 		questionIDs := make(map[string]bool)
-		for _, question := range site.Questions {
-			questionCount++
-			if strings.TrimSpace(question.ID) == "" {
-				return fmt.Errorf("ask eval: site %q question id is required", site.ID)
+		for _, q := range site.Questions {
+			if strings.TrimSpace(q.ID) == "" || questionIDs[q.ID] || strings.TrimSpace(q.Text) == "" {
+				return fmt.Errorf("ask eval: site %q requires unique question ids and nonempty text", site.ID)
 			}
-			if questionIDs[question.ID] {
-				return fmt.Errorf("ask eval: site %q has duplicate question id %q", site.ID, question.ID)
+			questionIDs[q.ID] = true
+			if !fraction(q.MinimumRecallAtK) || (q.MinimumPrecisionAtK != nil && !fraction(*q.MinimumPrecisionAtK)) {
+				return fmt.Errorf("ask eval: invalid metric in %s/%s", site.ID, q.ID)
 			}
-			questionIDs[question.ID] = true
-			if strings.TrimSpace(question.Text) == "" {
-				return fmt.Errorf("ask eval: site %q question %q text is required", site.ID, question.ID)
-			}
-			if question.Unanswerable {
-				if len(question.AcceptablePages) != 0 {
-					return fmt.Errorf("ask eval: unanswerable question %s/%s cannot list acceptable pages", site.ID, question.ID)
+			if q.Unanswerable {
+				if len(q.AcceptablePages) != 0 || len(q.PathPages) != 0 || q.MinimumRecallAtK != 0 || q.MeasurementOnly {
+					return fmt.Errorf("ask eval: unanswerable question %s/%s cannot list evidence or measurement-only labels", site.ID, q.ID)
 				}
 				continue
 			}
 			answerableCount++
-			if len(question.AcceptablePages) == 0 {
-				return fmt.Errorf("ask eval: answerable question %s/%s needs acceptable_pages", site.ID, question.ID)
+			if len(q.AcceptablePages) == 0 {
+				return fmt.Errorf("ask eval: answerable question %s/%s needs acceptable_pages", site.ID, q.ID)
 			}
-			if question.MinimumRecallAtK <= 0 || question.MinimumRecallAtK > 1 {
-				return fmt.Errorf("ask eval: minimum_recall_at_k for %s/%s must be greater than 0 and at most 1", site.ID, question.ID)
+			if q.MinimumRecallAtK == 0 && !q.MeasurementOnly {
+				return fmt.Errorf("ask eval: minimum_recall_at_k for %s/%s must be positive unless measurement_only is set", site.ID, q.ID)
 			}
-			pageIDs := make(map[string]bool)
-			for _, page := range question.AcceptablePages {
-				if strings.TrimSpace(page) == "" || !isLocalPageID(page) {
-					return fmt.Errorf("ask eval: invalid acceptable page %q in %s/%s", page, site.ID, question.ID)
+			for _, pages := range [][]string{q.AcceptablePages, q.PathPages} {
+				seen := make(map[string]bool)
+				for _, page := range pages {
+					if strings.TrimSpace(page) == "" || !isLocalPageID(page) || seen[page] {
+						return fmt.Errorf("ask eval: invalid or duplicate page %q in %s/%s", page, site.ID, q.ID)
+					}
+					seen[page] = true
 				}
-				if pageIDs[page] {
-					return fmt.Errorf("ask eval: duplicate acceptable page %q in %s/%s", page, site.ID, question.ID)
-				}
-				pageIDs[page] = true
+			}
+			if len(q.PathPages) == 1 {
+				return fmt.Errorf("ask eval: path in %s/%s needs at least two pages", site.ID, q.ID)
 			}
 		}
 	}
-	if questionCount == 0 || answerableCount == 0 {
+	if answerableCount == 0 {
 		return errors.New("ask eval: dataset must contain at least one answerable question")
 	}
 	return nil
@@ -389,12 +407,7 @@ func (d Dataset) Validate() error {
 
 func isLocalPageID(page string) bool {
 	clean := filepath.ToSlash(filepath.Clean(filepath.FromSlash(page)))
-	return clean == page && clean != "." && clean != ".." && !strings.HasPrefix(clean, "../") && !strings.HasPrefix(clean, "/")
-}
-
-func isWithin(root, target string) bool {
-	rel, err := filepath.Rel(root, target)
-	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
+	return clean == page && filepath.IsLocal(page) && clean != "." && filepath.Ext(page) != ".md" && !strings.Contains(page, "\\")
 }
 
 func uniquePages(scored []retrieval.Scored) []string {
@@ -415,63 +428,82 @@ func recallAtK(retrieved, acceptable []string) float64 {
 	if len(acceptable) == 0 {
 		return 0
 	}
-	retrievedSet := make(map[string]bool, len(retrieved))
-	for _, page := range retrieved {
-		retrievedSet[page] = true
-	}
 	hits := 0
 	for _, page := range acceptable {
-		if retrievedSet[page] {
+		if slices.Contains(retrieved, page) {
 			hits++
 		}
 	}
 	return float64(hits) / float64(len(acceptable))
 }
 
-// WriteReport writes a compact, stable per-question table and overall
-// recall@K. A non-zero result is left to the caller so the table can still be
-// emitted before the CLI exits with a failure status.
+func precisionAtK(retrieved, acceptable []string) float64 {
+	if len(retrieved) == 0 {
+		return 0
+	}
+	hits := 0
+	for _, page := range retrieved {
+		if slices.Contains(acceptable, page) {
+			hits++
+		}
+	}
+	return float64(hits) / float64(len(retrieved))
+}
+
+func firstClass(class string) string {
+	if class == "" {
+		return "standard"
+	}
+	return class
+}
+
+// WriteReport retains the original table/recall summary and adds stable
+// diagnostics. The caller decides exit status after the report is written.
 func WriteReport(w io.Writer, report Report) error {
 	if w == nil {
 		return errors.New("ask eval: output writer is required")
 	}
-	if _, err := fmt.Fprintf(w, "Ask This Site evaluation: %s\nRanker: BM25-lite · K=%d · provider=%s\n\n",
-		report.DatasetName, report.K, report.Provider); err != nil {
-		return err
-	}
-	table := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-	if _, err := fmt.Fprintln(table, "SITE\tQUESTION\tRECALL@K\tMINIMUM\tSTATUS\tRETRIEVED PAGES"); err != nil {
-		return err
-	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "Ask This Site evaluation: %s\nRanker: BM25-lite · K=%d · provider=%s\n\n", report.DatasetName, report.K, report.Provider)
+	table := tabwriter.NewWriter(&b, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(table, "SITE\tQUESTION\tRECALL@K\tMINIMUM\tPRECISION\tPATH\tSTATUS\tRETRIEVED / MISSING PAGES")
 	for _, result := range report.Questions {
-		recall := fmt.Sprintf("%.2f", result.RecallAtK)
-		minimum := fmt.Sprintf("%.2f", result.MinimumRecallAtK)
+		recall, minimum := fmt.Sprintf("%.2f", result.RecallAtK), fmt.Sprintf("%.2f", result.MinimumRecallAtK)
+		precision, path := fmt.Sprintf("%.2f", result.PrecisionAtK), "-"
+		if result.PathCoverage != nil {
+			path = fmt.Sprintf("%.2f", *result.PathCoverage)
+		}
 		if result.Unanswerable {
-			recall = "n/a"
-			minimum = "no-answer"
+			recall, minimum, precision = "n/a", "no-answer", "-"
 		}
 		status := "FAIL"
 		if result.Passed {
 			status = "PASS"
 		}
-		if _, err := fmt.Fprintf(table, "%s\t%s\t%s\t%s\t%s\t%s\n",
-			result.SiteID, result.QuestionID, recall, minimum, status, strings.Join(result.RetrievedPages, ", ")); err != nil {
-			return err
-		}
+		fmt.Fprintf(table, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%v / %v\n", result.SiteID, result.QuestionID, recall, minimum, precision, path, status, result.RetrievedPages, result.MissingPages)
 	}
 	if err := table.Flush(); err != nil {
 		return err
 	}
-
-	if _, err := fmt.Fprintf(w, "\nRecall@%d: %.2f (%d answerable questions); questions passed: %d/%d",
-		report.K, report.RecallAtK, report.AnswerableCount, report.PassedCount, report.PassedCount+report.FailedCount); err != nil {
-		return err
-	}
+	fmt.Fprintf(&b, "\nRecall@%d: %.4f (%d answerable questions); questions passed: %d/%d\nPrecision@%d: %.4f (unique pages within top %d chunks)\n", report.K, report.RecallAtK, report.AnswerableCount, report.PassedCount, report.PassedCount+report.FailedCount, report.K, report.PrecisionAtK, report.K)
 	if report.BaselineRecallAt5 != nil {
-		if _, err := fmt.Fprintf(w, " · recorded BM25-lite recall@5 baseline: %.2f", *report.BaselineRecallAt5); err != nil {
-			return err
+		fmt.Fprintf(&b, "recorded BM25-lite recall@5 baseline: %.4f", *report.BaselineRecallAt5)
+		if report.K == 5 {
+			fmt.Fprintf(&b, "; delta: %+.4f; floor passed: %t\n", report.RecallAtK-*report.BaselineRecallAt5, report.BaselineOK)
+		} else {
+			fmt.Fprintln(&b, "; comparison skipped: K is not 5")
 		}
 	}
-	_, err := fmt.Fprintln(w)
+	classes := make([]string, 0, len(report.Classes))
+	for class := range report.Classes {
+		classes = append(classes, class)
+	}
+	sort.Strings(classes)
+	for _, class := range classes {
+		m := report.Classes[class]
+		fmt.Fprintf(&b, "Class %s: recall=%.4f precision=%.4f n=%d\n", class, m.RecallAtK, m.PrecisionAtK, m.Questions)
+	}
+	fmt.Fprintf(&b, "Precision floor passed: %t; evaluation passed: %t\n", report.PrecisionOK, report.Passed)
+	_, err := io.WriteString(w, b.String())
 	return err
 }

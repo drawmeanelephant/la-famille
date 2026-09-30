@@ -85,6 +85,7 @@ Flags:
   --no-browser            Do not try to open the UI in a browser.
   --max-context int       Maximum context characters per request (default 6000).
   --eval string           Run the BM25-lite retrieval evaluation against a golden-question JSON dataset.
+  --eval-k int            Override eval chunk depth (1-100); zero uses the dataset depth.
   --verbose               Verbose logs.
   --expose-host           Allow non-loopback binds. Warnings are emitted at startup.
 ```
@@ -93,11 +94,25 @@ Flags:
 
 Pass `--eval <dataset.json>` to run the checked-in golden-question harness
 instead of starting the assistant UI. Fixture paths in the dataset are
-resolved from the project root. The report shows each question's recall@K,
-its minimum threshold, the aggregate recall@K, and the recorded BM25-lite
-recall@5 baseline. The command exits with an error if any question misses its
-threshold or an unanswerable question fails to return the canonical no-answer
-fallback. It uses retrieval only and does not send prompts to an LLM.
+resolved from the project root. The original version-1 nested dataset is
+retained. The report includes per-question recall, precision, missing pages,
+optional graph-route coverage, class summaries and aggregate regression floors.
+Eval defaults to `fake`, starts no listener and builds content-only fixtures in
+disposable projects with real generated citation and graph metadata.
+
+The command fails if a question or dataset gate fails. Strict unanswerable
+controls require **zero retrieval** and the canonical server fallback; nonempty
+near-miss retrieval fails without invoking a model. `--eval-k 8` overrides the
+chunk budget; recorded recall@5 comparison is skipped at other depths. K limits
+chunks before page deduplication. Precision counts relevant unique retrieved
+pages divided by all unique retrieved pages, not by K.
+
+The separate `golden-questions-hard.json` dataset has twelve-page linked sites,
+paraphrase probes, decoys and a missing graph bridge. It intentionally exits
+nonzero on its warranty abstention check. Its zero-floor measurement probes are
+not successful retrieval claims. These are synthetic keyword probes; neither
+page recall nor graph coverage proves generated answer quality. Embeddings and
+graph expansion remain separate work for #581.
 
 ```bash
 go run ./cmd/la-famille ask \

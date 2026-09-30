@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "name": "ask-this-site-hard",
+  "k": 5,
+  "baseline_recall_at_5": 0.5833333333333334,
+  "minimum_precision_at_k": 0.2,
+  "sites": [
+    {
+      "id": "station",
+      "fixture": "assets/testdata/sites/ask-eval-paraphrase",
+      "content_dir": "content",
+      "questions": [
+        {"id": "capture-and-share", "class": "multi-page", "question": "rain cistern daily resident allowances", "acceptable_pages": ["cistern", "rationing"], "minimum_recall_at_k": 0.5},
+        {"id": "passive-cooling", "class": "multi-page", "question": "cooling rooms electricity", "acceptable_pages": ["thermal-mass", "night-purge"], "minimum_recall_at_k": 0.5},
+        {"id": "drinkable-backup", "class": "paraphrase", "question": "potable backup apportionment", "acceptable_pages": ["cistern", "rationing"], "minimum_recall_at_k": 0, "minimum_precision_at_k": 0, "measurement_only": true},
+        {"id": "unpowered-chill", "class": "paraphrase", "question": "unpowered dwelling refrigeration", "acceptable_pages": ["thermal-mass", "night-purge"], "minimum_recall_at_k": 0, "minimum_precision_at_k": 0, "measurement_only": true}
+      ]
+    },
+    {
+      "id": "estuary",
+      "fixture": "assets/testdata/sites/ask-eval-bridge",
+      "content_dir": "content",
+      "questions": [
+        {"id": "sensor-to-assay", "class": "multi-hop", "question": "salinity sensor chloride", "acceptable_pages": ["sensor", "assay"], "path_pages": ["sensor", "registry", "assay"], "minimum_recall_at_k": 0.5},
+        {"id": "lot-custody-and-result", "class": "multi-page", "question": "R17 courier elevated concentration", "acceptable_pages": ["registry", "assay"], "minimum_recall_at_k": 0.5},
+        {"id": "absent-answer-hard", "class": "abstention", "question": "quuxivorzz blarghmolecule", "unanswerable": true},
+        {"id": "sensor-warranty-absent", "class": "near-miss-abstention", "question": "salinity sensor warranty duration", "unanswerable": true}
+      ]
+    }
+  ]
+}
