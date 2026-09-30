@@ -65,6 +65,9 @@ runtime, set `include_unused_theme_assets: true` in `config.yaml`.
 - **Generation:** Written on every build using standard XML sitemap format (`http://www.sitemaps.org/schemas/sitemap/0.9`).
 - **Included URLs:** Unique output locations for all rendered Markdown pages and generated taxonomy pages (`tags/index.html`, `tags/<tag>/index.html`, `categories/index.html`, `categories/<cat>/index.html`).
 - **Exclusions:** Pages with `render: false` and unrendered raw files are excluded.
+- Notes with frontmatter `publish: false` are omitted from the static site and
+  its graph, backlinks, search index, sitemap, and published links. The
+  separate `la-famille rag` command also omits them from `rag-content.md`.
 
 ### 4. Robots Rules (`robots.txt`)
 
@@ -124,7 +127,8 @@ The link is root-relative so it works with or without `siteurl`, mirroring the e
 - **Generation:** Not part of `la-famille build`. Produced by the separate `la-famille rag` command (`internal/ragexport`), which writes three markdown bundles:
   - `rag-system.md`: Go source, workflows, and module metadata.
   - `rag-config.md`: config/templates/assets listing.
-  - `rag-content.md`: the site's markdown content (excluding `content/jules`).
+  - `rag-content.md`: published Markdown content (excluding `content/jules` and
+    notes with `publish: false`).
 - **Output location:** `rag_dir` from `config.yaml` (default `rag-archive/`, beside the project root). In CI, pass `--output public/rag-archive` so the bundles ship inside the Pages artifact — this is what `.github/workflows/deploy.yml` does after the build step.
 - **Publish interaction:** `publish-check` validates whatever tree exists; it does not require `rag-archive/`. A `public/` tree with or without the export is publishable.
 
@@ -179,6 +183,14 @@ Frontmatter allows specifying `render: false` to copy raw file contents directly
   - `graph.json` (as a node with `"render": false`)
   - `meta.json` (with `"render": false`)
   - `backlinks.json` (tracked if referenced by or referencing other pages via wikilinks)
+
+## Excluded Notes (`publish: false`)
+
+Notes with `publish: false` remain in the source directory but are omitted
+from generated output and `rag-content.md`. Links in included notes to
+excluded notes retain their visible label as plain text and do not create a
+published link, graph edge, backlink, or stub. The `check` command evaluates
+orphan status over the published subset.
 
 ---
 

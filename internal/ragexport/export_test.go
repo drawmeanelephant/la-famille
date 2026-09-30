@@ -358,6 +358,39 @@ func TestRunExport_HonoursConfiguredDirectories(t *testing.T) {
 	}
 }
 
+func TestRunExportExcludesUnpublishedNotes(t *testing.T) {
+	projectRoot := t.TempDir()
+	contentDir := filepath.Join(projectRoot, "vault")
+	writeExportTestFile(t, filepath.Join(contentDir, "public.md"), "---\ntitle: Public\n---\nPublic note.")
+	writeExportTestFile(t, filepath.Join(contentDir, "private.md"), "---\ntitle: Private\npublish: false\n---\nPrivate note.")
+	writeExportTestFile(t, filepath.Join(contentDir, "private.md-copy.md"), "---\ntitle: Public Copy\n---\nPublic note with a similar path.")
+
+	ragDir := filepath.Join(t.TempDir(), "rag-archive")
+	cfg := config.Config{
+		ProjectRoot: projectRoot,
+		ContentDir:  "vault",
+		RagDir:      ragDir,
+	}
+	if err := RunExport(cfg); err != nil {
+		t.Fatalf("RunExport: %v", err)
+	}
+
+	bundle, err := os.ReadFile(filepath.Join(ragDir, "rag-content.md"))
+	if err != nil {
+		t.Fatalf("read content bundle: %v", err)
+	}
+	got := string(bundle)
+	if !strings.Contains(got, `<file path="vault/public.md">`) {
+		t.Errorf("content bundle is missing the published note:\n%s", got)
+	}
+	if !strings.Contains(got, `<file path="vault/private.md-copy.md">`) {
+		t.Errorf("content bundle is missing a published note with a similar path:\n%s", got)
+	}
+	if strings.Contains(got, `<file path="vault/private.md">`) || strings.Contains(got, "Private note.") {
+		t.Errorf("content bundle includes an unpublished note:\n%s", got)
+	}
+}
+
 func writeExportTestFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {

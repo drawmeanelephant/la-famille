@@ -23,12 +23,13 @@ func ExtractManifestReferences(
 	fileMap map[string]*content.FileMeta,
 	graphExplorer bool,
 ) (map[string][]sitedata.ManifestLink, map[string][]string) {
-	linksByPage := make(map[string][]sitedata.ManifestLink, len(fileMap))
-	assetsByPage := make(map[string][]string, len(fileMap))
-	expectedOutputs := buildExpectedOutputs(fileMap, graphExplorer)
+	published := content.PublishedFiles(fileMap)
+	linksByPage := make(map[string][]sitedata.ManifestLink, len(published))
+	assetsByPage := make(map[string][]string, len(published))
+	expectedOutputs := buildExpectedOutputs(published, graphExplorer)
 	engine := markdown.NewEngine(nil)
 
-	for relPath, meta := range fileMap {
+	for relPath, meta := range published {
 		if meta == nil {
 			continue
 		}
@@ -78,6 +79,9 @@ func manifestLinkReference(
 ) (sitedata.ManifestLink, bool) {
 	if wikiTarget, heading, ok := transform.ParseWikiLinkDestination(dest); ok {
 		targetRelPath, targetMeta, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, fileMap)
+		if resolved && !content.IsPublished(targetMeta) {
+			return sitedata.ManifestLink{}, false
+		}
 		if !resolved {
 			targetRelPath = transform.UnresolvedWikiTargetPath(relPath, wikiTarget)
 		}
@@ -123,6 +127,9 @@ func manifestLinkReference(
 
 		targetID := strings.TrimSuffix(targetRelPath, ".md")
 		target, resolved := fileMap[targetRelPath]
+		if resolved && !content.IsPublished(target) {
+			return sitedata.ManifestLink{}, false
+		}
 		if resolved && target.Render != nil && !*target.Render {
 			targetID = targetRelPath
 		}

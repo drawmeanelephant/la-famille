@@ -134,10 +134,11 @@ func Validate(cfg config.Config) (*Result, error) {
 // the supplied build manifest for internal-link and orphan checks when one is
 // provided. Other validation continues to use the current source tree.
 func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, error) {
-	fileMap, err := content.GatherMetadata(cfg.ContentDir)
+	allFileMap, err := content.GatherMetadata(cfg.ContentDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to gather metadata: %w", err)
 	}
+	fileMap := content.PublishedFiles(allFileMap)
 
 	var manifestPages map[string]sitedata.ManifestPage
 	if manifestPath != "" {
@@ -219,6 +220,7 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 			if yErr == nil {
 				var matter struct {
 					Render      *bool              `yaml:"render"`
+					Publish     *bool              `yaml:"publish"`
 					Date        string             `yaml:"date"`
 					Slug        string             `yaml:"slug"`
 					Tags        content.StringList `yaml:"tags"`
@@ -343,7 +345,10 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 
 				dest := string(link.Destination)
 				if wikiTarget, _, isWikiLink := transform.ParseWikiLinkDestination(dest); isWikiLink {
-					if _, _, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, fileMap); resolved {
+					if _, target, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, allFileMap); resolved {
+						if !content.IsPublished(target) {
+							return ast.WalkContinue, nil
+						}
 						return ast.WalkContinue, nil
 					}
 					targetRelPath := transform.UnresolvedWikiTargetPath(relPath, wikiTarget)
@@ -389,7 +394,10 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 						return ast.WalkContinue, nil
 					}
 
-					if _, exists := fileMap[targetRelPath]; exists {
+					if targetMeta, exists := allFileMap[targetRelPath]; exists {
+						if !content.IsPublished(targetMeta) {
+							return ast.WalkContinue, nil
+						}
 						return ast.WalkContinue, nil
 					}
 				} else {
@@ -457,7 +465,7 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 	if manifestPages != nil {
 		orphanFindings = detectManifestOrphans(fileMap, manifestPages)
 	} else {
-		orphanFindings = detectOrphans(fileMap)
+		orphanFindings = detectOrphans(fileMap, allFileMap)
 	}
 	findings = append(findings, orphanFindings...)
 
@@ -510,7 +518,7 @@ func detectManifestOrphans(fileMap map[string]*content.FileMeta, pages map[strin
 // detectOrphans reuses the markdown link graph to find rendered pages with zero inbound links.
 // It mirrors the logic in generator.ComputeContentHealth but without requiring a full build.
 // The rendered homepage (id "index") is exempt per content/docs/publishing.md Explorer Orphan Rule.
-func detectOrphans(fileMap map[string]*content.FileMeta) []Finding {
+func detectOrphans(fileMap, allFileMap map[string]*content.FileMeta) []Finding {
 	// Build inbound count map for rendered pages.
 	ids := make(map[string]string) // id -> relPath
 	inbound := make(map[string]int)
@@ -542,8 +550,11 @@ func detectOrphans(fileMap map[string]*content.FileMeta) []Finding {
 			}
 			dest := string(link.Destination)
 			if wikiTarget, _, isWikiLink := transform.ParseWikiLinkDestination(dest); isWikiLink {
-				targetRelPath, targetMeta, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, fileMap)
+				targetRelPath, targetMeta, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, allFileMap)
 				if !resolved {
+					return ast.WalkContinue, nil
+				}
+				if !content.IsPublished(targetMeta) {
 					return ast.WalkContinue, nil
 				}
 				targetID := strings.TrimSuffix(targetRelPath, ".md")
@@ -573,8 +584,11 @@ func detectOrphans(fileMap map[string]*content.FileMeta) []Finding {
 			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) || strings.Contains(dest, "%2E%2E") {
 				return ast.WalkContinue, nil
 			}
-			targetMeta, exists := fileMap[targetRelPath]
+			targetMeta, exists := allFileMap[targetRelPath]
 			if !exists {
+				return ast.WalkContinue, nil
+			}
+			if !content.IsPublished(targetMeta) {
 				return ast.WalkContinue, nil
 			}
 			targetID := strings.TrimSuffix(targetRelPath, ".md")
