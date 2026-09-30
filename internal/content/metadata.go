@@ -39,6 +39,7 @@ type FileMeta struct {
 	Description     string
 	Image           string
 	Render          *bool
+	Publish         *bool
 	Warnings        []string
 }
 
@@ -115,6 +116,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			Description     string      `yaml:"description"`
 			Image           string      `yaml:"image"`
 			Tags            StringList  `yaml:"tags"`
+			Publish         *bool       `yaml:"publish"`
 		}
 
 		for _, detail := range DecodeFrontmatter(rawMatter, &matter) {
@@ -160,6 +162,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			Rest:            rest,
 			Description:     matter.Description,
 			Image:           matter.Image,
+			Publish:         matter.Publish,
 			Warnings:        warnings,
 		}
 

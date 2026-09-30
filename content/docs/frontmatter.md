@@ -22,6 +22,8 @@ Here are the currently supported fields:
 * `categories`: An array of strings grouping the page under category archives
   (e.g., `categories: [blog]`), generating `/categories/` pages the same way.
 * `render`: A boolean (`true` or `false`).
+* `publish`: A boolean (`true` or `false`). Set `publish: false` to leave a
+  note out of generated output; notes publish by default.
 * `slug`: A custom URL path for the page.
 * `layout`: To specify a custom layout, provide the filename *without* the
   `.html` extension (e.g., `layout: "layout-brutalist"`).
@@ -32,6 +34,7 @@ title: "Hello"
 date: "2026-08-27"
 tags: [go, test]
 categories: [blog]
+publish: true
 ---
 # Hello
 ```
@@ -65,3 +68,19 @@ render: false
 ```
 
 This ensures we have maximum flexibility with how our content is processed.
+
+### The `publish` Flag
+
+Set `publish: false` to keep a note in the source tree while excluding it from
+generated pages, graph and backlink data, search, RAG content archives, and
+published links. Links from included notes to an excluded note keep their
+visible text but do not create a published link, graph edge, backlink, or stub.
+
+```yaml
+---
+title: Private Research
+publish: false
+---
+# Private Research
+This note stays in the source tree but is not published.
+```

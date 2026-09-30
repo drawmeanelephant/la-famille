@@ -184,6 +184,7 @@ type buildContext struct {
 	// link transformer, which records graph edges during conversion.
 	mu sync.Mutex
 
+	allFileMap         map[string]*content.FileMeta
 	fileMap            map[string]*content.FileMeta
 	missingFiles       map[string][]string
 	missingTitles      map[string]string
@@ -280,13 +281,14 @@ func build(cfg, siteCfg config.Config) (BuildResult, error) {
 // body for every page. Per-file warnings surface on the build result, sorted
 // so repeated builds report them identically.
 func (bc *buildContext) gatherMetadata() error {
-	fileMap, err := content.GatherMetadata(bc.cfg.ContentDir)
+	allFileMap, err := content.GatherMetadata(bc.cfg.ContentDir)
 	if err != nil {
 		return fmt.Errorf("failed to gather metadata: %w", err)
 	}
-	bc.fileMap = fileMap
+	bc.allFileMap = allFileMap
+	bc.fileMap = content.PublishedFiles(allFileMap)
 
-	for _, meta := range fileMap {
+	for _, meta := range allFileMap {
 		if len(meta.Warnings) > 0 {
 			bc.result.Warnings = append(bc.result.Warnings, meta.Warnings...)
 		}
@@ -537,7 +539,7 @@ func (bc *buildContext) processJob(j job, buf *bytes.Buffer) {
 	// Their generated HTML is then discarded.
 	transformer := &transform.LinkTransformer{
 		CurrentFile:        relPath,
-		FileMap:            bc.fileMap,
+		FileMap:            bc.allFileMap,
 		MissingFiles:       bc.missingFiles,
 		MissingTitles:      bc.missingTitles,
 		Backlinks:          bc.backlinks,
@@ -729,7 +731,7 @@ func (bc *buildContext) writeDerivedArtifacts() error {
 		return err
 	}
 
-	links, assetReferences := checker.ExtractManifestReferences(bc.fileMap, bc.siteCfg.GraphExplorer)
+	links, assetReferences := checker.ExtractManifestReferences(bc.allFileMap, bc.siteCfg.GraphExplorer)
 	bc.manifest = sitedata.NewManifest(
 		bc.siteCfg,
 		bc.fileMap,

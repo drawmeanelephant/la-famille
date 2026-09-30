@@ -2,7 +2,6 @@ package ragexport
 
 import (
 	"fmt"
-	"github.com/tbuddy/la-famille/internal/ragfmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/content"
+	"github.com/tbuddy/la-famille/internal/ragfmt"
 )
 
 // RunExport exports project files into RAG-friendly markdown bundles
@@ -141,13 +142,18 @@ func RunExport(cfg config.Config) error {
 	slog.Info("Created rag-config.md")
 
 	// 3. Content Bundle
+	contentExcludes, err := unpublishedContentExcludes(cfg, contentDir)
+	if err != nil {
+		return fmt.Errorf("failed to find unpublished content: %w", err)
+	}
+	contentExcludes = append(contentExcludes, contentDir+"/jules")
 	if err :=
 		writeBundle(
 			filepath.Join(outDir, "rag-content.md"),
 			[]string{
 				contentDir + "/**/*.md",
 			},
-			[]string{contentDir + "/jules"},
+			contentExcludes,
 			nil, // Default formatting is verbatim with XML tags, which preserves the YAML frontmatter
 			outDir,
 			cfg.ProjectRoot,
@@ -157,6 +163,29 @@ func RunExport(cfg config.Config) error {
 	slog.Info("Created rag-content.md")
 
 	return nil
+}
+
+func unpublishedContentExcludes(cfg config.Config, contentDir string) ([]string, error) {
+	contentPath := filepath.Join(cfg.ProjectRoot, filepath.FromSlash(contentDir))
+	if _, err := os.Stat(contentPath); err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	files, err := content.GatherMetadata(contentPath)
+	if err != nil {
+		return nil, err
+	}
+	excludes := make([]string, 0)
+	for relPath, meta := range files {
+		if !content.IsPublished(meta) {
+			excludes = append(excludes, filepath.ToSlash(filepath.Join(contentDir, relPath)))
+		}
+	}
+	sort.Strings(excludes)
+	return excludes, nil
 }
 
 func writeBundle(outPath string, patterns []string, excludes []string, formatFunc func(path string, content []byte) string, outDir string, projectRoot string) error {
@@ -190,7 +219,8 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 				// Check excludes
 				isExcluded := false
 				for _, exclude := range excludes {
-					if strings.HasPrefix(filepath.ToSlash(relPath), filepath.ToSlash(exclude)) {
+					excludedPath := strings.TrimSuffix(filepath.ToSlash(exclude), "/")
+					if filepath.ToSlash(relPath) == excludedPath || strings.HasPrefix(filepath.ToSlash(relPath), excludedPath+"/") {
 						isExcluded = true
 						break
 					}

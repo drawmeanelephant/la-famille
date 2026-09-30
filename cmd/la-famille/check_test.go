@@ -77,6 +77,60 @@ Back to [Home](index.md).
 	}
 }
 
+func TestCheckCommandPublishedSubsetHasNoOrphans(t *testing.T) {
+	root := t.TempDir()
+	contentDir := filepath.Join(root, "vault")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"index.md": `---
+title: Home
+description: Home
+---
+[[Public Note]] and [[Private Note|private note]].
+`,
+		"public.md": `---
+title: Public Note
+description: Public note
+---
+[[Home]]
+`,
+		"private.md": `---
+title: Private Note
+description: Private note
+publish: false
+---
+Private text.
+`,
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(contentDir, name), []byte(body), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ProjectRoot = root
+	cfg.ContentDir = contentDir
+	cfg.SiteURL = "https://example.com"
+
+	cmd := setupRootCmd(cfg)
+	var out, errOut bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&errOut)
+	cmd.SetArgs([]string{"check", "--content", contentDir})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("check published subset: %v (stderr: %s)", err, errOut.String())
+	}
+	if !strings.Contains(out.String(), "0 orphaned pages") {
+		t.Fatalf("check summary = %q, want zero orphans", out.String())
+	}
+	if strings.Contains(out.String(), "private.md") || strings.Contains(errOut.String(), "private.md") {
+		t.Fatalf("excluded note appeared in check output:\nstdout: %s\nstderr: %s", out.String(), errOut.String())
+	}
+}
+
 func TestCheckCommand_InvalidContent(t *testing.T) {
 	tempDir := t.TempDir()
 	contentDir := filepath.Join(tempDir, "content")

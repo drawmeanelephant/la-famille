@@ -74,6 +74,10 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, _ pa
 
 			// Check file map
 			meta, exists := t.FileMap[targetRelPath]
+			if exists && !content.IsPublished(meta) {
+				unwrapWikiLink(link)
+				return ast.WalkContinue, nil
+			}
 
 			targetID := strings.TrimSuffix(targetRelPath, ".md")
 			if exists && meta.Render != nil && !*meta.Render {
@@ -210,6 +214,9 @@ func (t *LinkTransformer) transformWikiLink(link *ast.Link, target, heading stri
 	targetRelPath, meta, exists := ResolveWikiTarget(t.CurrentFile, target, t.FileMap)
 	if !exists {
 		targetRelPath = UnresolvedWikiTargetPath(t.CurrentFile, target)
+	} else if !content.IsPublished(meta) {
+		unwrapWikiLink(link)
+		return
 	}
 
 	targetID := strings.TrimSuffix(targetRelPath, ".md")
@@ -289,4 +296,17 @@ func containsString(values []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func unwrapWikiLink(link *ast.Link) {
+	parent := link.Parent()
+	if parent == nil {
+		return
+	}
+	for child := link.FirstChild(); child != nil; {
+		next := child.NextSibling()
+		parent.InsertBefore(parent, link, child)
+		child = next
+	}
+	parent.RemoveChild(parent, link)
 }
