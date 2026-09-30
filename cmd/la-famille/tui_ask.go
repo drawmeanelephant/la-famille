@@ -56,6 +56,7 @@ func launchAskServer(cfg config.Config) tea.Cmd {
 			ContentDir:     askContentDir(cfg),
 			LoopbackOnly:   true,
 			Embeddings:     askFlagBundle.embeddings && !askFlagBundle.noEmbeddings,
+			GraphExpansion: askFlagBundle.graphExpansion,
 			EmbeddingModel: askFlagBundle.embeddingModel,
 			CacheDir:       firstNonEmpty(resolveProjectPath(cfg.ProjectRoot, askFlagBundle.embeddingCache), cfg.ProjectRoot),
 		}

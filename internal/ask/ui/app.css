@@ -119,6 +119,32 @@ body {
   flex-wrap: wrap;
 }
 .ask-help { color: var(--fg-muted); font-size: 12px; margin: 0; }
+.ask-graph-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+  font-size: 14px;
+}
+.ask-graph-toggle input { accent-color: var(--accent); }
+.ask-paths { margin: 18px 0; }
+.ask-paths h3 { margin: 0 0 8px; font-size: 14px; }
+.ask-graph-path {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+}
+.ask-graph-path li { display: flex; align-items: center; gap: 8px; }
+.ask-graph-path a, .ask-graph-path li > span:not(.path-arrow) {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.path-arrow { color: var(--accent); font-size: 20px; }
 .ask-form-buttons { display: flex; gap: 8px; }
 
 .ask-button-primary, .ask-button-secondary {

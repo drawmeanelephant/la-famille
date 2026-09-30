@@ -11,6 +11,9 @@
   const state = {
     busy: false,
     last: null,
+    graphExplicit: false,
+    embeddings: false,
+    statusLoaded: false,
   };
 
   function escapeHTML(s) {
@@ -64,6 +67,7 @@
       p.innerHTML = formatAnswerText(payload.answer);
       content.appendChild(p);
     }
+    renderPaths(payload.paths, content);
 
     if (Array.isArray(payload.sources) && payload.sources.length > 0) {
       const heading = document.createElement("h3");
@@ -120,6 +124,51 @@
     $("empty-state").hidden = true;
   }
 
+  function renderPaths(paths, content) {
+    if (!Array.isArray(paths) || paths.length === 0) return;
+    const section = document.createElement("section");
+    section.className = "ask-paths";
+    section.setAttribute("aria-label", "How I got there");
+    const heading = document.createElement("h3");
+    heading.textContent = "How I got there";
+    section.appendChild(heading);
+    paths.forEach((path) => {
+      const list = document.createElement("ol");
+      list.className = "ask-graph-path";
+      (path.nodes || []).forEach((node, index) => {
+        const item = document.createElement("li");
+        if (index > 0) {
+          const arrow = document.createElement("span");
+          arrow.className = "path-arrow";
+          arrow.textContent = "→";
+          arrow.setAttribute("aria-hidden", "true");
+          item.appendChild(arrow);
+        }
+        const label = document.createElement(node.url ? "a" : "span");
+        label.textContent = (node.title || node.page_id) + " [" + node.key + "]";
+        if (node.url) {
+          try {
+            const url = new URL(node.url, location.href);
+            if (url.protocol === "http:" || url.protocol === "https:") {
+              label.href = url.href;
+              label.rel = "noopener noreferrer";
+              label.target = "_blank";
+            }
+          } catch (_) { /* A malformed URL must not hide the cited route. */ }
+        }
+        item.appendChild(label);
+        list.appendChild(item);
+      });
+      section.appendChild(list);
+      const note = document.createElement("p");
+      note.className = "ask-help";
+      note.textContent = "Site links, traversable in either direction. Outbound edges: " +
+        (path.edges || []).map((edge) => edge.join(" → ")).join("; ");
+      section.appendChild(note);
+    });
+    content.appendChild(section);
+  }
+
   // formatAnswerText converts [1]/[2]-style citations emitted by the model
   // into small inline tags so the reader can match them with the source
   // cards below the answer. We deliberately do NOT parse markdown further
@@ -144,10 +193,16 @@
 
     const t0 = performance.now();
     try {
+      const request = { question: q };
+      // Preserve hybrid defaults until the reader explicitly chooses the
+      // lexical graph comparison. Both toggle states then use lexical scoring.
+      if (state.graphExplicit || (state.statusLoaded && !state.embeddings)) {
+        request.graph_expansion = $("graph-expansion").checked;
+      }
       const payload = await fetchJSON("/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q }),
+        body: JSON.stringify(request),
       });
       const total = Math.round(performance.now() - t0);
       state.last = payload;
@@ -156,6 +211,7 @@
       const diagnostics = payload.diagnostics || {};
       $("diag-retrieve-ms").textContent = formatMs(diagnostics.retrieval_ms);
       $("diag-generate-ms").textContent = formatMs(diagnostics.generation_ms);
+      $("diag-retrieval-mode").textContent = diagnostics.retrieval_mode || "lexical";
 
       if (payload.status === "no_answer") {
         setStatus("No corroborating sources in corpus", "error");
@@ -188,6 +244,10 @@
       $("diag-provider").textContent = data.provider || "—";
       $("diag-model").textContent = data.model || "—";
       $("diag-host").textContent = data.bind || "—";
+      $("diag-graph-edges").textContent = data.graph_edges ?? 0;
+      state.embeddings = Boolean(data.embeddings);
+      state.statusLoaded = true;
+      if (!state.graphExplicit) $("graph-expansion").checked = Boolean(data.graph_expansion);
       setStatus(data.ready ? "Ready" : "Unavailable", data.ready ? "ready" : "error");
     } catch (err) {
       setStatus("Status unavailable", "error");
@@ -210,6 +270,12 @@
         const title = s.title || s.chunk_id;
         const url = s.url ? " — " + s.url : "";
         lines.push("  " + tag + " " + title + url);
+      });
+    }
+    if (Array.isArray(state.last.paths) && state.last.paths.length > 0) {
+      lines.push("", "How I got there:");
+      state.last.paths.forEach((path) => {
+        lines.push(path.nodes.map((node) => node.title + " [" + node.key + "]").join(" → "));
       });
     }
     if (state.last.no_answer_message) lines.push("\n" + state.last.no_answer_message);
@@ -257,6 +323,9 @@
     $("ask-form").addEventListener("submit", submitQuestion);
     $("copy-answer").addEventListener("click", copyAnswer);
     $("diagnostics-toggle").addEventListener("click", toggleDiagnostics);
+    $("graph-expansion").addEventListener("change", () => {
+      state.graphExplicit = true;
+    });
     bindKeys();
     loadStatus();
     $("question").focus();

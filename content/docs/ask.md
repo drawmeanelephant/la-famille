@@ -65,6 +65,47 @@ chunks on the next run. Changing site inputs, model or corpus invalidates it.
 If Ollama is unavailable, serving falls back to the original lexical ranker.
 Only the local Ollama endpoint is accepted, including on redirects.
 
+### Optional link-graph retrieval
+
+Graph expansion is a separate **lexical-only** mode, not an embedding feature:
+
+```bash
+go run ./cmd/la-famille build
+go run ./cmd/la-famille rag
+go run ./cmd/la-famille ask --graph-expansion --no-embeddings
+```
+
+The checkbox **Expand along site links** can be switched on and off for the
+same question without restarting. Both checkbox states compare against the
+original lexical scorer. On an embedding-enabled server, hybrid remains the
+default until you change this checkbox; after that, both states select the
+lexical comparison. `--graph-expansion --embeddings` is rejected.
+
+Graph mode reads the existing `graph.json` and `backlinks.json`, the same
+directed links used by `/graph/`. It promotes reciprocal neighbors only when
+they have strong, complementary lexical evidence. Two independently matching
+pages can pull in their shortest connecting route, including a bridge with no
+query words. Routes are limited to four hops, 256 visited pages, and the request's
+chunk budget. Only rendered, published corpus pages participate, not missing
+stubs, repository files, or unrendered notes. A single-page query does not
+automatically add every neighbor.
+
+**How I got there** shows the ordered, cited route with source links. Traversal
+can follow backlinks; the outbound edge list preserves actual link direction.
+Links establish navigation, not causation or proof of a factual relationship.
+The model receives source text, not just the source-card preview, and must cite
+every route page. A partially cited route answer falls back to no-answer.
+The citation verifier checks source membership, not factual accuracy.
+
+Missing graph artifacts leave lexical retrieval usable. Malformed optional
+graph artifacts produce a warning. Rebuild both site and archive after changes
+so paths and source text stay consistent.
+
+API clients can post `"graph_expansion": true` or `false` to `/api/ask` to select
+the graph or lexical arm explicitly. Omitting the field retains startup
+defaults. Responses include `paths` (page IDs, chunk IDs, citation keys, URLs,
+directed edges) and the selected `diagnostics.retrieval_mode`.
+
 ## Privacy Guarantees
 
 The default configuration is **loopback-only**: the assistant binds to
@@ -108,6 +149,8 @@ Flags:
   --max-context int       Maximum context characters per request (default 6000).
   --eval string           Run the BM25-lite retrieval evaluation against a golden-question JSON dataset.
   --eval-k int            Override eval chunk depth (1-100); zero uses the dataset depth.
+  --graph-expansion       Opt in to bounded lexical link-graph retrieval.
+  --eval-compare-graph    Run graph on/off against lexical scoring in one eval.
   --embeddings            Opt in to local Ollama embeddings and hybrid fusion.
   --no-embeddings         Force lexical ranking, overriding --embeddings.
   --embedding-model       Local embedding model (default nomic-embed-text).
@@ -137,8 +180,7 @@ The separate `golden-questions-hard.json` dataset has twelve-page linked sites,
 paraphrase probes, decoys and a missing graph bridge. It intentionally exits
 nonzero on its warranty abstention check. Its zero-floor measurement probes are
 not successful retrieval claims. These are synthetic keyword probes; neither
-page recall nor graph coverage proves generated answer quality. Graph expansion
-remains separate work for #581. The original regression dataset is saturated
+page recall nor graph coverage proves generated answer quality. The original regression dataset is saturated
 at recall@5 1.0000, so a lift there is impossible; measure the unchanged hard
 set at 0.5833 as well. Its warranty abstention check fails even with lexical
 ranking, so its CLI command exits nonzero. RRF does **not** mathematically
@@ -157,7 +199,26 @@ go run ./cmd/la-famille ask \
   --provider fake
 go run ./cmd/la-famille ask --eval assets/testdata/ask-eval/golden-questions-hard.json --embeddings
 go run ./cmd/la-famille ask --eval assets/testdata/ask-eval/golden-questions-hard.json --no-embeddings
+go run ./cmd/la-famille ask --eval assets/testdata/ask-eval/golden-questions-graph.json --eval-compare-graph --no-embeddings
 ```
+
+The separate Phase 3 graph dataset adds three multi-hop questions and two
+single-page controls without changing either previous golden file. Its
+`require_grounded_path` gate checks that the answer names and cites every page
+on the labeled route, not just that retrieval found them. With the deterministic
+fake provider, graph off/on gives recall@5 **0.8667 → 1.0000** and precision@5
+**0.4867 → 0.6067**. Single-page precision is unchanged, including all eight
+frozen regression questions (aggregate 0.4375). Fake route answers explicitly
+identify themselves as synthetic: these measurements prove retrieval, prompt,
+citation, and UI contracts, not real-model reasoning quality. Use
+`--provider ollama` for local completion checks.
+
+The paired report keeps both arms, per-question retrieved pages, route coverage,
+and aggregate deltas. It fails on a graph gate failure, decreased aggregate
+recall/precision, or decreased recall/precision on any single-page question.
+The lexical arm is expected to fail the new multi-hop grounding gates; this
+does not conceal its results. The frozen hard dataset still fails its known
+warranty-abstention gate.
 
 ### Examples
 
@@ -220,6 +281,8 @@ Each question flows through:
    `k1=1.5`, `b=0.75`) returns the top-K chunks for a query. When opted in,
    Ollama embeddings rank chunks by cosine similarity, then reciprocal rank
    fusion combines the complete lexical and dense rankings before top-K.
+   Graph mode instead uses lexical seeds and bounded link traversal, with no
+   dense ranking or embedding calls.
 4. **Prompt construction.** The top-K chunks are flattened into a
    numbered citation-key map. The model sees the keys, the heading
    trail, and the chunk text — but never a fabricated URL.
@@ -249,6 +312,8 @@ framework, no CDN dependencies. It includes:
 - **Source cards.** Each verified key gets a card with title, heading
   trail, excerpt, and a working "Open source" link. Cards include the
   stable chunk ID so you can grep the corpus for the same text.
+- **Graph toggle and route.** Compare lexical graph on/off in the same server.
+  Fully cited connecting paths appear as an ordered **How I got there** list.
 - **Copy button.** Copies the answer plus a "Sources:" footer with
   URLs. Uses the system clipboard when available.
 - **Diagnostics drawer.** Toggled by the "Diagnostics" button or `Esc`.
