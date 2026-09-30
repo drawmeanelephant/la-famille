@@ -5,6 +5,8 @@
 > claims, costs, and ranking can be inspected. The review challenges them
 > against the code and current publishing evidence; the old scorecard is not
 > a validated investment recommendation.
+>
+> Next-step brief: [Homestead's first rung — the existing bilingual site](#homestead-first-rung-the-existing-bilingual-site).
 
 *Strategic, moonshot-level bets for la-famille. This document proposes; it
 implements nothing.*
@@ -1826,3 +1828,220 @@ before allowing the site to ship; do not require a new pack format before
 allowing anyone to download it; do not improve retrieval before observing
 what evidence the model was given. If the first site is useful, these bets get
 better inputs. If it isn't, the stop is information—not a failed pitch deck.
+
+---
+
+## Homestead first rung: the existing bilingual site
+
+**Decision:** use the existing bilingual workload behind #570–#572. Do not
+start another field manual, run a bake-off, migrate to a new theme, or generate
+content to meet a quota. This is a bounded **delivery brief**, not proof that
+the site has shipped and not authorization to deploy it.
+
+The issue reports identify a local `sites/zai` project with **46 content pages**
+on 2026-09-29. That path is a locator from a report, not a repository URL or
+proof the source is in this checkout. Its public address, named editorial
+owner, actual language pair, rights, and current source revision remain
+unverified. No milestone below may turn those unknowns into success claims.
+
+### Outcome and hard boundary
+
+Publish—or verify an already published—independently useful site at **one
+actual HTTPS URL**, using a pinned released La Famille binary. Preserve its
+approved existing content and navigation. Demonstrate one real reader task
+in each language without requiring the reader to install Go or a model.
+The artifact is the live site plus a short, reproducible launch record in
+**the site's repository**, not another generator feature.
+
+**Included:** source/publication inventory, reproducible build, public-safe
+content export, targeted URL/browser checks, one approved publication or
+verification of the existing deployment, and reader evidence.
+
+**Excluded:** fixing #570–#572 in this task; i18n/translation machinery;
+pagination, redirects, plugins, new themes, image processing, Ledger, packs,
+retrieval upgrades, public `ask`, automatic publishing, and a second site.
+Needed generator fixes become separate issues/PRs with same-package tests.
+The content needs no new translations to pass; the selected slice must
+already exist in both languages. Do not silently drop the other pages.
+
+### Gate 0: do not build blind
+
+Record these inputs before implementation starts. An unresolved item means
+**blocked**, not “an agent will choose later.”
+
+| Required input | Acceptance |
+| --- | --- |
+| Source | Exact site repository or accessible source path and immutable starting revision; identify the content/config/templates/assets actually used. |
+| Owner | Named human who owns editorial claims, public/private selection, and ongoing availability. A coding agent is not the editorial owner. |
+| Audience | One sentence naming who reads the site and what they should accomplish; one concrete task in each actual language, with expected answers/pages chosen before testing. |
+| Public destination | Existing or owner-approved HTTPS origin **including its deployment subpath**, publishing mechanism, authorized deployment operator, and a way to restore the last known-good artifact if one exists. Verify ownership/access; do not register anything or switch providers as part of this brief. |
+| Publication scope and rights | Explicit intended page/asset list, omissions with reasons, reuse/license decisions, and any material that must not leave the machine. Confirm whether the reported 46 pages are still the right inventory. |
+| Compiler | Pinned release tag, platform archive, verified matching SHA256SUMS digest, binary build identity, and help output for the commands/flags below. The release list currently identifies `v0.1.0-prealpha` as latest; that is an observed candidate, not a claim it supports every current-source behavior. |
+| Approval path | Where the human reviews source/artifact evidence and how the approved revision reaches the host. No agent-PR policy or cron job substitutes for launch approval. |
+
+If the site is already live, first record its current URL, source revision,
+and representative behavior; avoid a redeploy merely to manufacture a launch.
+If source, rights, ownership, or public destination cannot be established,
+stop here with the missing-input list. Do not fork a new destination instead.
+
+### Bounded work and spending cap
+
+After Gate 0, allow **two focused implementation sessions, at most six hours
+of agent work in total**, plus one **up-to-one-hour human review**. These are
+scope caps, not feasibility estimates. Record actual effort separately for
+inventory, artifact validation, publication, and review. If a session ends,
+leave its files and failures reproducible; do not burn time expanding scope.
+
+Use three checkpoints:
+
+1. **Inventory and reproducible artifact.** Preserve a starting revision and
+   build a release workspace with only approved public inputs. Keep the site's
+   layout, URLs, language structure, and existing taxonomy conventions. Record
+   the intended output and export coverage before building. Produce checked
+   output plus all warnings, failures, and workarounds. This is useful even
+   if deployment is blocked.
+2. **Human-approved publication or live verification.** Review the exact
+   source/artifact pair, run the launch checks below, and obtain explicit
+   approval before an authorized operator publishes. Verify the actual URL
+   after upload; the local artifact passing is not the remote result.
+3. **Reader evidence, within seven calendar days of publication/verification.**
+   A consenting person who did not author the selected pages attempts a task
+   in each language. One bilingual reader can do both; otherwise use one
+   reader per language. Record completion, the page/path used, confusion, and
+   any observed failure without recording unnecessary personal information.
+   One focused correction and recheck can fit the remaining session budget.
+   A lack of available readers remains “reader validation pending,” not a
+   successful task inferred from an agent walkthrough.
+
+At the cap, stop and hand off either an accepted first release or a concrete
+blocked/failed record. Do not extend the deadline, manufacture readers, or
+quietly pull generator work into the sessions. Any continuation needs a new
+bounded decision. No new content-production budget is hidden off the books.
+
+### Known friction: ordinary work, explicit dispositions
+
+Statuses below were checked on 2026-09-29; all three reports remain open.
+Recheck against the **selected binary and site**, not just generator master.
+
+| Report | First-release disposition | Stop condition |
+| --- | --- | --- |
+| #570: empty RAG with relative project root | Use the report's known working form: invoke from the site root with `--project-root .` and an absolute archive output. Independently check intended document coverage; an exit code or nonzero file size alone is insufficient. Record whether the selected release actually exhibits the problem. | Intended content is missing, empty, stale, or unparseable after the bounded workaround. Do not publish a knowingly incomplete archive or call `publish-check` proof it is sound. |
+| #571: dropped non-Latin taxonomy | Preserve a documented ASCII taxonomy vocabulary **only if the site already uses it and its owner accepts it**; preserve native-language titles and prose. Verify archives for the intended terms. | Native-language taxonomy is an owner-required launch condition or important meaning/navigation is lost. Record that requirement; do not silently transliterate, invent translations, or reduce a bilingual site to English. |
+| #572: unused fallback theme assets | Accept the reported roughly 1.5 MB overhead for the first release if the host budget allows it. Record measured artifact size and unused files; retain a prune step only if it already belongs to the site's reproducible publishing process and validate afterward. | Host limits fail or pruning breaks referenced runtime files. Do not add a new asset-selection subsystem or an unrecorded post-build deletion step. |
+
+Documented warnings can be accepted individually with owner/reason; malformed
+content, broken required paths, leaked material, and missing intended export
+content cannot. Neither a zero-warning dashboard nor erasing every workaround
+is the goal.
+
+### Build/export recipe and public-data boundary
+
+Use a clean **public-only release workspace** rooted at an immutable source
+revision. Inventory what goes into it; ordinary Git ignores and
+`render: false` are not privacy controls. Approved raw Markdown is public,
+and its presence in graph/meta must be intentional. Referenced assets and
+source filenames can also disclose information. If public/private selection
+is uncertain, block publication rather than rely on removal after generation.
+
+Retain config/layout choices; set the release config's `siteurl` to the actual
+approved URL including subpath. Record any release-config changes and the
+exact config/input hashes alongside the source revision; a revision alone does
+not identify an edited workspace. Freeze these inputs before validation.
+Do not run `init --force` over the existing site. Evidence files live outside
+source inputs and outside `public/`.
+
+The following is a **command template, not an executed transcript**. Fill
+absolute paths and the approved URL, verify flags against the pinned binary's
+help, and record commands, exit codes, and both output streams. If the chosen
+release does not support the required contract, record a compatibility blocker
+rather than silently using `go run` or inventing flags.
+
+```bash
+set -eu
+BIN=/absolute/path/to/verified/la-famille
+SITE_ROOT=/absolute/path/to/public-only-release-workspace
+RUN=/absolute/path/to/evidence-directory
+SITE_URL=https://actual-owner-approved-origin/actual-subpath
+
+# Prepare RUN outside SITE_ROOT and public/, and set siteurl in the release config.
+cd "$SITE_ROOT"
+"$BIN" --version --json
+"$BIN" --project-root . check --asset-health
+"$BIN" --project-root . build --output "$SITE_ROOT/public" --site-url "$SITE_URL"
+"$BIN" --project-root . rag --output "$RUN/rag-archive"
+```
+
+After `rag`, compare the parsed `rag-content.md` document paths and representative
+text against the approved expected corpus—not merely its byte count. Record
+any exporter-specific exclusions explicitly. Use an existing archive reader
+or a small site-local verification helper that understands marker escaping;
+a line-count/grep approximation is not a parser. Do not add a generator command
+for this launch. Require evidence that pages from both languages are included
+and belong to the frozen inputs and source revision. Review
+raw-page inclusion for public exposure even when `ask` would exclude it.
+System/config bundles stay in the private evidence workspace; **do not publish
+`rag-system.md` or `rag-config.md` in this first release**. Publish only the
+reviewed content bundle at `public/rag-archive/rag-content.md`, copied using
+the site's documented release procedure. This is a downloadable content
+artifact, not a pack or a public assistant service.
+
+```bash
+# After reviewing and copying ONLY the content bundle into public/rag-archive/:
+"$BIN" --project-root . publish-check \
+  --output "$SITE_ROOT/public" --site-url "$SITE_URL" --strict --json
+```
+
+`check` must have no errors; record accepted warnings. `publish-check --strict`
+must pass, including no generated missing-page stubs. It does **not** validate
+archive coverage, source truth, or hosting. Run the final check after any
+existing prune/copy step; do not rebuild after copying the corpus without
+repeating the export/copy/validation sequence. Keep the same source revision
+throughout and preserve the reviewed output digest/file inventory. Any source,
+config, template, or asset change restarts artifact validation before approval.
+
+### Launch acceptance: every row needs evidence
+
+| Check | Required evidence |
+| --- | --- |
+| One independent site | Actual approved HTTPS URL, source revision, binary identity, and deployment/artifact identity. “Would deploy” and a local screenshot do not pass. |
+| Source and artifact agree | Intended page/asset inventory with actual outputs and documented omissions; no silent content loss, unexpected raw private files, repository notes, or extra system/config export. |
+| Bilingual navigation | Test six representative existing paths, three per language, including each language entry and a content page. Test existing cross-language links if present; lack of translation-switch machinery alone is not a launch blocker. All previously published intended paths stay reachable. |
+| Reader discovery | A task finds its target by ordinary navigation or search. Test known CJK/native-language queries if applicable; unsupported results are a recorded failure/workaround, not a guessed pass. No local model needed. |
+| Existing static features | If enabled, load graph explorer over HTTP and select a known page; if intentionally disabled, record that decision rather than enabling it for this exercise. Verify intended tag/category archive links when the site uses taxonomy. Confirm canonical/sitemap URLs and asset URLs use the deployed subpath correctly. |
+| Public content export | Parsed document coverage and representative text from both languages match the approved revision; download the deployed content bundle and confirm it matches the reviewed local artifact. |
+| Remote artifact works | Fetch/inspect each representative path, search/graph payload, and referenced runtime resources at the real URL; check status, expected content, and browser console/network behavior. HTTP 200 alone can be an error page or host fallback. |
+| Approval and recovery | Human approval tied to the source/config/artifact identity; authorized publisher and last known-good artifact/recovery procedure recorded. If remote checks fail, stop further uploads and restore only through the authorized operator. Never add the automated merge label as a substitute. |
+| Reader outcome | Attempted task and observed outcome in each language, with failures preserved and no success inferred from build logs. |
+
+No site restructuring or theme overhaul is permitted to make the check matrix
+look impressive. Reuse existing features; the question is whether this site
+works, not whether every La Famille capability has a demo.
+
+### The launch record and finish line
+
+Commit a short `HOMESTEAD.md` to the **site repository**, outside its rendered
+content directory. Keep transcripts/manifests beside that record or link to a
+retained CI artifact. Sensitive evidence stays private; publish only sanitized
+summaries with permission. Capture:
+
+- Named owner, audience, actual languages, public URL, source revision,
+  verified release/archive identity, and publication date/operator.
+- Intended public page/asset/export inventory and licensing decisions.
+- Exact command/exit-code evidence, final artifact inventory/digest, and
+  acceptance-matrix results with representative URLs.
+- Warnings and #570–#572 dispositions, accepted workarounds with reasons,
+  reader task outcomes, and any correction/recheck.
+- Actual agent work and human review effort, next review date, and an honest
+  status: **accepted first release**, **live but validation pending**,
+  **blocked before publication**, or **failed acceptance**.
+
+**First-rung done:** the approved live URL and artifact are verified, intended
+content is preserved, both language tasks have observed outcomes meeting the
+chosen expectations, and the launch record is committed. Reader failure may
+produce a useful live release, but not an unqualified Homestead success.
+
+**Later rungs are not silently included:** schedule an owner check about two
+weeks after launch, then decide whether to fund a second-contributor correction
+and two maintenance cycles. Those would demonstrate durability; this first
+release does not. If nobody owns continued usefulness, archive or retire the
+experiment honestly rather than schedule an agent to manufacture activity.
