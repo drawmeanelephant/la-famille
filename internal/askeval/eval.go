@@ -65,6 +65,20 @@ type Options struct {
 	ProjectRoot string
 	Provider    string
 	K           int
+	// Ranker overrides the production BM25-lite scorer so that alternative
+	// retrieval arms (#581 embeddings, hybrid fusion, graph expansion) can be
+	// measured through the same gates. Nil uses the production ranker, which
+	// is the default and the only behaviour any release claim may rest on.
+	Ranker func(Corpus) Scorer
+}
+
+// Corpus and Scorer are the minimal ranking surface the harness measures, so a
+// candidate arm can be evaluated without importing internal/retrieval.
+type Corpus = retrieval.Corpus
+
+// Scorer ranks chunks for a query. retrieval.Ranker satisfies it.
+type Scorer interface {
+	Rank(query string, topK int) []retrieval.Scored
 }
 
 // QuestionResult keeps known misses visible independently of passing floors.
@@ -158,7 +172,7 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 		if err != nil {
 			return Report{}, fmt.Errorf("ask eval: create temporary project: %w", err)
 		}
-		err = evaluateSite(ctx, site, projectRoot, tmp, opts.Provider, data.K, data.MinimumPrecisionAtK, &report)
+		err = evaluateSite(ctx, site, projectRoot, tmp, opts, data.K, data.MinimumPrecisionAtK, &report)
 		removeErr := os.RemoveAll(tmp)
 		if err != nil {
 			return Report{}, err
@@ -184,7 +198,7 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 	return report, nil
 }
 
-func evaluateSite(ctx context.Context, site Site, projectRoot, tmp, provider string, k int, precisionFloor float64, report *Report) error {
+func evaluateSite(ctx context.Context, site Site, projectRoot, tmp string, opts Options, k int, precisionFloor float64, report *Report) error {
 	cfg, err := prepareSite(projectRoot, tmp, site)
 	if err != nil {
 		return fmt.Errorf("ask eval: build fixture %q: %w", site.ID, err)
@@ -195,7 +209,11 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp, provider str
 	if err != nil {
 		return fmt.Errorf("ask eval: load site %q corpus: %w", site.ID, err)
 	}
-	ranker := retrieval.NewRanker(loaded.Corpus)
+	newRanker := opts.Ranker
+	if newRanker == nil {
+		newRanker = func(c Corpus) Scorer { return retrieval.NewRanker(c) }
+	}
+	ranker := newRanker(loaded.Corpus)
 	graphBytes, err := os.ReadFile(filepath.Join(cfg.OutputDir, "graph.json"))
 	if err != nil {
 		return err
@@ -225,7 +243,7 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp, provider str
 			if len(scored) == 0 {
 				if server == nil {
 					server, err = ask.NewServer(ask.Config{
-						ProviderName: provider, RagDir: cfg.RagDir, ContentDir: "content",
+						ProviderName: opts.Provider, RagDir: cfg.RagDir, ContentDir: "content",
 						OutputDir: cfg.OutputDir, DisableUI: true, LoopbackOnly: true,
 					})
 					if err != nil {

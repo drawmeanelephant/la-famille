@@ -52,6 +52,33 @@ answer pages are found, but `registry` is missing from the real graph route
 `sensor → registry → assay` (path coverage 2/3). Path coverage is separate from
 evidence recall and does not prove a generated answer explains the route.
 
+## What this gate can and cannot detect
+
+A regression gate that cannot fail is not a gate, so the suite proves its own
+teeth rather than assuming them. `internal/askeval/mutation_test.go` injects
+deliberately broken rankers through `Options.Ranker` and asserts they fail:
+
+- **Stub ranker** (returns the first chunk regardless of query) is rejected by
+  both datasets, and falls below the recorded recall floor. This is a hard gate.
+- **Reversed ranker** (production ranking inverted, a realistic comparator bug)
+  is asserted to change measured retrieval, so a green run cannot hide an
+  ordering regression.
+
+**Known limitation, measured rather than assumed.** The frozen #587 dataset is
+saturated: its fixtures have 2-4 pages, so at K=5 every candidate page is
+retrieved regardless of order. Reversing the ranking changes the *order* of
+retrieved pages but leaves recall at 1.0, so that dataset detects a stub
+ranker but not reversed ordering. `TestSaturatedRegressionSetCannotDetectOrdering`
+records this as a canary: if a future retriever regresses ordering on small
+corpora, that test is the signal to grow the dataset rather than trust a green
+run. The twelve-page hard dataset carries more of the ordering signal.
+
+`Options.Ranker` is the seam the next #581 phases need to compare lexical,
+hybrid and graph arms through identical gates. A nil `Ranker` uses the
+production BM25-lite scorer, which remains the only behaviour any release claim
+may rest on; `TestRankerSeamDefaultsToProduction` guards that the nil and
+explicit paths cannot diverge.
+
 ## Metric and gate semantics
 
 - K limits **chunks before page deduplication**, matching production ranking.
@@ -109,5 +136,6 @@ and add versioned labels when the contract evolves; never rewrite it to flatter
 a new retriever.
 
 Embeddings, hybrid fusion, bounded graph expansion, answer provenance and path
-UI remain separate phases of #581. No production ranker, prompt, citation
+UI remain separate phases of #581. `Options.Ranker` exists so those arms can be
+measured through these same gates. No production ranker, prompt, citation
 verifier, dependency or static generation configuration is changed here.
