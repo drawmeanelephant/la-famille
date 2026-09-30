@@ -30,4 +30,4 @@
 - [x] Add failing CLI regressions for relative project root and output forms.
 - [x] Fix root handling in `rag` and `build` without changing output semantics.
 - [x] Run focused tests, `go test ./...`, and `go vet ./...`.
-- [ ] Review diff, commit, and open PR against `master`.
+- [x] Review diff, commit, and open PR #577 against `master`.
