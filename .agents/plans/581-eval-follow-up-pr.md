@@ -33,6 +33,31 @@ The graph probe finds both answer pages but misses the bridge (coverage 2/3).
 Precision is relevant unique pages / retrieved unique pages within the top K
 chunks, **not hits / K**. Answerable-only macro averages exclude abstention.
 
+## Does the gate actually gate?
+
+A regression suite that cannot fail is not a gate. `internal/askeval/mutation_test.go`
+injects deliberately broken rankers through an `Options.Ranker` seam and asserts
+they are rejected:
+
+- **Stub ranker** (returns the first chunk regardless of query) fails both
+  datasets and drops below the recorded recall floor. Verified by mutation:
+  neutering `Report.Passed` makes these tests fail loudly.
+- **Reversed ranker** (production ranking inverted) must change measured
+  retrieval, so a green run cannot hide an ordering regression.
+
+**Measured limitation, not an assumption.** The frozen #587 dataset is
+saturated: 2-4 page fixtures at K=5 retrieve every candidate page, so reversing
+ranking reorders results but leaves recall at 1.0. That dataset detects a stub
+ranker but *not* reversed ordering.
+`TestSaturatedRegressionSetCannotDetectOrdering` is the canary: if ordering
+ever regresses on small corpora, it signals to grow the dataset rather than
+trust a green run. The twelve-page hard dataset carries more of that signal.
+
+`Options.Ranker` is the seam the next #581 phases need to compare lexical,
+hybrid and graph arms through identical gates. A nil `Ranker` uses production
+BM25-lite, the only behaviour any release claim may rest on;
+`TestRankerSeamDefaultsToProduction` guards the two paths from diverging.
+
 ## Compatibility and scope
 
 - Frozen #587 golden JSON and original tests are unchanged; project-relative
@@ -44,7 +69,8 @@ chunks, **not hits / K**. Answerable-only macro averages exclude abstention.
 - Probes are agent-authored synthetic keywords, not held-out natural questions.
   Page recall and graph coverage do not prove answer accuracy or provenance.
 - Content-only builds do not reproduce fixture themes/config/deployment paths.
-- Embeddings, hybrid fusion, bounded graph expansion and path UI remain deferred.
+- Embeddings, hybrid fusion, bounded graph expansion and path UI remain deferred;
+  `Options.Ranker` exists so those arms can be measured through these gates.
 
 ## Validation
 
@@ -63,7 +89,8 @@ chunks, **not hits / K**. Answerable-only macro averages exclude abstention.
 Added coverage includes precision/recall floors, permitted baseline lifts,
 aggregate-only CLI failures, K overrides, strict JSON and metric validation,
 symlink confinement, source collisions, cancellation, graph/citation identity,
-vocabulary leakage and invented/stale evidence labels.
+vocabulary leakage and invented/stale evidence labels, plus the broken-ranker
+gate tests described above.
 
 ## Try it
 
