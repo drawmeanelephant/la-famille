@@ -135,7 +135,50 @@ evidence before making answer-quality claims. Preserve the original benchmark
 and add versioned labels when the contract evolves; never rewrite it to flatter
 a new retriever.
 
-Embeddings, hybrid fusion, bounded graph expansion, answer provenance and path
-UI remain separate phases of #581. `Options.Ranker` exists so those arms can be
-measured through these same gates. No production ranker, prompt, citation
-verifier, dependency or static generation configuration is changed here.
+## Phase 3: paired lexical graph evaluation
+
+```bash
+go run ./cmd/la-famille ask \
+  --eval assets/testdata/ask-eval/golden-questions-graph.json \
+  --eval-compare-graph --no-embeddings
+go run ./cmd/la-famille ask \
+  --eval assets/testdata/ask-eval/golden-questions.json \
+  --eval-compare-graph --no-embeddings
+go test ./internal/askeval -run TestGraph -v
+```
+
+The new graph file adds questions, not rewritten labels in either previous
+dataset. Each multi-hop question requires the intermediate page as evidence
+and sets `require_grounded_path`. The gate calls the real Ask pipeline and
+checks a complete ordered route, every page name in the answer, and verified
+citation cards for every route node. The deterministic fake marks route
+responses as synthetic. This proves wiring, not model answer correctness.
+
+| Dataset / class | Graph off recall@5 | Graph on recall@5 | Off precision@5 | On precision@5 |
+| --- | ---: | ---: | ---: | ---: |
+| New graph set | 0.8667 | 1.0000 | 0.4867 | 0.6067 |
+| New multi-hop (3) | 0.7778 | 1.0000 | 0.6333 | 0.8333 |
+| New single-page (2) | 1.0000 | 1.0000 | 0.2667 | 0.2667 |
+| Frozen regression single-page (8) | 1.0000 | 1.0000 | 0.4375 | 0.4375 |
+
+`observation-custody-finding` needs the dawn observation (`sensor`), courier and
+sealed-vial custody (`registry`), and chloride finding (`assay`). The reverse
+question follows the same links backward. `observatory-to-archive` needs the
+observatory's entry point, the field log's routing link, and the kiln reading.
+The controls ask only for the courier or kiln temperature. Source facts reach
+the graph prompt: title-only chunks are not valid route grounding, and source
+text uses a bounded share of the prompt budget instead of a 160-rune preview.
+
+`Options.CompareGraph` runs both arms in one call, retains both reports, and
+rejects embeddings/custom baseline rankers. Both arms use the same K and
+unchanged labels. The comparison gates require graph question gates to pass,
+aggregate recall/precision not to fall, and every single-page question's recall
+and precision not to fall. The lexical arm's new grounded-route gates are
+expected to fail and remain visible. A lift is reported, not assumed; a
+saturated dataset cannot gain recall.
+
+The hard dataset's labels still treat `registry` as route metadata rather than
+acceptable evidence for `sensor-to-assay`. Retrieving that bridge may therefore
+reduce its frozen precision metric. Do not relabel it. Its warranty abstention
+failure also remains a failure. Run the hard command when investigating limits,
+not as a green end-to-end answer benchmark.

@@ -11,6 +11,8 @@ package retrieval
 import (
 	"sort"
 	"strings"
+
+	"github.com/tbuddy/la-famille/internal/graph"
 )
 
 // Chunk is a single retrievable unit. IDs are deterministic across loads so
@@ -56,6 +58,7 @@ func (c Chunk) HeadingLabel() string {
 
 // Corpus is a deterministic view over the chunks known to the assistant.
 type Corpus struct {
+	Graph         graph.Graph
 	Version       string
 	SourceDir     string
 	Chunks        []Chunk

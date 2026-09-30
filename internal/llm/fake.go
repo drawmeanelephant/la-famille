@@ -40,6 +40,19 @@ func (f *FakeProvider) Complete(_ context.Context, req Request) (Response, error
 	if f.ForceError != nil {
 		return Response{}, f.ForceError
 	}
+	if len(req.GroundingPaths) > 0 && (f.EchoMode == "" || f.EchoMode == "cite") {
+		var routes []string
+		for _, path := range req.GroundingPaths {
+			var labels []string
+			for _, hint := range path {
+				labels = append(labels, fmt.Sprintf("%s [%s]", hint.Title, hint.Key))
+			}
+			routes = append(routes, strings.Join(labels, " → "))
+		}
+		out := "Synthetic graph-grounding response (not a model answer): " + strings.Join(routes, "; ") +
+			". These pages are connected by site links."
+		return Response{Answer: out, Markdown: out}, nil
+	}
 
 	switch f.EchoMode {
 	case "miss":

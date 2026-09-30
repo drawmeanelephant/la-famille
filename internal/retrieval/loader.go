@@ -18,6 +18,7 @@ import (
 // (and what we couldn't find) so the orchestrator can produce an actionable
 // error if the archive is stale or malformed.
 type LoadResult struct {
+	GraphWarnings     []string
 	MalformedArtifact string
 	MissingArtifacts  []string
 	Corpus            Corpus
@@ -103,6 +104,7 @@ func Load(opts LoadOptions) (LoadResult, error) {
 			// Non-fatal: log via returned warning but keep the corpus usable
 			result.MalformedArtifact = "meta.json"
 		}
+		result.GraphWarnings = loadLinkGraph(&result.Corpus, opts.OutputDir)
 	}
 
 	result.Corpus.ChunkCount = len(result.Corpus.Chunks)

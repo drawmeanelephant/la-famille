@@ -34,6 +34,11 @@
           placeholder="Ask anything covered by the site. Press Enter to submit, Shift+Enter for a new line, Esc to clear."
           aria-describedby="question-help status-label"
           required></textarea>
+        <label class="ask-graph-toggle" for="graph-expansion">
+          <input type="checkbox" id="graph-expansion" aria-describedby="graph-help">
+          Expand along site links (lexical retrieval)
+        </label>
+        <p id="graph-help" class="ask-help">Toggle and ask the same question again to compare graph on/off without restarting.</p>
         <div class="ask-form-actions">
           <p id="question-help" class="ask-help">
             Enter submits · Shift+Enter newline · Esc clears · Cite sources shown inline as [1], [2]…
@@ -88,6 +93,8 @@
         <dt>Bind address</dt><dd id="diag-host">—</dd>
         <dt>Last retrieval</dt><dd id="diag-retrieve-ms">—</dd>
         <dt>Last generation</dt><dd id="diag-generate-ms">—</dd>
+        <dt>Last retrieval mode</dt><dd id="diag-retrieval-mode">—</dd>
+        <dt>Graph links</dt><dd id="diag-graph-edges">—</dd>
       </dl>
       <p class="ask-diagnostics-warning">
         Diagnostics are intentionally public — they describe your machine, not your questions.

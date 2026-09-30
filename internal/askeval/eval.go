@@ -51,6 +51,7 @@ type Site struct {
 // recall floor requires MeasurementOnly so known misses are not success claims.
 // Strict unanswerable controls require zero retrieval and canonical fallback.
 type Question struct {
+	RequireGroundedPath bool     `json:"require_grounded_path,omitempty"`
 	ID                  string   `json:"id"`
 	Text                string   `json:"question"`
 	AcceptablePages     []string `json:"acceptable_pages,omitempty"`
@@ -64,6 +65,8 @@ type Question struct {
 
 // Options configures an eval run. A zero K uses the dataset's original depth.
 type Options struct {
+	GraphExpansion    bool
+	CompareGraph      bool
 	DatasetPath       string
 	ProjectRoot       string
 	Provider          string
@@ -91,6 +94,9 @@ type Scorer interface {
 // QuestionResult keeps known misses visible independently of passing floors.
 // PathCoverage measures retrieved route pages, not generated answer provenance.
 type QuestionResult struct {
+	GroundedPath     bool
+	Answer           string
+	Paths            []retrieval.GraphPath
 	SiteID           string
 	QuestionID       string
 	Text             string
@@ -118,6 +124,7 @@ type Metrics struct {
 // Report retains the original recall fields and adds precision and diagnostics.
 // Baseline comparison is meaningful only at K=5; improvements are permitted.
 type Report struct {
+	Comparison        *GraphComparison
 	DatasetName       string
 	K                 int
 	Provider          string
@@ -138,6 +145,12 @@ type Report struct {
 // Run builds and exports content-only fixtures in disposable projects, then
 // measures the unchanged ranker. Nothing is written into source fixtures.
 func Run(ctx context.Context, opts Options) (Report, error) {
+	if opts.CompareGraph {
+		return compareGraph(ctx, opts)
+	}
+	if opts.GraphExpansion && opts.Embeddings {
+		return Report{}, errors.New("ask eval: graph expansion is lexical-only; disable embeddings")
+	}
 	if strings.TrimSpace(opts.DatasetPath) == "" {
 		return Report{}, errors.New("ask eval: dataset path is required")
 	}
@@ -172,6 +185,9 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 		BaselineRecallAt5: data.BaselineRecallAt5, BaselineOK: true,
 		Classes: make(map[string]Metrics),
 		Ranker:  "BM25-lite",
+	}
+	if opts.GraphExpansion {
+		report.Ranker = "BM25-lite + link graph"
 	}
 	if opts.Embeddings {
 		report.Ranker = "BM25-lite + Ollama embeddings (RRF)"
@@ -239,6 +255,9 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp string, opts 
 		newRanker = func(c Corpus) Scorer { return retrieval.NewRanker(c) }
 	}
 	ranker := newRanker(loaded.Corpus)
+	if opts.GraphExpansion {
+		ranker = retrieval.NewGraphRanker(loaded.Corpus)
+	}
 	if opts.Embeddings {
 		key := sha256.Sum256([]byte(projectRoot + "\x00" + site.ID + "\x00" + site.Fixture + "\x00" + site.ContentDir))
 		path := filepath.Join(opts.EmbeddingCacheDir, hex.EncodeToString(key[:]), retrieval.VectorFileName)
@@ -298,6 +317,7 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp string, opts 
 					server, err = ask.NewServer(ask.Config{
 						ProviderName: opts.Provider, RagDir: cfg.RagDir, ContentDir: "content",
 						OutputDir: cfg.OutputDir, DisableUI: true, LoopbackOnly: true,
+						GraphExpansion: opts.GraphExpansion,
 					})
 					if err != nil {
 						return err
@@ -328,6 +348,27 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp string, opts 
 			if len(question.PathPages) > 0 {
 				coverage := recallAtK(pages, question.PathPages)
 				result.PathCoverage = &coverage
+			}
+			if opts.GraphExpansion && question.RequireGroundedPath {
+				if server == nil {
+					server, err = ask.NewServer(ask.Config{
+						ProviderName: opts.Provider, RagDir: cfg.RagDir, ContentDir: "content",
+						OutputDir: cfg.OutputDir, DisableUI: true, LoopbackOnly: true,
+						GraphExpansion: true,
+					})
+					if err != nil {
+						return err
+					}
+				}
+				answer, err := server.Answer(ctx, ask.AnswerRequest{Question: question.Text, MaxChunks: k})
+				if err != nil {
+					return fmt.Errorf("ask eval: grounded path %s/%s: %w", site.ID, question.ID, err)
+				}
+				result.Answer, result.Paths = answer.Answer, answer.Paths
+				result.GroundedPath = groundedPathMatches(answer, question.PathPages)
+			}
+			if question.RequireGroundedPath {
+				result.Passed = result.Passed && result.GroundedPath
 			}
 			class := firstClass(question.Class)
 			metrics := report.Classes[class]
@@ -444,7 +485,7 @@ func (d Dataset) Validate() error {
 				return fmt.Errorf("ask eval: invalid metric in %s/%s", site.ID, q.ID)
 			}
 			if q.Unanswerable {
-				if len(q.AcceptablePages) != 0 || len(q.PathPages) != 0 || q.MinimumRecallAtK != 0 || q.MeasurementOnly {
+				if len(q.AcceptablePages) != 0 || len(q.PathPages) != 0 || q.MinimumRecallAtK != 0 || q.MeasurementOnly || q.RequireGroundedPath {
 					return fmt.Errorf("ask eval: unanswerable question %s/%s cannot list evidence or measurement-only labels", site.ID, q.ID)
 				}
 				continue
@@ -467,6 +508,9 @@ func (d Dataset) Validate() error {
 			}
 			if len(q.PathPages) == 1 {
 				return fmt.Errorf("ask eval: path in %s/%s needs at least two pages", site.ID, q.ID)
+			}
+			if q.RequireGroundedPath && len(q.PathPages) < 3 {
+				return fmt.Errorf("ask eval: grounded path in %s/%s needs at least three pages", site.ID, q.ID)
 			}
 		}
 	}
@@ -579,6 +623,16 @@ func WriteReport(w io.Writer, report Report) error {
 		fmt.Fprintf(&b, "Class %s: recall=%.4f precision=%.4f n=%d\n", class, m.RecallAtK, m.PrecisionAtK, m.Questions)
 	}
 	fmt.Fprintf(&b, "Precision floor passed: %t; evaluation passed: %t\n", report.PrecisionOK, report.Passed)
+	for _, result := range report.Questions {
+		if len(result.Paths) > 0 {
+			fmt.Fprintf(&b, "Grounded route %s/%s: %s; cited/named all pages: %t\n",
+				result.SiteID, result.QuestionID, pathLabel(result.Paths[0]), result.GroundedPath)
+			fmt.Fprintf(&b, "  Answer: %s\n", result.Answer)
+		}
+	}
+	if report.Comparison != nil {
+		writeGraphComparison(&b, report.Comparison)
+	}
 	_, err := io.WriteString(w, b.String())
 	return err
 }

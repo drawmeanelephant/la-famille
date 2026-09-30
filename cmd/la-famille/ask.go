@@ -26,23 +26,25 @@ import (
 // All ask-related flags live as package-level so the small TUI integration
 // can read them through AskFlagSnapshot().
 var askFlagBundle = struct {
-	provider       string
-	model          string
-	host           string
-	ragDir         string
-	outputDir      string
-	port           int
-	maxCtx         int
-	eval           string
-	evalK          int
-	embeddings     bool
-	noEmbeddings   bool
-	embeddingModel string
-	embeddingCache string
-	rebuild        bool
-	noBrowser      bool
-	verbose        bool
-	expose         bool
+	provider         string
+	model            string
+	host             string
+	ragDir           string
+	outputDir        string
+	port             int
+	maxCtx           int
+	eval             string
+	evalK            int
+	embeddings       bool
+	noEmbeddings     bool
+	graphExpansion   bool
+	evalCompareGraph bool
+	embeddingModel   string
+	embeddingCache   string
+	rebuild          bool
+	noBrowser        bool
+	verbose          bool
+	expose           bool
 }{}
 
 // setupAskCmd wires the `la-famille ask` cobra subcommand. It mirrors the
@@ -90,6 +92,10 @@ without starting the web server. Embeddings are opt-in via --embeddings;
 		"Opt in to local Ollama embeddings and hybrid reciprocal-rank fusion.")
 	cmd.Flags().BoolVar(&askFlagBundle.noEmbeddings, "no-embeddings", false,
 		"Disable embeddings instantly, even if --embeddings is also set.")
+	cmd.Flags().BoolVar(&askFlagBundle.graphExpansion, "graph-expansion", false,
+		"Expand lexical hits along site links and retrieve connecting paths (no embeddings).")
+	cmd.Flags().BoolVar(&askFlagBundle.evalCompareGraph, "eval-compare-graph", false,
+		"Compare graph on/off against lexical ranking in one eval run.")
 	cmd.Flags().StringVar(&askFlagBundle.embeddingModel, "embedding-model", "nomic-embed-text",
 		"Local Ollama embedding model (requires --embeddings).")
 	cmd.Flags().StringVar(&askFlagBundle.embeddingCache, "embedding-cache", "",
@@ -109,6 +115,9 @@ without starting the web server. Embeddings are opt-in via --embeddings;
 // validates flags, optionally rebuilds the RAG archive, and starts the server.
 func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
+		if askFlagBundle.evalCompareGraph && strings.TrimSpace(askFlagBundle.eval) == "" {
+			return fmt.Errorf("ask: --eval-compare-graph requires --eval")
+		}
 		if evalPath := strings.TrimSpace(askFlagBundle.eval); evalPath != "" {
 			projectRoot := firstNonEmpty(cfg.ProjectRoot, ".")
 			datasetPath := resolveProjectPath(projectRoot, evalPath)
@@ -122,6 +131,8 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 				Provider:          provider,
 				K:                 askFlagBundle.evalK,
 				Embeddings:        askFlagBundle.embeddings && !askFlagBundle.noEmbeddings,
+				GraphExpansion:    askFlagBundle.graphExpansion,
+				CompareGraph:      askFlagBundle.evalCompareGraph,
 				EmbeddingModel:    askFlagBundle.embeddingModel,
 				EmbeddingCacheDir: resolveProjectPath(projectRoot, askFlagBundle.embeddingCache),
 			})
@@ -191,6 +202,7 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 			Verbose:        askFlagBundle.verbose,
 			LoopbackOnly:   !askFlagBundle.expose,
 			Embeddings:     askFlagBundle.embeddings && !askFlagBundle.noEmbeddings,
+			GraphExpansion: askFlagBundle.graphExpansion,
 			EmbeddingModel: askFlagBundle.embeddingModel,
 			CacheDir:       firstNonEmpty(resolveProjectPath(cfg.ProjectRoot, askFlagBundle.embeddingCache), cfg.ProjectRoot, filepath.Dir(ragDir)),
 		}
