@@ -7,6 +7,7 @@
 > a validated investment recommendation.
 >
 > Next-step brief: [Homestead's first rung — the existing bilingual site](#homestead-first-rung-the-existing-bilingual-site).
+> Evidence now located: [launch-input register](#homestead-launch-input-register).
 
 *Strategic, moonshot-level bets for la-famille. This document proposes; it
 implements nothing.*
@@ -1839,10 +1840,13 @@ content to meet a quota. This is a bounded **delivery brief**, not proof that
 the site has shipped and not authorization to deploy it.
 
 The issue reports identify a local `sites/zai` project with **46 content pages**
-on 2026-09-29. That path is a locator from a report, not a repository URL or
-proof the source is in this checkout. Its public address, named editorial
-owner, actual language pair, rights, and current source revision remain
-unverified. No milestone below may turn those unknowns into success claims.
+on 2026-09-29. Subsequent source discovery located the public Z.ai Field Guide
+repository and a live URL, with **58 Markdown files (29 EN + 29 ZH)** at the
+reviewed revision. The [launch-input register](#homestead-launch-input-register)
+below supersedes the earlier unknown-source/URL inventory, distinguishes source
+from deployment evidence, and records the remaining owner, rights, compiler,
+export-scope, and reader gates. The site exists; Homestead acceptance is not
+therefore complete.
 
 ### Outcome and hard boundary
 
@@ -1954,7 +1958,9 @@ The following is a **command template, not an executed transcript**. Fill
 absolute paths and the approved URL, verify flags against the pinned binary's
 help, and record commands, exit codes, and both output streams. If the chosen
 release does not support the required contract, record a compatibility blocker
-rather than silently using `go run` or inventing flags.
+rather than silently using `go run` or inventing flags. **The deployed
+`v0.1.0-prealpha` does not support the final strict-check command below; the
+[launch-input register](#homestead-launch-input-register) records that blocker.**
 
 ```bash
 set -eu
@@ -2045,3 +2051,230 @@ weeks after launch, then decide whether to fund a second-contributor correction
 and two maintenance cycles. Those would demonstrate durability; this first
 release does not. If nobody owns continued usefulness, archive or retire the
 experiment honestly rather than schedule an agent to manufacture activity.
+
+### Homestead launch-input register
+
+**Status: existing site is live; Gate 0 and first-rung acceptance are not
+complete.** This is an evidence register in the generator repository, not a
+second launch log or a modification to the site. Update the site's existing
+[`docs/HOMESTEAD.md`][zai-homestead] for subsequent site-local execution evidence.
+Its [`docs/VERIFICATION.md`][zai-verification] records a prior claim audit;
+that record's assertions are not independently re-certified by this review.
+
+The reviewed immutable source is
+[`drawmeanelephant/z.filed.fyi@888f502588a12624d90b9be1f7df0c7cd7b397a3`][zai-source]
+(default branch `main`). All source links below are pinned to that revision.
+Mutable branch heads, URLs, and CI artifact availability must be rechecked
+before any later implementation. This pass used read-only repository/API/log
+inspection and fetched public pages. It did **not** run site scripts, rebuild,
+deploy, retrieve credentials, test an interactive browser, or observe readers.
+
+#### Gate-by-gate findings
+
+| Launch input | Evidence located | Disposition |
+| --- | --- | --- |
+| Source and revision | Public [site source][zai-source]; `config.yaml`, `content/`, `templates/`, `assets/`, and `scripts/` identified at the revision above. | **Located.** No longer rely on the old local `sites/zai` path. |
+| Human owner | GitHub repository is owned by `drawmeanelephant`; authored pages identify “Z.ai Field Guide,” not a named human editorial owner. | **Unconfirmed.** @drawmeanelephant is the candidate owner, not an accepted accountability assignment. Owner-confirmation questions received no selections. |
+| Languages and audience | [README][zai-readme] and source establish English at `/`, Simplified Chinese at `/zh/` (`zh-CN` layouts). Public about pages describe an independent guide to Z.ai/Zhipu, its models, products, history, and sources. | **Languages established.** Proposed audience: English- and Chinese-reading developers/readers comparing the GLM model line and product surfaces. Owner adoption of that audience/tasks remains pending. |
+| Existing destination | [Config][zai-config] pins `siteurl: https://z.filed.fyi`; public `/` and `/zh/` return HTTP 200 with expected guide content. No URL subpath. README identifies Cloudflare Pages project `z-filed`, alias `https://z-filed.pages.dev/`. | **Live destination observed.** No new hosting recommendation or provisioning needed. Human authority over publishing/domain/account remains unconfirmed. |
+| Public inventory | Source tree has 58 Markdown files, four layouts, ten partials, and 15 files under the site's asset directory. Two Markdown files deliberately use `render: false`. | **Inventoried, not signed off.** Candidate public scope is all current content, intentional raw examples, referenced assets, and content-only RAG; it is not owner-approved yet. |
+| Rights | README says “Licensing placeholders: TBD by the repository owner”; no top-level site license was located. Shipped font notices and colophon provenance exist. | **Unresolved.** Public visibility and source citations do not establish ownership or grant a reuse license. Owner confirmation for authored text/artwork was not received. |
+| Compiler and build | [Deployment workflow][zai-deploy] pins `v0.1.0-prealpha` Linux amd64; [successful run][zai-run] records SHA256SUMS verification, binary commit, source SHA, and completed build/export/postprocessing. | **Current compiler identified; brief compatibility blocked.** Release lacks the required strict publish-check flags; details below. |
+| Approval and recovery | Existing workflow deploys every push to `main` and supports manual dispatch. Successful run records a deployment-specific URL and retained `site` artifact. No explicit human launch/recovery gate is defined in that workflow. | **Mechanism located, authority/signoff unresolved.** Do not push to site `main` or dispatch it as part of input resolution. Candidate recovery artifact is not an approved rollback procedure. |
+
+The user selected this existing bilingual site, but did not answer the later
+owner/scope/rights selections. Treat the documentation request and eventual
+review of this PR as permission to record evidence—not as blanket rights
+attestation, launch acceptance, or authorization to deploy.
+
+#### Freeze the actual source set, not the old page count
+
+The pinned source tree contains **29 English + 29 Chinese Markdown files**.
+Twenty-eight per edition render as HTML; `la-famille/raw-sample.md` in each
+edition is deliberately public raw Markdown. The 46-file count in the earlier
+issue reports and audit introduction is a historical snapshot, not today's
+coverage denominator. CI reports **85 generated pages** including taxonomy;
+that build counter must not be relabeled as 85 source documents.
+
+The 29 relative paths in each edition are:
+
+```text
+index.md                         api/index.md
+products/index.md                chat/index.md
+code/index.md                    autoclaw/index.md
+autoglm/index.md                 bigmodel/index.md
+qingyan/index.md                 zcode/index.md
+ecosystem/index.md               company/index.md
+company/open-source.md           history/index.md
+history/origins.md               history/chatglm-era.md
+history/pivot.md                 history/engineering-era.md
+models/index.md                  models/earlier.md
+models/glm-4-x-era.md             models/glm-5-family.md
+models/glm-5-3.md                 models/glm-5-3-flash.md
+meta/about.md                    la-famille/index.md
+la-famille/how-this-site-works.md la-famille/colophon.md
+la-famille/raw-sample.md
+```
+
+English paths are under `content/`; prepend `content/zh/` for Chinese.
+Preserve all intended existing routes; the six reader-test URLs below are
+samples, not permission to publish only six pages. Source identity is the
+pinned Git tree: content tree `10e58d5a49a6718e3f1a3f43840c541117855304`, config
+blob `e43df812ddca450b1ac90fcb82506e5dd3a47813`, templates tree
+`224bcaf11249995f16f5a93b7939bd727720e104`, assets tree
+`cf0f065875150bf98005319b6ac259372c6d2bae`, and scripts tree
+`459070d18edb288543b9e463c71cbc9cbb1fd3e9`. These are **Git object IDs**, not
+independent SHA256 attestations of local input bytes. Any edited workspace
+still needs its final input/config hashes recorded before approval.
+
+The [font inventory][zai-fonts] identifies four WOFF2 files, General Sans FFL
+and JetBrains Mono OFL notices, and a system CJK font stack. Assets also include
+site CSS/JS, a favicon, an OG image, and three abstract images. The [colophon][zai-colophon]
+says the three abstract images were generated for this project; that is a
+provenance assertion, not proof of ownership. The shipped FFL text permits
+own-site self-hosting but separately restricts redistribution. Do not infer
+permission for a new downloadable font-containing pack or blanket licensing
+of third-party files; no such package is part of this task.
+
+#### Existing publishing receipts and compiler incompatibility
+
+[Run 36623067663][zai-run] built the exact reviewed source revision and completed
+deployment on **2026-09-29 at 19:59:24 UTC**. Its log records:
+
+- `la-famille_0.1.0-prealpha_linux_amd64.tar.gz: OK` against the release
+  `SHA256SUMS`; binary commit `896ec96a51f988b0108aeda4e86ae75451dc3ac8`,
+  built with `go1.25.0`. [Release asset metadata][zai-release] publishes the archive
+  SHA256 `0731dc7cb750e9a77f1ed72c61016ddf1a935002863d5cd3cbbc7dbf5c22e684`.
+  This pass inspected those receipts, not a fresh downloaded binary checksum.
+- `check`: 0 errors, 0 warnings; `build`: 85 generated pages, cache miss;
+  `publish-check`: valid artifact, 118 files. CI also checks a nonempty content
+  bundle and generated `404.html`.
+- Existing site-local sequence: check → build → RAG export into `public/` →
+  strip internal `nofollow` → enhance artifact → prune unused fallback assets
+  → publish-check → upload → deploy. The pinned enhancement script alters
+  hreflang, graph styling, search data/client, taxonomy presentation, sitemap,
+  404, and asset URL versions. These scripts are part of the actual publishing
+  inputs; “unmodified generator” does not mean “unmodified output.”
+- Deployment-specific URL reported by CI:
+  [`https://935e8988.z-filed.pages.dev/`](https://935e8988.z-filed.pages.dev/).
+  Its homepage and the custom domain returned expected guide text in this
+  pass. That correspondence is not a byte-for-byte comparison of every live
+  file with the artifact.
+- Retained [artifact 11059661647][zai-artifact], name `site`, compressed size
+  980,022 bytes, API digest
+  `sha256:375b6083d7d61761d1215e68e6b79a88dff42d446c7a8868d04124c55201e489`,
+  recorded expiry **2026-10-06 19:59:05 UTC**, not expired when inspected.
+  The digest is for the uploaded artifact, not a parsed public-tree manifest
+  or a verified rollback. Copy/retain it only through the approved evidence
+  process before expiry; do not depend on seven-day retention indefinitely.
+
+The compiler gate is **not** closed by this successful run. At the recorded
+release commit, [`publish_check.go`][zai-release-check] defines only `--output`
+and `--json`; it has **no `--strict` or `--site-url` flags**. Its JSON shape is
+also the older manifest, not the current valid/stubs/errors report. The site
+workflow calls plain `publish-check`, not the newer command in the brief.
+Release source confirms this incompatibility; binary help/new-flag failure
+was not executed here. Never present master-only flags as release evidence.
+
+Keep the reviewed release pin as the **existing deployment input**. Before
+first-rung acceptance, the owner must either choose a new released binary
+that supports the required gate and validate it, or explicitly amend the
+brief to require an independently tested site-local no-stub/reference check
+with the existing binary. The latter is a proposed decision, not a check we
+have implemented or an approved downgrade. A silent `go run` fallback or a
+merely renamed “strict” step does not resolve compatibility.
+
+#### Public corpus boundary: found, but not accepted
+
+The successful manifest lists **all three** RAG bundles. Public requests to
+`/rag-archive/rag-content.md`, `/rag-archive/rag-system.md`, and
+`/rag-archive/rag-config.md` returned HTTP 200. The fetched system excerpt
+contains public workflow source with symbolic secret references—not retrieved
+credential values. The config bundle contains asset/template inventory.
+Their existence is an observable mismatch with this brief's **content-only
+export** boundary; it is not proof that credentials have leaked.
+
+Choose a reviewed content-only public export in a **separate site change**, or
+obtain an explicit owner-approved exception after reviewing the complete
+bundles and updating the scope. Neither has happened here. Removing public
+bytes is also a deployment-affecting act and requires that site's authorized
+operator; this docs PR removes nothing remotely.
+
+The workflow's `test -s rag-content.md` and this pass's truncated readable
+excerpt establish nonempty output, **not full coverage**. No parsed 58-document
+comparison, per-document source-byte match, or complete private-material audit
+was performed. The two intentionally raw examples must be considered in the
+public export scope even though the assistant would exclude them. Approving
+current public visibility by inference would erase the very gate we added.
+
+#### Proposed tasks for the later reader test
+
+**Proposed audience:** developers and researchers who need to distinguish
+GLM product/model capabilities and license constraints without treating
+vendor claims as independent findings. This wording follows the site's
+existing purpose; a human owner still needs to adopt it. These tasks read the
+guide; they do not recommend or integrate a vendor service.
+
+| Language | Starting point and prompt | Proposed expected result |
+| --- | --- | --- |
+| English | Start at `https://z.filed.fyi/`. “Does this guide say GLM-5.3 and GLM-5.3-Flash have the same license? Find the difference and a primary source to check it.” | Reach `/models/` then `/models/glm-5-3/` (or a useful search result); identify the guide's custom/non-MIT vs MIT distinction and follow its model-card/license source. Preserve the guide's caveat that exact terms belong to the license text. |
+| Simplified Chinese | Start at `https://z.filed.fyi/zh/`. “GLM-5.3 与 GLM-5.3-Flash 的许可相同吗？请在手册中找出差异，并指出可核对的一手来源。” | Reach `/zh/models/` then `/zh/models/glm-5-3/` (or a useful search result); explain the same distinction and identify a linked primary model-card/license source. Do not substitute the English page for native-language navigation. |
+
+These expectations come from the pinned guide, **not an independent legal or
+model-fact certification**. Source facts can change; retain attribution and
+recheck authoritative terms when acting on them. The six URLs above all
+returned HTTP 200 with matching English/Chinese guide titles and relevant
+content during read-only fetching. That is a representative page check, not
+an observed reader path, search interaction, or console/network audit.
+
+A `/tags/glm-5-3/` fetch listed English and Chinese pages. A `/graph/` fetch
+returned explorer HTML; its readable extraction includes hidden loading/error
+labels, so **do not report a graph runtime error or graph success from that
+text**. JS graph interaction, native-language search, assets, canonical URLs,
+and all intended historical routes still need the brief's browser/artifact
+checks. No person was recruited, no task outcome recorded, and the seven-day
+reader window has not been declared completed or newly restarted by this PR.
+
+#### Remaining decisions before calling the first rung accepted
+
+1. **Human accountability and authority:** name the editorial owner and
+   authorized publisher/domain operator; define how source/artifact review
+   is approved. Current push-to-main deployment is an existing fact, not
+   human approval of Homestead. Select a known-good recovery artifact and
+   operator-controlled rollback procedure before changing production.
+2. **Scope and rights:** approve the 58-file content inventory and referenced
+   assets, confirm publication rights for authored text/artwork, preserve font
+   notices, and decide content-only export versus a documented reviewed
+   exception. No new downstream reuse license is granted by this register.
+3. **Compatible acceptance checks:** resolve the release/strict-flag mismatch
+   explicitly; then run the selected binary/help and required artifact checks
+   on frozen inputs. Do not retrofit our newer acceptance wording onto an
+   older green CI run.
+4. **Corpus and remote verification:** compare parsed intended source/export
+   coverage, record final byte/input evidence, and perform browser/network
+   checks. Use the site's existing scripts/launch record rather than invent
+   another generator subsystem or redeploying just to claim a new launch.
+5. **Actual readers and upkeep:** have a consenting non-author attempt both
+   language tasks, record outcomes, and assign an owner review date. Existing
+   freshness automation checks some source claims; it cannot establish
+   usability, full editorial correctness, or human ownership.
+
+**Handoff result:** the site/revision/languages/URL/publishing pipeline and
+compiler identity are resolved by evidence. Owner, rights, public-scope signoff,
+strict compatibility, complete corpus/browser verification, reader outcomes,
+and recovery authority remain explicit gates. The correct current label is
+**live; Homestead validation pending**, not “launch blocked because no URL”
+and not “Homestead complete.”
+
+[zai-source]: https://github.com/drawmeanelephant/z.filed.fyi/tree/888f502588a12624d90b9be1f7df0c7cd7b397a3
+[zai-readme]: https://github.com/drawmeanelephant/z.filed.fyi/blob/888f502588a12624d90b9be1f7df0c7cd7b397a3/README.md
+[zai-config]: https://github.com/drawmeanelephant/z.filed.fyi/blob/888f502588a12624d90b9be1f7df0c7cd7b397a3/config.yaml
+[zai-deploy]: https://github.com/drawmeanelephant/z.filed.fyi/blob/888f502588a12624d90b9be1f7df0c7cd7b397a3/.github/workflows/deploy.yml
+[zai-homestead]: https://github.com/drawmeanelephant/z.filed.fyi/blob/888f502588a12624d90b9be1f7df0c7cd7b397a3/docs/HOMESTEAD.md
+[zai-verification]: https://github.com/drawmeanelephant/z.filed.fyi/blob/888f502588a12624d90b9be1f7df0c7cd7b397a3/docs/VERIFICATION.md
+[zai-fonts]: https://github.com/drawmeanelephant/z.filed.fyi/blob/888f502588a12624d90b9be1f7df0c7cd7b397a3/assets/fonts/README.md
+[zai-colophon]: https://github.com/drawmeanelephant/z.filed.fyi/blob/888f502588a12624d90b9be1f7df0c7cd7b397a3/content/la-famille/colophon.md
+[zai-run]: https://github.com/drawmeanelephant/z.filed.fyi/actions/runs/36623067663
+[zai-artifact]: https://github.com/drawmeanelephant/z.filed.fyi/actions/runs/36623067663/artifacts/11059661647
+[zai-release]: https://github.com/drawmeanelephant/la-famille/releases/tag/v0.1.0-prealpha
+[zai-release-check]: https://github.com/drawmeanelephant/la-famille/blob/896ec96a51f988b0108aeda4e86ae75451dc3ac8/cmd/la-famille/publish_check.go
