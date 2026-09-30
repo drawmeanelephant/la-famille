@@ -164,7 +164,7 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 			Port:         port,
 			RagDir:       ragDir,
 			OutputDir:    outputDir,
-			ContentDir:   cfg.ContentDir,
+			ContentDir:   askContentDir(cfg),
 			Rebuild:      askFlagBundle.rebuild,
 			NoBrowser:    askFlagBundle.noBrowser,
 			MaxContext:   askFlagBundle.maxCtx,
@@ -207,6 +207,35 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 		defer stop()
 		return server.Start(ctx)
 	}
+}
+
+// askContentDir returns the configured content directory in the same
+// project-root-relative form recorded in RAG archive paths.
+func askContentDir(cfg config.Config) string {
+	contentDir := strings.TrimSpace(cfg.ContentDir)
+	if contentDir == "" {
+		return "content"
+	}
+	root := strings.TrimSpace(cfg.ProjectRoot)
+	if root == "" {
+		root = "."
+	}
+	root, err := filepath.Abs(filepath.Clean(root))
+	if err != nil {
+		return filepath.ToSlash(filepath.Clean(contentDir))
+	}
+	if !filepath.IsAbs(contentDir) {
+		contentDir = filepath.Join(root, contentDir)
+	}
+	contentDir, err = filepath.Abs(filepath.Clean(contentDir))
+	if err != nil {
+		return filepath.ToSlash(filepath.Clean(contentDir))
+	}
+	relative, err := filepath.Rel(root, contentDir)
+	if err == nil && filepath.IsLocal(relative) {
+		return filepath.ToSlash(relative)
+	}
+	return filepath.ToSlash(filepath.Clean(contentDir))
 }
 
 func firstNonEmpty(values ...string) string {
