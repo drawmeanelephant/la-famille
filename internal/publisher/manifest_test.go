@@ -41,6 +41,20 @@ func TestCheckRejectsCacheInPublic(t *testing.T) {
 	}
 }
 
+func TestCheckRejectsVectorIndexInPublic(t *testing.T) {
+	for _, path := range []string{".la-famille-vectors.json", "assets/.la-famille-vectors.json"} {
+		t.Run(path, func(t *testing.T) {
+			root := t.TempDir()
+			writePublishFile(t, root, "index.html", "<html></html>")
+			writeRequiredArtifacts(t, root)
+			writePublishFile(t, root, path, "private vectors")
+			if _, err := Check(root, ""); err == nil || !strings.Contains(err.Error(), path) {
+				t.Fatalf("Check error = %v, want private vector index rejection", err)
+			}
+		})
+	}
+}
+
 func TestCheckReportsMissingLocalReference(t *testing.T) {
 	root := t.TempDir()
 	writePublishFile(t, root, "index.html", `<a href="missing/">Missing</a>`)

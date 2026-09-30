@@ -43,6 +43,28 @@ go run ./cmd/la-famille ask --provider fake
 This is what the tests use; it returns a synthetic answer that includes
 valid `[1]` citations so you can see the full flow without a model.
 
+### Optional hybrid retrieval
+
+Lexical BM25-lite ranking remains the default. To opt in to local semantic
+embeddings, start Ollama with an embedding model installed (for example,
+`ollama pull nomic-embed-text`) and run:
+
+```bash
+go run ./cmd/la-famille ask --embeddings --embedding-model nomic-embed-text
+# Instantly revert to the unchanged lexical ranker:
+go run ./cmd/la-famille ask --no-embeddings
+```
+
+The completion model (`--model`) and embedding model are independent.
+`--provider fake --embeddings` still uses Ollama for embeddings. No vector
+database or external API is needed. Corpus chunks are embedded once into a
+private `.la-famille-vectors.json` next to the project build cache, keyed by
+the generator's fingerprint, embedding model and exact corpus digest; query
+vectors are computed on demand. A valid index is reused without embedding
+chunks on the next run. Changing site inputs, model or corpus invalidates it.
+If Ollama is unavailable, serving falls back to the original lexical ranker.
+Only the local Ollama endpoint is accepted, including on redirects.
+
 ## Privacy Guarantees
 
 The default configuration is **loopback-only**: the assistant binds to
@@ -86,6 +108,10 @@ Flags:
   --max-context int       Maximum context characters per request (default 6000).
   --eval string           Run the BM25-lite retrieval evaluation against a golden-question JSON dataset.
   --eval-k int            Override eval chunk depth (1-100); zero uses the dataset depth.
+  --embeddings            Opt in to local Ollama embeddings and hybrid fusion.
+  --no-embeddings         Force lexical ranking, overriding --embeddings.
+  --embedding-model       Local embedding model (default nomic-embed-text).
+  --embedding-cache       Private vector cache directory (optional).
   --verbose               Verbose logs.
   --expose-host           Allow non-loopback binds. Warnings are emitted at startup.
 ```
@@ -111,13 +137,26 @@ The separate `golden-questions-hard.json` dataset has twelve-page linked sites,
 paraphrase probes, decoys and a missing graph bridge. It intentionally exits
 nonzero on its warranty abstention check. Its zero-floor measurement probes are
 not successful retrieval claims. These are synthetic keyword probes; neither
-page recall nor graph coverage proves generated answer quality. Embeddings and
-graph expansion remain separate work for #581.
+page recall nor graph coverage proves generated answer quality. Graph expansion
+remains separate work for #581. The original regression dataset is saturated
+at recall@5 1.0000, so a lift there is impossible; measure the unchanged hard
+set at 0.5833 as well. Its warranty abstention check fails even with lexical
+ranking, so its CLI command exits nonzero. RRF does **not** mathematically
+guarantee that recall or precision improves. Report actual local model
+measurements rather than relabeling the questions or selecting favorable ones.
+
+Eval's fixture builds are disposable. Embedding indices persist in the user's
+cache directory (`la-famille/ask-eval` under the OS cache by default), keyed
+by fixture identity and content digest, or in `--embedding-cache`. The report
+identifies hybrid ranking or an explicit lexical fallback when Ollama is
+offline. No-answer controls retain their strict zero-retrieval gate.
 
 ```bash
 go run ./cmd/la-famille ask \
   --eval assets/testdata/ask-eval/golden-questions.json \
   --provider fake
+go run ./cmd/la-famille ask --eval assets/testdata/ask-eval/golden-questions-hard.json --embeddings
+go run ./cmd/la-famille ask --eval assets/testdata/ask-eval/golden-questions-hard.json --no-embeddings
 ```
 
 ### Examples
@@ -178,8 +217,9 @@ Each question flows through:
    stable chunks. Each chunk carries its page ID, title, heading trail,
    generated URL, and approximate token count.
 3. **Ranking.** A small BM25-lite scorer (in-memory inverted index,
-   `k1=1.5`, `b=0.75`) returns the top-K chunks for a query. Vector
-   embeddings are intentionally **opt-in** and not required.
+   `k1=1.5`, `b=0.75`) returns the top-K chunks for a query. When opted in,
+   Ollama embeddings rank chunks by cosine similarity, then reciprocal rank
+   fusion combines the complete lexical and dense rankings before top-K.
 4. **Prompt construction.** The top-K chunks are flattened into a
    numbered citation-key map. The model sees the keys, the heading
    trail, and the chunk text — but never a fabricated URL.

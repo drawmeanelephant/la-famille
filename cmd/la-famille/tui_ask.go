@@ -47,14 +47,17 @@ func launchAskServer(cfg config.Config) tea.Cmd {
 			port = ask.PortDefault
 		}
 		askCfg := ask.Config{
-			ProviderName: askFlagBundle.provider,
-			Model:        askFlagBundle.model,
-			Host:         host,
-			Port:         port,
-			RagDir:       resolveProjectPath(cfg.ProjectRoot, firstNonEmpty(askFlagBundle.ragDir, cfg.RagDir, "rag-archive")),
-			OutputDir:    resolveProjectPath(cfg.ProjectRoot, firstNonEmpty(askFlagBundle.outputDir, cfg.OutputDir, "public")),
-			ContentDir:   askContentDir(cfg),
-			LoopbackOnly: true,
+			ProviderName:   askFlagBundle.provider,
+			Model:          askFlagBundle.model,
+			Host:           host,
+			Port:           port,
+			RagDir:         resolveProjectPath(cfg.ProjectRoot, firstNonEmpty(askFlagBundle.ragDir, cfg.RagDir, "rag-archive")),
+			OutputDir:      resolveProjectPath(cfg.ProjectRoot, firstNonEmpty(askFlagBundle.outputDir, cfg.OutputDir, "public")),
+			ContentDir:     askContentDir(cfg),
+			LoopbackOnly:   true,
+			Embeddings:     askFlagBundle.embeddings && !askFlagBundle.noEmbeddings,
+			EmbeddingModel: askFlagBundle.embeddingModel,
+			CacheDir:       firstNonEmpty(resolveProjectPath(cfg.ProjectRoot, askFlagBundle.embeddingCache), cfg.ProjectRoot),
 		}
 
 		server, err := ask.NewServer(askCfg)

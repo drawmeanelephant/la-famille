@@ -26,19 +26,23 @@ import (
 // All ask-related flags live as package-level so the small TUI integration
 // can read them through AskFlagSnapshot().
 var askFlagBundle = struct {
-	provider  string
-	model     string
-	host      string
-	ragDir    string
-	outputDir string
-	port      int
-	maxCtx    int
-	eval      string
-	evalK     int
-	rebuild   bool
-	noBrowser bool
-	verbose   bool
-	expose    bool
+	provider       string
+	model          string
+	host           string
+	ragDir         string
+	outputDir      string
+	port           int
+	maxCtx         int
+	eval           string
+	evalK          int
+	embeddings     bool
+	noEmbeddings   bool
+	embeddingModel string
+	embeddingCache string
+	rebuild        bool
+	noBrowser      bool
+	verbose        bool
+	expose         bool
 }{}
 
 // setupAskCmd wires the `la-famille ask` cobra subcommand. It mirrors the
@@ -54,8 +58,9 @@ to a remote service. Use --provider ollama with a local Ollama daemon to get
 an LLM in front of the corpus. Set --provider fake to exercise the pipeline
 without a model.
 
-Run --eval <dataset.json> to measure the current BM25-lite retrieval against
-golden questions without starting the web server.`),
+Run --eval <dataset.json> to measure retrieval against golden questions
+without starting the web server. Embeddings are opt-in via --embeddings;
+--no-embeddings always restores the unchanged lexical scorer.`),
 		RunE: runAsk(cfg),
 	}
 
@@ -81,6 +86,14 @@ golden questions without starting the web server.`),
 		"Run the BM25-lite retrieval evaluation against a golden-question JSON dataset.")
 	cmd.Flags().IntVar(&askFlagBundle.evalK, "eval-k", 0,
 		"Override eval chunk depth (1-100); zero uses the dataset depth.")
+	cmd.Flags().BoolVar(&askFlagBundle.embeddings, "embeddings", false,
+		"Opt in to local Ollama embeddings and hybrid reciprocal-rank fusion.")
+	cmd.Flags().BoolVar(&askFlagBundle.noEmbeddings, "no-embeddings", false,
+		"Disable embeddings instantly, even if --embeddings is also set.")
+	cmd.Flags().StringVar(&askFlagBundle.embeddingModel, "embedding-model", "nomic-embed-text",
+		"Local Ollama embedding model (requires --embeddings).")
+	cmd.Flags().StringVar(&askFlagBundle.embeddingCache, "embedding-cache", "",
+		"Private vector cache directory (default: project root for serving, user cache for eval).")
 	cmd.Flags().BoolVar(&askFlagBundle.verbose, "verbose", false,
 		"Verbose logging of retrieval/generation timings.")
 	cmd.Flags().BoolVar(&askFlagBundle.expose, "expose-host", false,
@@ -104,10 +117,13 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 				provider = "fake"
 			}
 			report, err := askeval.Run(cmd.Context(), askeval.Options{
-				DatasetPath: datasetPath,
-				ProjectRoot: projectRoot,
-				Provider:    provider,
-				K:           askFlagBundle.evalK,
+				DatasetPath:       datasetPath,
+				ProjectRoot:       projectRoot,
+				Provider:          provider,
+				K:                 askFlagBundle.evalK,
+				Embeddings:        askFlagBundle.embeddings && !askFlagBundle.noEmbeddings,
+				EmbeddingModel:    askFlagBundle.embeddingModel,
+				EmbeddingCacheDir: resolveProjectPath(projectRoot, askFlagBundle.embeddingCache),
 			})
 			if err != nil {
 				return err
@@ -162,18 +178,21 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 		}
 
 		askCfg := ask.Config{
-			ProviderName: askFlagBundle.provider,
-			Model:        askFlagBundle.model,
-			Host:         host,
-			Port:         port,
-			RagDir:       ragDir,
-			OutputDir:    outputDir,
-			ContentDir:   askContentDir(cfg),
-			Rebuild:      askFlagBundle.rebuild,
-			NoBrowser:    askFlagBundle.noBrowser,
-			MaxContext:   askFlagBundle.maxCtx,
-			Verbose:      askFlagBundle.verbose,
-			LoopbackOnly: !askFlagBundle.expose,
+			ProviderName:   askFlagBundle.provider,
+			Model:          askFlagBundle.model,
+			Host:           host,
+			Port:           port,
+			RagDir:         ragDir,
+			OutputDir:      outputDir,
+			ContentDir:     askContentDir(cfg),
+			Rebuild:        askFlagBundle.rebuild,
+			NoBrowser:      askFlagBundle.noBrowser,
+			MaxContext:     askFlagBundle.maxCtx,
+			Verbose:        askFlagBundle.verbose,
+			LoopbackOnly:   !askFlagBundle.expose,
+			Embeddings:     askFlagBundle.embeddings && !askFlagBundle.noEmbeddings,
+			EmbeddingModel: askFlagBundle.embeddingModel,
+			CacheDir:       firstNonEmpty(resolveProjectPath(cfg.ProjectRoot, askFlagBundle.embeddingCache), cfg.ProjectRoot, filepath.Dir(ragDir)),
 		}
 
 		// Path safety: ensure configured dirs escape no upward traversal.

@@ -225,7 +225,7 @@ func TestScaffoldProjectRootFilesCreatesAndPreserves(t *testing.T) {
 func TestProjectRootFilesContentIntegrity(t *testing.T) {
 	files := projectRootFiles()
 	gitignore := string(files[".gitignore"])
-	if !strings.Contains(gitignore, "/public/") || !strings.Contains(gitignore, ".la-famille-cache.json") {
+	if !strings.Contains(gitignore, "/public/") || !strings.Contains(gitignore, ".la-famille-cache.json") || !strings.Contains(gitignore, ".la-famille-vectors.json") {
 		t.Errorf(".gitignore missing critical patterns:\n%s", gitignore)
 	}
 
