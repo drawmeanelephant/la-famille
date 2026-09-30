@@ -165,6 +165,105 @@ func TestRagOutputCanBeStagedInsidePublicFromOutsideProject(t *testing.T) {
 	}
 }
 
+func TestRagFromParentWithRelativeProjectRoot(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		relativeOutput bool
+	}{
+		{name: "absolute output"},
+		{name: "project-relative output", relativeOutput: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			parent, project, relativeRoot := nestedProjectFixture(t)
+			t.Chdir(parent)
+
+			output := filepath.Join(project, "public", "rag-archive")
+			if tc.relativeOutput {
+				output = filepath.Join("public", "rag-archive")
+			}
+			args := []string{"--project-root", relativeRoot, "rag", "--output", output}
+			cfg, err := loadProjectConfig(args)
+			if err != nil {
+				t.Fatalf("loadProjectConfig: %v", err)
+			}
+			root := setupRootCmd(cfg)
+			root.SetArgs(args)
+			if err := root.Execute(); err != nil {
+				t.Fatalf("rag from parent: %v", err)
+			}
+
+			archive := filepath.Join(project, "public", "rag-archive")
+			for name, want := range map[string]string{
+				"rag-system.md":  `<file path="README.md">`,
+				"rag-content.md": `<file path="docs/index.md">`,
+				"rag-config.md":  "static/logo.png",
+			} {
+				data, err := os.ReadFile(filepath.Join(archive, name))
+				if err != nil {
+					t.Fatalf("read %s: %v", name, err)
+				}
+				if !strings.Contains(string(data), want) {
+					t.Errorf("%s missing %q:\n%s", name, want, data)
+				}
+			}
+			if _, err := os.Stat(filepath.Join(project, relativeRoot)); !os.IsNotExist(err) {
+				t.Errorf("project root was nested twice: %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(parent, "public")); !os.IsNotExist(err) {
+				t.Errorf("RAG output was written relative to the invocation directory: %v", err)
+			}
+		})
+	}
+}
+
+func TestBuildFromParentWithRelativeProjectRoot(t *testing.T) {
+	parent, project, relativeRoot := nestedProjectFixture(t)
+	t.Chdir(parent)
+
+	args := []string{"--project-root=" + relativeRoot, "build"}
+	cfg, err := loadProjectConfig(args)
+	if err != nil {
+		t.Fatalf("loadProjectConfig: %v", err)
+	}
+	root := setupRootCmd(cfg)
+	root.SetArgs(args)
+	if err := root.Execute(); err != nil {
+		t.Fatalf("build from parent: %v", err)
+	}
+	for _, name := range []string{"public/index.html", ".la-famille-cache.json"} {
+		if _, err := os.Stat(filepath.Join(project, name)); err != nil {
+			t.Errorf("expected %s in selected project: %v", name, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(project, relativeRoot)); !os.IsNotExist(err) {
+		t.Errorf("project root was nested twice: %v", err)
+	}
+}
+
+func nestedProjectFixture(t *testing.T) (parent, project, relativeRoot string) {
+	t.Helper()
+	parent = t.TempDir()
+	relativeRoot = filepath.Join("sites", "zai")
+	project = filepath.Join(parent, relativeRoot)
+	for name, body := range map[string]string{
+		"config.yaml":         "content_dir: docs\nasset_dir: static\ntemplate: layouts/base.html\n",
+		"README.md":           "# Site\n",
+		"docs/index.md":       "# Home\n",
+		"static/logo.png":     "PNG",
+		"layouts/base.html":   "<html><body>{{.Content}}</body></html>",
+		"internal/app/app.go": "package app\n",
+	} {
+		path := filepath.Join(project, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return parent, project, relativeRoot
+}
+
 func TestLoadProjectConfigRejectsOutputOverlapAfterResolution(t *testing.T) {
 	project := t.TempDir()
 	configFile := filepath.Join(project, "config.yaml")
