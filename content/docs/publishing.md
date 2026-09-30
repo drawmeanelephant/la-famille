@@ -25,7 +25,7 @@ actions; this project does not publish a `gh-pages` branch.
 | **Sitemap** | `sitemap.xml` | Generated on every build | Search engine discovery |
 | **Robots Rules** | `robots.txt` | Generated on every build | Search engine crawler rules & sitemap location |
 | **Search Index** | `search.json` | Generated on every build | Client-side search index |
-| **Taxonomies** | `tags/`, `categories/` | Generated when pages specify `tags` or `categories` frontmatter | Rendered tag and category index & detail pages |
+| **Taxonomies** | `tags/`, `categories/` | Generated when pages specify `tags` or `categories` frontmatter, or contain body hashtags | Rendered tag and category index & detail pages |
 | **Link Graph** | `graph.json` | Generated on every build | Page node and wikilink edge dataset |
 | **Backlinks** | `backlinks.json` | Generated on every build | Map of target page IDs to referencing parent page IDs |
 | **Site Metadata** | `meta.json` | Generated on every build | Page metadata dictionary |
@@ -88,9 +88,10 @@ runtime, set `include_unused_theme_assets: true` in `config.yaml`.
 
 ### 6. Taxonomy Pages (`tags/` and `categories/`)
 
-- **Generation:** When content files declare `tags` or `categories` arrays:
+- **Generation:** When content files declare `tags` or `categories` frontmatter, or contain body hashtags such as `#ceramics`:
   - Main index pages are generated at `tags/index.html` and `categories/index.html`.
   - Term detail pages are generated at `tags/<tag-name>/index.html` and `categories/<category-name>/index.html`.
+- **Body tags:** A `#tag` in Markdown text joins the page's frontmatter `tags` for `/tags/` archives, page tag links, search, and metadata. Headings, code, links, and URLs are not treated as body tags.
 - **Content:** Lists titles and relative links of associated rendered pages.
 - **Exclusions:** Pages with `render: false` are excluded from tag/category aggregation.
 

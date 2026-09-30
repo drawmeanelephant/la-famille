@@ -17,7 +17,8 @@ Here are the currently supported fields:
 * `date`: A date string formatted as `YYYY-MM-DD` (e.g., `date: "2023-10-27"`).
 * `tags`: An array of strings grouping the page under tag archives
   (e.g., `tags: [go, test]`). Each tag generates a `/tags/<tag>/` archive page,
-  and `/tags/` lists every tag.
+  and `/tags/` lists every tag. Body hashtags such as `#ceramics` join the same
+  tags; hashtags in headings, code, links, and URLs are ignored.
 * `categories`: An array of strings grouping the page under category archives
   (e.g., `categories: [blog]`), generating `/categories/` pages the same way.
 * `render`: A boolean (`true` or `false`).
@@ -35,10 +36,13 @@ categories: [blog]
 # Hello
 ```
 
-Pages using `tags:` or `categories:` link their terms to the archives, and the
-site navigation gains **Tags** / **Categories** links automatically, so every
-archive stays reachable without editing a template. `la-famille new --tags a,b`
-writes the same frontmatter from the command line.
+Pages using `tags:`, `categories:`, or body hashtags link their terms to the
+archives, and the site navigation gains **Tags** / **Categories** links
+automatically, so every archive stays reachable without editing a template.
+For example, a prose sentence can contain `#ceramics`, or a body can have a
+standalone `#ceramics` line. Use no space after `#` so the line is not a
+Markdown heading. `la-famille new --tags a,b` writes the same frontmatter from
+the command line.
 
 Taxonomy terms can use native-language letters and digits, for example
 `tags: [起始]` and `categories: [说明]` generate `/tags/起始/` and

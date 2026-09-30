@@ -19,7 +19,7 @@ Here is the architectural map of the major components located in the `internal/`
 3. **`internal/transform`**: Walks the Markdown AST (via Goldmark) to process links, rewrite local relative `.md` paths to final URLs, and track site-wide backlinks.
 4. **`internal/asset`**: Manages static asset syncing. Safely copies assets to the output directory while respecting `.gitignore` rules and preventing path traversal bounds violations.
 5. **`internal/search`**: Builds minified JSON search indices by stripping Markdown/HTML noise and extracting clean text snippets and headings.
-6. **`internal/taxonomy`**: Processes tags and categories from page frontmatter to generate corresponding taxonomy index pages and grouped listings.
+6. **`internal/taxonomy`**: Processes frontmatter tags, body hashtags, and categories to generate corresponding taxonomy index pages and grouped listings.
 7. **`internal/graph`**: Compiles structural site data to construct the Knowledge Graph explorer payload (JSON), mapping page relationships and backlinks.
 8. **`internal/ragexport`**: Generates RAG-optimized export bundles, assembling the site's content into clean Markdown for consumption by LLMs.
 9. **`internal/config`**: Responsible for configuration parsing (YAML), structural defaults, and strict validation (e.g., verifying `OutputDir` safely isolates from source inputs).

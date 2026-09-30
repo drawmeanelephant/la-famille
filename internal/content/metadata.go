@@ -45,6 +45,7 @@ type FileMeta struct {
 // GatherMetadata walks the content directory and parses the frontmatter for each markdown file.
 func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 	fileMap := make(map[string]*FileMeta)
+	bodyTagParser := newBodyTagParser()
 
 	err := filepath.WalkDir(contentDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -136,7 +137,9 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 		rawCategories = append(rawCategories, extractStringSlice(matter.Categories)...)
 		rawCategories = append(rawCategories, extractStringSlice(matter.Category)...)
 
-		normalizedTags := normalizeTaxonomyList(matter.Tags, relPath, "tag", &warnings)
+		allTags := append([]string(nil), matter.Tags...)
+		allTags = append(allTags, extractBodyTags(bodyTagParser, rest)...)
+		normalizedTags := normalizeTaxonomyList(allTags, relPath, "tag", &warnings)
 		normalizedCategories := normalizeTaxonomyList(rawCategories, relPath, "category", &warnings)
 
 		fileMap[relPath] = &FileMeta{
