@@ -1,13 +1,13 @@
 package asset
 
 import (
-	"time"
-
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/runtimeassets"
 )
 
 func TestCopyAssets(t *testing.T) {
@@ -60,6 +60,118 @@ func TestCopyAssets_EmptyAssetDir(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(cfg.OutputDir, "assets", "graph", "explorer.js")); err != nil {
 		t.Errorf("embedded graph explorer fallback was not staged: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(cfg.OutputDir, "assets", "img", "mascot-default.jpeg")); !os.IsNotExist(err) {
+		t.Errorf("unreferenced embedded mascot should not be staged: %v", err)
+	}
+}
+
+func TestCopyAssets_OnlyReferencedBundledThemeAssets(t *testing.T) {
+	root := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.AssetDir = filepath.Join(root, "assets")
+	cfg.OutputDir = filepath.Join(root, "public")
+	cfg.ProjectRoot = root
+	cfg.GraphExplorer = true
+	bundled, err := runtimeassets.DefaultAssetFiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// An init-created asset directory contains the whole bundle. An edited
+	// file at the same path, however, is site-owned and must still be copied.
+	for _, name := range []string{
+		"css/theme.css", "css/theme-foundations.css", "css/layout-editorial.css",
+		"css/layout-midnight.css", "css/layout-terminal.css",
+		"img/mascot-default.jpeg", "img/jules-logo.png", "img/u1f419_u1f354.png",
+	} {
+		target := filepath.Join(cfg.AssetDir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			t.Fatal(err)
+		}
+		data := bundled[name]
+		if name == "css/layout-midnight.css" {
+			data = []byte("/* site-authored midnight stylesheet */")
+		}
+		if err := os.WriteFile(target, data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(cfg.AssetDir, "css", "site.css"), []byte("body{}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(cfg.OutputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Subpath deployments add the site base before /assets/. Markdown can
+	// also refer to relative assets paths in generated HTML.
+	html := `<link href="/my-site/assets/css/layout-editorial.css">` +
+		`<img src="assets/img/mascot-default.jpeg">` +
+		`<p>theme-foundations.css and jules-logo.png are not links.</p>`
+	if err := os.WriteFile(filepath.Join(cfg.OutputDir, "index.html"), []byte(html), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := CopyAssets(cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{
+		"css/layout-editorial.css", "css/layout-midnight.css", "css/site.css",
+		"img/mascot-default.jpeg", "css/search.css", "js/search.js",
+		"graph/explorer.css", "graph/explorer.js",
+	} {
+		if _, err := os.Stat(filepath.Join(cfg.OutputDir, "assets", filepath.FromSlash(name))); err != nil {
+			t.Errorf("expected %s to be published: %v", name, err)
+		}
+	}
+	for _, name := range []string{
+		"css/theme.css", "css/theme-foundations.css", "css/layout-terminal.css",
+		"img/jules-logo.png", "img/u1f419_u1f354.png",
+	} {
+		if _, err := os.Stat(filepath.Join(cfg.OutputDir, "assets", filepath.FromSlash(name))); !os.IsNotExist(err) {
+			t.Errorf("unreferenced bundled asset %s was published: %v", name, err)
+		}
+	}
+}
+
+func TestCopyAssets_IncludeUnusedThemeAssets(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.OutputDir = t.TempDir()
+	cfg.AssetDir = ""
+	cfg.IncludeUnusedThemeAssets = true
+	if err := CopyAssets(cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"css/layout-editorial.css", "img/mascot-default.jpeg", "img/jules-logo.png"} {
+		if _, err := os.Stat(filepath.Join(cfg.OutputDir, "assets", filepath.FromSlash(name))); err != nil {
+			t.Errorf("requested bundled asset %s missing: %v", name, err)
+		}
+	}
+}
+
+func TestCopyAssets_StylesheetReferencesAndGraphToggle(t *testing.T) {
+	root := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.AssetDir = filepath.Join(root, "assets")
+	cfg.OutputDir = filepath.Join(root, "public")
+	cfg.ProjectRoot = root
+	cfg.GraphExplorer = false
+	if err := os.MkdirAll(cfg.AssetDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cfg.AssetDir, "site.css"),
+		[]byte(`@import "layout-editorial.css"; .mascot { background: url("../img/mascot-default.jpeg"); }`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := CopyAssets(cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(cfg.OutputDir, "assets", "img", "mascot-default.jpeg")); err != nil {
+		t.Errorf("image referenced from CSS missing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(cfg.OutputDir, "assets", "css", "layout-editorial.css")); err != nil {
+		t.Errorf("stylesheet imported from CSS missing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(cfg.OutputDir, "assets", "graph")); !os.IsNotExist(err) {
+		t.Errorf("disabled graph bundle should not be staged: %v", err)
 	}
 }
 

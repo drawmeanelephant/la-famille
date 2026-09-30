@@ -33,6 +33,13 @@ actions; this project does not publish a `gh-pages` branch.
 | **Explorer Payload** | `graph/data.json` | Generated alongside `graph/index.html` | Resolved node list the explorer page renders: link direction, classification, titles, and public URLs |
 | **RAG Export** | `rag-archive/` (`rag-system.md`, `rag-config.md`, `rag-content.md`) | Not produced by `build`; written by the separate `la-famille rag` command. CI writes it into `public/rag-archive/` after the build step | Markdown bundles of source/config/content for LLM and retrieval use |
 
+Bundled theme CSS/images under `assets/` are published only when referenced by
+generated HTML or site CSS/JS. This applies to both embedded fallbacks and
+unchanged copies installed by `init`; edited files and other site-owned assets
+are copied as before. Search assets remain available, and the graph bundle
+still follows `graph_explorer`. To ship theme assets referenced only at
+runtime, set `include_unused_theme_assets: true` in `config.yaml`.
+
 ---
 
 ## Detailed Artifact Contracts
