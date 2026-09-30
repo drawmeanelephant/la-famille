@@ -311,6 +311,7 @@ func defaultGitignore() string {
 
 # Build cache
 .la-famille-cache.json
+.la-famille-vectors.json
 
 # Logs
 *.log

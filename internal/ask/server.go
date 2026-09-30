@@ -35,19 +35,23 @@ const PortDefault = 8090
 // Config collects the user-facing knobs for the ask server. It is what the
 // CLI flag parser builds before calling NewServer.
 type Config struct {
-	ContentDir   string
-	ProviderName string
-	Model        string
-	RagDir       string
-	OutputDir    string
-	Host         string
-	Port         int
-	MaxContext   int
-	Rebuild      bool
-	Verbose      bool
-	NoBrowser    bool
-	DisableUI    bool
-	LoopbackOnly bool
+	ContentDir     string
+	ProviderName   string
+	Model          string
+	Embeddings     bool
+	EmbeddingModel string
+	CacheDir       string
+	embedder       retrieval.Embedder
+	RagDir         string
+	OutputDir      string
+	Host           string
+	Port           int
+	MaxContext     int
+	Rebuild        bool
+	Verbose        bool
+	NoBrowser      bool
+	DisableUI      bool
+	LoopbackOnly   bool
 }
 
 // Defaults fills in sensible values for unspecified fields. It does not
@@ -71,6 +75,12 @@ func (c *Config) Defaults() {
 	}
 	if c.MaxContext == 0 {
 		c.MaxContext = 6000
+	}
+	if c.EmbeddingModel == "" {
+		c.EmbeddingModel = "nomic-embed-text"
+	}
+	if c.CacheDir == "" {
+		c.CacheDir = filepath.Dir(c.RagDir)
 	}
 }
 
@@ -98,7 +108,8 @@ func (c *Config) Validate() error {
 type Server struct {
 	provider llm.Provider
 	ui       fs.FS
-	ranker   *retrieval.Ranker
+	ranker   retrieval.Scorer
+	lexical  *retrieval.Ranker
 	corpus   retrieval.Corpus
 	cfg      Config
 }
@@ -128,11 +139,27 @@ func NewServer(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("ask: prepare provider: %w", err)
 	}
 
+	lexical := retrieval.NewRanker(loadRes.Corpus)
 	srv := &Server{
 		cfg:      cfg,
 		corpus:   loadRes.Corpus,
-		ranker:   retrieval.NewRanker(loadRes.Corpus),
+		ranker:   lexical,
+		lexical:  lexical,
 		provider: provider,
+	}
+	if cfg.Embeddings {
+		embedder := cfg.embedder
+		if embedder == nil {
+			embedder = llm.NewOllama(llm.OllamaConfig{})
+		}
+		fingerprint := retrieval.BuildFingerprint(filepath.Join(cfg.CacheDir, ".la-famille-cache.json"), loadRes.Corpus)
+		hybrid, err := retrieval.NewHybridRanker(context.Background(), loadRes.Corpus, embedder, cfg.EmbeddingModel,
+			filepath.Join(cfg.CacheDir, retrieval.VectorFileName), fingerprint)
+		if err != nil {
+			slog.Warn("local embeddings unavailable; using lexical ranking", "error", err)
+		} else {
+			srv.ranker = hybrid
+		}
 	}
 
 	if !cfg.DisableUI {
@@ -256,7 +283,20 @@ func (s *Server) Answer(ctx context.Context, req AnswerRequest) (AnswerResponse,
 	}
 
 	retrieveStart := time.Now()
-	scored := s.ranker.Rank(question, budget.MaxChunks)
+	var scored []retrieval.Scored
+	if hybrid, ok := s.ranker.(*retrieval.HybridRanker); ok {
+		var err error
+		scored, err = hybrid.RankContext(ctx, question, budget.MaxChunks)
+		if err != nil {
+			if ctx.Err() != nil || errors.Is(err, llm.ErrCancelled) {
+				return AnswerResponse{}, llm.ErrCancelled
+			}
+			slog.Warn("local query embedding unavailable; using lexical ranking", "error", err)
+			scored = s.lexical.Rank(question, budget.MaxChunks)
+		}
+	} else {
+		scored = s.ranker.Rank(question, budget.MaxChunks)
+	}
 	retrievalMs := time.Since(retrieveStart).Milliseconds()
 
 	if len(scored) == 0 {

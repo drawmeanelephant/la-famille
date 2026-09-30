@@ -5,6 +5,8 @@ package askeval
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +21,7 @@ import (
 
 	"github.com/tbuddy/la-famille/internal/ask"
 	"github.com/tbuddy/la-famille/internal/graph"
+	"github.com/tbuddy/la-famille/internal/llm"
 	"github.com/tbuddy/la-famille/internal/retrieval"
 )
 
@@ -61,10 +64,14 @@ type Question struct {
 
 // Options configures an eval run. A zero K uses the dataset's original depth.
 type Options struct {
-	DatasetPath string
-	ProjectRoot string
-	Provider    string
-	K           int
+	DatasetPath       string
+	ProjectRoot       string
+	Provider          string
+	K                 int
+	Embeddings        bool
+	EmbeddingModel    string
+	EmbeddingCacheDir string
+	Embedder          retrieval.Embedder
 	// Ranker overrides the production BM25-lite scorer so that alternative
 	// retrieval arms (#581 embeddings, hybrid fusion, graph expansion) can be
 	// measured through the same gates. Nil uses the production ranker, which
@@ -114,6 +121,7 @@ type Report struct {
 	DatasetName       string
 	K                 int
 	Provider          string
+	Ranker            string
 	BaselineRecallAt5 *float64
 	RecallAtK         float64
 	AnswerableCount   int
@@ -163,6 +171,23 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 		DatasetName: data.Name, K: data.K, Provider: opts.Provider,
 		BaselineRecallAt5: data.BaselineRecallAt5, BaselineOK: true,
 		Classes: make(map[string]Metrics),
+		Ranker:  "BM25-lite",
+	}
+	if opts.Embeddings {
+		report.Ranker = "BM25-lite + Ollama embeddings (RRF)"
+		if opts.EmbeddingModel == "" {
+			opts.EmbeddingModel = "nomic-embed-text"
+		}
+		if opts.Embedder == nil {
+			opts.Embedder = llm.NewOllama(llm.OllamaConfig{})
+		}
+		if opts.EmbeddingCacheDir == "" {
+			userCache, err := os.UserCacheDir()
+			if err != nil {
+				return Report{}, fmt.Errorf("ask eval: locate embedding cache: %w", err)
+			}
+			opts.EmbeddingCacheDir = filepath.Join(userCache, "la-famille", "ask-eval")
+		}
 	}
 	for _, site := range data.Sites {
 		if err := ctx.Err(); err != nil {
@@ -214,6 +239,22 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp string, opts 
 		newRanker = func(c Corpus) Scorer { return retrieval.NewRanker(c) }
 	}
 	ranker := newRanker(loaded.Corpus)
+	if opts.Embeddings {
+		key := sha256.Sum256([]byte(projectRoot + "\x00" + site.ID + "\x00" + site.Fixture + "\x00" + site.ContentDir))
+		path := filepath.Join(opts.EmbeddingCacheDir, hex.EncodeToString(key[:]), retrieval.VectorFileName)
+		// Disposable eval builds have a fresh project path and binary hash
+		// each run. Their loaded corpus digest is the stable input fingerprint.
+		hybrid, err := retrieval.NewHybridRanker(ctx, loaded.Corpus, opts.Embedder, opts.EmbeddingModel,
+			path, retrieval.CorpusDigest(loaded.Corpus))
+		if err != nil {
+			if !errors.Is(err, llm.ErrUnavailable) {
+				return fmt.Errorf("ask eval: embed site %q: %w", site.ID, err)
+			}
+			report.Ranker = "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+		} else {
+			ranker = hybrid
+		}
+	}
 	graphBytes, err := os.ReadFile(filepath.Join(cfg.OutputDir, "graph.json"))
 	if err != nil {
 		return err
@@ -230,7 +271,19 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp string, opts 
 		if err := validateLabels(question, loaded.Corpus, g); err != nil {
 			return fmt.Errorf("ask eval: site %s: %w", site.ID, err)
 		}
-		scored := ranker.Rank(question.Text, k)
+		var scored []retrieval.Scored
+		if hybrid, ok := ranker.(*retrieval.HybridRanker); ok {
+			scored, err = hybrid.RankContext(ctx, question.Text, k)
+			if err != nil {
+				if !errors.Is(err, llm.ErrUnavailable) {
+					return fmt.Errorf("ask eval: embed question %s/%s: %w", site.ID, question.ID, err)
+				}
+				report.Ranker = "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+				scored = retrieval.NewRanker(loaded.Corpus).Rank(question.Text, k)
+			}
+		} else {
+			scored = ranker.Rank(question.Text, k)
+		}
 		pages := uniquePages(scored)
 		result := QuestionResult{
 			SiteID: site.ID, QuestionID: question.ID, Text: question.Text,
@@ -482,7 +535,11 @@ func WriteReport(w io.Writer, report Report) error {
 		return errors.New("ask eval: output writer is required")
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "Ask This Site evaluation: %s\nRanker: BM25-lite · K=%d · provider=%s\n\n", report.DatasetName, report.K, report.Provider)
+	ranker := report.Ranker
+	if ranker == "" {
+		ranker = "BM25-lite"
+	}
+	fmt.Fprintf(&b, "Ask This Site evaluation: %s\nRanker: %s · K=%d · provider=%s\n\n", report.DatasetName, ranker, report.K, report.Provider)
 	table := tabwriter.NewWriter(&b, 0, 4, 2, ' ', 0)
 	fmt.Fprintln(table, "SITE\tQUESTION\tRECALL@K\tMINIMUM\tPRECISION\tPATH\tSTATUS\tRETRIEVED / MISSING PAGES")
 	for _, result := range report.Questions {

@@ -3,6 +3,7 @@
 /dist/
 rag-archive/
 .la-famille-cache.json
+.la-famille-vectors.json
 SUPPORT/
 la-famille.log
 coverage/

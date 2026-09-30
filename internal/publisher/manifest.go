@@ -21,6 +21,9 @@ import (
 // between the generator and publisher checks.
 const CacheFileName = ".la-famille-cache.json"
 
+// VectorFileName is private retrieval state, never a static site artifact.
+const VectorFileName = ".la-famille-vectors.json"
+
 // stagingDirPrefix marks temporary atomic-build directories. A correct build
 // cleans them up beside the project root; one inside the publish artifact
 // means a partial or interrupted build was captured.
@@ -104,6 +107,9 @@ func Check(outputDir, basePath string) (Manifest, error) {
 		rel = filepath.ToSlash(rel)
 		if rel == CacheFileName {
 			return fmt.Errorf("publish artifact contains internal build cache %q; cache state belongs beside the project, not in public", CacheFileName)
+		}
+		if filepath.Base(rel) == VectorFileName {
+			return fmt.Errorf("publish artifact contains private vector index %q; embeddings must stay on this machine", rel)
 		}
 		manifest.Files = append(manifest.Files, rel)
 		return nil
