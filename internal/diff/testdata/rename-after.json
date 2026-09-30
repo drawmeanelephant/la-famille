@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "pages": [
+    {
+      "identity": "existing-orphan",
+      "source_path": "existing-orphan.md",
+      "rendered": true,
+      "url": "/existing-orphan/",
+      "title": "Existing Orphan",
+      "date": "",
+      "tags": [],
+      "categories": [],
+      "outbound_links": [],
+      "inbound_link_count": 0,
+      "links": [],
+      "asset_references": []
+    },
+    {
+      "identity": "index",
+      "source_path": "index.md",
+      "rendered": true,
+      "url": "/",
+      "title": "Home",
+      "date": "",
+      "tags": [],
+      "categories": [],
+      "outbound_links": [
+        "new"
+      ],
+      "inbound_link_count": 0,
+      "links": [
+        {
+          "destination": "new.md",
+          "target": "new.md",
+          "graph_target": "new",
+          "line": 4,
+          "resolved": true
+        }
+      ],
+      "asset_references": []
+    },
+    {
+      "identity": "new",
+      "source_path": "new.md",
+      "rendered": true,
+      "url": "/new/",
+      "title": "Renamed Note",
+      "date": "2025-02-01",
+      "tags": [
+        "new",
+        "shared"
+      ],
+      "categories": [
+        "notes"
+      ],
+      "outbound_links": [
+        "target"
+      ],
+      "inbound_link_count": 1,
+      "links": [
+        {
+          "destination": "target.md",
+          "target": "target.md",
+          "graph_target": "target",
+          "line": 8,
+          "resolved": true
+        }
+      ],
+      "asset_references": []
+    },
+    {
+      "identity": "target",
+      "source_path": "target.md",
+      "rendered": true,
+      "url": "/target/",
+      "title": "Target",
+      "date": "",
+      "tags": [],
+      "categories": [],
+      "outbound_links": [
+        "missing"
+      ],
+      "inbound_link_count": 1,
+      "links": [
+        {
+          "destination": "missing.md",
+          "target": "missing.md",
+          "graph_target": "missing",
+          "line": 9,
+          "resolved": false
+        }
+      ],
+      "asset_references": []
+    }
+  ]
+}

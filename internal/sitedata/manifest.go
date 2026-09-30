@@ -132,11 +132,17 @@ func WriteManifest(outputDir string, manifest Manifest) error {
 
 // ReadManifest reads a manifest and rejects unsupported schema versions.
 func ReadManifest(path string) (Manifest, error) {
-	var manifest Manifest
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return manifest, err
+		return Manifest{}, err
 	}
+	return ParseManifest(data)
+}
+
+// ParseManifest parses serialized manifest data and rejects unsupported schema
+// versions.
+func ParseManifest(data []byte) (Manifest, error) {
+	var manifest Manifest
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return manifest, fmt.Errorf("failed to parse site manifest: %w", err)
 	}

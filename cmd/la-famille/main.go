@@ -488,6 +488,7 @@ func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(setupCheckCmd(cfg))
 	rootCmd.AddCommand(setupPublishCheckCmd(cfg))
+	rootCmd.AddCommand(setupDiffCmd(cfg))
 	rootCmd.AddCommand(setupNewCmd(cfg))
 	rootCmd.AddCommand(setupAskCmd(cfg))
 
@@ -501,6 +502,7 @@ func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
 var configIndependentCommands = map[string]bool{
 	"init":             true,
 	"pr":               true,
+	"diff":             true,
 	"themes":           true,
 	"help":             true,
 	"completion":       true,
