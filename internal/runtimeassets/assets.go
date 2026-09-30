@@ -110,6 +110,22 @@ func DefaultAssetFiles() (map[string][]byte, error) {
 	return files, nil
 }
 
+// ThemeAssetNames lists the bundled CSS and images that are only needed by
+// layouts or content which actually reference them. Search and graph bundles
+// are deliberately excluded: their existing generation rules are unchanged.
+func ThemeAssetNames() []string {
+	return []string{
+		"css/theme-foundations.css",
+		"css/theme.css",
+		"css/layout-editorial.css",
+		"css/layout-midnight.css",
+		"css/layout-terminal.css",
+		"img/mascot-default.jpeg",
+		"img/jules-logo.png",
+		"img/u1f419_u1f354.png",
+	}
+}
+
 // InstallMissing writes release-owned defaults into a project. Existing files
 // are left untouched so an operator's explicit site assets remain authoritative.
 // The operation is safe to call repeatedly.

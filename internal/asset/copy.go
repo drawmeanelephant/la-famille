@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log/slog"
@@ -13,6 +14,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/pathutil"
 	"github.com/tbuddy/la-famille/internal/runtimeassets"
+	"golang.org/x/net/html"
 )
 
 // graphAssetDir is the asset subdirectory holding the knowledge graph
@@ -96,6 +98,30 @@ func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 		return fmt.Errorf("asset directory %q resolves to %q, which contains the output directory; copying it would publish the output into itself", cfg.AssetDir, walkRoot)
 	}
 
+	// Only bundled theme CSS/images are selective. init installs the whole
+	// packet into a site's assets directory, so detect those byte-identical
+	// copies as well as the embedded fallbacks. Edited site assets and all
+	// non-theme files continue to be published unconditionally.
+	files, err := runtimeassets.DefaultAssetFiles()
+	if err != nil {
+		return err
+	}
+	themeAssets := runtimeassets.ThemeAssetNames()
+	needed := make(map[string]bool, len(themeAssets))
+	if !cfg.IncludeUnusedThemeAssets {
+		needed, err = referencedThemeAssets(outDirClean, walkRoot, assetRootExists, projectRootResolved, ignoreRules, themeAssets, files)
+		if err != nil {
+			return err
+		}
+	}
+	publishThemeAsset := func(rel string) bool {
+		return cfg.IncludeUnusedThemeAssets || needed[rel]
+	}
+	isThemeAsset := make(map[string]bool, len(themeAssets))
+	for _, rel := range themeAssets {
+		isThemeAsset[rel] = true
+	}
+
 	if assetRootExists {
 		if err := filepath.WalkDir(walkRoot, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
@@ -138,6 +164,16 @@ func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 
 			if d.IsDir() {
 				return nil
+			}
+
+			if isThemeAsset[relSlash] && !publishThemeAsset(relSlash) {
+				source, readErr := os.ReadFile(path)
+				if readErr != nil {
+					return readErr
+				}
+				if bytes.Equal(source, files[relSlash]) {
+					return nil
+				}
 			}
 
 			destPath := filepath.Join(outDirClean, filepath.FromSlash(relPath))
@@ -187,10 +223,6 @@ func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 	// not require an operator to discover repository assets. User-owned files
 	// were copied first and remain authoritative: the embedded copy only fills
 	// paths that are still absent from the staged output.
-	files, err := runtimeassets.DefaultAssetFiles()
-	if err != nil {
-		return err
-	}
 	assetNames := make([]string, 0, len(files))
 	for relSlash := range files {
 		assetNames = append(assetNames, relSlash)
@@ -199,6 +231,9 @@ func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 	for _, relSlash := range assetNames {
 		data := files[relSlash]
 		if !cfg.GraphExplorer && (relSlash == graphAssetDir || strings.HasPrefix(relSlash, graphAssetDir+"/")) {
+			continue
+		}
+		if isThemeAsset[relSlash] && !publishThemeAsset(relSlash) {
 			continue
 		}
 
@@ -229,6 +264,105 @@ func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 	}
 
 	return nil
+}
+
+// referencedThemeAssets scans the pages already rendered into the staging
+// tree, including images in Markdown, metadata, inline styles/scripts and
+// subpath-prefixed URLs. Plain page text does not make an asset necessary.
+// Authored CSS/JS can use a theme image via url() or script without mentioning
+// it in HTML, so scan those source files too. Do not scan the untouched bundled
+// CSS: comments about other themes are not references in published pages.
+// Only the known bundled names are subject to filtering; arbitrary user assets
+// are never pruned.
+func referencedThemeAssets(outDir, assetRoot string, assetRootExists bool, projectRoot string, ignoreRules []IgnoreRule, names []string, bundled map[string][]byte) (map[string]bool, error) {
+	needed := make(map[string]bool, len(names))
+	scanNames := func(data []byte) {
+		for _, name := range names {
+			// A stylesheet may import another CSS file or image relative to
+			// itself (url("../img/mascot-default.jpeg")), so a filename
+			// match is safer than requiring the full /assets/ URL prefix.
+			if !needed[name] && bytes.Contains(data, []byte(filepath.Base(name))) {
+				needed[name] = true
+			}
+		}
+	}
+	scanHTML := func(file string) error {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		tokenizer := html.NewTokenizer(bytes.NewReader(data))
+		inScriptOrStyle := false
+		for {
+			switch tokenizer.Next() {
+			case html.ErrorToken:
+				if err := tokenizer.Err(); err != io.EOF {
+					return err
+				}
+				return nil
+			case html.StartTagToken, html.SelfClosingTagToken:
+				token := tokenizer.Token()
+				for _, attr := range token.Attr {
+					scanNames([]byte(attr.Val))
+				}
+				inScriptOrStyle = token.Data == "script" || token.Data == "style"
+			case html.EndTagToken:
+				inScriptOrStyle = false
+			case html.TextToken:
+				if inScriptOrStyle {
+					scanNames(tokenizer.Text())
+				}
+			}
+		}
+	}
+	if err := filepath.WalkDir(filepath.Dir(outDir), func(file string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		// outDir is the staging /assets directory; only scan its sibling
+		// generated pages, not any pre-existing files elsewhere.
+		if file == outDir {
+			return filepath.SkipDir
+		}
+		if !d.IsDir() && d.Type().IsRegular() && filepath.Ext(file) == ".html" {
+			return scanHTML(file)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	if assetRootExists {
+		if err := filepath.WalkDir(assetRoot, func(file string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.Type()&os.ModeSymlink != 0 {
+				return nil
+			}
+			rel, err := filepath.Rel(assetRoot, file)
+			if err != nil {
+				return err
+			}
+			relSlash := filepath.ToSlash(rel)
+			if !d.IsDir() && IsIgnoredAsset(file, false, relSlash, projectRoot, ignoreRules) {
+				return nil
+			}
+			if !d.IsDir() && (filepath.Ext(file) == ".css" || filepath.Ext(file) == ".js") {
+				source, readErr := os.ReadFile(file)
+				if readErr != nil {
+					return readErr
+				}
+				if data, ok := bundled[relSlash]; ok && bytes.Equal(source, data) {
+					return nil
+				}
+				scanNames(source)
+			}
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	}
+	return needed, nil
 }
 
 type IgnoreRule struct {

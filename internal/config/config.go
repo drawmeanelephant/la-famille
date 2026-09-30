@@ -43,6 +43,9 @@ type Config struct {
 	WatchMode         bool       `yaml:"-" json:"-"`
 	CheckAssetHealth  bool       `yaml:"check_asset_health"`
 	GraphExplorer     bool       `yaml:"graph_explorer"`
+	// IncludeUnusedThemeAssets retains the full bundled theme packet for
+	// sites that fetch assets only at runtime, outside rendered HTML/CSS/JS.
+	IncludeUnusedThemeAssets bool `yaml:"include_unused_theme_assets"`
 }
 
 // DefaultLayoutPath is the layout the default configuration and freshly

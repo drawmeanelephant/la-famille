@@ -20,3 +20,27 @@ func TestDefaultConfigYamlMatchesCanonical(t *testing.T) {
 		t.Errorf("defaultConfigYaml drifted from config.yaml; run `go generate ./internal/config` and commit default_config_gen.go")
 	}
 }
+
+func TestIncludeUnusedThemeAssetsDefaultAndOverride(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := WriteDefault(path); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.IncludeUnusedThemeAssets {
+		t.Fatal("bundled theme assets should be selective by default")
+	}
+	if err := os.WriteFile(path, []byte("include_unused_theme_assets: true\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err = Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.IncludeUnusedThemeAssets {
+		t.Fatal("explicitly requested unused theme assets were not enabled")
+	}
+}

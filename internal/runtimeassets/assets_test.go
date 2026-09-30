@@ -79,6 +79,14 @@ func TestEmbeddedDefaultsAreAvailable(t *testing.T) {
 			t.Errorf("embedded asset %q is empty", name)
 		}
 	}
+	for _, name := range ThemeAssetNames() {
+		if len(assets[name]) == 0 {
+			t.Errorf("selective theme asset %q is not embedded", name)
+		}
+		if strings.HasPrefix(name, "graph/") || name == "css/search.css" || name == "js/search.js" {
+			t.Errorf("always-needed search/graph asset %q must not be selective", name)
+		}
+	}
 }
 
 func TestInstallMissingPreservesSiteOverride(t *testing.T) {

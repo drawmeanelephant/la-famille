@@ -64,6 +64,7 @@ Here is a breakdown of each available field:
 *   **`content_dir`** (string): The source directory containing your Markdown `.md` files. *Default: "content"*
 *   **`output_dir`** (string): The destination directory where the fully generated static site (HTML, JSON graphs, etc.) will be placed. *Default: "public"*
 *   **`asset_dir`** (string): The directory containing static assets. *Default: "assets"*
+*   **`include_unused_theme_assets`** (bool): Keep the entire bundled theme CSS/image packet in published output, even if no generated page or stylesheet references it. By default, unused embedded assets and unchanged copies installed by `init` are omitted. Edited site assets remain untouched. Enable this for assets used only by dynamic client-side fetches. Search and graph assets keep their own behavior. *Default: `false`*
 *   **`rag_dir`** (string): The directory where RAG markdown bundles will be exported. *Default: "rag-archive"*
 *   **`project_root`** (string, optional): The site root used to resolve the other relative paths. When omitted, the config file directory (or current directory) is used. An explicit `--project-root` flag takes precedence.
 *   **`theme`** (string): The built-in palette applied by the default layout. The default layout ships five local-first palettes: `retro` (warm paper, the default), `ink` (dark), `sepia` (aged paper), `slate` (cool light), and `moss` (green light). Alternate layouts may ignore this value and keep their own fixed identity. *Default: "retro"*

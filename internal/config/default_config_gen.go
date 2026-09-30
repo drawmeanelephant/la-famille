@@ -66,4 +66,9 @@ port: 8080
 # at /graph/index.html. Defaults to true; set to false to skip emission (no
 # /graph/ output, no nav link).
 # graph_explorer: true
+
+# include_unused_theme_assets: Publish all bundled theme CSS/images even when
+# no generated page references them. Useful for assets fetched dynamically by
+# custom scripts. Defaults to false; search and graph assets are unaffected.
+# include_unused_theme_assets: false
 `
