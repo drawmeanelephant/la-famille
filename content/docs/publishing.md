@@ -21,6 +21,7 @@ actions; this project does not publish a `gh-pages` branch.
 | Artifact | Output Path | Generation Condition | Primary Purpose |
 | :--- | :--- | :--- | :--- |
 | **HTML Pages** | `<slug>/index.html` or `<path>/index.html` | Rendered for every `.md` source file with `render != false` | Public site web pages |
+| **Unresolved Notes Index** | `unresolved-notes/index.html` | Generated on every build | To-write list linking to generated missing-note stubs |
 | **RSS Feed** | `feed.xml` | Generated when at least one rendered page has a `date` field | Syndication feed for web readers |
 | **Sitemap** | `sitemap.xml` | Generated on every build | Search engine discovery |
 | **Robots Rules** | `robots.txt` | Generated on every build | Search engine crawler rules & sitemap location |
@@ -53,6 +54,19 @@ runtime, set `include_unused_theme_assets: true` in `config.yaml`.
   - `<meta property="og:title" content="...">`: Page title (or filename fallback).
   - `<meta property="og:description" content="...">`: Frontmatter `description`, or `default_description` from `config.yaml`.
   - `<meta property="og:image" content="...">`: Frontmatter `image`, or `default_og_image` from `config.yaml`.
+- Rendered content pages include a “Linked from” panel. Its inbound links reuse
+  the same relationships written to `backlinks.json`; generated stubs already
+  list their referring pages.
+
+### Unresolved Notes Index (`unresolved-notes/index.html`)
+
+- **Generation:** Written on every build, including builds with no unresolved
+  links (which show an empty-state message).
+- **Entries:** Each generated stub is listed by note title and linked to its
+  generated URL. A note disappears from the list once a real Markdown file
+  replaces the missing target and the site is rebuilt.
+- **Navigation:** A site-wide **Unresolved Notes** link is added to the
+  generated pages.
 
 ### 2. RSS Feed (`feed.xml`)
 

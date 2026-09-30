@@ -329,8 +329,8 @@ func TestBuild_StubDoesNotOverwriteAnotherStub(t *testing.T) {
 	// Stubs are generated in sorted order, so "ghost.md" claims the path and
 	// keeps its referrer list. Before the claim, "ghost/index.md" was written
 	// second and replaced it.
-	if !strings.Contains(got, "alpha.md") {
-		t.Errorf("ghost/index.html = %q, want the first claimant's referrer alpha.md", got)
+	if !strings.Contains(got, "Alpha") {
+		t.Errorf("ghost/index.html = %q, want the first claimant's referrer title Alpha", got)
 	}
 	if strings.Contains(got, "beta.md") {
 		t.Errorf("ghost/index.html = %q, want it not replaced by the later stub for ghost/index.md", got)
