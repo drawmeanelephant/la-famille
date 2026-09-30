@@ -517,12 +517,13 @@ func (bc *buildContext) processJob(j job, buf *bytes.Buffer) {
 		// same URL the canonical link and sitemap advertise.
 		urlPath := bc.siteCfg.PublicPathForOutput(relOut)
 		bc.searchIndexItems[idx] = search.Item{
-			Title:    title,
-			URL:      urlPath,
-			Tags:     taxonomyTerms,
-			TagURLs:  taxonomyURLs,
-			Snippet:  search.ExtractSnippet(meta.Rest),
-			Headings: search.ExtractHeadings(meta.Rest),
+			Title:       title,
+			URL:         urlPath,
+			Tags:        taxonomyTerms,
+			TagURLs:     taxonomyURLs,
+			Snippet:     search.ExtractSnippet(meta.Rest),
+			Headings:    search.ExtractHeadings(meta.Rest),
+			WikiTargets: search.ExtractWikiLinkTargets(meta.Rest),
 		}
 	}
 

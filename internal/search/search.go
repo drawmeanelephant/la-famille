@@ -19,6 +19,10 @@ type Item struct {
 	TagURLs  []string `json:"gu,omitempty"`
 	Snippet  string   `json:"s,omitempty"`
 	Headings []string `json:"h,omitempty"`
+	// WikiTargets holds the explicit [[wiki-link]] destinations referenced by
+	// the page. Keeping them separate makes linked note names searchable even
+	// when a link uses an alias and the target is absent from the prose.
+	WikiTargets []string `json:"w,omitempty"`
 }
 
 var (

@@ -101,6 +101,7 @@ runtime, set `include_unused_theme_assets: true` in `config.yaml`.
   - `g` (Tags/Categories): Combined slice of tags and categories.
   - `s` (Snippet): Up to 160 characters of clean text extracted from page body (stripping Markdown codeblocks, HTML tags, and formatting).
   - `h` (Headings): Extracted ATX heading titles (`#` through `######`).
+  - `w` (Wiki targets): Optional list of explicit `[[wiki-link]]` destinations referenced by the page.
 - **Included Entries:** Includes all rendered content pages and all generated taxonomy pages.
 
 ### 6. Taxonomy Pages (`tags/` and `categories/`)
