@@ -36,12 +36,15 @@ type Provider interface {
 // model's answer (e.g. "[1]") to chunk IDs that we will use to emit verifiable
 // source cards in the UI.
 type Request struct {
-	Question  string
-	System    string
-	Context   string
-	Model     string
-	Citations []CitationHint
-	MaxTokens int
+	// GroundingPaths follows retrieved site links in traversal order. The
+	// context also describes these routes for ordinary completion providers.
+	GroundingPaths [][]CitationHint
+	Question       string
+	System         string
+	Context        string
+	Model          string
+	Citations      []CitationHint
+	MaxTokens      int
 }
 
 // CitationHint tells the model which integer key in its answer corresponds

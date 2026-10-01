@@ -39,6 +39,7 @@ type Config struct {
 	ProviderName   string
 	Model          string
 	Embeddings     bool
+	GraphExpansion bool
 	EmbeddingModel string
 	CacheDir       string
 	embedder       retrieval.Embedder
@@ -87,6 +88,9 @@ func (c *Config) Defaults() {
 // Validate enforces the security and correctness rules from the moonshot
 // spec. Call this before NewServer.
 func (c *Config) Validate() error {
+	if c.GraphExpansion && c.Embeddings {
+		return errors.New("ask: graph expansion compares against lexical ranking; do not combine it with embeddings")
+	}
 	if c.Port < 1 || c.Port > 65535 {
 		return fmt.Errorf("ask: port must be between 1 and 65535, got %d", c.Port)
 	}
@@ -110,6 +114,7 @@ type Server struct {
 	ui       fs.FS
 	ranker   retrieval.Scorer
 	lexical  *retrieval.Ranker
+	graph    *retrieval.GraphRanker
 	corpus   retrieval.Corpus
 	cfg      Config
 }
@@ -133,6 +138,9 @@ func NewServer(cfg Config) (*Server, error) {
 	if len(loadRes.MissingArtifacts) == 3 {
 		return nil, fmt.Errorf("ask: no RAG artifacts found in %s — run `la-famille rag` first", cfg.RagDir)
 	}
+	for _, warning := range loadRes.GraphWarnings {
+		slog.Warn("optional retrieval graph artifact unavailable", "warning", warning)
+	}
 
 	provider, err := buildProvider(cfg)
 	if err != nil {
@@ -145,6 +153,7 @@ func NewServer(cfg Config) (*Server, error) {
 		corpus:   loadRes.Corpus,
 		ranker:   lexical,
 		lexical:  lexical,
+		graph:    retrieval.NewGraphRanker(loadRes.Corpus),
 		provider: provider,
 	}
 	if cfg.Embeddings {
@@ -190,16 +199,19 @@ func buildProvider(cfg Config) (llm.Provider, error) {
 // Status returns a small JSON-safe description of the server's state. The
 // UI uses it to populate the diagnostics drawer.
 type Status struct {
-	Provider      string `json:"provider"`
-	Model         string `json:"model"`
-	Bind          string `json:"bind"`
-	CorpusVersion string `json:"corpus_version"`
-	RagVersion    string `json:"rag_version"`
-	SourceDir     string `json:"source_dir"`
-	DocumentCount int    `json:"document_count"`
-	ChunkCount    int    `json:"chunk_count"`
-	Ready         bool   `json:"ready"`
-	LoopbackOnly  bool   `json:"loopback_only"`
+	GraphExpansion bool   `json:"graph_expansion"`
+	GraphEdges     int    `json:"graph_edges"`
+	Embeddings     bool   `json:"embeddings"`
+	Provider       string `json:"provider"`
+	Model          string `json:"model"`
+	Bind           string `json:"bind"`
+	CorpusVersion  string `json:"corpus_version"`
+	RagVersion     string `json:"rag_version"`
+	SourceDir      string `json:"source_dir"`
+	DocumentCount  int    `json:"document_count"`
+	ChunkCount     int    `json:"chunk_count"`
+	Ready          bool   `json:"ready"`
+	LoopbackOnly   bool   `json:"loopback_only"`
 }
 
 // Snapshot returns the current public status. Provider availability is
@@ -208,15 +220,18 @@ type Status struct {
 func (s *Server) Snapshot(ctx context.Context) Status {
 	bound := net.JoinHostPort(s.cfg.Host, strconv.Itoa(s.cfg.Port))
 	st := Status{
-		Ready:         true,
-		Provider:      s.provider.Name(),
-		Model:         s.cfg.Model,
-		Bind:          bound,
-		CorpusVersion: s.corpus.Version,
-		DocumentCount: s.corpus.DocumentCount,
-		ChunkCount:    s.corpus.ChunkCount,
-		SourceDir:     filepath.Clean(s.cfg.RagDir),
-		LoopbackOnly:  s.cfg.LoopbackOnly,
+		GraphExpansion: s.cfg.GraphExpansion,
+		GraphEdges:     len(s.corpus.Graph.Edges),
+		Embeddings:     s.cfg.Embeddings,
+		Ready:          true,
+		Provider:       s.provider.Name(),
+		Model:          s.cfg.Model,
+		Bind:           bound,
+		CorpusVersion:  s.corpus.Version,
+		DocumentCount:  s.corpus.DocumentCount,
+		ChunkCount:     s.corpus.ChunkCount,
+		SourceDir:      filepath.Clean(s.cfg.RagDir),
+		LoopbackOnly:   s.cfg.LoopbackOnly,
 	}
 	availCtx, cancel := context.WithTimeout(ctx, 1500*time.Millisecond)
 	defer cancel()
@@ -228,7 +243,10 @@ func (s *Server) Snapshot(ctx context.Context) Status {
 
 // AnswerRequest is the JSON body posted to /api/ask.
 type AnswerRequest struct {
-	Question string `json:"question"`
+	// Explicit on/off values select the graph or lexical arm in this same
+	// server, independently of any configured embedding scorer.
+	GraphExpansion *bool  `json:"graph_expansion,omitempty"`
+	Question       string `json:"question"`
 	// MaxChunks (optional) overrides the prompt budget for this query.
 	MaxChunks int `json:"max_chunks,omitempty"`
 	// MaxContextChars (optional) overrides the context character budget.
@@ -242,6 +260,7 @@ type AnswerRequest struct {
 
 // AnswerResponse is the JSON body returned by /api/ask.
 type AnswerResponse struct {
+	Paths            []retrieval.GraphPath  `json:"paths,omitempty"`
 	Status           string                 `json:"status"`
 	Question         string                 `json:"question"`
 	Answer           string                 `json:"answer,omitempty"`
@@ -258,6 +277,8 @@ type AnswerResponse struct {
 // guarantee parity between the drawer (status endpoint) and the per-answer
 // timings (ask endpoint).
 type AnswerDiagnostics struct {
+	GraphExpansion  bool   `json:"graph_expansion"`
+	RetrievalMode   string `json:"retrieval_mode"`
 	Provider        string `json:"provider"`
 	Model           string `json:"model"`
 	RetrievalMs     int64  `json:"retrieval_ms"`
@@ -274,7 +295,14 @@ func (s *Server) Answer(ctx context.Context, req AnswerRequest) (AnswerResponse,
 		return AnswerResponse{}, errors.New("ask: question cannot be empty")
 	}
 
+	graphOn := s.cfg.GraphExpansion
+	if req.GraphExpansion != nil {
+		graphOn = *req.GraphExpansion
+	}
 	budget := retrieval.DefaultPromptBudget()
+	if graphOn && s.cfg.MaxContext > 0 {
+		budget.MaxContextChars = s.cfg.MaxContext
+	}
 	if req.MaxChunks > 0 {
 		budget.MaxChunks = req.MaxChunks
 	}
@@ -284,7 +312,16 @@ func (s *Server) Answer(ctx context.Context, req AnswerRequest) (AnswerResponse,
 
 	retrieveStart := time.Now()
 	var scored []retrieval.Scored
-	if hybrid, ok := s.ranker.(*retrieval.HybridRanker); ok {
+	mode := "lexical"
+	var graphResult retrieval.GraphResult
+	if graphOn {
+		graphResult = s.graph.Retrieve(question, budget.MaxChunks)
+		scored = graphResult.Scored
+		mode = "lexical+graph"
+	} else if req.GraphExpansion != nil {
+		scored = s.lexical.Rank(question, budget.MaxChunks)
+	} else if hybrid, ok := s.ranker.(*retrieval.HybridRanker); ok {
+		mode = "hybrid"
 		var err error
 		scored, err = hybrid.RankContext(ctx, question, budget.MaxChunks)
 		if err != nil {
@@ -293,6 +330,7 @@ func (s *Server) Answer(ctx context.Context, req AnswerRequest) (AnswerResponse,
 			}
 			slog.Warn("local query embedding unavailable; using lexical ranking", "error", err)
 			scored = s.lexical.Rank(question, budget.MaxChunks)
+			mode = "lexical"
 		}
 	} else {
 		scored = s.ranker.Rank(question, budget.MaxChunks)
@@ -306,6 +344,8 @@ func (s *Server) Answer(ctx context.Context, req AnswerRequest) (AnswerResponse,
 			NoAnswer:        true,
 			NoAnswerMessage: "This site does not provide enough information to answer that question.",
 			Diagnostics: AnswerDiagnostics{
+				GraphExpansion:  graphOn,
+				RetrievalMode:   mode,
 				RetrievalMs:     retrievalMs,
 				ChunksRetrieved: 0,
 				Provider:        s.provider.Name(),
@@ -316,15 +356,38 @@ func (s *Server) Answer(ctx context.Context, req AnswerRequest) (AnswerResponse,
 
 	cites := retrieval.NewCitations(scoredChunks(scored))
 	prompt, hints := retrieval.BuildAnswerPrompt(question, scored, cites, budget)
+	var paths []retrieval.GraphPath
+	if graphOn {
+		prompt, hints, paths = retrieval.BuildGraphAnswerPrompt(question, graphResult, budget)
+		// Graph prompts enforce character budgets before assigning keys. Do
+		// not accept citations to chunks the model never received.
+		var prompted []retrieval.Chunk
+		for _, hint := range hints {
+			ch, _ := s.corpus.ChunkByID(hint.ChunkID)
+			prompted = append(prompted, ch)
+		}
+		cites = retrieval.NewCitations(prompted)
+		if len(hints) == 0 || len(paths) != len(graphResult.Paths) {
+			return AnswerResponse{
+				Status: "no_answer", Question: question, NoAnswer: true,
+				NoAnswerMessage: "This site does not provide enough information to answer that question.",
+				Diagnostics: AnswerDiagnostics{
+					GraphExpansion: graphOn, RetrievalMode: mode, RetrievalMs: retrievalMs,
+					ChunksRetrieved: len(scored), Provider: s.provider.Name(), Model: s.cfg.Model,
+				},
+			}, nil
+		}
+	}
 
 	genStart := time.Now()
 	resp, err := s.provider.Complete(ctx, llm.Request{
-		Question:  question,
-		System:    retrievalSystemHeader(),
-		Context:   prompt,
-		Citations: hintsToLLM(hints),
-		Model:     s.cfg.Model,
-		MaxTokens: 0,
+		Question:       question,
+		System:         retrievalSystemHeader(),
+		Context:        prompt,
+		Citations:      hintsToLLM(hints),
+		GroundingPaths: pathsToLLM(paths, hints),
+		Model:          s.cfg.Model,
+		MaxTokens:      0,
 	})
 	generationMs := time.Since(genStart).Milliseconds()
 	if err != nil {
@@ -339,11 +402,13 @@ func (s *Server) Answer(ctx context.Context, req AnswerRequest) (AnswerResponse,
 
 	result := cites.Verify(resp.Answer)
 	sources := cites.ResolveSourceCards(result.VerifiedKeys)
+	citedPaths := retrieval.CitedPaths(paths, result.VerifiedKeys)
 
 	// If the model emitted no citations and produced real prose, we
 	// conservatively treat it as no-answer: the moonshot spec says we must
 	// not invent an answer without grounded citations.
-	if len(result.VerifiedKeys) == 0 && !isApparentRefusal(resp.Answer) {
+	if (len(result.VerifiedKeys) == 0 && !isApparentRefusal(resp.Answer)) ||
+		(len(paths) > 0 && len(citedPaths) != len(paths)) {
 		return AnswerResponse{
 			Status:           "no_answer",
 			Question:         question,
@@ -353,6 +418,8 @@ func (s *Server) Answer(ctx context.Context, req AnswerRequest) (AnswerResponse,
 			Sources:          sources,
 			DroppedCitations: result.DroppedKeys,
 			Diagnostics: AnswerDiagnostics{
+				GraphExpansion:  graphOn,
+				RetrievalMode:   mode,
 				RetrievalMs:     retrievalMs,
 				GenerationMs:    generationMs,
 				ChunksRetrieved: len(scored),
@@ -368,8 +435,11 @@ func (s *Server) Answer(ctx context.Context, req AnswerRequest) (AnswerResponse,
 		Answer:           resp.Answer,
 		Markdown:         resp.Markdown,
 		Sources:          sources,
+		Paths:            citedPaths,
 		DroppedCitations: result.DroppedKeys,
 		Diagnostics: AnswerDiagnostics{
+			GraphExpansion:  graphOn,
+			RetrievalMode:   mode,
 			RetrievalMs:     retrievalMs,
 			GenerationMs:    generationMs,
 			ChunksRetrieved: len(scored),
@@ -378,6 +448,22 @@ func (s *Server) Answer(ctx context.Context, req AnswerRequest) (AnswerResponse,
 		},
 	}
 	return out, nil
+}
+
+func pathsToLLM(paths []retrieval.GraphPath, hints []retrieval.CitationHint) [][]llm.CitationHint {
+	byKey := make(map[string]llm.CitationHint)
+	for _, hint := range hintsToLLM(hints) {
+		byKey[hint.Key] = hint
+	}
+	var out [][]llm.CitationHint
+	for _, path := range paths {
+		var route []llm.CitationHint
+		for _, node := range path.Nodes {
+			route = append(route, byKey[node.Key])
+		}
+		out = append(out, route)
+	}
+	return out
 }
 
 func scoredChunks(s []retrieval.Scored) []retrieval.Chunk {
