@@ -1,34 +1,30 @@
 ---
-date: "2026-07-09"
-title: "La Famille"
-author: "Jules"
+date: "2026-10-01"
+title: "Small files. Big possibilities."
+description: "Turn Markdown into a connected, searchable website. One Go binary, local-first tools, and an enthusiastic octopus."
+layout: "layout-site-home"
 ---
 
-# Welcome to La Famille
+## Make a home for what you know
 
-La Famille is a static site generator written in Go, featuring built-in live reloading and a zero-dependency architecture.
+La Famille is for field guides, connected notebooks, independent publications,
+and documentation with a point of view. Start with Markdown. Add links between
+ideas. Build a static site that can live on any static host.
 
-## Documentation
-Read the docs to learn how to use La Famille.
+[The getting-started guide](docs/setup.md) takes you from a downloaded binary
+to your first page. [The documentation](docs/index.md) covers writing, themes,
+checks, and publishing. Want proof beyond a feature list? Meet
+[Escapement](showcase/escapement.md) and the [Z.ai Field Guide](showcase/zai.md).
 
-[View Docs](docs/index.md)
+## Small tool. Honest edges.
 
-## Showcase
-See what others have built with La Famille.
+La Famille is pre-alpha. The released binary supports the core publishing
+workflow; some newer features, including [Change Ledger](docs/change-ledger.md)
+and retrieval upgrades, currently require a source build. Check your binary's
+`--version` and command help before copying commands from newer documentation.
+[Local Ask](docs/ask.md) is experimental, opt-in, and runs on your machine.
+This website does not expose an online assistant.
 
-[View Showcase](showcase/index.md)
-
-## Jules
-Information about Jules.
-
-[View Jules](jules/index.md)
-
-## Meta
-Meta information about the project.
-
-[View Meta](meta/index.md)
-
-## Template Gallery
-La Famille includes a gallery of templates you can use for your site.
-
-[View Gallery](docs/templates.md)
+The personality is part of the project, too: meet [Jules](jules/index.md),
+follow [the roadmap](meta/roadmap.md), or explore
+[the template gallery](showcase/templates.md). No account needed to look around.

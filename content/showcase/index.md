@@ -1,33 +1,43 @@
 ---
-date: "2026-07-09"
-title: "Template Gallery"
-description: "A visual index of every layout available."
-author: "Jules"
+date: "2026-10-01"
+title: "Built with La Famille"
+description: "Independent publications with real content, real readers, and useful lessons for the generator."
 ---
 
-# Template Gallery
+## Out in the world
 
-Welcome to the template gallery. Here is a visual index of every layout available:
+Two different sites, two useful workloads. Both publish static files generated
+with La Famille, but they do not have to look like the generator's own website.
 
-- [Brutalist](/showcase/layout-brutalist/)
-- [Cyberpunk](/showcase/layout-cyberpunk/)
-- [Devlog](/showcase/layout-devlog/)
-- [Layout Asymmetric](/showcase/layout-asymmetric/)
-- [Layout Bento](/showcase/layout-bento/)
-- [Layout Centered Minimalist](/showcase/layout-centered-minimalist/)
-- [Layout Dashboard](/showcase/layout-dashboard/)
-- [Layout Documentation](/showcase/layout-documentation/)
-- [Layout Drawer](/showcase/layout-drawer/)
-- [Editorial](/showcase/layout-editorial/)
-- [Layout Floating Cards](/showcase/layout-floating-cards/)
-- [Layout Glassmorphism](/showcase/layout-glassmorphism/)
-- [Layout Hero](/showcase/layout-hero/)
-- [Layout Magazine Grid](/showcase/layout-magazine-grid/)
-- [Midnight](/showcase/layout-midnight/)
-- [Layout Neon](/showcase/layout-neon/)
-- [Layout Sidebar](/showcase/layout-sidebar/)
-- [Layout Split Screen](/showcase/layout-split-screen/)
-- [Layout Terminal](/showcase/layout-terminal/)
-- [Layout The Hacker](/showcase/layout-the-hacker/)
-- [Layout](/showcase/layout/)
-- [Luxury Magazine](/showcase/layout-luxury-magazine/)
+### Escapement
+
+A connected guide to mechanical watches: anatomy, physics, history, and
+site-owned SVG diagrams. An eight-part series gives readers a path through
+the material; the knowledge graph gives them another.
+
+[Meet Escapement](escapement.md) ·
+[Visit the site](https://escapement.filed.fyi/) ·
+[Source](https://github.com/drawmeanelephant/escapement)
+
+### Z.ai Field Guide
+
+English and Chinese editions of an independent, source-linked guide. A custom
+theme, mirrored language paths, and a pinned release-based publishing workflow
+show what a site can compose from the generator's primitives.
+
+[Meet the Z.ai Field Guide](zai.md) ·
+[Visit the site](https://z.filed.fyi/) ·
+[Source](https://github.com/drawmeanelephant/z.filed.fyi)
+
+## Looking for layouts?
+
+[The template gallery](templates.md) keeps every existing preview available.
+The [templating guide](../docs/templates.md) explains how to adapt one or build
+your own.
+
+## This site is a workload, too
+
+The website you're reading is built from this generator repository.
+[Its publishing notes](../docs/site-publishing.md) distinguish the canonical
+Cloudflare deployment from the GitHub Pages fallback, and explain which
+generated artifacts are public.

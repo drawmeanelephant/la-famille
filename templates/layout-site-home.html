@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{.Site.Theme}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Site.SiteName}}{{.Title}} - {{.Site.SiteName}}{{else}}{{.Title}}{{end}}</title>
+    <meta name="description" content="{{.Description}}">
+    <meta property="og:title" content="{{.Title}}">
+    <meta property="og:description" content="{{.Description}}">
+    <meta property="og:image" content="{{.Image}}">
+    <meta property="og:type" content="website">
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
+    <link rel="icon" href="/assets/img/u1f419_u1f354.png" type="image/png">
+    <link rel="stylesheet" href="/assets/css/theme-foundations.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body class="site-body">
+    <a href="#main-content" class="site-skip">Skip to content</a>
+    {{template "site_header" .}}
+    <main id="main-content">
+        <section class="site-wrap site-hero" aria-labelledby="hero-title">
+            <div>
+                <p class="site-eyebrow"><span class="site-status-dot" aria-hidden="true"></span> A small, independent tool for the web</p>
+                <h1 id="hero-title">Small files.<br><em>Big possibilities.</em></h1>
+                <p class="site-hero-deck">Your notes deserve a home, not a platform.</p>
+                <p class="site-hero-copy">La Famille turns a folder of Markdown into a connected, searchable website. One Go binary. Your files. Your machine. Your site.</p>
+                <div class="site-actions">
+                    <a class="site-button" href="/docs/setup/">Make your first site <span aria-hidden="true">↗</span></a>
+                    <a class="site-text-link" href="https://github.com/drawmeanelephant/la-famille/releases">Get the binary <span aria-hidden="true">↓</span></a>
+                </div>
+                <p class="site-fine-print">Early days, real websites. Pre-alpha software; bring your curiosity.</p>
+            </div>
+            <div class="site-workbench">
+                <div class="site-mascot-note">
+                    <img src="/assets/img/u1f419_u1f354.png" alt="Raoul, our octopus-burger companion" width="534" height="534">
+                    <span>I'll hold the burger.<br>You make the internet.</span>
+                </div>
+                <div class="site-terminal" aria-label="Example build commands and generated files">
+                    <div class="site-terminal-bar"><span class="site-terminal-dots" aria-hidden="true">● ● ●</span><span>your-next-good-idea/</span></div>
+                    <pre><code><span class="site-terminal-muted">$</span> la-famille init
+<span class="site-terminal-muted">$</span> la-famille build
+
+<span class="site-terminal-green">public/</span>
+├── index.html       <span class="site-terminal-muted">your words, on the web</span>
+├── search.json      <span class="site-terminal-muted">find the good bits</span>
+├── graph/           <span class="site-terminal-muted">follow the connections</span>
+└── sitemap.xml      <span class="site-terminal-muted">leave a trail</span></code></pre>
+                    <div class="site-terminal-foot"><span aria-hidden="true">↳</span> Static files. Ready for your host.</div>
+                </div>
+            </div>
+        </section>
+        <div class="site-principles">
+            <div class="site-wrap"><span>Plain Markdown</span><span>One Go binary</span><span>Linked by default</span><span>No build service required</span></div>
+        </div>
+        <section class="site-wrap site-section" aria-labelledby="toolbox-title">
+            <div class="site-section-heading">
+                <p class="site-eyebrow">A thoughtfully packed toolbox</p>
+                <h2 id="toolbox-title">More than pages.<br>Less than a platform.</h2>
+                <p>Keep the useful parts. Skip the infrastructure project.</p>
+            </div>
+            <div class="site-feature-grid">
+                <article><span class="site-number">01 / Write</span><h3>Files you can keep.</h3><p>Markdown, a little frontmatter, and HTML templates. Edit with the tools you already love.</p><a href="/docs/frontmatter/">Writing content <span aria-hidden="true">↗</span></a></article>
+                <article><span class="site-number">02 / Connect</span><h3>Ideas have neighbors.</h3><p>Backlinks, wiki links, and a browsable knowledge graph turn a collection of pages into a place to explore.</p><a href="/graph/">Explore this site's graph <span aria-hidden="true">↗</span></a></article>
+                <article><span class="site-number">03 / Find</span><h3>A site with a memory.</h3><p>Local client-side search and generated tag archives help readers find their way, without a search service.</p><a href="/docs/search/">How search works <span aria-hidden="true">↗</span></a></article>
+                <article><span class="site-number">04 / Make it yours</span><h3>Your site, your taste.</h3><p>Start with a bundled theme, or bring your own templates. The octopus is optional. Mostly.</p><a href="/showcase/templates/">Browse the templates <span aria-hidden="true">↗</span></a></article>
+                <article><span class="site-number">05 / Build with confidence</span><h3>Know what changed.</h3><p>Content checks, incremental builds, and source-build Change Ledger reports make the publishing loop easier to trust.</p><a href="/docs/change-ledger/">Meet the Change Ledger <span aria-hidden="true">↗</span></a></article>
+                <article><span class="site-number">06 / Take it with you</span><h3>Readable by people. And tools.</h3><p>Export a machine-readable corpus. Experiment with local, cited Q&amp;A through Ollama. Ask stays opt-in.</p><a href="/docs/ask/">Local Ask, experimental <span aria-hidden="true">↗</span></a></article>
+            </div>
+        </section>
+        <section class="site-showcase-band" aria-labelledby="showcase-title">
+            <div class="site-wrap site-section">
+                <div class="site-section-heading site-heading-row">
+                    <div><p class="site-eyebrow">Out in the world</p><h2 id="showcase-title">Not just demo content.</h2></div>
+                    <a class="site-text-link" href="/showcase/">Meet the sites <span aria-hidden="true">↗</span></a>
+                </div>
+                <div class="site-showcase-grid">
+                    <article class="site-showcase-card">
+                        <div class="site-showcase-cover site-cover-watch" aria-hidden="true"><span>ESCAPEMENT</span><span class="site-cover-serif">Time, taken<br>apart.</span><span>ANATOMY · PHYSICS · HISTORY</span></div>
+                        <div class="site-showcase-copy"><p class="site-eyebrow">An independent explainer</p><h3>Escapement</h3><p>A mechanical watch, part by part. Long-form explanations, SVG diagrams, and an eight-part reading path.</p><a href="/showcase/escapement/">See how it's made <span aria-hidden="true">↗</span></a><a class="site-live-link" href="https://escapement.filed.fyi/">Visit the site <span aria-hidden="true">↗</span></a></div>
+                    </article>
+                    <article class="site-showcase-card">
+                        <div class="site-showcase-cover site-cover-zai" aria-hidden="true"><span>Z.AI FIELD GUIDE / 智谱</span><span class="site-cover-serif">Two languages.<br>One field guide.</span><span>MODELS · PRODUCTS · SOURCES</span></div>
+                        <div class="site-showcase-copy"><p class="site-eyebrow">A bilingual field guide</p><h3>Z.ai Field Guide</h3><p>English and Chinese editions, a custom theme, and source-linked histories. Built with composition, not an i18n framework.</p><a href="/showcase/zai/">See how it's made <span aria-hidden="true">↗</span></a><a class="site-live-link" href="https://z.filed.fyi/">Visit the site <span aria-hidden="true">↗</span></a></div>
+                    </article>
+                </div>
+            </div>
+        </section>
+        <section class="site-wrap site-home-notes site-prose">
+            {{if .ComplianceModal}}<aside class="site-notice" aria-label="Content notice">{{.ComplianceModal}}</aside>{{end}}
+            {{.Content}}
+        </section>
+        <section class="site-wrap site-invitation" aria-labelledby="invitation-title">
+            <img src="/assets/img/u1f419_u1f354.png" alt="" aria-hidden="true" width="100" height="100">
+            <div><p class="site-eyebrow">A field guide. A notebook. A weird little corner of the internet.</p><h2 id="invitation-title">What will you make?</h2><p>Start small. Keep your files. Follow the interesting links.</p></div>
+            <a class="site-button" href="/docs/setup/">Let's make a site <span aria-hidden="true">↗</span></a>
+        </section>
+    </main>
+    {{template "site_footer" .}}
+</body>
+</html>

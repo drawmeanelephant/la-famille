@@ -1,0 +1,47 @@
+{{define "site_header"}}
+<header class="site-header">
+    <div class="site-wrap site-header-inner">
+        <a href="/" class="site-wordmark" aria-label="La Famille home">
+            <img src="/assets/img/u1f419_u1f354.png" alt="" width="44" height="44" aria-hidden="true">
+            <span>la famille<span class="site-wordmark-dot">.</span></span>
+        </a>
+        <nav id="site-navigation" aria-label="Main navigation">
+            <a href="/docs/setup/">Get started</a>
+            <a href="/docs/">Docs</a>
+            <a href="/showcase/">Showcase</a>
+            <a href="https://github.com/drawmeanelephant/la-famille">GitHub <span aria-hidden="true">↗</span></a>
+        </nav>
+        {{template "search_modal" .}}
+    </div>
+</header>
+{{end}}
+
+{{define "site_footer"}}
+<footer class="site-footer">
+    <div class="site-wrap site-footer-grid">
+        <div>
+            <a class="site-wordmark" href="/">la famille<span class="site-wordmark-dot">.</span></a>
+            <p>Eight arms. One burger.<br>A little more room for your ideas.</p>
+        </div>
+        <nav aria-label="Explore La Famille">
+            <span class="site-eyebrow">Make something</span>
+            <a href="/docs/setup/">Your first site</a>
+            <a href="/docs/templates/">Make it yours</a>
+            <a href="/showcase/">Built with La Famille</a>
+            <a href="/showcase/templates/">Template gallery</a>
+        </nav>
+        <nav aria-label="Project resources">
+            <span class="site-eyebrow">Under the hood</span>
+            <a href="/graph/">Explore this site's graph</a>
+            <a href="/docs/ask/">Local Ask, experimental</a>
+            <a href="/docs/site-publishing/">How this site ships</a>
+            <a href="https://github.com/drawmeanelephant/la-famille/releases">Releases</a>
+        </nav>
+    </div>
+    <div class="site-wrap site-footer-note">
+        <span>Made of Markdown, Go, and a very enthusiastic octopus.</span>
+        <a href="https://github.com/drawmeanelephant/la-famille">Source on GitHub <span aria-hidden="true">↗</span></a>
+    </div>
+</footer>
+<script src="/assets/js/search.js" defer></script>
+{{end}}

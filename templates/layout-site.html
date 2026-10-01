@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{.Site.Theme}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Site.SiteName}}{{.Title}} - {{.Site.SiteName}}{{else}}{{.Title}}{{end}}</title>
+    <meta name="description" content="{{.Description}}">
+    <meta property="og:title" content="{{.Title}}">
+    <meta property="og:description" content="{{.Description}}">
+    <meta property="og:image" content="{{.Image}}">
+    <meta property="og:type" content="website">
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">
+    <meta property="og:url" content="{{.CanonicalURL}}">{{end}}
+    <link rel="icon" href="/assets/img/u1f419_u1f354.png" type="image/png">
+    <link rel="stylesheet" href="/assets/css/theme-foundations.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body class="site-body">
+    <a href="#main-content" class="site-skip">Skip to content</a>
+    {{template "site_header" .}}
+    <main id="main-content" class="site-wrap site-document">
+        <aside class="site-doc-nav">
+            <p class="site-eyebrow">The field guide</p>
+            <nav aria-label="Documentation">
+                <a href="/docs/">Documentation home</a>
+                <a href="/docs/setup/">Getting started</a>
+                <a href="/docs/config/">Configuration</a>
+                <a href="/docs/frontmatter/">Writing content</a>
+                <a href="/docs/templates/">Templates &amp; themes</a>
+                <a href="/docs/cli/">CLI reference</a>
+                <a href="/docs/tui/">Terminal UI</a>
+                <a href="/docs/publishing/">Publishing</a>
+                <a href="/docs/rag/">Corpus exports</a>
+                <a href="/docs/ask/">Ask this site</a>
+                <a href="/docs/change-ledger/">Change Ledger</a>
+            </nav>
+        </aside>
+        <article class="site-prose">
+            <p class="site-eyebrow">La Famille / Field notes</p>
+            {{/* Existing Markdown guides already start with a rendered h1. Keep
+                 that heading rather than adding a second document title. */}}
+            {{if ne (printf "%.3s" .Content) (print "<" "h1")}}
+            <h1>{{.Title}}</h1>
+            {{if .Description}}<p class="site-deck">{{.Description}}</p>{{end}}
+            {{end}}
+            {{if .ComplianceModal}}<aside class="site-notice" aria-label="Content notice">{{.ComplianceModal}}</aside>{{end}}
+            {{.Content}}
+        </article>
+    </main>
+    {{template "site_footer" .}}
+</body>
+</html>

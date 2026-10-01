@@ -1,0 +1,21 @@
+# The project's public website, not the configuration installed by `init`.
+site_name: "La Famille"
+siteurl: "https://la-famille.filed.fyi"
+template: "templates/layout-site.html"
+content_dir: "content"
+output_dir: "public"
+asset_dir: "assets"
+rag_dir: "rag-archive"
+theme: "retro"
+default_description: "A local-first Go static site generator. Turn Markdown into a connected, searchable website you own."
+default_og_image: "/assets/img/u1f419_u1f354.png"
+graph_explorer: true
+site_links:
+  - label: "Get started"
+    url: "/docs/setup/"
+  - label: "Documentation"
+    url: "/docs/"
+  - label: "Showcase"
+    url: "/showcase/"
+  - label: "GitHub"
+    url: "https://github.com/drawmeanelephant/la-famille"

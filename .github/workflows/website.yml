@@ -1,0 +1,91 @@
+name: Flagship website
+
+on:
+  pull_request:
+    branches: [master, main]
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Publish the validated artifact to the existing Cloudflare Pages project"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flagship-website-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SITE_URL: https://la-famille.filed.fyi
+  PAGES_PROJECT: la-famille-go
+
+jobs:
+  build:
+    name: Build and validate website
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Test website contracts
+        run: |
+          go test ./internal/render ./internal/generator ./cmd/la-famille -run 'TestFlagship|TestRepositoryFlagship' -count=1
+          python3 -B -m unittest discover -s .github/scripts/website -p 'test_*.py'
+      - name: Build source compiler
+        run: go build -trimpath -o "$RUNNER_TEMP/la-famille" ./cmd/la-famille
+      - name: Build website and content-only corpus
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/la-famille" --project-root "$GITHUB_WORKSPACE" \
+            --config "$GITHUB_WORKSPACE/website.yaml" build \
+            --site-url "$SITE_URL" --output "$GITHUB_WORKSPACE/public"
+          "$RUNNER_TEMP/la-famille" --project-root "$GITHUB_WORKSPACE" \
+            --config "$GITHUB_WORKSPACE/website.yaml" rag \
+            --output "$RUNNER_TEMP/flagship-rag"
+          test -s "$RUNNER_TEMP/flagship-rag/rag-content.md"
+          mkdir -p "$GITHUB_WORKSPACE/public/rag-archive"
+          cp "$RUNNER_TEMP/flagship-rag/rag-content.md" "$GITHUB_WORKSPACE/public/rag-archive/"
+          "$RUNNER_TEMP/la-famille" --project-root "$GITHUB_WORKSPACE" \
+            --config "$GITHUB_WORKSPACE/website.yaml" publish-check \
+            --site-url "$SITE_URL" --output "$GITHUB_WORKSPACE/public"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: flagship-website
+          path: public/
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    name: Publish production website
+    needs: build
+    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy))
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare-pages
+      url: https://la-famille.filed.fyi
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: flagship-website
+          path: public/
+      - name: Read existing Pages production branch
+        id: pages_project
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: python3 -B .github/scripts/website/production_branch.py
+      - name: Publish to existing Cloudflare Pages project
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy public --project-name "${{ env.PAGES_PROJECT }}" --branch "${{ steps.pages_project.outputs.production_branch }}"

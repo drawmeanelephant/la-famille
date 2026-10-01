@@ -1,89 +1,129 @@
 ---
-date: "2026-07-09"
-title: "Getting Started Guide"
-author: "Jules"
+date: "2026-10-01"
+title: "Your first La Famille site"
+description: "Download a binary, write a page, and build a website you can keep."
 ---
 
-# Getting Started with La Famille
+## 1. Get the binary
 
-Welcome to La Famille! This guide will walk you through the process of setting up the project on your local machine, initializing your first workspace, and running the local development server.
+Open [the releases page](https://github.com/drawmeanelephant/la-famille/releases)
+and download the archive for your operating system and architecture, plus
+`SHA256SUMS`. Compare the archive's SHA-256 digest with its matching entry
+before extracting it. On macOS use `shasum -a 256 <archive>`; on Linux use
+`sha256sum <archive>`. A different digest means stop and download again.
 
-## 0. Choose source or binary
+Extract the verified archive and put `la-famille` on your `PATH`, or substitute
+the executable's absolute path in the commands below. Then check its identity:
 
-Use a released archive for CI and publishing. Verify `SHA256SUMS`, run
-`./la-famille --version`, and use `--project-root /path/to/site` from any
-working directory. Use a source checkout when you are developing La Famille
-itself or changing its templates and parser.
+```bash
+la-famille --version
+```
 
-## 1. Prerequisites
+**No Go installation is needed for the released binary.** La Famille is
+pre-alpha, so keep your content in version control and expect some rough edges.
 
-La Famille is written in Go. Before you can build or run the project, you need to have Go installed on your system.
+## 2. Give it a folder
 
-*   **Install Go:** Head over to the official [Go Installation Guide](https://go.dev/doc/install) and download Go 1.24 or newer (the project requires `go 1.24.0` / toolchain `go1.24.3`).
-*   **Verify Installation & PATH:** Open your terminal and run `go version` to ensure it is correctly installed. Additionally, ensure your Go binary directory (`GOPATH/bin`) is included in your shell's `PATH`:
-    ```bash
-    export PATH="$PATH:$(go env GOPATH)/bin"
-    ```
+Run these commands from the directory where you want to keep your site:
 
-## 2. Clone the Repository
+```bash
+mkdir my-site
+cd my-site
+la-famille init
+la-famille build
+```
 
-Clone the La Famille repository from GitHub to your local machine:
+`init` installs configuration, a starter homepage, bundled layouts, and runtime
+assets. `build` writes the complete static site into `public/`. Your Markdown
+stays in `content/`; it is not replaced by the generated HTML.
+
+## 3. Write something worth linking to
+
+```bash
+la-famille new notes/first-note --title "My first note"
+```
+
+Open `content/notes/first-note.md` in your editor and replace the starter text.
+Link it from `content/index.md` with ordinary Markdown:
+
+```markdown
+[Read my first note](notes/first-note.md)
+```
+
+Run the checker and rebuild:
+
+```bash
+la-famille check
+la-famille build
+```
+
+The checker reports content problems; the build generates your pages, search
+index, graph, and publishing metadata. [Frontmatter](frontmatter.md) covers
+titles, dates, tags, and `publish: false`.
+
+## 4. See it locally
+
+```bash
+la-famille serve --watch
+```
+
+Open `http://localhost:8080`. The server rebuilds when source files change.
+Press `Ctrl+C` to stop it. Prefer the terminal UI? Run `la-famille tui`.
+
+You can also work from another directory:
+
+```bash
+la-famille --project-root /absolute/path/to/my-site build
+```
+
+Paths in configuration and CLI output options resolve against the selected
+project root. Absolute paths avoid ambiguity when driving another project.
+
+## 5. Publish files, not your workspace
+
+Set `siteurl` in `config.yaml` to your full public address. A subdomain uses
+an origin such as `https://notes.example.com`; a GitHub Pages project site
+must include its `/repository` subpath.
+
+Build again, run `la-famille publish-check`, and upload **only `public/`** to
+your static host. Do not upload your private build cache or the entire source
+checkout. See [the publishing contract](publishing.md).
+
+Corpus export is a separate, optional step. Build first, then export:
+
+```bash
+la-famille rag --output "$PWD/public/rag-archive"
+```
+
+This creates content, system, and configuration bundles. Review what each
+contains before publishing any of them; a content-only site normally only needs
+`rag-content.md`. A later build may replace `public/`, so re-export afterward.
+
+## Working on La Famille itself?
+
+Use the Go version declared in the repository's `go.mod` (currently Go 1.26):
 
 ```bash
 git clone https://github.com/drawmeanelephant/la-famille.git
 cd la-famille
+go build -o ./bin/la-famille ./cmd/la-famille
+./bin/la-famille --version
 ```
 
-## 3. Unified Getting-Started Workflow Path
+For this project's flagship site, use its separate configuration:
 
-Follow this concise sequential path to initialize, author, validate, build, preview, and export your site:
-
-### Step 1: Initialize Project (`init`)
-Initialize default configuration, layout templates, and required assets:
 ```bash
-go run ./cmd/la-famille init
-```
-*(For a released binary outside source: `la-famille --project-root /path/to/site init`)*
-
-### Step 2: Scaffold Content (`new`)
-Create new markdown posts or pages with pre-formatted YAML frontmatter:
-```bash
-go run ./cmd/la-famille new posts/first-post --title "First Post" --tags "welcome,guide" --categories "updates"
+./bin/la-famille --config website.yaml build
+./bin/la-famille --config website.yaml serve
 ```
 
-### Step 3: Validate Content & Asset Health (`check`)
-Check frontmatter syntax, internal links, slug collisions, and asset references:
-```bash
-go run ./cmd/la-famille check --asset-health
-```
-Diagnostic findings include the active build version and commit metadata.
+The source build includes newer features that the last published pre-alpha
+release may not have. Always check `--version` and the command's `--help`.
 
-### Step 4: Build Static Site (`build`)
-Compile markdown files and assets into static HTML in `public/`:
-```bash
-go run ./cmd/la-famille build
-```
+## Pick your next path
 
-### Step 5: Serve Locally with Watch Mode (`serve --watch`)
-Launch the local HTTP server and automatically rebuild on content changes:
-```bash
-go run ./cmd/la-famille serve --watch
-```
-Navigate to `http://localhost:8080` in your web browser to preview your site live.
-
-### Step 6: Export RAG Context Bundles (`rag`)
-Generate LLM-ready context archives (`rag-system.md`, `rag-content.md`):
-```bash
-go run ./cmd/la-famille rag
-```
-
-## 4. GitHub Pages Deployment
-
-GitHub Pages uses the Actions Pages artifact/deploy flow and uploads the whole `public/` tree; it does not imply or require a `gh-pages` branch. Set the `LA_FAMILLE_VERSION` repository variable to make the workflow download and checksum-verify a released binary. With the variable empty, it uses the clearly marked source-build fallback for development.
-
-## 5. What's Next?
-
-* **Explore the TUI:** Run `go run ./cmd/la-famille tui` to launch the interactive Terminal UI. See the [TUI Guide](tui.md).
-* **Learn the CLI:** Read the [CLI Reference](cli.md) to discover all available flags and subcommands.
-* **Design with Templates:** Customize HTML layouts in the [Templating Guide](templates.md).
-* **Ask This Site:** Learn about the on-device AI assistant in the [Ask Guide](ask.md).
+- [Themes and templates](templates.md): make the site look like you.
+- [The terminal UI](tui.md): the same workflow, with an octopus.
+- [Configuration](config.md): paths, names, and publishing addresses.
+- [Local Ask](ask.md): experimental questions with local models and citations.
+- [Real sites](../showcase/index.md): see what other content looks like.
