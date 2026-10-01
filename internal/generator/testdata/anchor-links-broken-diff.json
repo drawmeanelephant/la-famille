@@ -1,0 +1,103 @@
+{
+  "added_pages": [
+    {
+      "identity": "new-page",
+      "source_path": "new-page.md",
+      "url": "/ledger/new-page/",
+      "title": "New page"
+    }
+  ],
+  "removed_pages": [],
+  "changed_pages": [],
+  "metadata_changes": [],
+  "taxonomy_changes": [],
+  "added_links": [
+    {
+      "page": "new-page",
+      "destination": "nonexistent.md",
+      "target": "nonexistent.md"
+    }
+  ],
+  "removed_links": [],
+  "added_edges": [
+    {
+      "from": "new-page",
+      "to": "nonexistent"
+    }
+  ],
+  "removed_edges": [],
+  "orphan_changes": [
+    {
+      "page": "new-page",
+      "state": "orphaned"
+    }
+  ],
+  "new_broken_links": [
+    {
+      "page": "new-page",
+      "destination": "nonexistent.md",
+      "target": "nonexistent.md",
+      "line": 4
+    }
+  ],
+  "resolved_broken_links": [],
+  "file_changes": [
+    {
+      "path": "backlinks.json",
+      "action": "modified",
+      "before": "e5e18e770250f9ad8de029141f8560a1c8dede651136cb67ed7cc6b203687785",
+      "after": "4a1fcb712ea34f068fbb66e8e9bbd3a13eb33218f0e2417c972eb500a4636aad"
+    },
+    {
+      "path": "graph.json",
+      "action": "modified",
+      "before": "47f46a0bd8557102147887728faa2f7d810265353b9322c4f477fff19e06fb1b",
+      "after": "96b689b6e5021aa4b626784604256c4a4a6b08835dbc5f9b63a162e4fc91fb40"
+    },
+    {
+      "path": "meta.json",
+      "action": "modified",
+      "before": "2aef3c0c7b007f1091581ba854847fdda95ca12bceea9a77114ee176ef1921ad",
+      "after": "5d80371754131f291a9235080131e992beeb66ee0ee62d24dcd43c21fd167627"
+    },
+    {
+      "path": "nonexistent/index.html",
+      "action": "added",
+      "before": "",
+      "after": "beceb7ed601cb37e8af7910e56648a86cbe3eb0924a2ca31639656269127e0cf"
+    },
+    {
+      "path": "search.json",
+      "action": "modified",
+      "before": "5de9997d534e5b1660e9a4c79543d26a17e98ee91a75e27ab275aa73b02b6b8c",
+      "after": "4c7a47be24a08bf49fbd037a6992c3af27abd7bcfcdd2aa3bee3d4d4431baaaf"
+    },
+    {
+      "path": "sitemap.xml",
+      "action": "modified",
+      "before": "111738639dc6fe35248f3c8ca12ef395c39ac0762af995f749571266be4e978a",
+      "after": "6b554b302293c2965ea248179dd532aa178350f7db25e68e14c6f4aa4d32aba6"
+    },
+    {
+      "path": "unresolved-notes/index.html",
+      "action": "modified",
+      "before": "5232c4b684df5db89c5904d438f352a9b6d6ae51fb0a67bab503dc94b9d03b01",
+      "after": "6ed96d1f08433d93f04ffae61cd5c527b1a1d3fb848290e7be0717ff6932f2da"
+    }
+  ],
+  "added_sitemap": [
+    "https://example.com/ledger/new-page/"
+  ],
+  "regressions": [
+    {
+      "kind": "broken_link",
+      "page": "new-page",
+      "detail": "newly-broken link \"nonexistent.md\" (line 4)"
+    },
+    {
+      "kind": "orphan",
+      "page": "new-page",
+      "detail": "new orphan"
+    }
+  ]
+}

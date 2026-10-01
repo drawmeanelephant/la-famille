@@ -3,6 +3,7 @@ package diff
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -24,6 +25,26 @@ type Report struct {
 	OrphanChanges       []OrphanChange   `json:"orphan_changes"`
 	NewBrokenLinks      []BrokenLink     `json:"new_broken_links"`
 	ResolvedBrokenLinks []BrokenLink     `json:"resolved_broken_links"`
+	FileChanges         []FileChange     `json:"file_changes,omitempty"`
+	AddedSitemap        []string         `json:"added_sitemap,omitempty"`
+	RemovedSitemap      []string         `json:"removed_sitemap,omitempty"`
+	Regressions         []Regression     `json:"regressions,omitempty"`
+	CoverageWarnings    []string         `json:"coverage_warnings,omitempty"`
+	RenderedPages       []PageRef        `json:"rendered_pages,omitempty"`
+}
+
+type FileChange struct {
+	Path   string `json:"path"`
+	Action string `json:"action"`
+	Before string `json:"before"`
+	After  string `json:"after"`
+}
+
+// Regression is one actionable gate finding. Kinds are stable machine keys.
+type Regression struct {
+	Kind   string `json:"kind"`
+	Page   string `json:"page,omitempty"`
+	Detail string `json:"detail"`
 }
 
 // PageRef is the stable, human-readable portion of a manifest page.
@@ -119,6 +140,10 @@ func Compare(before, after sitedata.Manifest) (Report, error) {
 	pairs, beforeToAfter := matchPages(beforePages, afterPages)
 	for _, pair := range pairs {
 		addPageChanges(&report, pair)
+		if !pageChanged(pair.before, pair.after) && pair.before.OutputHash != "" &&
+			pair.after.OutputHash != "" && pair.before.OutputHash != pair.after.OutputHash {
+			report.RenderedPages = append(report.RenderedPages, pageRef(pair.after))
+		}
 		addTaxonomyChanges(&report, pair)
 		addMetadataChanges(&report, pair)
 	}
@@ -133,6 +158,9 @@ func Compare(before, after sitedata.Manifest) (Report, error) {
 			report.RemovedLinks = append(report.RemovedLinks, LinkChange{
 				Page: id, Destination: link.Destination, Target: link.Target,
 			})
+			if !link.Resolved {
+				report.ResolvedBrokenLinks = append(report.ResolvedBrokenLinks, brokenLink(id, link))
+			}
 		}
 	}
 	matchedAfter := make(map[string]bool, len(pairs))
@@ -150,6 +178,16 @@ func Compare(before, after sitedata.Manifest) (Report, error) {
 	addLinkChanges(&report, beforePages, afterPages, beforeToAfter)
 	addGraphChanges(&report, before, after)
 	addOrphanChanges(&report, beforePages, afterPages, beforeToAfter)
+	if before.Version == 1 || after.Version == 1 {
+		report.CoverageWarnings = append(report.CoverageWarnings,
+			"Legacy v1 manifest: prose, extra frontmatter, published bytes, and sitemap coverage is incomplete. Rebuild both snapshots.")
+	} else if !before.OutputCaptured || !after.OutputCaptured {
+		report.CoverageWarnings = append(report.CoverageWarnings,
+			"Published output was not captured in both snapshots. Rebuild both snapshots for complete comparison coverage.")
+	} else {
+		addOutputChanges(&report, before, after)
+	}
+	addRegressions(&report, before, after, beforePages, afterPages)
 
 	sortReport(&report)
 	return report, nil
@@ -168,7 +206,11 @@ func (r Report) Empty() bool {
 		len(r.RemovedEdges) == 0 &&
 		len(r.OrphanChanges) == 0 &&
 		len(r.NewBrokenLinks) == 0 &&
-		len(r.ResolvedBrokenLinks) == 0
+		len(r.ResolvedBrokenLinks) == 0 &&
+		len(r.FileChanges) == 0 &&
+		len(r.RenderedPages) == 0 &&
+		len(r.AddedSitemap) == 0 &&
+		len(r.RemovedSitemap) == 0
 }
 
 // Summary formats a readable report for terminal output.
@@ -234,8 +276,31 @@ func (r Report) Summary(beforeLabel, afterLabel string) string {
 	for _, link := range r.ResolvedBrokenLinks {
 		fmt.Fprintf(&out, "  ✓ %s:%d %q → %s\n", link.Page, link.Line, link.Destination, link.Target)
 	}
+	for _, file := range r.FileChanges {
+		fmt.Fprintf(&out, "Published file %s: %s\n", file.Action, file.Path)
+	}
+	for _, page := range r.RenderedPages {
+		fmt.Fprintf(&out, "Rendered output changed: %s (%s)\n", page.Identity, page.Title)
+	}
+	for _, url := range r.AddedSitemap {
+		fmt.Fprintf(&out, "Sitemap + %s\n", url)
+	}
+	for _, url := range r.RemovedSitemap {
+		fmt.Fprintf(&out, "Sitemap - %s\n", url)
+	}
+	fmt.Fprintf(&out, "Regressions: %d\n", len(r.Regressions))
+	for _, regression := range r.Regressions {
+		fmt.Fprintf(&out, "  ! %s: %s %s\n", regression.Kind, regression.Page, regression.Detail)
+	}
+	for _, warning := range r.CoverageWarnings {
+		fmt.Fprintf(&out, "Coverage warning: %s\n", warning)
+	}
 	if r.Empty() {
-		out.WriteString("No changes.\n")
+		if len(r.CoverageWarnings) == 0 {
+			out.WriteString("No changes.\n")
+		} else {
+			out.WriteString("No changes in the covered fields.\n")
+		}
 	}
 	return out.String()
 }
@@ -251,6 +316,9 @@ func countOrphanState(changes []OrphanChange, state string) int {
 }
 
 func indexPages(manifest sitedata.Manifest) (map[string]sitedata.ManifestPage, error) {
+	if manifest.Version != 1 && manifest.Version != sitedata.ManifestVersion {
+		return nil, fmt.Errorf("unsupported site manifest version %d", manifest.Version)
+	}
 	pages := make(map[string]sitedata.ManifestPage, len(manifest.Pages))
 	for _, page := range manifest.Pages {
 		if page.Identity == "" {
@@ -366,7 +434,8 @@ func pageChanged(before, after sitedata.ManifestPage) bool {
 		before.Title != after.Title ||
 		before.Date != after.Date ||
 		before.Rendered != after.Rendered ||
-		before.InboundLinkCount != after.InboundLinkCount ||
+		(before.ContentHash != "" && after.ContentHash != "" && before.ContentHash != after.ContentHash) ||
+		(before.Frontmatter != nil && after.Frontmatter != nil && !reflect.DeepEqual(before.Frontmatter, after.Frontmatter)) ||
 		!sameStrings(before.Tags, after.Tags) ||
 		!sameStrings(before.Categories, after.Categories) ||
 		!sameStrings(before.OutboundLinks, after.OutboundLinks) ||
@@ -382,6 +451,18 @@ func addMetadataChanges(report *Report, pair pagePair) {
 	appendMetadataChange(report, page, "title", pair.before.Title, pair.after.Title)
 	appendMetadataChange(report, page, "date", pair.before.Date, pair.after.Date)
 	appendMetadataChange(report, page, "rendered", pair.before.Rendered, pair.after.Rendered)
+	if pair.before.Frontmatter != nil && pair.after.Frontmatter != nil {
+		fields := make(map[string]bool)
+		for field := range pair.before.Frontmatter {
+			fields[field] = true
+		}
+		for field := range pair.after.Frontmatter {
+			fields[field] = true
+		}
+		for field := range fields {
+			appendMetadataChange(report, page, field, pair.before.Frontmatter[field], pair.after.Frontmatter[field])
+		}
+	}
 }
 
 func appendMetadataChange(report *Report, page, field string, before, after any) {
@@ -619,6 +700,16 @@ func sameLinks(left, right []sitedata.ManifestLink) bool {
 }
 
 func sortReport(report *Report) {
+	sort.Slice(report.Regressions, func(i, j int) bool {
+		a, b := report.Regressions[i], report.Regressions[j]
+		if a.Kind != b.Kind {
+			return a.Kind < b.Kind
+		}
+		if a.Page != b.Page {
+			return a.Page < b.Page
+		}
+		return a.Detail < b.Detail
+	})
 	sort.Slice(report.AddedPages, func(i, j int) bool {
 		return report.AddedPages[i].Identity < report.AddedPages[j].Identity
 	})

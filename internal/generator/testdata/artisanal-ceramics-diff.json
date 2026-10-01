@@ -1,0 +1,140 @@
+{
+  "added_pages": [],
+  "removed_pages": [],
+  "changed_pages": [
+    {
+      "kind": "modified",
+      "before": {
+        "identity": "care-guide",
+        "source_path": "care-guide.md",
+        "url": "/ledger/care-guide/",
+        "title": "Ceramic Ware Care \u0026 Preservation Guide"
+      },
+      "after": {
+        "identity": "care-guide",
+        "source_path": "care-guide.md",
+        "url": "/ledger/care-guide/",
+        "title": "Care guide revised"
+      }
+    }
+  ],
+  "metadata_changes": [
+    {
+      "page": "care-guide",
+      "field": "title",
+      "before": "Ceramic Ware Care \u0026 Preservation Guide",
+      "after": "Care guide revised"
+    }
+  ],
+  "taxonomy_changes": [],
+  "added_links": [
+    {
+      "page": "care-guide",
+      "destination": "ledger-target.md",
+      "target": "ledger-target.md"
+    }
+  ],
+  "removed_links": [
+    {
+      "page": "care-guide",
+      "destination": "collection/wheel-thrown-vessels.md",
+      "target": "collection/wheel-thrown-vessels.md"
+    }
+  ],
+  "added_edges": [
+    {
+      "from": "care-guide",
+      "to": "ledger-target"
+    }
+  ],
+  "removed_edges": [
+    {
+      "from": "care-guide",
+      "to": "collection/wheel-thrown-vessels"
+    }
+  ],
+  "orphan_changes": [
+    {
+      "page": "ledger-target",
+      "state": "resolved"
+    }
+  ],
+  "new_broken_links": [],
+  "resolved_broken_links": [],
+  "file_changes": [
+    {
+      "path": "backlinks.json",
+      "action": "modified",
+      "before": "3fa498ff26e3fd4bd73dca98cb4de4021becd5c19b91ab9c0abf68b4fbabd15c",
+      "after": "98b9942d417fce52c40544be120563376af30e02010a41a87289184dc994fb0d"
+    },
+    {
+      "path": "categories/guides/index.html",
+      "action": "modified",
+      "before": "a225df7bd119aeb465f689cbb5f65901f4ff5c61b2184e4ea34dd0b6a94b0fba",
+      "after": "2edea6b0b8d46b4b3f7c9105ba35f1c4b79c593068ca2930e8288794bcfccb19"
+    },
+    {
+      "path": "feed.xml",
+      "action": "modified",
+      "before": "b89277a32ceda3d915993db9710dcd8fcd73b9a94478bb7da66f7bb697148e1c",
+      "after": "40545b908ae995424f3be1c2adc8816af1a176f29b036bcd77c5c2663ca5cc62"
+    },
+    {
+      "path": "graph.json",
+      "action": "modified",
+      "before": "2064d4f60ba7eeac1c7e9e302f8fa25fd1c7826b23644a3579831ce0ca577c5f",
+      "after": "f540c78a883387da3ea04225182bd4ad9a8a17e2e3db4e5621e185431e04d158"
+    },
+    {
+      "path": "meta.json",
+      "action": "modified",
+      "before": "3dea04b017b44ae3127acf654333c94f61c6345faa3651389ecb0c5e93de71a3",
+      "after": "d45b29ce5a95e5f0603b5e4451d4796400c85a8e7e0cd2edf7b739b4911128ec"
+    },
+    {
+      "path": "search.json",
+      "action": "modified",
+      "before": "bfed5b0b8fae5a3f861da91073ea10947c1362252df3787de20dbc42d089f5f9",
+      "after": "20123d46f21e59090a05d2bc61c89046a43024994bc0a238e822d7d252447e21"
+    },
+    {
+      "path": "tags/care/index.html",
+      "action": "modified",
+      "before": "6c0126ebf2dd9693f8b1fce890a4837611b4bcf629614f0d76823a7caf676c64",
+      "after": "df6b2abada5c9d277cf8325b5b910f055accf501146ecc209460e45f300f2baf"
+    },
+    {
+      "path": "tags/ceramics/index.html",
+      "action": "modified",
+      "before": "9718fa9a5e86d19a5cd9652fa5347271a96263db10bf6762b1d77c2800af5b8a",
+      "after": "aef6f6b3f46342d2248b7b9fd51e193413e0677221883c3bcef8f17f76e42437"
+    },
+    {
+      "path": "tags/guide/index.html",
+      "action": "modified",
+      "before": "e1552801de5b5ddba8040985f8209bcc3ee46b3b9de189e546e1ba1bca35b270",
+      "after": "74656cabf9b17d010e5d53882d51f42b4b46faf0abadc2c20cbaee4376e335ce"
+    }
+  ],
+  "rendered_pages": [
+    {
+      "identity": "collection/wheel-thrown-vessels",
+      "source_path": "collection/wheel-thrown-vessels.md",
+      "url": "/ledger/collection/wheel-thrown-vessels/",
+      "title": "Wheel-Thrown Vessels Collection"
+    },
+    {
+      "identity": "journal/2026-07-15-glazing-techniques",
+      "source_path": "journal/2026-07-15-glazing-techniques.md",
+      "url": "/ledger/journal/2026-07-15-glazing-techniques/",
+      "title": "Studio Notes: Ash Glazes \u0026 Reduction Firing"
+    },
+    {
+      "identity": "ledger-target",
+      "source_path": "ledger-target.md",
+      "url": "/ledger/ledger-target/",
+      "title": "Ledger target"
+    }
+  ]
+}

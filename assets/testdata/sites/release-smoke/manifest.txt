@@ -11,6 +11,8 @@ backlinks.json
 categories/general/index.html
 categories/index.html
 categories/news/index.html
+diff.json
+diff.txt
 feed.xml
 graph.json
 graph/data.json

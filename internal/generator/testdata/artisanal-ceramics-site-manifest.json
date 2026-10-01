@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "pages": [
     {
       "identity": "care-guide",
@@ -37,7 +37,21 @@
           "resolved": true
         }
       ],
-      "asset_references": []
+      "asset_references": [],
+      "content_hash": "4f71329464e5f4d30349fb1fdbe72817d7f9523bfd9e21b8f12db3fd923eb325",
+      "output_hash": "7f1fc8859c769d9764523d4cb9cfc40b961d3b27ce76da08ea46594e38b6f053",
+      "frontmatter": {
+        "animation_cues": "",
+        "author": "Studio Conservator",
+        "compliance_modal": "",
+        "description": "How to clean and care for hand-thrown stoneware and unglazed surfaces.",
+        "image": "",
+        "layout": "",
+        "publish": "true",
+        "slug": "",
+        "soundtrack_theme": "",
+        "video_script": ""
+      }
     },
     {
       "identity": "collection/wheel-thrown-vessels",
@@ -77,7 +91,21 @@
       ],
       "asset_references": [
         "ceramic-vase.png"
-      ]
+      ],
+      "content_hash": "673fa1d0861031fe7ee7ee96da2311bed1c6835157585b19b1be11596801ef00",
+      "output_hash": "4050e3a94f5b180f7398425fa23363816d3303a27725c158157c4efd75815440",
+      "frontmatter": {
+        "animation_cues": "",
+        "author": "Master Potter",
+        "compliance_modal": "",
+        "description": "Limited series of hand-thrown stoneware bottles and bowls.",
+        "image": "/assets/ceramic-vase.png",
+        "layout": "",
+        "publish": "true",
+        "slug": "",
+        "soundtrack_theme": "",
+        "video_script": ""
+      }
     },
     {
       "identity": "index",
@@ -125,7 +153,21 @@
       ],
       "asset_references": [
         "ceramic-vase.png"
-      ]
+      ],
+      "content_hash": "041801c973280d958515d5bb821b5eba85fe377b8b71978dfb8f6d5e3e576fd6",
+      "output_hash": "86b79646d872e928787c9648c192d54c20a44d60f6fff3312d505afbf2bc8aeb",
+      "frontmatter": {
+        "animation_cues": "",
+        "author": "Master Potter",
+        "compliance_modal": "",
+        "description": "Handcrafted stoneware and porcelain vessels made in Kyoto.",
+        "image": "",
+        "layout": "",
+        "publish": "true",
+        "slug": "",
+        "soundtrack_theme": "",
+        "video_script": ""
+      }
     },
     {
       "identity": "journal/2026-07-15-glazing-techniques",
@@ -165,7 +207,21 @@
       ],
       "asset_references": [
         "ceramic-vase.png"
-      ]
+      ],
+      "content_hash": "dabc4d52085e8f1002aeec4b17eacaeaeecfcdd5daade3194ca09f2041ac866e",
+      "output_hash": "ae4bb980616125c8dc85bbe1058d06faa3b6f8e3a86438bd17d998662488b0eb",
+      "frontmatter": {
+        "animation_cues": "",
+        "author": "Master Potter",
+        "compliance_modal": "",
+        "description": "Insights into wood-ash glaze formulations and anagama kiln reduction atmospheres.",
+        "image": "",
+        "layout": "",
+        "publish": "true",
+        "slug": "",
+        "soundtrack_theme": "",
+        "video_script": ""
+      }
     },
     {
       "identity": "notes/unrendered-formulas.md",
@@ -184,7 +240,155 @@
       "outbound_links": [],
       "inbound_link_count": 0,
       "links": [],
-      "asset_references": []
+      "asset_references": [],
+      "content_hash": "40ffda1d2f1db3110b266e45751be67abf205df7c05968bd7a2cb7f88e14d3ed",
+      "output_hash": "bae0b322b10a2ba76c39e123c648808eb036e083e51132561e1cc2c478211578",
+      "frontmatter": {
+        "animation_cues": "",
+        "author": "",
+        "compliance_modal": "",
+        "description": "Raw internal chemical recipe notes for ash and tenmoku glazes.",
+        "image": "",
+        "layout": "",
+        "publish": "true",
+        "slug": "",
+        "soundtrack_theme": "",
+        "video_script": ""
+      }
     }
-  ]
+  ],
+  "files": [
+    {
+      "path": "assets/ceramic-vase.png",
+      "hash": "be267e53bc037d7f9c8b94e199ab4028649c63109f5c0cf877a934fdff6bbef1"
+    },
+    {
+      "path": "assets/css/search.css",
+      "hash": "5453173fae0232f483a536d7042fc52fa6f10da02a2fc713d1ceb384ff980f4b"
+    },
+    {
+      "path": "assets/js/search.js",
+      "hash": "d477091ad3ee42a17a7d4e51f27d7b6c80229ebbf8237c6911539e35dac43a69"
+    },
+    {
+      "path": "backlinks.json",
+      "hash": "3fa498ff26e3fd4bd73dca98cb4de4021becd5c19b91ab9c0abf68b4fbabd15c"
+    },
+    {
+      "path": "categories/crafts/index.html",
+      "hash": "03e14a80f6bf6a9e5327b4434da7ed7c64874145d1f76b74d14d66cbdea6a779"
+    },
+    {
+      "path": "categories/guides/index.html",
+      "hash": "239d1414fcec23666ad12be9f62d60b07eab08d73be8be03dec82e95b375c714"
+    },
+    {
+      "path": "categories/index.html",
+      "hash": "c945fd8b50fc4b3644430d1402b658d2e5b2501aff66d2feb31b2bdc644ad4b6"
+    },
+    {
+      "path": "categories/journal/index.html",
+      "hash": "ac8c9fa8a5346e8bbf1ee40bdc356700acb905abadf296a0e34ffa93dd14a43e"
+    },
+    {
+      "path": "categories/studio/index.html",
+      "hash": "28175f3ad96a15c7f5061b398e837ca28abd4b9e1f47afabdb260c9d409d6c22"
+    },
+    {
+      "path": "feed.xml",
+      "hash": "effc8357280c9ccf21d7526a81a519acb2067284d30879ae3e2b7dfdf893d633"
+    },
+    {
+      "path": "graph.json",
+      "hash": "ba6e6947ae144f22f0ce7b86622909b0b8a9a71e65a21a3826f27e59259056d9"
+    },
+    {
+      "path": "meta.json",
+      "hash": "c18a19dd8bb4a2245690a13f2b9457f385d4eb30477695673d5de693d63677df"
+    },
+    {
+      "path": "robots.txt",
+      "hash": "042cc0f466301e5e7c89ca2496cd8f677aac47b16bb77062ed23820b33690e04"
+    },
+    {
+      "path": "search.json",
+      "hash": "1d38706ab06d5d1cff3280fd0936511d3b4bc4b32ee6ae3fdee4e8d904dbc692"
+    },
+    {
+      "path": "sitemap.xml",
+      "hash": "cfadd94ccc42ff2c24dd809160b495d4967ea023f840b69363d5d5755ac378e5"
+    },
+    {
+      "path": "tags/care/index.html",
+      "hash": "95502f5cdb44718dc61da0bd39f070f6de29754309525f6257c36f54ecd5148f"
+    },
+    {
+      "path": "tags/ceramics/index.html",
+      "hash": "509a5de0c209ccbb33b10ea2576ab8165719f7873536a5ea209e16df7cc14e6f"
+    },
+    {
+      "path": "tags/collection/index.html",
+      "hash": "487ef725cfc10efc43c85e8f8c068741281be810932f8cff989fc788cf8a5e66"
+    },
+    {
+      "path": "tags/craft/index.html",
+      "hash": "2f496d32af2d1f14458d9f803bf6d2b84000fe22c2d994cf38dfe24a65019e81"
+    },
+    {
+      "path": "tags/glazing/index.html",
+      "hash": "33f4a30602395742915a8680beff90332cb8a2781f6acb30c4709fd2da55010d"
+    },
+    {
+      "path": "tags/guide/index.html",
+      "hash": "1e33646df5a3269d87a7158b077ca4ea4772f3345ac860315f58e11e7eaff184"
+    },
+    {
+      "path": "tags/homepage/index.html",
+      "hash": "a6a920e3e8a12048042338857802e0b5dd3751c8aa80e89d9d53cdd9c5f44e90"
+    },
+    {
+      "path": "tags/index.html",
+      "hash": "97d175cd769fe1dd596e6df70cf292d926c97e14646ac1b4f780a1db3a2c7f46"
+    },
+    {
+      "path": "tags/journal/index.html",
+      "hash": "be5986895a9ded4c291cd4047b5add7ecc8967042eebbdba79940b69704e6d7e"
+    },
+    {
+      "path": "tags/studio/index.html",
+      "hash": "17aed7767f8b87e601e4b9e37ef3e8f274ea5ed1128ca676584864356daa3c9e"
+    },
+    {
+      "path": "tags/wheel-thrown/index.html",
+      "hash": "005c438f9b48babe731a55d2d369037b789569853c5faaafd903d7a88257b81e"
+    },
+    {
+      "path": "unresolved-notes/index.html",
+      "hash": "0e821e14d77bf04fbb5cd2fdb73cf78cca1322576c8a2f533a0328026e3a03ad"
+    }
+  ],
+  "sitemap": [
+    "https://example.com/ceramics/",
+    "https://example.com/ceramics/care-guide/",
+    "https://example.com/ceramics/categories/",
+    "https://example.com/ceramics/categories/crafts/",
+    "https://example.com/ceramics/categories/guides/",
+    "https://example.com/ceramics/categories/journal/",
+    "https://example.com/ceramics/categories/studio/",
+    "https://example.com/ceramics/collection/wheel-thrown-vessels/",
+    "https://example.com/ceramics/journal/2026-07-15-glazing-techniques/",
+    "https://example.com/ceramics/tags/",
+    "https://example.com/ceramics/tags/care/",
+    "https://example.com/ceramics/tags/ceramics/",
+    "https://example.com/ceramics/tags/collection/",
+    "https://example.com/ceramics/tags/craft/",
+    "https://example.com/ceramics/tags/glazing/",
+    "https://example.com/ceramics/tags/guide/",
+    "https://example.com/ceramics/tags/homepage/",
+    "https://example.com/ceramics/tags/journal/",
+    "https://example.com/ceramics/tags/studio/",
+    "https://example.com/ceramics/tags/wheel-thrown/",
+    "https://example.com/ceramics/unresolved-notes/"
+  ],
+  "output_captured": true
 }

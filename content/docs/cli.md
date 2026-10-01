@@ -101,16 +101,26 @@ Compares the semantic site manifests from two builds:
 la-famille diff public-before public
 la-famille diff public-before/site-manifest.json public/site-manifest.json --json
 la-famille diff ref:v1.0.0 ref:HEAD
+la-famille diff public-before public --gate --report-dir reports
 ```
 
 Each input can be an output directory, a `site-manifest.json` file, or a Git
-revision. Git revisions read `<output_dir>/site-manifest.json` from that
-revision in the selected project repository. Prefix a revision with `ref:` to
+revision. Git revisions read a committed `<output_dir>/site-manifest.json`,
+or build an isolated source archive with the current generator when generated
+files are not committed. The revision's configuration selects its inputs;
+external paths and symlinks are rejected. No repository scripts run and the
+checkout is unchanged. Prefix a revision with `ref:` to
 force Git interpretation when it matches a local path. The default output is a
 readable summary; `--json` writes the structured change report. The command
 reports page and metadata changes, tag/category membership, internal link and
-graph-edge deltas, orphan transitions, and newly broken or resolved links. It
-does not build a site or write generated files.
+graph-edge deltas, orphan transitions, newly broken or resolved links, published
+file hashes, and sitemap deltas. `--report-dir` saves `diff.json` and `diff.txt`.
+`--gate` exits nonzero only for regression classes (or incomplete snapshots).
+It writes the report before failing, including with `--json`.
+
+Every build also publishes its own ledger against the previous successful
+build. See the [Change Ledger guide](change-ledger.md) for baseline behavior,
+gate policy, TUI controls, and advisory CI rollout.
 
 ### `serve`
 

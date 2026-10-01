@@ -97,6 +97,19 @@ The main menu allows you to navigate through the core features of the applicatio
 
 ## Keybindings & Discoverability
 
+### Changes
+
+Select **Changes** or press `l` to inspect the last successful build against
+its predecessor. `j`/`k` step through changed pages and files; `r` toggles the
+regressions-only filter. Green means no regressions, while newly broken links
+and other regressions appear in red. `d` still opens Diagnostics and returns
+to Changes; `?` opens help. `q`/`Esc` returns to the menu.
+
+The pane loads the saved `public/diff.json` on startup and updates after builds
+and watcher rebuilds. Failed builds do not replace it. The first build sets a
+baseline. Cache hits keep the ledger from the last build that actually ran.
+Full details are available in `public/diff.txt`.
+
 Every screen shows its valid keys in the footer (e.g., menu: `↑/k, ↓/j: Navigate • Enter/Space: Select • m: Menu • d: Diagnostics • w: Watch • ?: Help • q: Quit`). The selected menu item uses a `focus-visible` highlight (underline + background) following `templates/layout.html` accessibility patterns.
 
 | Key | Action | Where |

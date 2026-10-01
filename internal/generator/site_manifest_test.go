@@ -2,6 +2,7 @@ package generator
 
 import (
 	"bytes"
+	"flag"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -12,6 +13,8 @@ import (
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/sitedata"
 )
+
+var updateLedgerGoldens = flag.Bool("update-ledger-goldens", false, "Update reviewed Change Ledger golden files")
 
 func TestBuildWritesDeterministicSiteManifestAndGolden(t *testing.T) {
 	repoRoot := repositoryRoot(t)
@@ -84,6 +87,11 @@ func TestBuildWritesDeterministicSiteManifestAndGolden(t *testing.T) {
 		t.Fatal("manifest bytes differ across clean builds of the same source tree")
 	}
 
+	if *updateLedgerGoldens {
+		if err := os.WriteFile(goldenPath, firstManifest, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	golden, err := os.ReadFile(goldenPath)
 	if err != nil {
 		t.Fatalf("read manifest golden %s: %v\nGenerated manifest:\n%s", goldenPath, err, firstManifest)

@@ -23,6 +23,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/checker"
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/content"
+	sitediff "github.com/tbuddy/la-famille/internal/diff"
 	"github.com/tbuddy/la-famille/internal/discovery"
 	"github.com/tbuddy/la-famille/internal/feed"
 	"github.com/tbuddy/la-famille/internal/graph"
@@ -93,6 +94,7 @@ func setConvertMarkdown(fn func(goldmark.Markdown, []byte, *bytes.Buffer) error)
 
 // BuildResult contains statistics about the build process.
 type BuildResult struct {
+	Ledger     *sitediff.Ledger
 	Warnings   []string
 	Health     ContentHealth
 	Duration   time.Duration
@@ -134,6 +136,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 			CacheHit:  true,
 			Health:    cache.Health,
 			Warnings:  cache.Warnings,
+			Ledger:    cache.Ledger,
 		}, nil
 	}
 
@@ -758,10 +761,6 @@ func (bc *buildContext) writeDerivedArtifacts() error {
 		links,
 		assetReferences,
 	)
-	if err := sitedata.WriteManifest(bc.cfg.OutputDir, bc.manifest); err != nil {
-		return err
-	}
-
 	// 5b. Knowledge Graph Explorer page and payload (static, no extra deps).
 	if _, err := graphexplorer.Write(graphexplorer.Input{
 		Config:      bc.cfg,
@@ -789,7 +788,29 @@ func (bc *buildContext) writeDerivedArtifacts() error {
 	if err := discovery.Write(bc.cfg, bc.renderedPaths); err != nil {
 		return err
 	}
-	return nil
+	if err := sitedata.SnapshotOutput(&bc.manifest, bc.cfg.OutputDir, bc.pageOutputs); err != nil {
+		return err
+	}
+	if err := sitedata.WriteManifest(bc.cfg.OutputDir, bc.manifest); err != nil {
+		return err
+	}
+	return bc.writeLedger()
+}
+
+func (bc *buildContext) writeLedger() error {
+	before, err := sitedata.ReadManifest(filepath.Join(bc.siteCfg.OutputDir, sitedata.ManifestFileName))
+	baseline := os.IsNotExist(err)
+	if baseline {
+		before = bc.manifest
+	} else if err != nil {
+		return fmt.Errorf("read previous build snapshot: %w", err)
+	}
+	report, err := sitediff.Compare(before, bc.manifest)
+	if err != nil {
+		return err
+	}
+	bc.result.Ledger = &sitediff.Ledger{Version: 1, Baseline: baseline, Changes: report}
+	return sitediff.Write(bc.cfg.OutputDir, *bc.result.Ledger)
 }
 
 // cacheBuild records the completed build in the on-disk cache so a later
@@ -804,7 +825,7 @@ func (bc *buildContext) cacheBuild(fingerprint string) error {
 	// warnings.
 	bc.result.Warnings = append(bc.result.Warnings, bc.claims.Warnings()...)
 	sort.Strings(bc.result.Warnings)
-	if err := writeBuildCache(cachePath(bc.siteCfg), fingerprint, files, bc.result.PageCount, bc.result.Health, bc.result.Warnings, bc.manifest); err != nil {
+	if err := writeBuildCache(cachePath(bc.siteCfg), fingerprint, files, bc.result.PageCount, bc.result.Health, bc.result.Warnings, bc.manifest, bc.result.Ledger); err != nil {
 		return fmt.Errorf("failed to write build cache: %w", err)
 	}
 	return nil
@@ -818,6 +839,8 @@ func (bc *buildContext) cacheBuild(fingerprint string) error {
 func reservedOutputPaths(cfg config.Config) map[string]string {
 	reserved := map[string]string{
 		filepath.Clean(filepath.Join(cfg.OutputDir, sitedata.ManifestFileName)):        "the site manifest",
+		filepath.Clean(filepath.Join(cfg.OutputDir, sitediff.JSONFileName)):            "the change ledger",
+		filepath.Clean(filepath.Join(cfg.OutputDir, sitediff.TextFileName)):            "the readable change ledger",
 		filepath.Clean(filepath.Join(cfg.OutputDir, "unresolved-notes", "index.html")): "the unresolved-notes index",
 	}
 	if cfg.GraphExplorer {
