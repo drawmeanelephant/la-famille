@@ -74,6 +74,18 @@
 .site-feature-grid h3 { font: 500 23px/1.3 Georgia, serif; margin: 12px 0; letter-spacing: -.3px; }
 .site-feature-grid p { color: var(--site-muted); font-size: 14px; margin: 0 0 17px; }
 .site-feature-grid a { font-size: 12px; font-weight: 600; text-decoration: none; }
+.site-family { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 60px; align-items: center; border-top: 1px solid var(--site-line); }
+.site-family-portrait { margin: 0; background: #fff; border: 1px solid var(--site-line); border-radius: 6px; box-shadow: 8px 8px 0 #e1e5d9; overflow: hidden; }
+.site-family-portrait img { display: block; width: 100%; height: auto; }
+.site-family-portrait figcaption { padding: 14px 18px; border-top: 1px solid var(--site-line); font: 11px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--site-green); }
+.site-family-copy { min-width: 0; }
+.site-family .site-section-heading { margin-bottom: 24px; }
+.site-family .site-section-heading > p:last-child { font-size: 14px; max-width: 58ch; }
+.site-persona-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-bottom: 26px; }
+.site-persona-grid figure { margin: 0; }
+.site-persona-grid img { display: block; width: 100%; height: auto; border: 1px solid var(--site-line); border-radius: 4px; box-sizing: border-box; }
+.site-persona-grid figcaption { margin-top: 10px; font-size: 11px; line-height: 1.5; color: var(--site-muted); }
+.site-persona-grid strong { display: block; color: var(--site-ink); font: 500 18px/1.4 Georgia, serif; margin-bottom: 3px; }
 .site-showcase-band { background: #eceee3; border-block: 1px solid var(--site-line); }
 .site-heading-row { display: flex; justify-content: space-between; align-items: end; gap: 20px; }
 .site-heading-row h2 { margin-bottom: 0; }
@@ -106,6 +118,7 @@
 .site-prose th, .site-prose td { text-align: left; padding: 12px; border-bottom: 1px solid var(--site-line); vertical-align: top; }
 .site-prose th { background: #eef0e6; }
 .site-prose figure { margin-inline: 0; }
+.site-prose .site-raouls-illustration { max-width: 420px; }
 .site-prose .site-deck { color: var(--site-muted); font-size: 19px; line-height: 1.6; margin-bottom: 30px; }
 .site-notice { padding: 16px 20px; border: 1px solid var(--site-line); background: #f7ecd5; }
 .site-document { display: grid; grid-template-columns: 190px minmax(0, 740px); gap: 65px; padding-block: 55px 80px; justify-content: center; }
@@ -136,6 +149,7 @@
     .site-hero { gap: 30px; padding-block: 55px 65px; }
     .site-hero h1 { font-size: 51px; }
     .site-terminal pre { font-size: 10px; padding-inline: 15px; }
+    .site-family { grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 32px; }
     .site-document { gap: 35px; grid-template-columns: 160px minmax(0, 1fr); }
 }
 @media (max-width: 700px) {
@@ -161,6 +175,10 @@
     .site-feature-grid { grid-template-columns: 1fr; }
     .site-feature-grid article { padding-bottom: 23px; }
     .site-feature-grid p { max-width: 48ch; }
+    .site-family { grid-template-columns: 1fr; gap: 32px; }
+    .site-family-portrait { width: min(300px, 100%); justify-self: center; }
+    .site-persona-grid { gap: 12px; }
+    .site-persona-grid strong { font-size: 16px; }
     .site-heading-row { display: block; }
     .site-heading-row > a { display: inline-block; margin-top: 20px; }
     .site-showcase-grid { grid-template-columns: 1fr; gap: 24px; }

@@ -26,5 +26,6 @@ and retrieval upgrades, currently require a source build. Check your binary's
 This website does not expose an online assistant.
 
 The personality is part of the project, too: meet [Jules](jules/index.md),
+get to know [Raoul(s), our Multipersonality Octodeveloper](meta/mascot-raouls.md),
 follow [the roadmap](meta/roadmap.md), or explore
 [the template gallery](showcase/templates.md). No account needed to look around.
