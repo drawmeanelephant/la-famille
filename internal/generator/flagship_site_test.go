@@ -64,6 +64,8 @@ func TestRepositoryFlagshipSitePublishingContract(t *testing.T) {
 		`src="/assets/img/Octopus_mascot_cleaning_litterbox_202606200817.jpeg"`,
 		`src="/assets/img/Octopus_mascot_writing_music_dia`,
 		`src="/assets/img/Octopus_mascot_riding_skateboard`,
+		`alt="Raoul(s), a green octopus`,
+		`alt="The Janitor`, `alt="The Maestro`, `alt="The Skater`,
 	} {
 		if !strings.Contains(story, want) {
 			t.Errorf("mascot story missing %q", want)
