@@ -1,6 +1,7 @@
 package sitedata
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -16,33 +17,46 @@ import (
 
 const (
 	ManifestFileName = "site-manifest.json"
-	ManifestVersion  = 1
+	ManifestVersion  = 2
 )
 
 // Manifest is the canonical, per-build projection of the site's page and
 // link data. It intentionally has no build timestamp so identical inputs
 // serialize to identical bytes.
 type Manifest struct {
-	Version int            `json:"version"`
-	Pages   []ManifestPage `json:"pages"`
+	Version        int            `json:"version"`
+	Pages          []ManifestPage `json:"pages"`
+	Files          []ManifestFile `json:"files,omitempty"`
+	Sitemap        []string       `json:"sitemap,omitempty"`
+	OutputCaptured bool           `json:"output_captured,omitempty"`
+}
+
+// ManifestFile fingerprints a published file other than a content page or the
+// ledger itself. This includes assets and derived metadata.
+type ManifestFile struct {
+	Path string `json:"path"`
+	Hash string `json:"hash"`
 }
 
 // ManifestPage records the stable identity and build-time relationships of a
 // content page. SourcePath retains the content-tree key so check can resolve
 // source Markdown links without reconstructing identities from URLs.
 type ManifestPage struct {
-	Identity         string         `json:"identity"`
-	SourcePath       string         `json:"source_path"`
-	Rendered         bool           `json:"rendered"`
-	URL              string         `json:"url"`
-	Title            string         `json:"title"`
-	Date             string         `json:"date"`
-	Tags             []string       `json:"tags"`
-	Categories       []string       `json:"categories"`
-	OutboundLinks    []string       `json:"outbound_links"`
-	InboundLinkCount int            `json:"inbound_link_count"`
-	Links            []ManifestLink `json:"links"`
-	AssetReferences  []string       `json:"asset_references"`
+	Identity         string            `json:"identity"`
+	SourcePath       string            `json:"source_path"`
+	Rendered         bool              `json:"rendered"`
+	URL              string            `json:"url"`
+	Title            string            `json:"title"`
+	Date             string            `json:"date"`
+	Tags             []string          `json:"tags"`
+	Categories       []string          `json:"categories"`
+	OutboundLinks    []string          `json:"outbound_links"`
+	InboundLinkCount int               `json:"inbound_link_count"`
+	Links            []ManifestLink    `json:"links"`
+	AssetReferences  []string          `json:"asset_references"`
+	ContentHash      string            `json:"content_hash,omitempty"`
+	OutputHash       string            `json:"output_hash,omitempty"`
+	Frontmatter      map[string]string `json:"frontmatter,omitempty"`
 }
 
 // ManifestLink records an internal Markdown or generated-output link used by
@@ -109,6 +123,8 @@ func NewManifest(
 			InboundLinkCount: len(backlinks[identity]),
 			Links:            sortedManifestLinks(links[sourcePath]),
 			AssetReferences:  sortedUniqueStrings(assetReferences[sourcePath]),
+			ContentHash:      fmt.Sprintf("%x", sha256.Sum256(meta.Rest)),
+			Frontmatter:      effectiveFrontmatter(meta),
 		})
 	}
 
@@ -146,7 +162,7 @@ func ParseManifest(data []byte) (Manifest, error) {
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return manifest, fmt.Errorf("failed to parse site manifest: %w", err)
 	}
-	if manifest.Version != ManifestVersion {
+	if manifest.Version != 1 && manifest.Version != ManifestVersion {
 		return manifest, fmt.Errorf("unsupported site manifest version %d", manifest.Version)
 	}
 	if manifest.Pages == nil {
@@ -171,6 +187,20 @@ func ParseManifest(data []byte) (Manifest, error) {
 		}
 	}
 	return manifest, nil
+}
+
+func effectiveFrontmatter(meta *content.FileMeta) map[string]string {
+	publish := "true"
+	if meta.Publish != nil && !*meta.Publish {
+		publish = "false"
+	}
+	return map[string]string{
+		"author": meta.Author, "description": meta.Description,
+		"image": meta.Image, "layout": meta.Layout, "slug": meta.Slug,
+		"publish": publish, "video_script": meta.VideoScript,
+		"animation_cues": meta.AnimationCues, "soundtrack_theme": meta.SoundtrackTheme,
+		"compliance_modal": meta.ComplianceModal,
+	}
 }
 
 func sortedStrings(values []string) []string {

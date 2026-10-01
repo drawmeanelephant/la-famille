@@ -55,7 +55,7 @@ func TestLoadInputAcceptsGitRef(t *testing.T) {
 			return []byte("0123456789abcdef\n"), nil
 		}
 		if args[0] == "show" {
-			if args[1] != "0123456789abcdef:dist/site-manifest.json" {
+			if args[1] != "0123456789abcdef:./dist/site-manifest.json" {
 				t.Errorf("show argument = %q", args[1])
 			}
 			return fixture, nil

@@ -128,5 +128,24 @@
       "line": 9
     }
   ],
-  "resolved_broken_links": []
+  "resolved_broken_links": [],
+  "regressions": [
+    {
+      "kind": "broken_link",
+      "page": "target",
+      "detail": "newly-broken link \"missing.md\" (line 9)"
+    },
+    {
+      "kind": "removed_linked_page",
+      "page": "old",
+      "detail": "removed page with inbound links: /old/"
+    },
+    {
+      "kind": "taxonomy",
+      "detail": "tag vanished: archive"
+    }
+  ],
+  "coverage_warnings": [
+    "Legacy v1 manifest: prose, extra frontmatter, published bytes, and sitemap coverage is incomplete. Rebuild both snapshots."
+  ]
 }

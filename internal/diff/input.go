@@ -26,6 +26,12 @@ var runGit = func(root string, args ...string) ([]byte, error) {
 // resolved from projectRoot. A ref can be forced with the "ref:" prefix when
 // it has the same name as a local path.
 func LoadInput(input, outputDir, projectRoot string) (sitedata.Manifest, error) {
+	return LoadInputWithBuilder(input, outputDir, projectRoot, nil)
+}
+
+// LoadInputWithBuilder additionally builds source-only Git revisions in a
+// disposable archive. The callback must not run source scripts.
+func LoadInputWithBuilder(input, outputDir, projectRoot string, builder func(string) (sitedata.Manifest, error)) (sitedata.Manifest, error) {
 	input = strings.TrimSpace(input)
 	if input == "" {
 		return sitedata.Manifest{}, fmt.Errorf("input is empty")
@@ -66,8 +72,11 @@ func LoadInput(input, outputDir, projectRoot string) (sitedata.Manifest, error) 
 		return sitedata.Manifest{}, fmt.Errorf("resolve Git ref %q: %w", ref, err)
 	}
 	revision = []byte(strings.TrimSpace(string(revision)))
-	data, err := runGit(projectRoot, "show", string(revision)+":"+manifestPath)
+	data, err := runGit(projectRoot, "show", string(revision)+":./"+manifestPath)
 	if err != nil {
+		if builder != nil {
+			return buildRevision(projectRoot, string(revision), builder)
+		}
 		return sitedata.Manifest{}, fmt.Errorf("read %s from Git ref %q: %w", manifestPath, ref, err)
 	}
 	manifest, err := sitedata.ParseManifest(data)

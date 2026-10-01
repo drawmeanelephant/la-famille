@@ -1,0 +1,104 @@
+{
+  "added_pages": [],
+  "removed_pages": [],
+  "changed_pages": [
+    {
+      "kind": "modified",
+      "before": {
+        "identity": "other",
+        "source_path": "other.md",
+        "url": "/ledger/other/",
+        "title": "other.md"
+      },
+      "after": {
+        "identity": "other",
+        "source_path": "other.md",
+        "url": "/ledger/other/",
+        "title": "Other revised"
+      }
+    }
+  ],
+  "metadata_changes": [
+    {
+      "page": "other",
+      "field": "title",
+      "before": "other.md",
+      "after": "Other revised"
+    }
+  ],
+  "taxonomy_changes": [],
+  "added_links": [
+    {
+      "page": "other",
+      "destination": "ledger-target.md",
+      "target": "ledger-target.md"
+    }
+  ],
+  "removed_links": [
+    {
+      "page": "other",
+      "destination": "index.md#section",
+      "target": "index.md"
+    }
+  ],
+  "added_edges": [
+    {
+      "from": "other",
+      "to": "ledger-target"
+    }
+  ],
+  "removed_edges": [
+    {
+      "from": "other",
+      "to": "index"
+    }
+  ],
+  "orphan_changes": [
+    {
+      "page": "ledger-target",
+      "state": "resolved"
+    }
+  ],
+  "new_broken_links": [],
+  "resolved_broken_links": [],
+  "file_changes": [
+    {
+      "path": "backlinks.json",
+      "action": "modified",
+      "before": "5efeb024a83190062d3b4582d93adf7a32348beec2c75d98d9a95ed350baf6eb",
+      "after": "e5e18e770250f9ad8de029141f8560a1c8dede651136cb67ed7cc6b203687785"
+    },
+    {
+      "path": "graph.json",
+      "action": "modified",
+      "before": "3cf16aa25437ad67179c30bf6505984d4c46fcda8cc575760703eb97871fa3b1",
+      "after": "47f46a0bd8557102147887728faa2f7d810265353b9322c4f477fff19e06fb1b"
+    },
+    {
+      "path": "meta.json",
+      "action": "modified",
+      "before": "8fada57380b452d12527af02041ec0338c2e2a94e43dbf1760f1c54b48a01665",
+      "after": "2aef3c0c7b007f1091581ba854847fdda95ca12bceea9a77114ee176ef1921ad"
+    },
+    {
+      "path": "search.json",
+      "action": "modified",
+      "before": "b779f5e33f03d01ee2b1b46e8902a22585987dac4c7e87e5d64335aa9699af79",
+      "after": "5de9997d534e5b1660e9a4c79543d26a17e98ee91a75e27ab275aa73b02b6b8c"
+    }
+  ],
+  "rendered_pages": [
+    {
+      "identity": "index",
+      "source_path": "index.md",
+      "url": "/ledger/",
+      "title": "index.md"
+    },
+    {
+      "identity": "ledger-target",
+      "source_path": "ledger-target.md",
+      "url": "/ledger/ledger-target/",
+      "title": "Ledger target"
+    }
+  ]
+}

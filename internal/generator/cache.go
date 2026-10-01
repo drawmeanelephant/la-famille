@@ -15,14 +15,15 @@ import (
 	"time"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	sitediff "github.com/tbuddy/la-famille/internal/diff"
 	"github.com/tbuddy/la-famille/internal/sitedata"
 )
 
 const cacheFileName = ".la-famille-cache.json"
 
-// cacheVersion is bumped whenever the on-disk shape changes. Version 3
-// retains the canonical site manifest alongside generated-file hashes.
-const cacheVersion = 3
+// cacheVersion is bumped whenever the on-disk shape changes. Version 4
+// retains the v2 manifest and last successful build's change ledger.
+const cacheVersion = 4
 
 // generatedFile is one file the previous build left in the output directory.
 // The hash is what makes a cache hit safe: a hit republishes those bytes
@@ -38,6 +39,7 @@ type buildCache struct {
 	Warnings       []string          `json:"warnings,omitempty"`
 	Health         ContentHealth     `json:"health,omitempty"`
 	Manifest       sitedata.Manifest `json:"manifest"`
+	Ledger         *sitediff.Ledger  `json:"ledger"`
 	Version        int               `json:"version"`
 	PageCount      int               `json:"page_count"`
 }
@@ -272,7 +274,7 @@ func generatedFiles(outputDir string) ([]generatedFile, error) {
 	return files, nil
 }
 
-func writeBuildCache(path, fingerprint string, files []generatedFile, pageCount int, health ContentHealth, warnings []string, manifest sitedata.Manifest) error {
+func writeBuildCache(path, fingerprint string, files []generatedFile, pageCount int, health ContentHealth, warnings []string, manifest sitedata.Manifest, ledger *sitediff.Ledger) error {
 	cache := buildCache{
 		Version:        cacheVersion,
 		Fingerprint:    fingerprint,
@@ -281,6 +283,7 @@ func writeBuildCache(path, fingerprint string, files []generatedFile, pageCount 
 		Health:         health,
 		Warnings:       warnings,
 		Manifest:       manifest,
+		Ledger:         ledger,
 	}
 	data, err := json.MarshalIndent(cache, "", "  ")
 	if err != nil {

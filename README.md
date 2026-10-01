@@ -17,6 +17,7 @@ This project is built and maintained primarily by **Jules** (AI assistant) along
 *   **Taxonomy Archives:** Add `tags:` or `categories:` to any page's YAML frontmatter and the build emits `/tags/` and `/categories/` archive pages — linked from each article and from the site nav, with no template edits required.
 *   **Built-in Local Server:** Instantly preview your site with `go run ./cmd/la-famille serve`.
 *   **Smart Graphing:** Automatically generates `graph.json`, `backlinks.json`, and handles non-existent internal links by generating helpful stub pages.
+*   **Change Ledger:** Deterministic build snapshots, semantic `diff` reports, a regression-only `--gate`, and a TUI Changes pane. Track prose, metadata, links, assets, and sitemap changes without failing CI for harmless rewording.
 *   **Interactive Knowledge Graph Explorer:** Every build emits a self-contained `/graph/index.html` page that visualizes the site as a directed graph — search by title, page ID, tag, category, or author, filter by render/raw/stub/orphan, jump into "focus mode" for a selected page plus its neighbors, and deep-link selections via `?node=`. No runtime server; just open the file. Disable with `graph_explorer: false` in `config.yaml`.
 
 ## Quickstart 🚀
@@ -164,6 +165,7 @@ The commands above will get you started, but La Famille has a lot more to offer.
 *   **[Templating Guide](content/docs/templates.md)**
 *   **[RAG Export Guide](content/docs/rag.md)**
 *   **[Ask This Site Guide](content/docs/ask.md)**
+*   **[Change Ledger Guide](content/docs/change-ledger.md)**
 *   **[How the Generator Works](content/docs/generator.md)**
 
 ---

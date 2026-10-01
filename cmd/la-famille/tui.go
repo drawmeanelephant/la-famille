@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tbuddy/la-famille/internal/ask"
 	"github.com/tbuddy/la-famille/internal/config"
+	sitediff "github.com/tbuddy/la-famille/internal/diff"
 	"github.com/tbuddy/la-famille/internal/generator"
 	"github.com/tbuddy/la-famille/internal/ragexport"
 	"github.com/tbuddy/la-famille/internal/watcher"
@@ -91,6 +92,7 @@ const (
 	screenDiagnostics
 	screenHelp
 	screenAsk
+	screenChanges
 )
 
 type menuOption struct {
@@ -128,6 +130,9 @@ type diagnostic struct {
 }
 
 type model struct {
+	ledger            *sitediff.Ledger
+	changesCursor     int
+	regressionsOnly   bool
 	workErr           error
 	askServerErr      error
 	stats             *generator.BuildResult
@@ -163,7 +168,7 @@ func (m model) workDone() bool {
 }
 
 func initialModel(cfg config.Config) model {
-	return model{
+	m := model{
 		cfg:    cfg,
 		screen: screenMenu,
 		choices: []menuOption{
@@ -171,6 +176,7 @@ func initialModel(cfg config.Config) model {
 			{"Serve Site"},
 			{"Toggle Watch Mode"},
 			{"Stats"},
+			{"Changes"},
 			{"Diagnostics"},
 			{"RAG Export"},
 			{"Ask This Site"},
@@ -181,6 +187,8 @@ func initialModel(cfg config.Config) model {
 		spinner:  newCookSpinner(),
 		progress: newGlowProgress(40),
 	}
+	m.loadLedger()
+	return m
 }
 
 func getRecoveryGuidance(err error) string {
@@ -380,6 +388,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.showDiagnostics()
 			}
 			return m, nil
+		case "l":
+			if m.screen != screenWorking || m.workDone() {
+				m.screen = screenChanges
+			}
+			return m, nil
+		case "r":
+			if m.screen == screenChanges {
+				m.regressionsOnly = !m.regressionsOnly
+				m.changesCursor = 0
+				return m, nil
+			}
 		case "c":
 			if m.screen == screenDiagnostics {
 				m.diagnostics = nil
@@ -434,7 +453,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "up", "k":
-			if m.screen == screenDiagnostics {
+			if m.screen == screenChanges {
+				if m.changesCursor > 0 {
+					m.changesCursor--
+				}
+			} else if m.screen == screenDiagnostics {
 				if m.diagnosticCursor > 0 {
 					m.diagnosticCursor--
 				}
@@ -444,7 +467,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "down", "j":
-			if m.screen == screenDiagnostics {
+			if m.screen == screenChanges {
+				if m.changesCursor < len(m.changeRows())-1 {
+					m.changesCursor++
+				}
+			} else if m.screen == screenDiagnostics {
 				if m.diagnosticCursor < len(m.diagnostics)-1 {
 					m.diagnosticCursor++
 				}
@@ -465,6 +492,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tickCmd()
 				case "Stats":
 					m.screen = screenStats
+					return m, nil
+				case "Changes":
+					m.screen = screenChanges
 					return m, nil
 				case "Diagnostics":
 					m.showDiagnostics()
@@ -524,6 +554,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 
 					m.stats = &res
+					m.recordLedger(res)
 
 					if isWatch {
 						watchCtx, cancelWatch := context.WithCancel(context.Background())
@@ -610,6 +641,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case statsUpdateMsg:
 		newRes := msg.res
 		m.stats = &newRes
+		m.recordLedger(newRes)
 		return m, nil
 
 	case workResultMsg:
@@ -634,6 +666,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.res != nil {
 			m.stats = msg.res
+			if msg.err == nil {
+				m.recordLedger(*msg.res)
+			}
 			if msg.res.ErrorCount > 0 {
 				m.workEvents = append(m.workEvents, fmt.Sprintf("Warning: %d build errors reported", msg.res.ErrorCount))
 			}
@@ -993,6 +1028,9 @@ func (m model) View() string {
 		}
 		return s
 
+	case screenChanges:
+		return m.changesView()
+
 	case screenDiagnostics:
 		info := currentBuildInfo()
 		s := titleStyle.Render(fmt.Sprintf("Diagnostics & Recovery Guidance [%s (commit: %s)]", info.Version, info.Commit)) + "\n\n"
@@ -1051,6 +1089,8 @@ func (m model) View() string {
 		s += "  w            Toggle Watch Mode (menu/stats/diagnostics)\n"
 		s += "  ? / h        Open/close this help (legend)\n"
 		s += "  c            Clear diagnostics (in Diagnostics drawer)\n"
+		s += "  l            Open Changes (last successful build)\n"
+		s += "  r            Regressions-only filter (in Changes)\n"
 		s += "  Esc / q      Go back / close menu / quit\n"
 		s += "  Ctrl+C       Force quit application\n\n"
 		s += headerStyle.Render("Workflow Hints") + "\n"

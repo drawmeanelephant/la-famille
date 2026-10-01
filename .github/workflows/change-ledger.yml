@@ -1,0 +1,57 @@
+name: Change Ledger
+
+on:
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  change-ledger:
+    name: Semantic regression gate (advisory rollout)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Verify strict prose and broken-link controls
+        run: go test ./cmd/la-famille -run '^TestChangeLedgerGateFixtures$' -count=1
+      - name: Build comparison tool
+        run: go build -o "$RUNNER_TEMP/la-famille-ledger" ./cmd/la-famille
+      - name: Compare repository site to PR base
+        id: gate
+        if: github.event_name == 'pull_request'
+        continue-on-error: ${{ vars.CHANGE_LEDGER_ENFORCE != 'true' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          "$RUNNER_TEMP/la-famille-ledger" diff "ref:$BASE_SHA" "ref:$HEAD_SHA" \
+            --gate --json --report-dir "$RUNNER_TEMP/change-ledger"
+      - name: Record advisory result
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GATE_OUTCOME: ${{ steps.gate.outcome }}
+        run: |
+          {
+            echo '## Change Ledger'
+            printf 'Comparison outcome: **%s**\n\n' "$GATE_OUTCOME"
+            echo 'Advisory until a week of quiet CI. Set CHANGE_LEDGER_ENFORCE=true to enforce.'
+            if [ -f "$RUNNER_TEMP/change-ledger/diff.txt" ]; then
+              echo '```text'
+              cat "$RUNNER_TEMP/change-ledger/diff.txt"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: change-ledger
+          path: ${{ runner.temp }}/change-ledger
+          if-no-files-found: ignore

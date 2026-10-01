@@ -3,12 +3,15 @@ package diff
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/tbuddy/la-famille/internal/sitedata"
 )
+
+var updateLedgerGoldens = flag.Bool("update-ledger-goldens", false, "Update reviewed Change Ledger golden files")
 
 func TestCompareGoldenManifestDiff(t *testing.T) {
 	before := readFixtureManifest(t, "rename-before.json")
@@ -75,6 +78,11 @@ func TestCompareGoldenManifestDiff(t *testing.T) {
 	}
 	got = append(got, '\n')
 	goldenPath := filepath.Join("testdata", "rename-golden.json")
+	if *updateLedgerGoldens {
+		if err := os.WriteFile(goldenPath, got, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	golden, err := os.ReadFile(goldenPath)
 	if err != nil {
 		t.Fatalf("read golden %s: %v", goldenPath, err)
