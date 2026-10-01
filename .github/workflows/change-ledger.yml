@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   change-ledger:
-    name: Semantic regression gate (advisory rollout)
+    name: Semantic regression gate (synthetic strict control)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -27,7 +27,7 @@ jobs:
       - name: Compare repository site to PR base
         id: gate
         if: github.event_name == 'pull_request'
-        continue-on-error: ${{ vars.CHANGE_LEDGER_ENFORCE != 'true' }}
+        continue-on-error: false # Synthetic strict control; do not merge.
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
