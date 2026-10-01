@@ -6,6 +6,24 @@ La Famille is a fast, feature-rich static site generator written in Go. It goes 
 
 This project is built and maintained primarily by **Jules** (AI assistant) alongside an eight-legged friend, Raoul(s) the Octopus. We take a "Jules-forward" approach to development. If you are opening a Pull Request, please make sure to tag Jules in the comments to keep the AI looped in.
 
+## Project website
+
+The flagship website lives in this repository. `website.yaml` selects its
+layout and canonical address, `https://la-famille.filed.fyi`, without changing
+new-project defaults. Build it with:
+
+```bash
+go run ./cmd/la-famille --config website.yaml build
+go run ./cmd/la-famille --config website.yaml serve
+```
+
+The **Flagship website** workflow validates and saves artifacts on PRs/pushes.
+Successful pushes to `master` publish to the existing Cloudflare Pages project
+`la-famille-go`, using its detected production branch. PRs never deploy; an
+optional manual run on `master` with `deploy = true` supports retries.
+See [site publishing](content/docs/site-publishing.md) for the
+content-only corpus boundary and the independent GitHub Pages fallback.
+
 ## Features ✨
 
 *   **Lightning-Fast Static Generation:** Converts Markdown content into clean, semantic HTML using the `goldmark` library.
@@ -27,7 +45,7 @@ This project is built and maintained primarily by **Jules** (AI assistant) along
 | Workflow | Use when | Required inputs |
 | --- | --- | --- |
 | Released binary | CI, GitHub Pages, or an operator who does not have the source checkout | A downloaded archive and its `SHA256SUMS` entry |
-| Source checkout | Developing La Famille or changing templates/parser code | Go 1.24+ and this repository |
+| Source checkout | Developing La Famille or changing templates/parser code | The Go version in `go.mod` (currently 1.26) and this repository |
 
 Released archives are self-contained: `--version` works offline from an empty
 directory, and the default layout plus required graph/search assets are
@@ -66,8 +84,7 @@ builds to something real immediately:
 ### Octoburger 🍔🐙 — the soul theme
 
 **Octoburger is La Famille's flagship, soul theme — and the global default.**
-Every fresh `init` site, every build of this repository (local or GitHub
-Pages), and the released binary all render Octoburger out of the box. It
+Every fresh `init` site and the released binary render Octoburger out of the box. It
 translates the 🍔 OCTOBURGER MENU identity from the TUI into a site layout:
 Raoul(s) the octopus holds the burger while you write, with bun-yellow
 mastheads, pink highlights, Raoul-blue accents over charcoal panels, and a
@@ -75,9 +92,9 @@ burger-stack card holding each article's content. It is embedded in the
 release binary alongside the default layout and installed by `init`, so a
 binary-only install gets it with no source checkout.
 
-Beautiful docs, an octopus, and a burger — Octoburger is how La Famille
-introduces itself to the world, and it is what the project's own deployed
-site renders.
+The flagship website keeps the octopus/burger identity in its own field-guide
+layout, selected by `website.yaml`. The separate GitHub Pages fallback retains
+Octoburger as the default for other content.
 
 Switching looks works on a binary-only install, no source checkout required:
 
@@ -88,7 +105,7 @@ Switching looks works on a binary-only install, no source checkout required:
     scaffolded `content/theming.md` for a working example).
 
 ### Prerequisites
-*   **Go Toolchain:** [Go 1.24 or newer](https://go.dev/doc/install) (the project `go.mod` specifies `go 1.24.0` with `toolchain go1.24.3`). Verify your installed version with `go version`.
+*   **Go Toolchain:** Use the [Go version](https://go.dev/doc/install) declared in `go.mod` (currently Go 1.26). Verify your installed version with `go version`. Released binaries do not require Go.
 *   **Go Installation & Binary Path:** Ensure `go` is in your `PATH`. When installing binaries via Go (e.g. `go install`), binaries are placed in `$(go env GOPATH)/bin` (typically `~/go/bin`). Ensure `$(go env GOPATH)/bin` is added to your shell's `PATH`:
     ```bash
     export PATH="$PATH:$(go env GOPATH)/bin"
