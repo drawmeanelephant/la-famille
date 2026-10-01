@@ -21,23 +21,31 @@ still defaults to Ollama. Fixture paths remain **project-root-relative**. The
 real generator and RAG exporter run in disposable content-only projects; caches,
 archives, graph edges and citation metadata are kept outside source fixtures.
 
-## Lexical baseline (2026-09-30)
+## Lexical results (2026-10-01, #603)
 
 | Dataset | Answerable | Recall@5 | Precision@5 | Question gates |
 | --- | ---: | ---: | ---: | ---: |
 | Original #587 regression | 8 | 1.0000 | 0.4375 | 9/9 |
-| Hard | 6 | 0.5833333333 | 0.3333333333 | 7/8 |
+| Hard | 6 | 0.5833333333 | 0.3333333333 | 8/8 |
 
 The regression precision differs from the unmerged local prototype because its
-labels are the frozen #587 labels, not expanded relevance labels. Production
-BM25-lite is unchanged. Neither benchmark is evidence of answer accuracy.
+labels are the frozen #587 labels, not expanded relevance labels. Accepted
+queries retain their BM25-lite scoring/order. Neither benchmark is evidence
+of live-model answer accuracy.
 
-The hard command **intentionally exits nonzero**: `sensor-warranty-absent`
-retrieves topical pages even though no fixture page states a warranty duration.
-Strict abstention requires zero retrieval plus the canonical server fallback.
-Nonempty near-miss retrieval fails immediately; no model call is attempted that
-could hide the failure behind fake or semantic abstention. Tests assert this
-known failure rather than making an unsupported capability look green.
+The hard lexical command now exits **zero**. Before #603 it passed 7/8:
+`sensor-warranty-absent` retrieved topical pages without warranty evidence.
+Lexical retrieval now abstains if half or more of the unique meaningful query
+terms are absent from its index, ignoring conversational/structural words.
+The frozen probe retrieves nothing and returns the canonical server fallback,
+without invoking completion, including with graph expansion.
+
+No dataset, relevance/path labels, or thresholds were weakened. Independent
+controls test other absent topics, repeated terms, minor vocabulary gaps, and
+a positive corpus containing warranty duration. This is a conservative lexical
+coverage heuristic, not semantic evidence sufficiency: sparse synonyms may be
+rejected, and unsupported facts with common vocabulary may still retrieve.
+Dense retrieval and live-model factual correctness are separate measurements.
 
 | Hard class | Recall@5 | Precision@5 |
 | --- | ---: | ---: |
@@ -46,11 +54,14 @@ known failure rather than making an unsupported capability look green.
 | Multi-hop (1) | 1.0000 | 0.5000 |
 
 Each hard site has twelve published linked pages and topical decoys. The
-`drinkable-backup` probe retrieves nothing. `unpowered-chill` retrieves an
-appliance decoy, but neither required evidence page. For `sensor-to-assay`, both
+`drinkable-backup` and `unpowered-chill` probes retrieve nothing under the
+coverage guard, so neither is a paraphrase success. For `sensor-to-assay`, both
 answer pages are found, but `registry` is missing from the real graph route
 `sensor → registry → assay` (path coverage 2/3). Path coverage is separate from
 evidence recall and does not prove a generated answer explains the route.
+The optional hard graph comparison still fails precision non-dilution because
+the bridge is not labeled as acceptable evidence; its eight individual question
+gates pass. The separate graph dataset remains the route-grounding contract.
 
 ## What this gate can and cannot detect
 
@@ -179,6 +190,7 @@ saturated dataset cannot gain recall.
 
 The hard dataset's labels still treat `registry` as route metadata rather than
 acceptable evidence for `sensor-to-assay`. Retrieving that bridge may therefore
-reduce its frozen precision metric. Do not relabel it. Its warranty abstention
-failure also remains a failure. Run the hard command when investigating limits,
-not as a green end-to-end answer benchmark.
+reduce its frozen precision metric. Do not relabel it. Its warranty probe now
+passes strict lexical/graph abstention; the hard graph comparison still exposes
+bridge-related precision dilution. A passing lexical hard command is a retrieval
+contract, not a green end-to-end live-model answer benchmark.

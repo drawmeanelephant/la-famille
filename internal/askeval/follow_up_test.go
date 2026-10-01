@@ -142,13 +142,13 @@ func TestGoldenFollowUpBaselines(t *testing.T) {
 				}
 				return
 			}
-			if r.Passed || r.FailedCount != 1 || !r.BaselineOK || !r.PrecisionOK || math.Abs(r.PrecisionAtK-1.0/3) > 1e-9 {
+			if !r.Passed || r.PassedCount != 8 || r.FailedCount != 0 || !r.BaselineOK || !r.PrecisionOK || math.Abs(r.PrecisionAtK-1.0/3) > 1e-9 {
 				t.Fatalf("hard gates changed: %+v", r)
 			}
 			for _, q := range r.Questions {
 				if q.QuestionID == "sensor-warranty-absent" {
-					if q.Passed || len(q.RetrievedPages) == 0 || q.NoAnswer {
-						t.Fatalf("near-miss retrieval must fail without model fallback: %+v", q)
+					if !q.Passed || len(q.RetrievedPages) != 0 || !q.NoAnswer || q.NoAnswerMessage != noAnswerFallbackMessage {
+						t.Fatalf("near-miss must abstain with canonical no-answer: %+v", q)
 					}
 				} else if !q.Passed {
 					t.Errorf("unexpected failure: %+v", q)

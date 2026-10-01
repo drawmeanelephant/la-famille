@@ -22,7 +22,7 @@ func TestAskEvalHardSetAndDepth(t *testing.T) {
 		fail bool
 		want string
 	}{
-		{"hard failure", []string{"--eval", "assets/testdata/ask-eval/golden-questions-hard.json"}, true, "sensor-warranty-absent"},
+		{"hard strict abstention", []string{"--eval", "assets/testdata/ask-eval/golden-questions-hard.json", "--no-embeddings"}, false, "questions passed: 8/8"},
 		{"depth override", []string{"--eval", "assets/testdata/ask-eval/golden-questions.json", "--eval-k", "8"}, false, "comparison skipped"},
 		{"invalid depth", []string{"--eval", "assets/testdata/ask-eval/golden-questions.json", "--eval-k", "101"}, true, ""},
 	} {
