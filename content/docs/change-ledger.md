@@ -116,5 +116,20 @@ Before closing #580, capture actual PR evidence, not just local assertions:
 4. Record the run links and the advisory observation window in the PR
    description. Close the synthetic PRs without merging their test edits.
 
-Local tests and saved fixture goldens prove the behavior, but are not a claim
-that these remote PR runs or the observation week have already happened.
+### Recorded real-PR controls
+
+The implementation is [PR 599](https://github.com/drawmeanelephant/la-famille/pull/599).
+On October 1, 2026 (UTC), strict workflow copies on draft synthetic PRs proved
+the actual job behavior without changing repository-wide enforcement:
+
+- [Prose-only PR 600](https://github.com/drawmeanelephant/la-famille/pull/600):
+  [strict job passed](https://github.com/drawmeanelephant/la-famille/actions/runs/36800978395/job/110175016854).
+  Its saved report contains zero regressions and no coverage warnings.
+- [Broken-link PR 601](https://github.com/drawmeanelephant/la-famille/pull/601):
+  [strict job failed](https://github.com/drawmeanelephant/la-famille/actions/runs/36800983594/job/110175035316)
+  at the comparison step, not setup/build. Its saved report contains exactly
+  one regression: `index`, `ledger-does-not-exist.md`, source line 36.
+
+These are do-not-merge controls. They do **not** establish a week of quiet
+advisory operation after rollout. That observation, enforcement decision, and
+final issue closure remain separate steps.

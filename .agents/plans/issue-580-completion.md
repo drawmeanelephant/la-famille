@@ -77,3 +77,18 @@ temporarily force strict comparison in their own workflow copies. This proves
 the actual CI job's pass/fail behavior without prematurely enabling strict
 enforcement for the repository. They are draft, do-not-merge test branches.
 #580 remains open until the rollout observation requirement is satisfied.
+
+## Real CI evidence
+
+- Implementation PR: https://github.com/drawmeanelephant/la-famille/pull/599.
+  Go suite, lint, and advisory comparison all passed on the published tree.
+- Prose-only draft control: https://github.com/drawmeanelephant/la-famille/pull/600.
+  Strict job passed: https://github.com/drawmeanelephant/la-famille/actions/runs/36800978395/job/110175016854.
+- Broken-link draft control: https://github.com/drawmeanelephant/la-famille/pull/601.
+  Strict job failed at comparison: https://github.com/drawmeanelephant/la-famille/actions/runs/36800983594/job/110175035316.
+- Downloaded both actual `change-ledger` artifacts and asserted zero prose
+  regressions, no coverage warnings, and exactly one broken-link regression
+  (`index`, `ledger-does-not-exist.md`, line 36), with no unrelated failures.
+- Synthetic controls are draft, do not merge, and remain available for review.
+  No repository-wide enforcement variable, branch protection, or issue state
+  was changed. A quiet week after production rollout is still required.
