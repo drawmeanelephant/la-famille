@@ -32,3 +32,5 @@ Meta information about the project.
 La Famille includes a gallery of templates you can use for your site.
 
 [View Gallery](docs/templates.md)
+
+This sentence exercises the prose-only Change Ledger CI control.
