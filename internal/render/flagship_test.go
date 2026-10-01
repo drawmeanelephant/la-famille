@@ -2,6 +2,7 @@ package render_test
 
 import (
 	"html/template"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,6 +13,71 @@ import (
 	"github.com/tbuddy/la-famille/internal/page"
 	"github.com/tbuddy/la-famille/internal/render"
 )
+
+func TestFlagshipHomeWelcomesRaoulsWithoutRemovingBurgers(t *testing.T) {
+	dir := getTemplatesDir(t)
+	cfg := config.DefaultConfig()
+	cfg.Template = filepath.Join(dir, "layout-site.html")
+	p := page.Page{Title: "La Famille", Site: cfg}
+	for _, base := range []string{"https://la-famille.filed.fyi", "https://example.com/la-famille"} {
+		t.Run(base, func(t *testing.T) {
+			cfg.SiteURL = base
+			raw := renderLayoutToBuffer(t, render.New(dir), dir, "layout-site-home", p, cfg)
+			doc := parseHTMLDocument(t, raw)
+			for _, want := range []string{
+				`id="raouls-title"`, "Meet Raoul(s)", "Multipersonality Octodeveloper",
+				"The Janitor", "The Maestro", "The Skater",
+				`href="` + cfg.BasePath() + `/meta/mascot-raouls/"`,
+				`rel="icon" href="` + cfg.BasePath() + `/assets/img/u1f419_u1f354.png"`,
+				"I'll hold the burger.", "Eight arms. One burger.",
+			} {
+				if !strings.Contains(raw, want) {
+					t.Errorf("missing mascot or preserved burger content %q", want)
+				}
+			}
+			for _, image := range []string{
+				"mascot-default.jpeg",
+				"Octopus_mascot_cleaning_litterbox_202606200817.jpeg",
+				"Octopus_mascot_writing_music_dia…_202606200817.jpeg",
+				"Octopus_mascot_riding_skateboard…_202606200817.jpeg",
+				"u1f419_u1f354.png",
+			} {
+				path := cfg.BasePath() + "/assets/img/" + image
+				images := collectNodes(doc, func(n *html.Node) bool {
+					if n.Type != html.ElementNode || n.Data != "img" {
+						return false
+					}
+					for _, attr := range n.Attr {
+						if attr.Key == "src" {
+							src, err := url.PathUnescape(attr.Val)
+							return err == nil && src == path
+						}
+					}
+					return false
+				})
+				if image == "u1f419_u1f354.png" {
+					if len(images) < 3 {
+						t.Errorf("keep all three existing burger placements, got %d", len(images))
+					}
+					continue
+				}
+				if len(images) != 1 {
+					t.Errorf("expected one original %s illustration, got %d", image, len(images))
+				}
+				for _, img := range images {
+					attrs := make(map[string]string)
+					for _, attr := range img.Attr {
+						attrs[attr.Key] = attr.Val
+					}
+					if attrs["alt"] == "" || attrs["width"] == "" || attrs["height"] == "" ||
+						attrs["loading"] != "lazy" {
+						t.Errorf("mascot image needs alt text, dimensions, and lazy loading: %s", image)
+					}
+				}
+			}
+		})
+	}
+}
 
 func TestFlagshipLayoutsKeepContentAndAccessibleNavigation(t *testing.T) {
 	dir := getTemplatesDir(t)

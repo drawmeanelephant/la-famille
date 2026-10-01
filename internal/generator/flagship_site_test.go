@@ -38,6 +38,11 @@ func TestRepositoryFlagshipSitePublishingContract(t *testing.T) {
 		"showcase/index.html", "showcase/escapement/index.html",
 		"showcase/zai/index.html", "showcase/templates/index.html",
 		"assets/css/site.css", "assets/js/search.js", "graph/index.html",
+		"meta/mascot-raouls/index.html", "assets/img/mascot-default.jpeg",
+		"assets/img/Octopus_mascot_cleaning_litterbox_202606200817.jpeg",
+		"assets/img/Octopus_mascot_writing_music_dia…_202606200817.jpeg",
+		"assets/img/Octopus_mascot_riding_skateboard…_202606200817.jpeg",
+		"assets/img/u1f419_u1f354.png",
 	} {
 		if _, err := os.Stat(filepath.Join(cfg.OutputDir, name)); err != nil {
 			t.Errorf("missing publish artifact %s: %v", name, err)
@@ -47,9 +52,21 @@ func TestRepositoryFlagshipSitePublishingContract(t *testing.T) {
 	for _, want := range []string{
 		"Small files.", "Big possibilities.", "escapement.filed.fyi",
 		"z.filed.fyi", `href="https://la-famille.filed.fyi/"`,
+		"Meet Raoul(s)", `href="/meta/mascot-raouls/"`,
 	} {
 		if !strings.Contains(home, want) {
 			t.Errorf("homepage missing %q", want)
+		}
+	}
+	story := readOutput(t, cfg, "meta/mascot-raouls/index.html")
+	for _, want := range []string{
+		"Multipersonality Octodeveloper", `src="/assets/img/mascot-default.jpeg"`,
+		`src="/assets/img/Octopus_mascot_cleaning_litterbox_202606200817.jpeg"`,
+		`src="/assets/img/Octopus_mascot_writing_music_dia`,
+		`src="/assets/img/Octopus_mascot_riding_skateboard`,
+	} {
+		if !strings.Contains(story, want) {
+			t.Errorf("mascot story missing %q", want)
 		}
 	}
 	if _, err := publisher.Check(cfg.OutputDir, cfg.BasePath()); err != nil {
