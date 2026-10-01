@@ -78,20 +78,26 @@ func TestGraphHardLabelsRemainHonest(t *testing.T) {
 		t.Fatal(err)
 	}
 	c := report.Comparison
-	if c == nil || c.Lexical.RecallAtK != *c.Lexical.BaselineRecallAt5 || c.Lexical.FailedCount != 1 {
+	if c == nil || c.Lexical.RecallAtK != *c.Lexical.BaselineRecallAt5 || c.Lexical.FailedCount != 0 || !c.Lexical.Passed {
 		t.Fatal("lexical baseline changed")
 	}
 	for _, q := range report.Questions {
-		if q.QuestionID == "sensor-warranty-absent" && (q.Passed || q.NoAnswer || len(q.RetrievedPages) == 0) {
-			t.Fatalf("graph hid known abstention failure: %+v", q)
+		if q.QuestionID == "sensor-warranty-absent" && (!q.Passed || !q.NoAnswer ||
+			len(q.RetrievedPages) != 0 || q.NoAnswerMessage != noAnswerFallbackMessage) {
+			t.Fatalf("graph bypassed strict abstention: %+v", q)
 		}
 		if q.QuestionID == "sensor-to-assay" && q.PathCoverage != nil && *q.PathCoverage == 1 &&
 			slices.Contains(q.RetrievedPages, "registry") && q.PrecisionAtK == 1 {
 			t.Fatal("bridge was relabeled as acceptable evidence in the frozen hard set")
 		}
 	}
-	if report.Passed {
-		t.Fatal("hard dataset must retain its known failure")
+	if report.PassedCount != 8 || report.FailedCount != 0 || c.Graph.PassedCount != 8 {
+		t.Fatal("hard questions must pass without relabeling their evidence")
+	}
+	// The unlabeled bridge still dilutes precision in this frozen set. Fixing
+	// abstention must not relabel it or hide the graph-comparison failure.
+	if c.PrecisionOK || c.Passed || report.Passed {
+		t.Fatal("graph bridge was hidden from the hard precision comparison")
 	}
 }
 

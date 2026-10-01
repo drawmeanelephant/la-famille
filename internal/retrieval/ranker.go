@@ -59,10 +59,10 @@ func NewRanker(c Corpus) *Ranker {
 
 // Rank returns up to topK chunks ordered by relevance. If topK <= 0 or the
 // corpus has fewer chunks than topK, fewer results are returned. An empty
-// query yields no results.
+// query or insufficient meaningful query vocabulary yields no results.
 func (r *Ranker) Rank(query string, topK int) []Scored {
 	qTokens := tokenizeQuery(query)
-	if len(qTokens) == 0 {
+	if len(qTokens) == 0 || !r.hasQueryCoverage(query) {
 		return nil
 	}
 	if topK <= 0 {
@@ -114,6 +114,25 @@ func (r *Ranker) Rank(query string, topK int) []Scored {
 		scored = scored[:topK]
 	}
 	return scored
+}
+
+// hasQueryCoverage rejects topical near-misses when half or more of the unique
+// non-conversational query terms are absent from the index. A strict majority
+// tolerates minor vocabulary gaps without treating topic overlap alone as
+// sufficient. This lexical check is not proof that the corpus answers a fact.
+func (r *Ranker) hasQueryCoverage(query string) bool {
+	terms := make(map[string]bool)
+	covered := 0
+	for _, term := range evidenceTerms(query) {
+		if terms[term] {
+			continue
+		}
+		terms[term] = true
+		if len(r.index[term]) > 0 {
+			covered++
+		}
+	}
+	return covered*2 > len(terms)
 }
 
 // Scored pairs a chunk with its relevance score. The score is unbounded;

@@ -177,15 +177,35 @@ chunks before page deduplication. Precision counts relevant unique retrieved
 pages divided by all unique retrieved pages, not by K.
 
 The separate `golden-questions-hard.json` dataset has twelve-page linked sites,
-paraphrase probes, decoys and a missing graph bridge. It intentionally exits
-nonzero on its warranty abstention check. Its zero-floor measurement probes are
-not successful retrieval claims. These are synthetic keyword probes; neither
-page recall nor graph coverage proves generated answer quality. The original regression dataset is saturated
-at recall@5 1.0000, so a lift there is impossible; measure the unchanged hard
-set at 0.5833 as well. Its warranty abstention check fails even with lexical
-ranking, so its CLI command exits nonzero. RRF does **not** mathematically
-guarantee that recall or precision improves. Report actual local model
-measurements rather than relabeling the questions or selecting favorable ones.
+paraphrase probes, decoys and a missing graph bridge. With lexical ranking it
+passes **8/8** questions, including strict zero-context abstention for the absent
+sensor warranty duration. Answerable recall@5 remains **0.5833** and precision@5
+**0.3333**; the original regression set remains **9/9**, recall **1.0000** and
+precision **0.4375**. Neither frozen dataset nor its thresholds changed.
+
+Before scoring, lexical retrieval requires a strict majority of unique
+meaningful query terms to occur in the indexed corpus (body, headings or title).
+Conversational and structural words such as “what”, “they”, “page” and “heading”
+do not count toward that coverage. If half or more of the terms are absent, it
+returns no context; graph expansion respects the same guard. Minor vocabulary
+gaps remain allowed and accepted queries retain their BM25 scoring/order.
+Queries composed only of ignored words also retrieve nothing.
+
+This is a conservative **lexical coverage heuristic**, not proof that the site
+answers every requested fact. It can reject answerable sparse paraphrases and
+can miss unsupported questions whose words are common in the corpus, even on
+unrelated pages. Independent near-miss/answerable tests include non-warranty
+topics and a corpus that actually supplies warranty duration. Strict retrieval
+abstention bypasses completion entirely; these tests do not demonstrate general
+live-model factual correctness or that all hallucinations are prevented.
+
+The hard set's zero-floor paraphrase probes remain measurements, not successful
+retrieval claims. Its frozen evidence labels still exclude the graph bridge:
+the optional hard graph comparison can fail its precision non-dilution gate
+even though its individual questions pass. Use the separate graph dataset for
+grounded-route acceptance. RRF does **not** mathematically guarantee improved
+recall/precision. Dense retrieval is a separate opt-in arm and does not inherit
+the lexical coverage guarantee; report actual local-model measurements.
 
 Eval's fixture builds are disposable. Embedding indices persist in the user's
 cache directory (`la-famille/ask-eval` under the OS cache by default), keyed

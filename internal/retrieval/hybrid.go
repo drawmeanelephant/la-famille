@@ -67,7 +67,8 @@ func BuildFingerprint(cachePath string, c Corpus) string {
 }
 
 // HybridRanker fuses the complete BM25-lite and dense rankings with RRF.
-// Its lexical ranker is the original unmodified implementation.
+// Its lexical arm includes the query-coverage guard; dense matches remain an
+// independent, explicitly opted-in source of evidence.
 type HybridRanker struct {
 	lexical  *Ranker
 	corpus   Corpus

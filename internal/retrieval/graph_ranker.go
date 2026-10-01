@@ -35,7 +35,7 @@ type GraphResult struct {
 }
 
 // GraphRanker deliberately owns a lexical ranker, never a hybrid scorer.
-// Expansion is bounded and opt-in; Ranker.Rank itself remains untouched.
+// Expansion is bounded and opt-in and respects the lexical coverage guard.
 type GraphRanker struct {
 	lexical *Ranker
 	pages   map[string][]Chunk
@@ -274,7 +274,7 @@ func hasSourceEvidence(ch Chunk) bool {
 }
 
 func evidenceTerms(text string) []string {
-	const stop = " a an and are as at be between by can connect connected connection describe do does explain for from got how i in is it link linked of on or page pages path relate related relationship route say should site that the their there these this through to via was what when where which who with "
+	const stop = " a an and are as at be between by can connect connected connection describe did do does explain for from got has have heading headings how i in is it its link linked me my of on or our page pages path please relate related relationship route say says should site that the their them there these they this through to via was we what when where which who with you your "
 	var terms []string
 	for _, term := range tokenize(text) {
 		if !strings.Contains(stop, " "+term+" ") {
