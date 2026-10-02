@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/tbuddy/la-famille/internal/llm"
+	"github.com/tbuddy/la-famille/internal/pack"
 	"github.com/tbuddy/la-famille/internal/retrieval"
 )
 
@@ -35,6 +36,7 @@ const PortDefault = 8090
 // Config collects the user-facing knobs for the ask server. It is what the
 // CLI flag parser builds before calling NewServer.
 type Config struct {
+	PackFile       string
 	ContentDir     string
 	ProviderName   string
 	Model          string
@@ -68,10 +70,10 @@ func (c *Config) Defaults() {
 	if c.ProviderName == "" {
 		c.ProviderName = "ollama"
 	}
-	if c.RagDir == "" {
+	if c.PackFile == "" && c.RagDir == "" {
 		c.RagDir = "rag-archive"
 	}
-	if c.OutputDir == "" {
+	if c.PackFile == "" && c.OutputDir == "" {
 		c.OutputDir = "public"
 	}
 	if c.MaxContext == 0 {
@@ -80,7 +82,7 @@ func (c *Config) Defaults() {
 	if c.EmbeddingModel == "" {
 		c.EmbeddingModel = "nomic-embed-text"
 	}
-	if c.CacheDir == "" {
+	if c.PackFile == "" && c.CacheDir == "" {
 		c.CacheDir = filepath.Dir(c.RagDir)
 	}
 }
@@ -88,6 +90,14 @@ func (c *Config) Defaults() {
 // Validate enforces the security and correctness rules from the moonshot
 // spec. Call this before NewServer.
 func (c *Config) Validate() error {
+	if c.PackFile != "" {
+		if !filepath.IsAbs(c.PackFile) {
+			return errors.New("ask: --pack requires an absolute local path")
+		}
+		if c.RagDir != "" || c.OutputDir != "" || c.ContentDir != "" || c.Rebuild {
+			return errors.New("ask: --pack cannot be combined with directory inputs or --rebuild")
+		}
+	}
 	if c.GraphExpansion && c.Embeddings {
 		return errors.New("ask: graph expansion compares against lexical ranking; do not combine it with embeddings")
 	}
@@ -127,11 +137,15 @@ func NewServer(cfg Config) (*Server, error) {
 		return nil, err
 	}
 
-	loadOpts := retrieval.LoadOptions{RagDir: cfg.RagDir, OutputDir: cfg.OutputDir, ContentDir: cfg.ContentDir}
-	if cfg.Rebuild {
-		loadOpts.RagDir = cfg.RagDir // future: could call ragexport.RunExport here
+	var loadRes retrieval.LoadResult
+	var err error
+	if cfg.PackFile != "" {
+		loadRes, err = pack.LoadCorpus(cfg.PackFile)
+	} else {
+		loadRes, err = retrieval.Load(retrieval.LoadOptions{
+			RagDir: cfg.RagDir, OutputDir: cfg.OutputDir, ContentDir: cfg.ContentDir,
+		})
 	}
-	loadRes, err := retrieval.Load(loadOpts)
 	if err != nil {
 		return nil, fmt.Errorf("ask: prepare corpus: %w", err)
 	}
@@ -161,7 +175,16 @@ func NewServer(cfg Config) (*Server, error) {
 		if embedder == nil {
 			embedder = llm.NewOllama(llm.OllamaConfig{})
 		}
-		fingerprint := retrieval.BuildFingerprint(filepath.Join(cfg.CacheDir, ".la-famille-cache.json"), loadRes.Corpus)
+		fingerprint := retrieval.CorpusDigest(loadRes.Corpus)
+		if cfg.PackFile == "" {
+			fingerprint = retrieval.BuildFingerprint(filepath.Join(cfg.CacheDir, ".la-famille-cache.json"), loadRes.Corpus)
+		} else if cfg.CacheDir == "" {
+			cache, err := os.UserCacheDir()
+			if err != nil {
+				return nil, fmt.Errorf("ask: private embedding cache: %w", err)
+			}
+			cfg.CacheDir = filepath.Join(cache, "la-famille", "ask-packs")
+		}
 		hybrid, err := retrieval.NewHybridRanker(context.Background(), loadRes.Corpus, embedder, cfg.EmbeddingModel,
 			filepath.Join(cfg.CacheDir, retrieval.VectorFileName), fingerprint)
 		if err != nil {
@@ -190,6 +213,11 @@ func buildProvider(cfg Config) (llm.Provider, error) {
 			Model: cfg.Model,
 		}), nil
 	case "fake":
+		if cfg.PackFile != "" {
+			// Exercise pack citation evidence without changing the historical
+			// directory-backed fake-provider behavior.
+			return &llm.FakeProvider{EchoMode: "cite"}, nil
+		}
 		return &llm.FakeProvider{}, nil
 	default:
 		return nil, fmt.Errorf("ask: unknown provider %q (supported: ollama, fake)", cfg.ProviderName)
@@ -230,7 +258,7 @@ func (s *Server) Snapshot(ctx context.Context) Status {
 		CorpusVersion:  s.corpus.Version,
 		DocumentCount:  s.corpus.DocumentCount,
 		ChunkCount:     s.corpus.ChunkCount,
-		SourceDir:      filepath.Clean(s.cfg.RagDir),
+		SourceDir:      filepath.Clean(firstCorpusSource(s.cfg)),
 		LoopbackOnly:   s.cfg.LoopbackOnly,
 	}
 	availCtx, cancel := context.WithTimeout(ctx, 1500*time.Millisecond)
@@ -239,6 +267,13 @@ func (s *Server) Snapshot(ctx context.Context) Status {
 		st.Ready = false
 	}
 	return st
+}
+
+func firstCorpusSource(cfg Config) string {
+	if cfg.PackFile != "" {
+		return cfg.PackFile
+	}
+	return cfg.RagDir
 }
 
 // AnswerRequest is the JSON body posted to /api/ask.

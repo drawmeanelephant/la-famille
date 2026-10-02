@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net"
@@ -31,6 +30,7 @@ var askFlagBundle = struct {
 	host             string
 	ragDir           string
 	outputDir        string
+	packFile         string
 	port             int
 	maxCtx           int
 	eval             string
@@ -60,6 +60,10 @@ to a remote service. Use --provider ollama with a local Ollama daemon to get
 an LLM in front of the corpus. Set --provider fake to exercise the pipeline
 without a model.
 
+Use --pack /absolute/path/corpus.tar to consume a verified content-only Corpus
+Pack without a site checkout, config, or generated directories. Archive
+payloads are never extracted or executed.
+
 Run --eval <dataset.json> to measure retrieval against golden questions
 without starting the web server. Embeddings are opt-in via --embeddings;
 --no-embeddings always restores the unchanged lexical scorer.`),
@@ -78,6 +82,8 @@ without starting the web server. Embeddings are opt-in via --embeddings;
 		"Directory containing the RAG archive (rag-content.md, rag-system.md, rag-config.md).")
 	cmd.Flags().StringVar(&askFlagBundle.outputDir, "output", cfg.OutputDir,
 		"Generated site output directory, used for citation URLs.")
+	cmd.Flags().StringVar(&askFlagBundle.packFile, "pack", "",
+		"Verified local Corpus Pack (absolute path); replaces all directory inputs.")
 	cmd.Flags().BoolVar(&askFlagBundle.rebuild, "rebuild", false,
 		"Regenerate the RAG archive before starting the assistant.")
 	cmd.Flags().BoolVar(&askFlagBundle.noBrowser, "no-browser", false,
@@ -115,6 +121,16 @@ without starting the web server. Embeddings are opt-in via --embeddings;
 // validates flags, optionally rebuilds the RAG archive, and starts the server.
 func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
+		if cmd.Flags().Changed("pack") {
+			if !filepath.IsAbs(askFlagBundle.packFile) {
+				return fmt.Errorf("ask: --pack requires an absolute local path")
+			}
+			for _, flag := range []string{"rag-dir", "output", "rebuild", "config", "project-root", "eval", "eval-k", "eval-compare-graph"} {
+				if cmd.Flags().Changed(flag) || cmd.InheritedFlags().Changed(flag) {
+					return fmt.Errorf("ask: --pack cannot be combined with --%s", flag)
+				}
+			}
+		}
 		if askFlagBundle.evalCompareGraph && strings.TrimSpace(askFlagBundle.eval) == "" {
 			return fmt.Errorf("ask: --eval-compare-graph requires --eval")
 		}
@@ -178,6 +194,12 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 		}
 		outputDir = resolveProjectPath(cfg.ProjectRoot, outputDir)
 
+		if askFlagBundle.packFile != "" {
+			// Do not carry config defaults into pack mode, including paths the
+			// HTTP file server or embedding cache could otherwise read.
+			ragDir, outputDir = "", ""
+		}
+
 		if askFlagBundle.rebuild {
 			slog.Info("rebuilding RAG archive", "dir", ragDir)
 			reb := cfg
@@ -189,6 +211,7 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 		}
 
 		askCfg := ask.Config{
+			PackFile:       askFlagBundle.packFile,
 			ProviderName:   askFlagBundle.provider,
 			Model:          askFlagBundle.model,
 			Host:           host,
@@ -206,11 +229,18 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 			EmbeddingModel: askFlagBundle.embeddingModel,
 			CacheDir:       firstNonEmpty(resolveProjectPath(cfg.ProjectRoot, askFlagBundle.embeddingCache), cfg.ProjectRoot, filepath.Dir(ragDir)),
 		}
+		if askCfg.PackFile != "" {
+			askCfg.ContentDir = ""
+			askCfg.CacheDir = askFlagBundle.embeddingCache
+		}
 
 		// Path safety: ensure configured dirs escape no upward traversal.
 		for _, p := range []struct {
 			name, value string
 		}{{"rag-dir", ragDir}, {"output", outputDir}} {
+			if p.value == "" {
+				continue
+			}
 			if !filepath.IsAbs(p.value) && !filepath.IsLocal(p.value) {
 				return fmt.Errorf("ask: %s must be a local path, got %s", p.name, p.value)
 			}
@@ -225,7 +255,7 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 		slog.Info("Ask This Site is starting", "url", url,
 			"provider", askFlagBundle.provider,
 			"model", firstNonEmpty(askFlagBundle.model, "(provider default)"),
-			"corpus", ragDir,
+			"corpus", firstNonEmpty(askCfg.PackFile, ragDir),
 		)
 		fmt.Fprintln(cmd.OutOrStdout(), "🐙 Ask This Site")
 		fmt.Fprintf(cmd.OutOrStdout(), "  ↪ open: %s\n", url)
@@ -238,7 +268,7 @@ func runAsk(cfg config.Config) func(*cobra.Command, []string) error {
 			tryOpenBrowser(url)
 		}
 
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
 		return server.Start(ctx)
 	}
