@@ -1,0 +1,23 @@
+{
+  "added": [
+    "tags/preservation/index.html"
+  ],
+  "removed": [
+    "tags/care/index.html"
+  ],
+  "changed": [
+    "backlinks.json",
+    "graph.json",
+    "graph/data.json",
+    "meta.json",
+    "rag-content.md",
+    "search.json",
+    "site-manifest.json",
+    "tags/index.html"
+  ],
+  "delta_payloads": 9,
+  "added_graph_edges": 1,
+  "taxonomy_changes": 2,
+  "target_byte_identical": true,
+  "repeated_delta_byte_identical": true
+}

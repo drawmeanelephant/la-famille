@@ -6,6 +6,9 @@ description: "Package existing public corpus artifacts deterministically and ver
 
 # Corpus Packs v1: Build and Verify
 
+For member-level updates to existing v1 packs, see
+[Local Diff and Apply](corpus-pack-deltas.md). The v1 format below is unchanged.
+
 This is Phase 1 of [#583](https://github.com/drawmeanelephant/la-famille/issues/583),
 tracked by [milestone 6](https://github.com/drawmeanelephant/la-famille/milestone/6)
 and subissues [#609](https://github.com/drawmeanelephant/la-famille/issues/609)
@@ -186,8 +189,10 @@ and unknown-member regression tests, a compiled-binary demonstration and
 repository validation. See the [recorded demonstration](https://github.com/drawmeanelephant/la-famille/blob/master/docs/corpus-packs-v1-demo.md)
 in the repository.
 
-Pack diff/apply, subscriptions, pull/watch, remote downloads, pack-backed Ask,
-signatures, deployment, model benchmarks and adoption evidence are **not in
-scope**. New ideas belong in separate issues. After review and merge with the
+Pack diff/apply belongs to the separate
+[Local Diff and Apply milestone](corpus-pack-deltas.md). Subscriptions,
+pull/watch, remote downloads, pack-backed Ask, signatures, deployment, model
+benchmarks and adoption evidence remain **not in scope**. New ideas belong in
+separate issues. After review and merge with the
 fixed criteria met, close #609, #610 and milestone 6; leave #583 open for later
 milestones.

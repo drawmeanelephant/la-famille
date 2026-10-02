@@ -163,20 +163,27 @@ companion CSS/JS when `graph/index.html` is present.
 
 ### `pack`
 
-Builds and verifies deterministic, content-only Corpus Packs from existing
-public artifacts and `rag-content.md`:
+Builds, verifies, compares, and locally applies deterministic, content-only
+Corpus Packs from existing public artifacts and `rag-content.md`:
 
 ```bash
 la-famille pack build --output corpus.tar
 la-famille pack build --site-output public --rag-dir rag-archive --output corpus.tar
 la-famille pack verify corpus.tar
+la-famille pack diff before.tar after.tar --output delta.tar
+la-famille pack diff before.tar after.tar --output delta-json.tar --json
+la-famille pack apply before.tar delta.tar --output result.tar
+la-famille pack verify result.tar
 ```
 
 The destination must not exist. Relative paths resolve from `--project-root`.
-Packaging does not refresh its inputs. Verification needs no usable site
-configuration and never extracts or executes members.
+Packaging does not refresh its inputs. Verify, diff, and apply need no usable
+site configuration and never extract or execute members. Apply binds to the
+exact base archive and publishes only a verified new pack. Deltas operate on
+whole members, including the entire `rag-content.md`, not individual pages.
 See [Corpus Packs v1](corpus-packs.md) for the explicit allowlist, USTAR/manifest
-format, resource bounds, integrity limits and milestone scope.
+format and bounds, and [Local Diff and Apply](corpus-pack-deltas.md) for the
+delta schema, readable/JSON reports and canonical-builder byte-identity contract.
 
 ### `pr`
 

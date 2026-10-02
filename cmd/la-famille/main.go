@@ -513,7 +513,7 @@ var configIndependentCommands = map[string]bool{
 
 func requiresSiteConfig(cmd *cobra.Command) bool {
 	for c := cmd; c != nil && c.HasParent(); c = c.Parent() {
-		if c.Name() == "verify" && c.Parent().Name() == "pack" {
+		if c.Parent().Name() == "pack" && (c.Name() == "verify" || c.Name() == "diff" || c.Name() == "apply") {
 			return false
 		}
 		if configIndependentCommands[c.Name()] {

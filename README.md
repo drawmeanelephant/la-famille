@@ -182,6 +182,7 @@ The commands above will get you started, but La Famille has a lot more to offer.
 *   **[Templating Guide](content/docs/templates.md)**
 *   **[RAG Export Guide](content/docs/rag.md)**
 *   **[Corpus Packs v1: Build and Verify](content/docs/corpus-packs.md)**
+*   **[Corpus Packs: Local Diff and Apply](content/docs/corpus-pack-deltas.md)**
 *   **[Ask This Site Guide](content/docs/ask.md)**
 *   **[Change Ledger Guide](content/docs/change-ledger.md)**
 *   **[How the Generator Works](content/docs/generator.md)**
