@@ -88,12 +88,12 @@ shows green `no regressions, 3 pages changed`; one new broken link shows red
 `1 newly-broken link`. The pane updates after manual and watcher builds and
 loads the saved ledger when the TUI starts.
 
-## Repository CI rollout and closure evidence
+## Repository CI status and implementation closure
 
 `.github/workflows/change-ledger.yml` runs strict synthetic controls on the
 `anchor-links` and `artisanal-ceramics` fixtures, then compares the repository
 site at the PR base/head. It uploads both reports and records the comparison
-outcome in the job summary. The repository comparison starts **advisory**:
+outcome in the job summary. The repository comparison remains **advisory**:
 regressions are visible without blocking unrelated work. Synthetic controls
 always fail the job if prose is rejected or a new broken link is accepted.
 
@@ -102,19 +102,6 @@ To reproduce the strict controls locally:
 ```bash
 go test ./cmd/la-famille -run '^TestChangeLedgerGateFixtures$' -count=1 -v
 ```
-
-Before closing #580, capture actual PR evidence, not just local assertions:
-
-1. Open a prose-only test PR. Verify the comparison step passes.
-2. Open a test PR adding `[Synthetic regression](ledger-does-not-exist.md)`
-   to a linked page. Verify the comparison step fails and its artifact
-   identifies exactly that new broken link. Advisory mode keeps the overall
-   job non-blocking; record the step's failure.
-3. Observe a full week of quiet advisory comparisons. Set the repository
-   Actions variable `CHANGE_LEDGER_ENFORCE=true`, then rerun the broken-link
-   PR and verify the **job** fails. Make the gate a required check if desired.
-4. Record the run links and the advisory observation window in the PR
-   description. Close the synthetic PRs without merging their test edits.
 
 ### Recorded real-PR controls
 
@@ -131,5 +118,30 @@ the actual job behavior without changing repository-wide enforcement:
   one regression: `index`, `ledger-does-not-exist.md`, source line 36.
 
 These are do-not-merge controls. They do **not** establish a week of quiet
-advisory operation after rollout. That observation, enforcement decision, and
-final issue closure remain separate steps.
+advisory operation after rollout.
+
+### Advisory observation and owner decision
+
+The seven-day advisory observation and enforcement decision are tracked
+separately in [issue 615](https://github.com/drawmeanelephant/la-famille/issues/615).
+The fixed window is **2026-10-01 01:36:12 UTC through 2026-10-08 01:36:12 UTC**,
+anchored to #599's merge. At the October 2 handoff, six post-merge reports
+had been inspected. Each showed zero regressions and zero newly broken links;
+some contained ordinary content and rendered-output changes. The window has
+not elapsed, so these observations do not establish a quiet week. Issue 615
+records the [first comparison](https://github.com/drawmeanelephant/la-famille/actions/runs/36906500838),
+the [latest comparison](https://github.com/drawmeanelephant/la-famille/actions/runs/37013332962),
+and details for all six reports. Continue recording comparisons and any noise
+there through the fixed window.
+
+Issue 615 records the comparisons and any noise, then an explicit owner
+decision to enable enforcement or retain advisory mode with a reason. Enabling
+enforcement is not required to complete that decision task. If enforcement is
+separately authorized, the existing prose-only and broken-link control evidence
+above proves the required pass/fail behavior. Any unresolved defects become
+specific separate issues.
+
+The Change Ledger implementation is complete. Closing #580 depends on the
+implementation documentation being merged, **not** on completing issue 615 or
+enabling repository enforcement. Repository CI remains advisory unless its
+enforcement is separately authorized.
