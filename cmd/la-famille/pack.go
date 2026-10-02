@@ -11,7 +11,7 @@ import (
 
 func setupPackCmd(cfg config.Config) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "pack", Short: "Build, verify, diff, and apply content-only Corpus Packs",
+		Use: "pack", Short: "Build, verify, diff, apply, and pull content-only Corpus Packs",
 	}
 	var outputDir, ragDir, destination string
 	build := &cobra.Command{
@@ -59,7 +59,49 @@ func setupPackCmd(cfg config.Config) *cobra.Command {
 			return err
 		},
 	}
-	cmd.AddCommand(build, verify, setupPackDiffCmd(cfg), setupPackApplyCmd(cfg))
+	cmd.AddCommand(build, verify, setupPackDiffCmd(cfg), setupPackApplyCmd(cfg), setupPackPullCmd(cfg))
+	return cmd
+}
+
+func setupPackPullCmd(cfg config.Config) *cobra.Command {
+	var base, destination string
+	cmd := &cobra.Command{
+		Use:   "pull <feed-directory> --output <new-pack.tar>",
+		Short: "Pull a verified local feed, optionally updating an exact base by delta",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Changed("base") && base == "" {
+				return fmt.Errorf("--base requires an existing pack path")
+			}
+			if destination == "" {
+				return fmt.Errorf("--output requires a new pack path")
+			}
+			result, err := pack.Pull(
+				resolveProjectPath(cfg.ProjectRoot, args[0]),
+				resolveProjectPath(cfg.ProjectRoot, base),
+				resolveProjectPath(cfg.ProjectRoot, destination))
+			if err != nil {
+				return err
+			}
+			if result.Fallback {
+				if _, err := fmt.Fprintln(cmd.OutOrStdout(), "No matching delta for the exact base SHA256; using full-pack fallback."); err != nil {
+					return err
+				}
+			}
+			if _, err := fmt.Fprintf(cmd.OutOrStdout(),
+				"Pulled pack %s: mode %s, %d members\nTarget archive SHA256: %s\nTarget content root: %s\n",
+				destination, result.Mode, len(result.Manifest.Members), result.TargetSHA256, result.Manifest.ContentRoot); err != nil {
+				return err
+			}
+			if result.Changes != nil {
+				_, err = fmt.Fprint(cmd.OutOrStdout(), result.Changes.Summary())
+			}
+			return err
+		},
+	}
+	cmd.Flags().StringVar(&base, "base", "", "Existing verified base pack (never modified)")
+	cmd.Flags().StringVarP(&destination, "output", "o", "", "New result pack file, must not already exist")
+	_ = cmd.MarkFlagRequired("output")
 	return cmd
 }
 

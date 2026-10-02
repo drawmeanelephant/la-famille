@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"unicode/utf8"
 )
@@ -170,8 +171,17 @@ func verifyDelta(input io.Reader) (DeltaMetadata, Manifest, []byte, map[string]i
 }
 
 func loadDelta(name string) (*snapshot, DeltaMetadata, error) {
+	input, err := os.Open(name)
+	if err != nil {
+		return nil, DeltaMetadata{}, err
+	}
+	defer input.Close()
+	return loadOpenDelta(input)
+}
+
+func loadOpenDelta(input *os.File) (*snapshot, DeltaMetadata, error) {
 	var d DeltaMetadata
-	s, err := captureSnapshot(name, func(r io.Reader, s *snapshot) error {
+	s, err := captureOpenSnapshot(input, func(r io.Reader, s *snapshot) error {
 		var err error
 		d, s.manifest, s.manifestJSON, s.offsets, err = verifyDelta(r)
 		return err

@@ -33,6 +33,12 @@ func captureSnapshot(name string, verify func(io.Reader, *snapshot) error) (*sna
 		return nil, err
 	}
 	defer input.Close()
+	return captureOpenSnapshot(input, verify)
+}
+
+// captureOpenSnapshot consumes an already-open source, including confined feed
+// files. Its caller owns the source; the returned snapshot owns a private copy.
+func captureOpenSnapshot(input *os.File, verify func(io.Reader, *snapshot) error) (*snapshot, error) {
 	info, err := input.Stat()
 	if err != nil {
 		return nil, err
@@ -56,11 +62,13 @@ func captureSnapshot(name string, verify func(io.Reader, *snapshot) error) (*sna
 }
 
 func loadPack(name string) (*snapshot, error) {
-	return captureSnapshot(name, func(r io.Reader, s *snapshot) error {
-		var err error
-		s.manifest, s.manifestJSON, s.offsets, err = verifyPack(r)
-		return err
-	})
+	return captureSnapshot(name, verifyPackSnapshot)
+}
+
+func verifyPackSnapshot(r io.Reader, s *snapshot) error {
+	var err error
+	s.manifest, s.manifestJSON, s.offsets, err = verifyPack(r)
+	return err
 }
 
 // publishArchive verifies through the same descriptor before atomically
