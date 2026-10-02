@@ -1,0 +1,8 @@
+content_dir: vault
+output_dir: public
+asset_dir: assets
+rag_dir: rag-archive
+template: templates/layout.html
+site_name: Synthetic Vault Acceptance
+siteurl: https://example.test/vault
+graph_explorer: true
