@@ -51,10 +51,15 @@ func extractHashtags(source []byte) []string {
 		start := i + size
 		end := start
 		hasWordRune := false
+		hasLetter := false
 		for end < len(source) {
 			next, nextSize := utf8.DecodeRune(source[end:])
 			switch {
-			case unicode.IsLetter(next), unicode.IsDigit(next):
+			case unicode.IsLetter(next):
+				hasWordRune = true
+				hasLetter = true
+				end += nextSize
+			case unicode.IsDigit(next):
 				hasWordRune = true
 				end += nextSize
 			case unicode.IsMark(next) && hasWordRune:
@@ -67,7 +72,7 @@ func extractHashtags(source []byte) []string {
 		}
 
 	tagEnd:
-		if hasWordRune {
+		if hasLetter {
 			tag := strings.TrimRight(string(source[start:end]), "-_")
 			if tag != "" {
 				tags = append(tags, tag)

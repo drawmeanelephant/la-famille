@@ -1,12 +1,16 @@
 package generator
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/tbuddy/la-famille/internal/config"
+	"github.com/tbuddy/la-famille/internal/search"
+	"github.com/tbuddy/la-famille/internal/sitedata"
 )
 
 func TestBuildBodyTagsShareFrontmatterTaxonomyArchive(t *testing.T) {
@@ -60,5 +64,47 @@ func TestBuildBodyTagsShareFrontmatterTaxonomyArchive(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(cfg.OutputDir, "tags", "code-only", "index.html")); !os.IsNotExist(err) {
 		t.Errorf("code hashtag unexpectedly generated an archive: %v", err)
+	}
+
+	for _, reference := range []string{"599", "617"} {
+		if _, err := os.Stat(filepath.Join(cfg.OutputDir, "tags", reference, "index.html")); !os.IsNotExist(err) {
+			t.Errorf("issue reference #%s unexpectedly generated an archive: %v", reference, err)
+		}
+		if strings.Contains(tagIndex, `href="`+reference+`/"`) ||
+			strings.Contains(bodyPage, `href="../tags/`+reference+`/"`) {
+			t.Errorf("issue reference #%s appeared in taxonomy navigation", reference)
+		}
+		if !strings.Contains(bodyPage, "#"+reference) {
+			t.Errorf("issue reference #%s was removed from page prose", reference)
+		}
+	}
+	numericArchive := readOutput(t, cfg, "tags/2026/index.html")
+	if !strings.Contains(numericArchive, "Frontmatter-tagged note") {
+		t.Error("explicit numeric frontmatter tag is missing its page")
+	}
+
+	manifest, err := sitedata.ReadManifest(filepath.Join(cfg.OutputDir, sitedata.ManifestFileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := map[string][]string{
+		"body-note":        {"ceramics"},
+		"frontmatter-note": {"2026", "ceramics"},
+	}
+	for _, page := range manifest.Pages {
+		if want, ok := expected[page.Identity]; ok && !reflect.DeepEqual(page.Tags, want) {
+			t.Errorf("manifest tags for %s = %v, want %v", page.Identity, page.Tags, want)
+		}
+	}
+	var searchIndex []search.Item
+	if err := json.Unmarshal([]byte(readOutput(t, cfg, "search.json")), &searchIndex); err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range searchIndex {
+		for _, tag := range item.Tags {
+			if tag == "599" || tag == "617" {
+				t.Errorf("issue reference tag %q appeared in search metadata", tag)
+			}
+		}
 	}
 }

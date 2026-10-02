@@ -18,7 +18,10 @@ Here are the currently supported fields:
 * `tags`: An array of strings grouping the page under tag archives
   (e.g., `tags: [go, test]`). Each tag generates a `/tags/<tag>/` archive page,
   and `/tags/` lists every tag. Body hashtags such as `#ceramics` join the same
-  tags; hashtags in headings, code, links, and URLs are ignored.
+  tags; hashtags in headings, code, links, and URLs are ignored. Body hashtags
+  must contain at least one letter, so numeric issue references such as `#599`
+  are ignored. Explicit numeric frontmatter tags, such as `tags: ["2026"]`,
+  remain supported.
 * `categories`: An array of strings grouping the page under category archives
   (e.g., `categories: [blog]`), generating `/categories/` pages the same way.
 * `render`: A boolean (`true` or `false`).
