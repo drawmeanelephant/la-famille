@@ -109,7 +109,7 @@ runtime, set `include_unused_theme_assets: true` in `config.yaml`.
 - **Generation:** When content files declare `tags` or `categories` frontmatter, or contain body hashtags such as `#ceramics`:
   - Main index pages are generated at `tags/index.html` and `categories/index.html`.
   - Term detail pages are generated at `tags/<tag-name>/index.html` and `categories/<category-name>/index.html`.
-- **Body tags:** A `#tag` in Markdown text joins the page's frontmatter `tags` for `/tags/` archives, page tag links, search, and metadata. Headings, code, links, and URLs are not treated as body tags.
+- **Body tags:** A `#tag` in Markdown text joins the page's frontmatter `tags` for `/tags/` archives, page tag links, search, and metadata. Headings, code, links, and URLs are not treated as body tags. Body hashtags must contain at least one Unicode letter; `#3d-printing` is a tag, but a numeric reference such as `#599` is not. Declare numeric tags explicitly in frontmatter.
 - **Content:** Lists titles and relative links of associated rendered pages.
 - **Exclusions:** Pages with `render: false` are excluded from tag/category aggregation.
 
