@@ -491,6 +491,7 @@ func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
 	rootCmd.AddCommand(setupDiffCmd(cfg))
 	rootCmd.AddCommand(setupNewCmd(cfg))
 	rootCmd.AddCommand(setupAskCmd(cfg))
+	rootCmd.AddCommand(setupPackCmd(cfg))
 
 	return rootCmd, st
 }
@@ -512,6 +513,9 @@ var configIndependentCommands = map[string]bool{
 
 func requiresSiteConfig(cmd *cobra.Command) bool {
 	for c := cmd; c != nil && c.HasParent(); c = c.Parent() {
+		if c.Name() == "verify" && c.Parent().Name() == "pack" {
+			return false
+		}
 		if configIndependentCommands[c.Name()] {
 			return false
 		}

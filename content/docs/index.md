@@ -23,6 +23,7 @@ or a build service to make a site.
 | Work from the terminal UI | [TUI guide](tui.md) |
 | Understand client-side search | [Search](search.md) |
 | Export content for other tools | [Corpus exports](rag.md) |
+| Package and verify public corpus artifacts | [Corpus Packs v1](corpus-packs.md), source-build feature |
 | Try local, citation-grounded questions | [Ask This Site](ask.md), experimental |
 | Compare builds and gate regressions | [Change Ledger](change-ledger.md), source-build feature |
 | Manage repository pull requests locally | [PR management](pr.md) |
