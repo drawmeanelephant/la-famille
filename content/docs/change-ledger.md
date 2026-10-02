@@ -125,7 +125,7 @@ advisory operation after rollout.
 The seven-day advisory observation and enforcement decision are tracked
 separately in [issue 615](https://github.com/drawmeanelephant/la-famille/issues/615).
 The fixed window is **2026-10-01 01:36:12 UTC through 2026-10-08 01:36:12 UTC**,
-anchored to #599's merge. At the October 2 handoff, six post-merge reports
+anchored to PR 599's merge. At the October 2 handoff, six post-merge reports
 had been inspected. Each showed zero regressions and zero newly broken links;
 some contained ordinary content and rendered-output changes. The window has
 not elapsed, so these observations do not establish a quiet week. Issue 615
