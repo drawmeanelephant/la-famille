@@ -161,6 +161,23 @@ The check rejects an accidentally published `.la-famille-cache.json`, verifies
 local `href`/`src` references, and requires the graph explorer's payload and
 companion CSS/JS when `graph/index.html` is present.
 
+### `pack`
+
+Builds and verifies deterministic, content-only Corpus Packs from existing
+public artifacts and `rag-content.md`:
+
+```bash
+la-famille pack build --output corpus.tar
+la-famille pack build --site-output public --rag-dir rag-archive --output corpus.tar
+la-famille pack verify corpus.tar
+```
+
+The destination must not exist. Relative paths resolve from `--project-root`.
+Packaging does not refresh its inputs. Verification needs no usable site
+configuration and never extracts or executes members.
+See [Corpus Packs v1](corpus-packs.md) for the explicit allowlist, USTAR/manifest
+format, resource bounds, integrity limits and milestone scope.
+
 ### `pr`
 
 Manages GitHub Pull Requests (Clear the Litterbox).
