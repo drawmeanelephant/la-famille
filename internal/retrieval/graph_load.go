@@ -16,10 +16,16 @@ import (
 // target -> sources, not additional reverse links. Missing optional artifacts
 // leave lexical retrieval usable; malformed artifacts are surfaced to callers.
 func loadLinkGraph(c *Corpus, outputDir string) []string {
+	return loadLinkGraphArtifacts(c, func(name string) ([]byte, error) {
+		return os.ReadFile(filepath.Join(outputDir, name))
+	})
+}
+
+func loadLinkGraphArtifacts(c *Corpus, readArtifact func(string) ([]byte, error)) []string {
 	g := graph.Graph{Nodes: make(map[string]graph.Node)}
 	var warnings []string
 	read := func(name string, dst any) bool {
-		raw, err := os.ReadFile(filepath.Join(outputDir, name))
+		raw, err := readArtifact(name)
 		if errors.Is(err, os.ErrNotExist) {
 			return false
 		}

@@ -43,6 +43,40 @@ go run ./cmd/la-famille ask --provider fake
 This is what the tests use; it returns a synthetic answer that includes
 valid `[1]` citations so you can see the full flow without a model.
 
+### Ask a Corpus Pack without a site checkout
+
+```bash
+la-famille ask --pack /absolute/path/corpus.tar --model llama3.2
+# Deterministic citation evidence without Ollama:
+la-famille ask --pack /absolute/path/corpus.tar --provider fake --no-browser
+```
+
+Pack mode needs no config, source checkout, `public/`, or loose `rag-archive/`.
+It verifies the local v1 pack into a private opaque snapshot, parses the exact
+verified bytes, then closes and removes the snapshot before serving. It never
+extracts or executes members, reads an unrelated config, or serves unrelated
+local site files. Only `rag-content.md` and its packaged citation/link metadata
+enter retrieval; repository/config bundles and taxonomy HTML do not.
+
+Generated metadata preserves source-card titles, slugs, and deployment
+subpaths, including custom content directories. Pack citation URLs still point
+at the published site paths; the pack does not contain or serve page HTML.
+Corrupt/unsupported packs, missing content, and malformed consumed payloads
+fail at startup rather than falling back to local directories.
+
+`--pack` requires an absolute local file path. Do not combine it with
+`--rag-dir`, `--output`, `--rebuild` (even `--rebuild=false`), `--config`,
+`--project-root`, or the dataset-based `--eval` flags. Directory-backed Ask
+keeps its existing behavior. Optional embeddings and graph expansion reuse
+the existing scorers; pack embeddings use the OS user cache under
+`la-famille/ask-packs`, or explicit `--embedding-cache`, and never read the
+working directory's build cache.
+
+The pack-mode fake provider emits a synthetic `[1]` citation, not a factual
+model answer. Inspect the returned source-card excerpt to verify retrieved
+facts. [Compiled-binary evidence](https://github.com/drawmeanelephant/la-famille/blob/master/docs/pack-backed-ask-demo.md) records
+both fixture note titles and deployment-subpath URLs.
+
 ### Optional hybrid retrieval
 
 Lexical BM25-lite ranking remains the default. To opt in to local semantic
@@ -144,6 +178,7 @@ Flags:
   --port int              HTTP port. Default 8090.
   --rag-dir string        Path to the RAG archive directory. Default "rag-archive".
   --output string         Generated site output directory (used for citation URLs). Default "public".
+  --pack string           Verified local Corpus Pack, absolute path; replaces directory inputs.
   --rebuild               Regenerate the RAG archive inline before starting the server.
   --no-browser            Do not try to open the UI in a browser.
   --max-context int       Maximum context characters per request (default 6000).

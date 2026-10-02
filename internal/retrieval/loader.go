@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/tbuddy/la-famille/internal/ragfmt"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/tbuddy/la-famille/internal/ragfmt"
 )
 
 // LoadResult is the success envelope from Load. It records what we found
@@ -82,19 +83,9 @@ func Load(opts LoadOptions) (LoadResult, error) {
 	}
 
 	for _, b := range bundles {
-		for _, f := range b.files {
-			// The archive records directory inventories as <file path="assets/">
-			// blocks whose body is a listing of names and sizes. They are not
-			// documents: chunked as prose they answered questions about the site
-			// with a file listing, ranked ahead of real pages, and carried a
-			// fabricated citation URL like "/assets//" and no title.
-			if strings.HasSuffix(f.path, "/") {
-				result.Corpus.DocumentCount--
-				continue
-			}
-			chunks := chunkFile(f.text, f.path, opts.ContentDir, b.name)
-			result.Corpus.Chunks = append(result.Corpus.Chunks, chunks...)
-		}
+		appendBundle(&result.Corpus, b, func(f parsedFile) []Chunk {
+			return chunkFile(f.text, f.path, opts.ContentDir, b.name)
+		})
 	}
 
 	// Enrichment runs AFTER chunking. It rewrites chunks, so running it first —
@@ -107,15 +98,29 @@ func Load(opts LoadOptions) (LoadResult, error) {
 		result.GraphWarnings = loadLinkGraph(&result.Corpus, opts.OutputDir)
 	}
 
-	result.Corpus.ChunkCount = len(result.Corpus.Chunks)
+	return finishLoad(result)
+}
 
+func appendBundle(c *Corpus, b parsedBundle, chunk func(parsedFile) []Chunk) {
+	for _, f := range b.files {
+		// Directory inventories are not documents and must not be cited.
+		if strings.HasSuffix(f.path, "/") {
+			c.DocumentCount--
+			continue
+		}
+		c.Chunks = append(c.Chunks, chunk(f)...)
+	}
+}
+
+func finishLoad(result LoadResult) (LoadResult, error) {
+	result.Corpus.ChunkCount = len(result.Corpus.Chunks)
 	// Stable ordering for determinism across runs.
 	sort.SliceStable(result.Corpus.Chunks, func(i, j int) bool {
 		return result.Corpus.Chunks[i].ID < result.Corpus.Chunks[j].ID
 	})
 
 	if result.Corpus.ChunkCount == 0 {
-		return result, fmt.Errorf("retrieval: %s produced no chunks (missing or empty)", opts.RagDir)
+		return result, fmt.Errorf("retrieval: %s produced no chunks (missing or empty)", result.Corpus.SourceDir)
 	}
 	return result, nil
 }
@@ -148,20 +153,33 @@ func parseRAGBundle(p string) (parsedBundle, error) {
 	}
 	defer f.Close()
 
+	return parseRAGReader(p, f, false)
+}
+
+// Strict structure checks are used for verified pack payloads. Directory
+// loading retains its historical tolerance.
+func parseRAGReader(p string, r io.Reader, strict bool) (parsedBundle, error) {
 	var out parsedBundle
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 0, 1<<16), 1<<24) // 16 MB
 
 	var (
 		currentFile *parsedFile
 		buf         bytes.Buffer
 		currentPath string
+		contentOpen bool
+		fileClosed  = true
 	)
 
 	scanned := false
 	for scanner.Scan() {
 		scanned = true
 		line := scanner.Text()
+		if strict && (strings.HasPrefix(line, "<content>") || strings.HasPrefix(line, "</content>") ||
+			strings.HasPrefix(line, "</file>")) &&
+			line != "<content>" && line != "</content>" && line != "</file>" {
+			return parsedBundle{}, fmt.Errorf("%s: malformed structural tag", p)
+		}
 
 		switch {
 		case strings.HasPrefix(line, "<file "):
@@ -172,19 +190,37 @@ func parseRAGBundle(p string) (parsedBundle, error) {
 				// rather than silently swallowing blocks.
 				return parsedBundle{}, fmt.Errorf("%s: unterminated <file> block before path=%q", p, currentPath)
 			}
+			if strict && !fileClosed {
+				return parsedBundle{}, fmt.Errorf("%s: missing </file>", p)
+			}
+			fileClosed = false
 			currentFile = &parsedFile{}
 			buf.Reset()
 			attr := extractPathAttr(line)
 			if attr == "" {
 				return parsedBundle{}, fmt.Errorf("%s: missing path attribute on <file>", p)
 			}
+			if strict && line != `<file path="`+attr+`">` {
+				return parsedBundle{}, fmt.Errorf("%s: malformed <file> tag", p)
+			}
 			currentPath = attr
 		case strings.HasPrefix(line, "<content>") && currentFile != nil:
+			if strict && contentOpen {
+				return parsedBundle{}, fmt.Errorf("%s: nested <content>", p)
+			}
+			contentOpen = true
 			buf.Reset()
 			// Re-init the current file so we don't leak partial state from
 			// any earlier lines that pre-date <content>.
 			currentFile = &parsedFile{path: currentPath}
 		case strings.HasPrefix(line, "</content>") && currentFile != nil:
+			if strict && !contentOpen {
+				return parsedBundle{}, fmt.Errorf("%s: </content> without <content>", p)
+			}
+			contentOpen = false
+			if strict && strings.TrimSpace(buf.String()) == "" {
+				return parsedBundle{}, fmt.Errorf("%s: empty content block (path=%q)", p, currentPath)
+			}
 			currentFile.text = buf.String()
 			out.files = append(out.files, *currentFile)
 			currentFile = nil
@@ -193,15 +229,24 @@ func parseRAGBundle(p string) (parsedBundle, error) {
 			if currentFile != nil {
 				return parsedBundle{}, fmt.Errorf("%s: </file> appeared inside an unclosed <content> block (path=%q)", p, currentPath)
 			}
+			if strict && fileClosed {
+				return parsedBundle{}, fmt.Errorf("%s: </file> without <file>", p)
+			}
+			fileClosed = true
 		case strings.HasPrefix(line, "<content>") && currentFile == nil:
 			return parsedBundle{}, fmt.Errorf("%s: <content> outside of <file>", p)
 		case currentFile != nil:
+			if strict && !contentOpen {
+				return parsedBundle{}, fmt.Errorf("%s: expected <content>", p)
+			}
 			if buf.Len() > 0 {
 				buf.WriteByte('\n')
 			}
 			// Undo the write-time escaping so a body line that looks like
 			// archive structure is restored verbatim.
 			buf.WriteString(ragfmt.UnescapeLine(line))
+		case strict && strings.TrimSpace(line) != "":
+			return parsedBundle{}, fmt.Errorf("%s: unexpected text outside <file>", p)
 		}
 	}
 	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
@@ -212,6 +257,9 @@ func parseRAGBundle(p string) (parsedBundle, error) {
 	}
 	if currentFile != nil {
 		return parsedBundle{}, fmt.Errorf("%s: unterminated <file> block at EOF (last path=%q)", p, currentPath)
+	}
+	if strict && !fileClosed {
+		return parsedBundle{}, fmt.Errorf("%s: missing </file> at EOF", p)
 	}
 	return out, nil
 }
@@ -252,15 +300,27 @@ type searchIndexEntry struct {
 }
 
 func enrichCorpusWithSiteMeta(c *Corpus, outputDir string) error {
+	return enrichCorpus(c, func(name string) ([]byte, error) {
+		return os.ReadFile(filepath.Join(outputDir, name))
+	}, false)
+}
+
+func enrichCorpus(c *Corpus, read func(string) ([]byte, error), strict bool) error {
 	// meta.json is a map keyed by page id — {"docs/index": {"title":…, "url":…}}
 	// — which is what internal/sitedata has always written. This used to decode
 	// {"pages":[{id,url,title}]}, a shape the generator never produced; that
 	// unmarshals successfully with Pages nil, so the enrichment silently did
 	// nothing even once it ran in the right order.
-	metaPath := filepath.Join(outputDir, "meta.json")
-	if data, err := os.ReadFile(metaPath); err == nil {
+	if data, err := read("meta.json"); err == nil {
 		var doc map[string]metaEntry
-		if err := json.Unmarshal(data, &doc); err == nil {
+		if err := json.Unmarshal(data, &doc); err != nil {
+			if strict {
+				return fmt.Errorf("meta.json: %w", err)
+			}
+		} else {
+			if strict && doc == nil {
+				return fmt.Errorf("meta.json: expected an object, not null")
+			}
 			for i, ch := range c.Chunks {
 				if ch.PageID == "" {
 					continue
@@ -277,20 +337,28 @@ func enrichCorpusWithSiteMeta(c *Corpus, outputDir string) error {
 				if entry.URL != "" {
 					ch.URL = entry.URL
 				}
-				if entry.Title != "" && ch.Title == "" {
+				if entry.Title != "" && (strict || ch.Title == "") {
 					ch.Title = entry.Title
 				}
 				c.Chunks[i] = ch
 			}
 		}
+	} else if strict && !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
 
 	// search.json: list of items w/ title/URL/tags. Currently only used to
 	// backfill titles when the corpus has none. Cheap to read.
-	searchPath := filepath.Join(outputDir, "search.json")
-	if data, err := os.ReadFile(searchPath); err == nil {
+	if data, err := read("search.json"); err == nil {
 		var entries []searchIndexEntry
-		if err := json.Unmarshal(data, &entries); err == nil {
+		if err := json.Unmarshal(data, &entries); err != nil {
+			if strict {
+				return fmt.Errorf("search.json: %w", err)
+			}
+		} else {
+			if strict && entries == nil {
+				return fmt.Errorf("search.json: expected an array, not null")
+			}
 			titleByURL := map[string]string{}
 			for _, e := range entries {
 				if e.URL != "" {
@@ -306,6 +374,8 @@ func enrichCorpusWithSiteMeta(c *Corpus, outputDir string) error {
 				}
 			}
 		}
+	} else if strict && !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
 	return nil
 }

@@ -1,0 +1,7 @@
+site_name: Meadow Field Guide
+siteurl: https://example.test/field-guide
+content_dir: notes/research
+output_dir: public
+rag_dir: rag-archive
+template: templates/layout.html
+asset_dir: assets

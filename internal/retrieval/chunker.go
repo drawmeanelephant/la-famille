@@ -32,6 +32,10 @@ var pageHeadingRE = regexp.MustCompile(`(?m)^(#{2,4})\s+(.+?)\s*#*\s*$`)
 // — same intent. We treat it as out-of-scope and return nil.
 func chunkFile(text, sourcePath, contentDir, bundleName string) []Chunk {
 	pageID := derivePageID(sourcePath, contentDir)
+	return chunkFileForPage(text, sourcePath, pageID, bundleName)
+}
+
+func chunkFileForPage(text, sourcePath, pageID, bundleName string) []Chunk {
 	renderedURL := pageIDToURL(pageID)
 	kind := sourceKind(bundleName)
 	if !kindIsSiteContent(kind) {
@@ -50,7 +54,7 @@ func chunkFile(text, sourcePath, contentDir, bundleName string) []Chunk {
 
 	// If the file is short and has no headings, produce a single chunk.
 	if !pageHeadingRE.MatchString(body) {
-		id := chunkID(sourcePath, contentDir, 0, "")
+		id := chunkID(pageID, 0, "")
 		return []Chunk{{
 			ID:          id,
 			PageID:      pageID,
@@ -75,7 +79,7 @@ func chunkFile(text, sourcePath, contentDir, bundleName string) []Chunk {
 	// not lose opening prose (frontmatter, lede paragraphs).
 	prelude := body[:matches[0][0]]
 	if strings.TrimSpace(prelude) != "" {
-		id := chunkID(sourcePath, contentDir, position, "")
+		id := chunkID(pageID, position, "")
 		out = append(out, Chunk{
 			ID:         id,
 			PageID:     pageID,
@@ -108,7 +112,7 @@ func chunkFile(text, sourcePath, contentDir, bundleName string) []Chunk {
 			headingTrail = append(headingTrail, headingFromMatch(body, matches[i-1]))
 		}
 
-		id := chunkID(sourcePath, contentDir, position, heading)
+		id := chunkID(pageID, position, heading)
 		out = append(out, Chunk{
 			ID:          id,
 			PageID:      pageID,
@@ -245,8 +249,7 @@ func sourceKind(path string) string {
 // chunkID produces a deterministic chunk identifier. The same input always
 // yields the same ID so reruns (including across Ask sessions) compare
 // cleanly. The slug is computed from the heading text only if non-empty.
-func chunkID(sourcePath, contentDir string, position int, heading string) string {
-	page := derivePageID(sourcePath, contentDir)
+func chunkID(page string, position int, heading string) string {
 	slug := "h0"
 	if heading != "" {
 		slug = "h" + fmt.Sprintf("%d", position+1) + "-" + slugify(heading)

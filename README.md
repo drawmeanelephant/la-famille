@@ -168,6 +168,8 @@ To launch the local-first **Ask This Site** assistant against your corpus:
 ```bash
 go run ./cmd/la-famille rag                # refresh the corpus first
 go run ./cmd/la-famille ask --model llama3.2  # then serve the assistant on 127.0.0.1:8090
+# Or use a verified pack, with no checkout/config or generated directories:
+la-famille ask --pack /absolute/path/corpus.tar --provider fake --no-browser
 ```
 
 > **Note:** `ask` is opt-in and experimental. It binds only to your loopback address, never sends your content off the machine, and never logs prompts or answers by default. See [content/docs/ask.md](content/docs/ask.md) for the full privacy and architecture notes.
