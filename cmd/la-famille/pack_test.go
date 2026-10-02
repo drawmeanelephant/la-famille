@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,6 +102,52 @@ func TestPackCommands(t *testing.T) {
 	if _, err := run("pack", "verify", "result.tar"); err != nil {
 		t.Fatal(err)
 	}
+	targetHash := fmt.Sprintf("%x", sha256.Sum256(target))
+	feed := pack.Feed{
+		SchemaVersion: pack.FeedVersion,
+		Full:          pack.FeedPack{Path: "target.tar", SHA256: targetHash},
+		Deltas:        []pack.FeedDelta{{Path: "delta.tar", BaseSHA256: fmt.Sprintf("%x", sha256.Sum256(baseBytes))}},
+	}
+	writeFeed := func() {
+		t.Helper()
+		data, err := json.Marshal(feed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(root, pack.FeedName), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeFeed()
+	out, err = run("pack", "pull", ".", "--output", "cold.tar")
+	if err != nil || !strings.Contains(out, "mode full") || !strings.Contains(out, targetHash) ||
+		strings.Contains(out, "fallback") {
+		t.Fatalf("cold pull = %q, %v", out, err)
+	}
+	if err := os.Remove(filepath.Join(root, "target.tar")); err != nil {
+		t.Fatal(err)
+	}
+	out, err = run("pack", "pull", ".", "--base", "site.tar", "--output", "pulled.tar")
+	if err != nil || !strings.Contains(out, "mode delta") || !strings.Contains(out, targetHash) ||
+		!strings.Contains(out, "~ rag-content.md") {
+		t.Fatalf("delta pull = %q, %v", out, err)
+	}
+	for _, name := range []string{"cold.tar", "pulled.tar"} {
+		data, err := os.ReadFile(filepath.Join(root, name))
+		if err != nil || !bytes.Equal(data, target) {
+			t.Fatalf("CLI pull %s differs from target: %v", name, err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(root, "target.tar"), target, 0600); err != nil {
+		t.Fatal(err)
+	}
+	feed.Deltas = []pack.FeedDelta{}
+	writeFeed()
+	out, err = run("pack", "pull", ".", "--base", "site.tar", "--output", "fallback.tar")
+	if err != nil || !strings.Contains(out, "full-pack fallback") || !strings.Contains(out, "mode full") ||
+		!strings.Contains(out, "~ rag-content.md") {
+		t.Fatalf("fallback pull = %q, %v", out, err)
+	}
 	for _, args := range [][]string{
 		{"pack", "build"}, {"pack", "build", "--output", "site.tar"},
 		{"pack", "build", "--output", "other.tar", "extra"},
@@ -112,6 +160,14 @@ func TestPackCommands(t *testing.T) {
 		{"pack", "apply", "target.tar", "delta.tar", "--output", "wrong.tar"},
 		{"pack", "apply", "site.tar", "delta.tar", "--output", "result.tar"},
 		{"pack", "apply", "site.tar", "missing.tar", "--output", "missing-result.tar"},
+		{"pack", "pull"}, {"pack", "pull", "."},
+		{"pack", "pull", ".", "--output="},
+		{"pack", "pull", ".", "--base=", "--output", "other.tar"},
+		{"pack", "pull", ".", "extra", "--output", "other.tar"},
+		{"pack", "pull", "missing-feed", "--output", "other.tar"},
+		{"pack", "pull", ".", "--base", "missing.tar", "--output", "other.tar"},
+		{"pack", "pull", ".", "--output", "cold.tar"},
+		{"pack", "pull", ".", "--base", "site.tar", "--output", "site.tar"},
 	} {
 		if _, err := run(args...); err == nil {
 			t.Fatalf("args %v succeeded unexpectedly", args)
@@ -129,6 +185,7 @@ func TestPackVerifyIndependentOfBrokenConfig(t *testing.T) {
 		{"pack", "verify", "missing.tar"}, {"pack", "build", "--output", "site.tar"},
 		{"pack", "diff", "missing.tar", "target.tar", "--output", "delta.tar"},
 		{"pack", "apply", "missing.tar", "delta.tar", "--output", "result.tar"},
+		{"pack", "pull", "missing-feed", "--output", "result.tar"},
 	} {
 		cmd, st := setupRootCmdState(config.DefaultConfig())
 		guardUnusableConfig(cmd, st, errors.New("broken site config"))

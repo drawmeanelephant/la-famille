@@ -8,6 +8,8 @@ description: "Package existing public corpus artifacts deterministically and ver
 
 For member-level updates to existing v1 packs, see
 [Local Diff and Apply](corpus-pack-deltas.md). The v1 format below is unchanged.
+For subscriber-only acquisition and updates, see
+[Pull from a Local Feed](corpus-pack-feeds.md).
 
 This is Phase 1 of [#583](https://github.com/drawmeanelephant/la-famille/issues/583),
 tracked by [milestone 6](https://github.com/drawmeanelephant/la-famille/milestone/6)

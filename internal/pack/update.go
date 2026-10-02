@@ -81,6 +81,10 @@ func Apply(baseFile, deltaFile, destination string) (Manifest, error) {
 		return Manifest{}, fmt.Errorf("delta: %w", err)
 	}
 	defer delta.close()
+	return applySnapshots(base, delta, d, destination, "")
+}
+
+func applySnapshots(base, delta *snapshot, d DeltaMetadata, destination, targetSHA256 string) (Manifest, error) {
 	if base.hash != d.BaseSHA256 {
 		return Manifest{}, fmt.Errorf("wrong base SHA256: expected %s, actual %s", d.BaseSHA256, base.hash)
 	}
@@ -89,7 +93,7 @@ func Apply(baseFile, deltaFile, destination string) (Manifest, error) {
 		!slices.Equal(changes.Removed, d.Removed) {
 		return Manifest{}, fmt.Errorf("delta inventory does not match base and target manifests")
 	}
-	err = publishArchive(destination, func(w io.Writer) error {
+	err := publishArchive(destination, func(w io.Writer) error {
 		writer := tar.NewWriter(w)
 		if err := writeJSONMember(writer, ManifestName, delta.manifestJSON); err != nil {
 			return err
@@ -105,13 +109,30 @@ func Apply(baseFile, deltaFile, destination string) (Manifest, error) {
 		}
 		return writer.Close()
 	}, func(r io.Reader) error {
-		_, err := Verify(r)
-		return err
+		return verifyTargetArchive(r, targetSHA256)
 	})
 	if err != nil {
 		return Manifest{}, err
 	}
 	return delta.manifest, nil
+}
+
+// The advertised identity is checked on the same bytes that were verified,
+// before publication. Local apply has no advertised archive digest.
+func verifyTargetArchive(r io.Reader, expected string) error {
+	if expected == "" {
+		_, err := Verify(r)
+		return err
+	}
+	hash := sha256.New()
+	if _, err := Verify(io.TeeReader(r, hash)); err != nil {
+		return err
+	}
+	actual := fmt.Sprintf("%x", hash.Sum(nil))
+	if actual != expected {
+		return fmt.Errorf("target archive SHA256 mismatch: expected %s, actual %s", expected, actual)
+	}
+	return nil
 }
 
 func writeJSONMember(w *tar.Writer, name string, data []byte) error {

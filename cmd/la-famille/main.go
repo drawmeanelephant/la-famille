@@ -516,7 +516,7 @@ func requiresSiteConfig(cmd *cobra.Command) bool {
 		return false
 	}
 	for c := cmd; c != nil && c.HasParent(); c = c.Parent() {
-		if c.Parent().Name() == "pack" && (c.Name() == "verify" || c.Name() == "diff" || c.Name() == "apply") {
+		if c.Parent().Name() == "pack" && (c.Name() == "verify" || c.Name() == "diff" || c.Name() == "apply" || c.Name() == "pull") {
 			return false
 		}
 		if configIndependentCommands[c.Name()] {

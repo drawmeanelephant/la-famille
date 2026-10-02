@@ -12,6 +12,8 @@ Tracking: [milestone 7](https://github.com/drawmeanelephant/la-famille/milestone
 [#613](https://github.com/drawmeanelephant/la-famille/issues/613) and
 [#614](https://github.com/drawmeanelephant/la-famille/issues/614).
 The [full pack v1 format](corpus-packs.md) and build/verify commands are unchanged.
+Subscribers can select and consume these deltas using
+[Pull from a Local Feed](corpus-pack-feeds.md).
 
 ## Commands and member boundary
 
