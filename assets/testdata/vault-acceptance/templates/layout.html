@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="la-famille-base-path" content="{{.Site.BasePath}}">
+  <title>{{.Title}}</title>
+  <script src="{{.Site.BasePath}}/assets/js/search.js" defer></script>
+</head>
+<body>
+  <nav>{{range .Site.SiteLinks}}<a href="{{.URL}}">{{.Label}}</a> {{end}}</nav>
+  <label for="site-search">Search notes</label>
+  <input id="site-search" type="search">
+  <ul id="search-results-list" class="hidden"></ul>
+  <main>{{.Content}}</main>
+</body>
+</html>

@@ -359,10 +359,12 @@ func TestRunExport_HonoursConfiguredDirectories(t *testing.T) {
 }
 
 func TestRunExportExcludesUnpublishedNotes(t *testing.T) {
+	const canary = "VAULT582_UNPUBLISHED_BODY_CANARY_4d1f9a"
 	projectRoot := t.TempDir()
 	contentDir := filepath.Join(projectRoot, "vault")
 	writeExportTestFile(t, filepath.Join(contentDir, "public.md"), "---\ntitle: Public\n---\nPublic note.")
-	writeExportTestFile(t, filepath.Join(contentDir, "private.md"), "---\ntitle: Private\npublish: false\n---\nPrivate note.")
+	writeExportTestFile(t, filepath.Join(contentDir, "private.md"), "---\ntitle: Private\npublish: false\n---\n"+canary)
+	writeExportTestFile(t, filepath.Join(contentDir, "private-raw.md"), "---\ntitle: Private Raw\nrender: false\npublish: false\n---\n"+canary)
 	writeExportTestFile(t, filepath.Join(contentDir, "private.md-copy.md"), "---\ntitle: Public Copy\n---\nPublic note with a similar path.")
 
 	ragDir := filepath.Join(t.TempDir(), "rag-archive")
@@ -386,7 +388,8 @@ func TestRunExportExcludesUnpublishedNotes(t *testing.T) {
 	if !strings.Contains(got, `<file path="vault/private.md-copy.md">`) {
 		t.Errorf("content bundle is missing a published note with a similar path:\n%s", got)
 	}
-	if strings.Contains(got, `<file path="vault/private.md">`) || strings.Contains(got, "Private note.") {
+	if strings.Contains(got, `<file path="vault/private.md">`) ||
+		strings.Contains(got, `<file path="vault/private-raw.md">`) || strings.Contains(got, canary) {
 		t.Errorf("content bundle includes an unpublished note:\n%s", got)
 	}
 }

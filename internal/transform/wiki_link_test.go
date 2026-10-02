@@ -110,6 +110,65 @@ func TestResolveWikiTargetRejectsAmbiguousTitles(t *testing.T) {
 	}
 }
 
+func TestExcludedLinksDoNotStopTargetTraversal(t *testing.T) {
+	for _, first := range []string{"[[Private|first label]]", "[first label](private.md)"} {
+		t.Run(first, func(t *testing.T) {
+			excluded := false
+			missing := make(map[string][]string)
+			backlinks := make(map[string][]string)
+			g := &graph.Graph{Nodes: make(map[string]graph.Node)}
+			transformer := &LinkTransformer{
+				CurrentFile: "index.md",
+				FileMap: map[string]*content.FileMeta{
+					"index.md":   {Title: "Home"},
+					"private.md": {Title: "Private", Publish: &excluded},
+					"public.md":  {Title: "Public"},
+				},
+				MissingFiles:  missing,
+				MissingTitles: make(map[string]string),
+				Backlinks:     backlinks,
+				Graph:         g,
+			}
+			engine := goldmark.New(goldmark.WithParserOptions(
+				parser.WithASTTransformers(util.Prioritized(transformer, 100)),
+				parser.WithInlineParsers(util.Prioritized(&WikiLinkParser{}, 150)),
+			))
+			var output bytes.Buffer
+			source := first + " [[Private|wiki label]] [markdown label](private.md) " +
+				"[[Public|public wiki]] [public markdown](public.md) [[Missing|future note]]"
+			if err := engine.Convert([]byte(source), &output); err != nil {
+				t.Fatal(err)
+			}
+			for _, label := range []string{"first label", "wiki label", "markdown label"} {
+				if !strings.Contains(output.String(), label) {
+					t.Errorf("excluded link label %q was lost: %s", label, output.String())
+				}
+			}
+			if strings.Contains(output.String(), `href="private`) {
+				t.Errorf("excluded target still linked: %s", output.String())
+			}
+			for _, want := range []string{
+				`href="public/">public wiki</a>`,
+				`href="public/">public markdown</a>`,
+				`href="missing/">future note</a>`,
+			} {
+				if !strings.Contains(output.String(), want) {
+					t.Errorf("link after exclusion missing %q: %s", want, output.String())
+				}
+			}
+			if len(g.Edges) != 3 || !containsEdge(g.Edges, [2]string{"index", "missing"}) {
+				t.Errorf("graph edges = %v, want only two public edges and one missing edge", g.Edges)
+			}
+			if _, exists := backlinks["private"]; exists {
+				t.Error("excluded target has backlinks")
+			}
+			if len(missing) != 1 || len(missing["missing.md"]) != 1 {
+				t.Errorf("missing targets = %v, want only missing.md", missing)
+			}
+		})
+	}
+}
+
 func containsEdge(edges [][2]string, want [2]string) bool {
 	for _, edge := range edges {
 		if edge == want {

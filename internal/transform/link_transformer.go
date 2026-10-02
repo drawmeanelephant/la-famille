@@ -34,6 +34,7 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, _ pa
 		sourceID = t.CurrentFile
 	}
 
+	var excludedLinks []*ast.Link
 	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
@@ -42,7 +43,9 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, _ pa
 		if link, ok := n.(*ast.Link); ok {
 			dest := string(link.Destination)
 			if target, heading, isWikiLink := ParseWikiLinkDestination(dest); isWikiLink {
-				t.transformWikiLink(link, target, heading)
+				if t.transformWikiLink(link, target, heading) {
+					excludedLinks = append(excludedLinks, link)
+				}
 				return ast.WalkContinue, nil
 			}
 			u, err := url.Parse(dest)
@@ -75,7 +78,7 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, _ pa
 			// Check file map
 			meta, exists := t.FileMap[targetRelPath]
 			if exists && !content.IsPublished(meta) {
-				unwrapWikiLink(link)
+				excludedLinks = append(excludedLinks, link)
 				return ast.WalkContinue, nil
 			}
 
@@ -177,6 +180,11 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, _ pa
 
 		return ast.WalkContinue, nil
 	})
+	// Removing a node during ast.Walk detaches its next sibling and can end
+	// traversal early. Keep all links in place until every target is scanned.
+	for _, link := range excludedLinks {
+		unwrapWikiLink(link)
+	}
 	if reader != nil && t.WikiHeadingTargets != nil {
 		t.addWikiHeadingIDs(node, reader.Source())
 	}
@@ -210,13 +218,14 @@ func (t *LinkTransformer) addWikiHeadingIDs(node ast.Node, source []byte) {
 	})
 }
 
-func (t *LinkTransformer) transformWikiLink(link *ast.Link, target, heading string) {
+// transformWikiLink returns true when the caller must unwrap an excluded link
+// after the AST walk completes.
+func (t *LinkTransformer) transformWikiLink(link *ast.Link, target, heading string) bool {
 	targetRelPath, meta, exists := ResolveWikiTarget(t.CurrentFile, target, t.FileMap)
 	if !exists {
 		targetRelPath = UnresolvedWikiTargetPath(t.CurrentFile, target)
 	} else if !content.IsPublished(meta) {
-		unwrapWikiLink(link)
-		return
+		return true
 	}
 
 	targetID := strings.TrimSuffix(targetRelPath, ".md")
@@ -268,7 +277,7 @@ func (t *LinkTransformer) transformWikiLink(link *ast.Link, target, heading stri
 	}
 	relative, err := filepath.Rel(currentDir, targetOut)
 	if err != nil {
-		return
+		return false
 	}
 	if targetRender && strings.HasSuffix(filepath.ToSlash(relative), "index.html") {
 		relative = strings.TrimSuffix(filepath.ToSlash(relative), "index.html")
@@ -279,6 +288,7 @@ func (t *LinkTransformer) transformWikiLink(link *ast.Link, target, heading stri
 	destination := url.URL{Path: filepath.ToSlash(relative)}
 	destination.Fragment = WikiHeadingFragment(heading)
 	link.Destination = []byte(destination.String())
+	return false
 }
 
 func (t *LinkTransformer) sourceID() string {
