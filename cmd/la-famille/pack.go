@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -10,7 +11,7 @@ import (
 
 func setupPackCmd(cfg config.Config) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "pack", Short: "Build and verify content-only Corpus Packs",
+		Use: "pack", Short: "Build, verify, diff, and apply content-only Corpus Packs",
 	}
 	var outputDir, ragDir, destination string
 	build := &cobra.Command{
@@ -58,6 +59,60 @@ func setupPackCmd(cfg config.Config) *cobra.Command {
 			return err
 		},
 	}
-	cmd.AddCommand(build, verify)
+	cmd.AddCommand(build, verify, setupPackDiffCmd(cfg), setupPackApplyCmd(cfg))
+	return cmd
+}
+
+func setupPackDiffCmd(cfg config.Config) *cobra.Command {
+	var destination string
+	var jsonOutput bool
+	cmd := &cobra.Command{
+		Use:   "diff <before.tar> <after.tar> --output <delta.tar>",
+		Short: "Compare verified packs and write a member-level delta",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			report, err := pack.Diff(
+				resolveProjectPath(cfg.ProjectRoot, args[0]),
+				resolveProjectPath(cfg.ProjectRoot, args[1]),
+				resolveProjectPath(cfg.ProjectRoot, destination))
+			if err != nil {
+				return err
+			}
+			if jsonOutput {
+				encoder := json.NewEncoder(cmd.OutOrStdout())
+				encoder.SetIndent("", "  ")
+				return encoder.Encode(report)
+			}
+			_, err = fmt.Fprint(cmd.OutOrStdout(), report.Summary())
+			return err
+		},
+	}
+	cmd.Flags().StringVarP(&destination, "output", "o", "", "New delta file, must not already exist")
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Write the structured member and Ledger comparison as JSON")
+	_ = cmd.MarkFlagRequired("output")
+	return cmd
+}
+
+func setupPackApplyCmd(cfg config.Config) *cobra.Command {
+	var destination string
+	cmd := &cobra.Command{
+		Use:   "apply <base.tar> <delta.tar> --output <result.tar>",
+		Short: "Verify and apply a local delta into a new pack",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			manifest, err := pack.Apply(
+				resolveProjectPath(cfg.ProjectRoot, args[0]),
+				resolveProjectPath(cfg.ProjectRoot, args[1]),
+				resolveProjectPath(cfg.ProjectRoot, destination))
+			if err != nil {
+				return err
+			}
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Applied pack %s: %d members, content root %s\n",
+				destination, len(manifest.Members), manifest.ContentRoot)
+			return err
+		},
+	}
+	cmd.Flags().StringVarP(&destination, "output", "o", "", "New result pack file, must not already exist")
+	_ = cmd.MarkFlagRequired("output")
 	return cmd
 }

@@ -30,74 +30,104 @@ func VerifyFile(name string) (Manifest, error) {
 // individually so archive/tar cannot consume hidden PAX/GNU extension records
 // before their type and size have been checked.
 func Verify(input io.Reader) (Manifest, error) {
-	r := io.LimitReader(input, MaxArchiveSize+1)
+	manifest, _, _, err := verifyPack(input)
+	return manifest, err
+}
+
+// countingReader locates payload bytes in the same stream being verified.
+type countingReader struct {
+	io.Reader
+	offset int64
+}
+
+func (r *countingReader) Read(p []byte) (int, error) {
+	n, err := r.Reader.Read(p)
+	r.offset += int64(n)
+	return n, err
+}
+
+func verifyPack(input io.Reader) (Manifest, []byte, map[string]int64, error) {
+	r := &countingReader{Reader: io.LimitReader(input, MaxArchiveSize+1)}
 	header, err := nextHeader(r)
 	if err != nil {
-		return Manifest{}, fmt.Errorf("read pack manifest header: %w", err)
+		return Manifest{}, nil, nil, fmt.Errorf("read pack manifest header: %w", err)
 	}
 	if header.Name != ManifestName || header.Size > MaxManifestSize {
-		return Manifest{}, fmt.Errorf("first member must be %s, at most %d bytes", ManifestName, MaxManifestSize)
+		return Manifest{}, nil, nil, fmt.Errorf("first member must be %s, at most %d bytes", ManifestName, MaxManifestSize)
 	}
 	data, err := io.ReadAll(io.LimitReader(r, header.Size))
 	if err != nil {
-		return Manifest{}, err
+		return Manifest{}, nil, nil, err
 	}
 	if int64(len(data)) != header.Size {
-		return Manifest{}, fmt.Errorf("truncated manifest")
+		return Manifest{}, nil, nil, fmt.Errorf("truncated manifest")
 	}
 	if err := readPadding(r, header.Size); err != nil {
-		return Manifest{}, err
+		return Manifest{}, nil, nil, err
 	}
 	manifest, err := parseManifest(data)
 	if err != nil {
-		return Manifest{}, err
+		return Manifest{}, nil, nil, err
 	}
-	listed := make(map[string]Member, len(manifest.Members))
-	for _, member := range manifest.Members {
+	offsets, err := verifyMembers(r, manifest.Members, ManifestName)
+	if err != nil {
+		return Manifest{}, nil, nil, err
+	}
+	return manifest, data, offsets, nil
+}
+
+func verifyMembers(r *countingReader, members []Member, reserved ...string) (map[string]int64, error) {
+	listed := make(map[string]Member, len(members))
+	for _, member := range members {
 		listed[member.Path] = member
 	}
-	seen := map[string]bool{ManifestName: true}
+	seen := make(map[string]bool, len(members)+len(reserved))
+	for _, name := range reserved {
+		seen[name] = true
+	}
+	offsets := make(map[string]int64, len(members))
 	for {
 		header, err := nextHeader(r)
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return Manifest{}, fmt.Errorf("read pack member header: %w", err)
+			return nil, fmt.Errorf("read pack member header: %w", err)
 		}
 		if seen[header.Name] {
-			return Manifest{}, fmt.Errorf("duplicate archive member %q", header.Name)
+			return nil, fmt.Errorf("duplicate archive member %q", header.Name)
 		}
 		seen[header.Name] = true
 		member, ok := listed[header.Name]
 		if !ok {
-			return Manifest{}, fmt.Errorf("unlisted archive member %q", header.Name)
+			return nil, fmt.Errorf("unlisted archive member %q", header.Name)
 		}
 		if header.Size != member.Size {
-			return Manifest{}, fmt.Errorf("member %q size mismatch: expected %d, actual %d", member.Path, member.Size, header.Size)
+			return nil, fmt.Errorf("member %q size mismatch: expected %d, actual %d", member.Path, member.Size, header.Size)
 		}
+		offsets[member.Path] = r.offset
 		hash := sha256.New()
 		size, err := io.Copy(hash, io.LimitReader(r, header.Size))
 		if err != nil {
-			return Manifest{}, fmt.Errorf("read member %q: %w", member.Path, err)
+			return nil, fmt.Errorf("read member %q: %w", member.Path, err)
 		}
 		if size != member.Size {
-			return Manifest{}, fmt.Errorf("member %q size mismatch: expected %d, actual %d (truncated)", member.Path, member.Size, size)
+			return nil, fmt.Errorf("member %q size mismatch: expected %d, actual %d (truncated)", member.Path, member.Size, size)
 		}
 		actual := fmt.Sprintf("%x", hash.Sum(nil))
 		if actual != member.SHA256 {
-			return Manifest{}, fmt.Errorf("member %q SHA256 mismatch: expected %s, actual %s", member.Path, member.SHA256, actual)
+			return nil, fmt.Errorf("member %q SHA256 mismatch: expected %s, actual %s", member.Path, member.SHA256, actual)
 		}
 		if err := readPadding(r, size); err != nil {
-			return Manifest{}, fmt.Errorf("member %q: %w", member.Path, err)
+			return nil, fmt.Errorf("member %q: %w", member.Path, err)
 		}
 	}
-	for _, member := range manifest.Members {
+	for _, member := range members {
 		if !seen[member.Path] {
-			return Manifest{}, fmt.Errorf("missing archive member %q", member.Path)
+			return nil, fmt.Errorf("missing archive member %q", member.Path)
 		}
 	}
-	return manifest, nil
+	return offsets, nil
 }
 
 func nextHeader(r io.Reader) (*tar.Header, error) {
