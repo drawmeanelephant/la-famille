@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tbuddy/la-famille/internal/config"
@@ -11,28 +16,18 @@ import (
 
 func setupPackCmd(cfg config.Config) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "pack", Short: "Build, verify, diff, apply, and pull content-only Corpus Packs",
+		Use: "pack", Short: "Build, verify, publish, pull, and watch content-only Corpus Packs",
 	}
 	var outputDir, ragDir, destination string
 	build := &cobra.Command{
 		Use: "build --output <pack.tar>", Short: "Package existing public artifacts and rag-content.md",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			info := currentBuildInfo()
-			provenance := pack.Provenance{
-				Generator: "la-famille", Version: info.Version, Target: info.Target, GoVersion: info.GoVersion,
-			}
-			if info.Commit != "unknown" {
-				provenance.Commit = info.Commit
-			}
-			if info.BuildDate != "unknown" {
-				provenance.BuildDate = info.BuildDate
-			}
 			manifest, err := pack.Build(pack.BuildOptions{
 				OutputDir:  resolveProjectPath(cfg.ProjectRoot, outputDir),
 				RagDir:     resolveProjectPath(cfg.ProjectRoot, ragDir),
 				Site:       pack.Site{Name: cfg.SiteName, URL: cfg.SiteURL},
-				Provenance: provenance,
+				Provenance: packProvenance(),
 			}, resolveProjectPath(cfg.ProjectRoot, destination))
 			if err != nil {
 				return err
@@ -59,15 +54,18 @@ func setupPackCmd(cfg config.Config) *cobra.Command {
 			return err
 		},
 	}
-	cmd.AddCommand(build, verify, setupPackDiffCmd(cfg), setupPackApplyCmd(cfg), setupPackPullCmd(cfg))
+	cmd.AddCommand(build, verify, setupPackDiffCmd(cfg), setupPackApplyCmd(cfg), setupPackPullCmd(cfg),
+		setupPackPublishCmd(cfg), setupPackWatchCmd(cfg))
 	return cmd
 }
 
 func setupPackPullCmd(cfg config.Config) *cobra.Command {
 	var base, destination string
+	var allowHTTPS, traceHTTP bool
+	var timeout time.Duration
 	cmd := &cobra.Command{
-		Use:   "pull <feed-directory> --output <new-pack.tar>",
-		Short: "Pull a verified local feed, optionally updating an exact base by delta",
+		Use:   "pull <feed-directory-or-HTTPS-manifest> --output <new-pack.tar>",
+		Short: "Pull a verified feed, optionally updating an exact base by delta",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.Flags().Changed("base") && base == "" {
@@ -76,11 +74,20 @@ func setupPackPullCmd(cfg config.Config) *cobra.Command {
 			if destination == "" {
 				return fmt.Errorf("--output requires a new pack path")
 			}
-			result, err := pack.Pull(
-				resolveProjectPath(cfg.ProjectRoot, args[0]),
+			if timeout <= 0 {
+				return fmt.Errorf("--timeout must be positive")
+			}
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			result, err := pack.PullContext(ctx,
+				packFeedSource(cfg, args[0]),
 				resolveProjectPath(cfg.ProjectRoot, base),
-				resolveProjectPath(cfg.ProjectRoot, destination))
+				resolveProjectPath(cfg.ProjectRoot, destination),
+				pack.RemoteOptions{AllowHTTPS: allowHTTPS, Timeout: timeout, OnTransfer: packTransferReporter(cmd, traceHTTP)})
 			if err != nil {
+				if ctx.Err() == context.Canceled {
+					return nil
+				}
 				return err
 			}
 			if result.Fallback {
@@ -101,6 +108,9 @@ func setupPackPullCmd(cfg config.Config) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&base, "base", "", "Existing verified base pack (never modified)")
 	cmd.Flags().StringVarP(&destination, "output", "o", "", "New result pack file, must not already exist")
+	cmd.Flags().BoolVar(&allowHTTPS, "allow-https", false, "Explicitly permit public HTTPS feed acquisition")
+	cmd.Flags().BoolVar(&traceHTTP, "trace-http", false, "Report credential-free requested URLs and received body bytes")
+	cmd.Flags().DurationVar(&timeout, "timeout", pack.DefaultRequestTimeout, "Maximum duration of each HTTPS request including body")
 	_ = cmd.MarkFlagRequired("output")
 	return cmd
 }

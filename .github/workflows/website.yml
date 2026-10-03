@@ -35,10 +35,16 @@ jobs:
           go-version-file: go.mod
       - name: Test website contracts
         run: |
-          go test ./internal/render ./internal/generator ./cmd/la-famille -run 'TestFlagship|TestRepositoryFlagship' -count=1
+          go test ./internal/render ./internal/generator ./cmd/la-famille ./internal/pack -run 'TestFlagship|TestRepositoryFlagship|TestPublish' -count=1
           python3 -B -m unittest discover -s .github/scripts/website -p 'test_*.py'
       - name: Build source compiler
         run: go build -trimpath -o "$RUNNER_TEMP/la-famille" ./cmd/la-famille
+      - name: Restore last successfully published pack history
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/previous-pack-feed
+          key: flagship-pack-feed-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: flagship-pack-feed-
       - name: Build website and content-only corpus
         run: |
           set -euo pipefail
@@ -54,6 +60,13 @@ jobs:
           "$RUNNER_TEMP/la-famille" --project-root "$GITHUB_WORKSPACE" \
             --config "$GITHUB_WORKSPACE/website.yaml" publish-check \
             --site-url "$SITE_URL" --output "$GITHUB_WORKSPACE/public"
+          "$RUNNER_TEMP/la-famille" --project-root "$GITHUB_WORKSPACE" \
+            --config "$GITHUB_WORKSPACE/website.yaml" pack publish \
+            --site-output "$GITHUB_WORKSPACE/public" --rag-dir "$RUNNER_TEMP/flagship-rag" \
+            --previous "$RUNNER_TEMP/previous-pack-feed" --retain 3 \
+            --output "$GITHUB_WORKSPACE/public/corpus-packs"
+          printf '/corpus-packs/pack-feed.json\n  Cache-Control: no-store\n/corpus-packs/packs/*\n  Cache-Control: public, max-age=31536000, immutable\n/corpus-packs/deltas/*\n  Cache-Control: public, max-age=31536000, immutable\n' \
+            >> "$GITHUB_WORKSPACE/public/_headers"
       - uses: actions/upload-artifact@v7
         with:
           name: flagship-website
@@ -89,3 +102,10 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy public --project-name "${{ env.PAGES_PROJECT }}" --branch "${{ steps.pages_project.outputs.production_branch }}"
+      - name: Retain history only after successful production publication
+        run: cp -R public/corpus-packs "$RUNNER_TEMP/previous-pack-feed"
+      - name: Save published pack history
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/previous-pack-feed
+          key: flagship-pack-feed-${{ github.run_id }}-${{ github.run_attempt }}

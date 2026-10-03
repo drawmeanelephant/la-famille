@@ -185,7 +185,7 @@ The commands above will get you started, but La Famille has a lot more to offer.
 *   **[RAG Export Guide](content/docs/rag.md)**
 *   **[Corpus Packs v1: Build and Verify](content/docs/corpus-packs.md)**
 *   **[Corpus Packs: Local Diff and Apply](content/docs/corpus-pack-deltas.md)**
-*   **[Corpus Packs: Pull from a Local Feed](content/docs/corpus-pack-feeds.md)**
+*   **[Corpus Packs: Publish, Pull, and Watch](content/docs/corpus-pack-feeds.md)**
 *   **[Ask This Site Guide](content/docs/ask.md)**
 *   **[Change Ledger Guide](content/docs/change-ledger.md)**
 *   **[How the Generator Works](content/docs/generator.md)**
