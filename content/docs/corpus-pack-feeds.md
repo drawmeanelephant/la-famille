@@ -1,18 +1,16 @@
 ---
-date: "2026-10-02"
-title: "Corpus Packs: Pull from a Local Feed"
-description: "Obtain a verified corpus from a local directory and update a new pack by an exact-base delta."
+date: "2026-10-03"
+title: "Corpus Packs: Publish, Pull, and Watch"
+description: "Publish content-only feeds and safely subscribe over local directories or opt-in HTTPS."
 ---
 
-# Corpus Packs: Pull from a Local Feed
+# Corpus Packs: Publish, Pull, and Watch
 
-A subscriber needs only the `la-famille` binary and a local feed directory,
+A subscriber needs only the `la-famille` binary and a feed source,
 not the publisher's source checkout, configuration, templates, public output,
-or a site build. This bounded milestone under
-[#583](https://github.com/drawmeanelephant/la-famille/issues/583) is tracked by
-[milestone 9](https://github.com/drawmeanelephant/la-famille/milestone/9),
-[#623](https://github.com/drawmeanelephant/la-famille/issues/623) and
-[#624](https://github.com/drawmeanelephant/la-famille/issues/624).
+or a site build. The HTTPS and watch finishing slice is tracked by
+[#626](https://github.com/drawmeanelephant/la-famille/issues/626) under
+[#583](https://github.com/drawmeanelephant/la-famille/issues/583).
 It reuses the existing [v1 pack format](corpus-packs.md),
 [local deltas](corpus-pack-deltas.md), and [pack-backed Ask](ask.md).
 
@@ -28,8 +26,9 @@ la-famille ask --pack /absolute/path/subscriber-v2.tar --provider fake --no-brow
 `--output` (`-o`) is required. Its parent directory must exist and its
 destination must be new. Existing files, directories, symlinks, and the base
 are never overwritten, including destinations created concurrently.
-In-place updates are deferred. Feed, base and output arguments are local paths;
-relative arguments resolve against the selected project root (the current
+Pull does not perform in-place updates. Base and output arguments are local
+paths; a feed is a local directory unless HTTPS is explicitly enabled.
+Relative paths resolve against the selected project root (the current
 directory by default). Pull needs no usable site configuration.
 
 Without `--base`, pull verifies and copies the current full archive
@@ -83,18 +82,42 @@ its base and target manifest; pull additionally checks the reconstructed
 **archive** digest against `full.sha256`. The v1 feed does not require a
 separate delta archive digest.
 
-Prepare packs and deltas at the publisher using existing commands:
+Generate the manifest, hashes, canonical pack and available deltas automatically:
 
 ```bash
-la-famille pack build --output /path/to/feed/packs/current.tar
-la-famille pack diff previous.tar /path/to/feed/packs/current.tar \
-  --output /path/to/feed/deltas/from-previous.tar
+la-famille build
+la-famille rag
+la-famille pack publish --output /path/to/feed-v1
+# After editing and rebuilding/exporting at the publisher:
+la-famille pack publish --previous /path/to/feed-v1 \
+  --retain 3 --output /path/to/feed-v2
 ```
 
-The inputs must already have been built/exported at the publisher. Create the
-feed JSON yourself using archive SHA256 values (for example,
-`shasum -a 256 <archive>`); there is no feed publishing command or automatic
-publisher. Publish a consistent manifest and its artifacts before pulling.
+The output directory must be new. `--site-output` and `--rag-dir` select the
+existing generated inputs. The publisher never scans source or includes
+`rag-system.md`, `rag-config.md`, credentials, caches, or arbitrary directories.
+Full names are `packs/<archive-sha256>.tar`; delta names include exact base and
+target identities. Artifact bytes never change under the same name.
+
+Retention defaults to three full versions and at most two deltas to the current
+target (`--retain` accepts 1–8). Prior versions are verified, copied byte-for-byte,
+and each generated delta is round-trip checked before advertising it.
+The manifest is written last. Repeated publication with identical inputs and
+binary provenance is deterministic. Missing history, a missing prior manifest,
+or missing retained packs produces a full-only or reduced-history feed;
+corrupt available history fails instead of publishing an inconsistent feed.
+Subscribers older than retained history use explicit full fallback.
+
+The existing flagship website workflow publishes the entire consistent Pages
+artifact, including `/corpus-packs/pack-feed.json`. It restores the last
+successfully deployed history from the existing GitHub Actions cache and saves
+new history **only after successful production publication**. Cache eviction
+(including GitHub's inactivity/quota eviction) is an expected missing-baseline
+case, not a reason to fail a cold publication. PR builds cannot save production
+history. The production environment approval and existing hosting are unchanged.
+The manifest uses `Cache-Control: no-store`; hash-named archives are immutable
+cache entries. Versions outside bounded retention can return 404, but their
+names are never reused with other bytes.
 
 **Canonical v1 builder packs are the supported delta round-trip source.**
 Delta application retains target manifest/payload bytes but writes canonical
@@ -135,6 +158,88 @@ regular and link-free, even when unselected. Missing unselected archives
 are allowed. Only selected archives must exist and are opened/read; checking
 unselected paths inspects filesystem metadata, not archive payloads.
 
+## Explicit HTTPS subscription
+
+```bash
+la-famille pack pull https://publisher.example/corpus-packs/pack-feed.json \
+  --allow-https --trace-http --output subscriber-v1.tar
+la-famille pack pull https://publisher.example/corpus-packs/pack-feed.json \
+  --allow-https --trace-http --base subscriber-v1.tar --output subscriber-v2.tar
+```
+
+The URL must name `pack-feed.json`. Remote acquisition requires `--allow-https`;
+HTTP, URL credentials, queries, fragments and nonstandard ports are rejected.
+Members resolve from the original manifest's directory, even after redirects.
+Every redirect must stay HTTPS, on the identical origin and within that
+directory. Traversal, URL escapes, symlink-like URL tricks, downgrade and
+cross-origin redirects fail. HTTPS member names additionally reject `%`, `?`
+and `#`; the local path contract is unchanged.
+
+TLS certificates are verified normally. No cookies, authorization headers,
+proxy settings or credentials are used. Every DNS result must be public;
+loopback, private, link-local, multicast, reserved and IPv6 translation/tunnel
+addresses are rejected. Sockets connect directly to a validated address,
+preventing DNS re-resolution/rebinding bypasses. The same policy covers
+redirects and later connections.
+
+Each request, including body transfer, has a two-minute default deadline
+(`--timeout`); dialing and TLS handshake are bounded to ten seconds and
+response headers to fifteen seconds. Headers are bounded to 32 KiB.
+There are at most three redirects per request and 64 requests per pull/poll.
+Uncompressed body bytes retain the feed/archive limits above. Interrupt and
+termination signals cancel requests and exit cleanly. Error output does not
+include server bodies, corpus text, or credential-bearing URLs.
+Optional `--trace-http` records requested URLs, status codes and received body
+bytes, including redirects, not TLS framing. A matching delta request replaces
+the full target request; there is no claim of page-sized transfer.
+
+## Durable watch
+
+```bash
+la-famille pack watch https://publisher.example/corpus-packs/pack-feed.json \
+  --allow-https --state /path/to/subscriber --interval 30s --trace-http
+# Local directory feeds use the same command without --allow-https.
+```
+
+`--state` and a positive `--interval` are required. Watch polls immediately,
+then waits the configured interval after each poll. A normal fast publication
+is detected at the next poll; transfer duration and errors can delay completion.
+Polls do not overlap. Watch needs no usable site configuration.
+
+Verified versions are immutable `packs/<sha256>.tar` files. `current.json`
+contains the schema version, exact archive hash and relative path of the current
+verified pack. Watch syncs the new archive and version directory, then atomically
+replaces and syncs the metadata. The previous verified version is never modified.
+Use this pointer to select a pack for Ask:
+
+```bash
+CURRENT=$(python3 -c 'import json; print(json.load(open("/path/to/subscriber/current.json"))["path"])')
+la-famille pack verify "/path/to/subscriber/$CURRENT"
+la-famille ask --pack "/path/to/subscriber/$CURRENT" \
+  --provider ollama --model <installed-local-model> --no-browser
+```
+
+An already-running Ask keeps its own verified snapshot. Restart it with the new
+pack to consume a watch update. Watch's unchanged polls fetch only the manifest,
+not a full archive or delta, do not rewrite the pointer, and emit no false changes.
+Updates report member additions/changes/removals and named pages through the
+existing Ledger when both packs support it. Otherwise page semantics are
+explicitly unavailable; members remain the transfer unit.
+
+Missing, truncated, corrupt, wrong-base or target-mismatched selected deltas,
+interrupted requests and publication races preserve the last verified current
+pack. Watch reports failure and retries on the next poll, never silently
+falling back for a broken selected delta. A verified orphan left by a process
+stopping between archive and pointer publication can be reused on restart.
+Corrupt subscriber state fails safely rather than being silently replaced.
+
+One watcher owns each state directory through `.watch-lock`. Clean cancellation
+removes the lock. After a crash, confirm that no process still owns the directory
+before manually removing a stale lock. Subscriber versions are not automatically
+deleted; operators may remove noncurrent versions only when no reader needs them.
+The state filesystem must support hard links, atomic file replacement and
+directory sync.
+
 ## Verification and publication
 
 Full/base/delta verification captures the bytes into private, bounded opaque
@@ -162,9 +267,13 @@ target unavailable and no subscriber source checkout or build.
 The fake provider's prose is synthetic; the updated fact is checked in the
 retrieved citation excerpt.
 
-HTTPS, Git-ref sources, timers/watch, automatic publishing, signatures,
-compression, per-page chunks, in-place updates, deployments, releases,
-model benchmarks, and adoption evidence are not included. After the reviewed
-PR merges, close #623, #624 and milestone 9. Leave #583 open for later
-transport/watch work. New ideas belong in separate issues, not extra closure
-criteria.
+The [finishing demonstration and operator checklist](https://github.com/drawmeanelephant/la-famille/blob/master/docs/corpus-pack-https-watch-demo.md)
+separates automated/local evidence from the still-required hosted HTTPS and real
+Ollama factual-answer evidence. Do not close #626 or #583 until the implementation
+is merged and that evidence is accepted.
+
+**Git-ref sources are deferred, not delivered.** This slice delivers local
+directory and opt-in HTTPS subscription only. Signatures/authenticity,
+compression, per-page chunks, v2 formats, retrieval benchmarking, new services,
+releases and adoption studies remain excluded. Integrity does not establish
+publisher authenticity or factual truth.

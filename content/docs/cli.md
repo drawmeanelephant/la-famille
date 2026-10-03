@@ -163,7 +163,7 @@ companion CSS/JS when `graph/index.html` is present.
 
 ### `pack`
 
-Builds, verifies, compares, locally applies, and pulls deterministic, content-only
+Builds, verifies, compares, applies, publishes, pulls, and watches content-only
 Corpus Packs from existing public artifacts and `rag-content.md`:
 
 ```bash
@@ -176,19 +176,25 @@ la-famille pack apply before.tar delta.tar --output result.tar
 la-famille pack verify result.tar
 la-famille pack pull /path/to/feed --output subscriber-v1.tar
 la-famille pack pull /path/to/feed --base subscriber-v1.tar --output subscriber-v2.tar
+la-famille pack publish --previous /path/to/feed-v1 --retain 3 --output /path/to/feed-v2
+la-famille pack pull https://publisher.example/corpus-packs/pack-feed.json \
+  --allow-https --output subscriber.tar
+la-famille pack watch https://publisher.example/corpus-packs/pack-feed.json \
+  --allow-https --state subscriber --interval 30s --trace-http
 ```
 
 The destination must not exist. Relative paths resolve from `--project-root`.
-Packaging does not refresh its inputs. Verify, diff, apply, and pull need no usable
+Packaging does not refresh its inputs. Verify, diff, apply, pull, and watch need no usable
 site configuration and never extract or execute members. Apply binds to the
 exact base archive and publishes only a verified new pack. Deltas operate on
 whole members, including the entire `rag-content.md`, not individual pages.
 See [Corpus Packs v1](corpus-packs.md) for the explicit allowlist, USTAR/manifest
 format and bounds, and [Local Diff and Apply](corpus-pack-deltas.md) for the
 delta schema, readable/JSON reports and canonical-builder byte-identity contract.
-See [Pull from a Local Feed](corpus-pack-feeds.md) for `pack-feed.json`, strict
+See [Publish, Pull, and Watch](corpus-pack-feeds.md) for `pack-feed.json`, strict
 path/size/count limits, verified cold copies, exact-base delta selection,
-explicit full-pack fallback when no delta matches, and subscriber-only updates.
+explicit full-pack fallback when no delta matches, bounded publishing history,
+HTTPS network restrictions/timeouts, durable watch state and subscriber-only updates.
 
 ### `ask`
 

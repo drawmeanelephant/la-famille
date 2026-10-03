@@ -1,9 +1,9 @@
 package pack
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/tbuddy/la-famille/internal/sitedata"
 )
@@ -16,34 +16,56 @@ type PullResult struct {
 	Changes      *Comparison
 }
 
-// Pull obtains a verified pack from a local directory. Only an absent matching
-// base identity permits full fallback; errors in a selected delta are fatal.
+// Pull retains the local-directory, no-overwrite contract.
 func Pull(directory, baseFile, destination string) (PullResult, error) {
-	root, err := openFeedRoot(directory)
+	return PullContext(context.Background(), directory, baseFile, destination, RemoteOptions{})
+}
+
+// PullContext permits HTTPS only with explicit opt-in. Only an absent matching
+// base identity permits full fallback; errors in a selected delta are fatal.
+func PullContext(ctx context.Context, source, baseFile, destination string, options RemoteOptions) (PullResult, error) {
+	root, err := acquireFeed(ctx, source, options)
 	if err != nil {
 		return PullResult{}, fmt.Errorf("open feed: %w", err)
 	}
 	defer root.Close()
-	feed, err := loadFeed(root)
+	feed, err := root.load()
 	if err != nil {
 		return PullResult{}, fmt.Errorf("feed manifest: %w", err)
 	}
-	result := PullResult{Mode: "full", TargetSHA256: feed.Full.SHA256}
+	return pullFeed(ctx, feed, root.open, baseFile, destination)
+}
+
+func pullFeed(ctx context.Context, feed Feed, open archiveOpener, baseFile, destination string) (PullResult, error) {
+	if err := ctx.Err(); err != nil {
+		return PullResult{}, err
+	}
 	var base *snapshot
+	var err error
 	if baseFile != "" {
 		base, err = loadPack(baseFile)
 		if err != nil {
 			return PullResult{}, fmt.Errorf("base pack: %w", err)
 		}
 		defer base.close()
+	}
+	return pullVerifiedFeed(ctx, feed, open, base, destination)
+}
+
+func pullVerifiedFeed(ctx context.Context, feed Feed, open archiveOpener, base *snapshot, destination string) (PullResult, error) {
+	if err := ctx.Err(); err != nil {
+		return PullResult{}, err
+	}
+	result := PullResult{Mode: "full", TargetSHA256: feed.Full.SHA256}
+	if base != nil {
 		for _, entry := range feed.Deltas {
 			if entry.BaseSHA256 == base.hash {
-				return pullDelta(root, base, entry, destination, result)
+				return pullDelta(ctx, open, base, entry, destination, result)
 			}
 		}
 		result.Fallback = true
 	}
-	input, err := openFeedSource(root, feed.Full.Path, MaxArchiveSize)
+	input, err := open(feed.Full.Path, MaxArchiveSize)
 	if err != nil {
 		return PullResult{}, fmt.Errorf("full pack: %w", err)
 	}
@@ -65,6 +87,9 @@ func Pull(directory, baseFile, destination string) (PullResult, error) {
 	}
 	// Copy the whole captured archive, including its original legal headers.
 	err = publishArchive(destination, func(w io.Writer) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		info, err := target.file.Stat()
 		if err != nil {
 			return err
@@ -72,6 +97,9 @@ func Pull(directory, baseFile, destination string) (PullResult, error) {
 		_, err = io.Copy(w, io.NewSectionReader(target.file, 0, info.Size()))
 		return err
 	}, func(r io.Reader) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		return verifyTargetArchive(r, feed.Full.SHA256)
 	})
 	if err != nil {
@@ -81,8 +109,8 @@ func Pull(directory, baseFile, destination string) (PullResult, error) {
 	return result, nil
 }
 
-func pullDelta(root *os.Root, base *snapshot, entry FeedDelta, destination string, result PullResult) (PullResult, error) {
-	input, err := openFeedSource(root, entry.Path, MaxArchiveSize)
+func pullDelta(ctx context.Context, open archiveOpener, base *snapshot, entry FeedDelta, destination string, result PullResult) (PullResult, error) {
+	input, err := open(entry.Path, MaxArchiveSize)
 	if err != nil {
 		return PullResult{}, fmt.Errorf("selected delta %q: %w", entry.Path, err)
 	}
@@ -92,6 +120,9 @@ func pullDelta(root *os.Root, base *snapshot, entry FeedDelta, destination strin
 		return PullResult{}, fmt.Errorf("selected delta %q: %w", entry.Path, err)
 	}
 	defer delta.close()
+	if err := ctx.Err(); err != nil {
+		return PullResult{}, err
+	}
 	manifest, err := applySnapshots(base, delta, metadata, destination, result.TargetSHA256)
 	if err != nil {
 		return PullResult{}, fmt.Errorf("selected delta %q: %w", entry.Path, err)
