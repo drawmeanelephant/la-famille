@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/tbuddy/la-famille/internal/ask"
 	"github.com/tbuddy/la-famille/internal/graph"
@@ -124,6 +125,7 @@ type Metrics struct {
 // Report retains the original recall fields and adds precision and diagnostics.
 // Baseline comparison is meaningful only at K=5; improvements are permitted.
 type Report struct {
+	Measurements      []SiteMeasurement
 	Comparison        *GraphComparison
 	DatasetName       string
 	K                 int
@@ -222,6 +224,13 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 			return Report{}, fmt.Errorf("ask eval: remove temporary project: %w", removeErr)
 		}
 	}
+	for _, site := range report.Measurements {
+		for _, query := range site.Queries {
+			if report.Ranker != query.Ranker {
+				report.Ranker = "mixed (see per-question measurement modes)"
+			}
+		}
+	}
 	if report.AnswerableCount > 0 {
 		report.RecallAtK /= float64(report.AnswerableCount)
 		report.PrecisionAtK /= float64(report.AnswerableCount)
@@ -255,23 +264,44 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp string, opts 
 		newRanker = func(c Corpus) Scorer { return retrieval.NewRanker(c) }
 	}
 	ranker := newRanker(loaded.Corpus)
+	mode := "BM25-lite"
+	measurement := SiteMeasurement{
+		SiteID: site.ID, CorpusDigest: retrieval.CorpusDigest(loaded.Corpus), Chunks: len(loaded.Corpus.Chunks),
+	}
+	var embedder *measuredEmbedder
 	if opts.GraphExpansion {
 		ranker = retrieval.NewGraphRanker(loaded.Corpus)
+		mode = "BM25-lite + link graph"
 	}
 	if opts.Embeddings {
 		key := sha256.Sum256([]byte(projectRoot + "\x00" + site.ID + "\x00" + site.Fixture + "\x00" + site.ContentDir))
 		path := filepath.Join(opts.EmbeddingCacheDir, hex.EncodeToString(key[:]), retrieval.VectorFileName)
+		measurement.EmbeddingModel, measurement.CachePath = opts.EmbeddingModel, path
+		measurement.IndexSHA256Before, err = indexSHA256(path)
+		if err != nil {
+			return err
+		}
+		embedder = &measuredEmbedder{inner: opts.Embedder}
 		// Disposable eval builds have a fresh project path and binary hash
 		// each run. Their loaded corpus digest is the stable input fingerprint.
-		hybrid, err := retrieval.NewHybridRanker(ctx, loaded.Corpus, opts.Embedder, opts.EmbeddingModel,
+		start := time.Now()
+		hybrid, err := retrieval.NewHybridRanker(ctx, loaded.Corpus, embedder, opts.EmbeddingModel,
 			path, retrieval.CorpusDigest(loaded.Corpus))
+		measurement.IndexDuration, measurement.ChunkEmbedding = time.Since(start), embedder.stats
 		if err != nil {
 			if !errors.Is(err, llm.ErrUnavailable) {
 				return fmt.Errorf("ask eval: embed site %q: %w", site.ID, err)
 			}
-			report.Ranker = "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+			mode = "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+			measurement.FallbackReason = err.Error()
 		} else {
 			ranker = hybrid
+			mode = "BM25-lite + Ollama embeddings (RRF)"
+		}
+		report.Ranker = mode
+		measurement.IndexSHA256After, err = indexSHA256(path)
+		if err != nil {
+			return err
 		}
 	}
 	graphBytes, err := os.ReadFile(filepath.Join(cfg.OutputDir, "graph.json"))
@@ -291,6 +321,13 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp string, opts 
 			return fmt.Errorf("ask eval: site %s: %w", site.ID, err)
 		}
 		var scored []retrieval.Scored
+		queryMeasurement := QueryMeasurement{
+			QuestionID: question.ID, Ranker: mode, FallbackReason: measurement.FallbackReason,
+		}
+		if embedder != nil {
+			embedder.stats = EmbeddingMeasurement{}
+		}
+		start := time.Now()
 		if hybrid, ok := ranker.(*retrieval.HybridRanker); ok {
 			scored, err = hybrid.RankContext(ctx, question.Text, k)
 			if err != nil {
@@ -298,11 +335,18 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp string, opts 
 					return fmt.Errorf("ask eval: embed question %s/%s: %w", site.ID, question.ID, err)
 				}
 				report.Ranker = "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+				queryMeasurement.Ranker, queryMeasurement.FallbackReason = report.Ranker, err.Error()
 				scored = retrieval.NewRanker(loaded.Corpus).Rank(question.Text, k)
 			}
 		} else {
 			scored = ranker.Rank(question.Text, k)
 		}
+		queryMeasurement.RankDuration = time.Since(start)
+		if embedder != nil {
+			queryMeasurement.Embedding = embedder.stats
+			queryMeasurement.RankDuration -= embedder.stats.Duration
+		}
+		measurement.Queries = append(measurement.Queries, queryMeasurement)
 		pages := uniquePages(scored)
 		result := QuestionResult{
 			SiteID: site.ID, QuestionID: question.ID, Text: question.Text,
@@ -387,6 +431,7 @@ func evaluateSite(ctx context.Context, site Site, projectRoot, tmp string, opts 
 			report.FailedCount++
 		}
 	}
+	report.Measurements = append(report.Measurements, measurement)
 	return nil
 }
 
@@ -632,6 +677,13 @@ func WriteReport(w io.Writer, report Report) error {
 	}
 	if report.Comparison != nil {
 		writeGraphComparison(&b, report.Comparison)
+	}
+	if len(report.Measurements) > 0 {
+		measurements, err := json.Marshal(report.Measurements)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(&b, "\nMeasurement JSON (durations in ns; excludes completion): %s\n", measurements)
 	}
 	_, err := io.WriteString(w, b.String())
 	return err

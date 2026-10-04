@@ -49,6 +49,18 @@ func TestHybridEvalOfflineFallsBackToHardBaseline(t *testing.T) {
 		offline.Ranker != "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)" {
 		t.Fatalf("offline changed hard baseline: offline=%+v lexical=%+v err=%v", offline, lexical, err)
 	}
+	for _, site := range offline.Measurements {
+		if site.ChunkEmbedding.Calls != 1 || site.ChunkEmbedding.Inputs == 0 ||
+			site.ChunkEmbedding.Vectors != 0 || site.FallbackReason == "" ||
+			site.IndexSHA256Before != "absent" || site.IndexSHA256After != "absent" {
+			t.Fatalf("unavailable construction misreported: %+v", site)
+		}
+		for _, query := range site.Queries {
+			if query.Ranker != offline.Ranker || query.Embedding.Calls != 0 {
+				t.Fatalf("fallback query misreported: %+v", query)
+			}
+		}
+	}
 }
 
 func TestHybridEvalReusesIndexAndOffKeepsBaseline(t *testing.T) {
@@ -83,6 +95,21 @@ func TestHybridEvalReusesIndexAndOffKeepsBaseline(t *testing.T) {
 	if err != nil || e.chunks != chunks || !reflect.DeepEqual(first.Questions, second.Questions) {
 		t.Fatalf("index reused? chunks=%d->%d err=%v", chunks, e.chunks, err)
 	}
+	for i, site := range second.Measurements {
+		cold := first.Measurements[i]
+		if cold.ChunkEmbedding.Inputs != cold.Chunks || cold.ChunkEmbedding.Vectors != cold.Chunks ||
+			cold.IndexSHA256Before != "absent" || cold.CorpusDigest != site.CorpusDigest ||
+			site.IndexSHA256Before != cold.IndexSHA256After || site.IndexSHA256After != cold.IndexSHA256After ||
+			site.ChunkEmbedding != (EmbeddingMeasurement{}) {
+			t.Fatalf("cold/warm index measurements: cold=%+v warm=%+v", cold, site)
+		}
+		for _, query := range site.Queries {
+			if query.Embedding.Calls != 1 || query.Embedding.Inputs != 1 || query.Embedding.Vectors != 1 ||
+				query.Ranker != "BM25-lite + Ollama embeddings (RRF)" || query.RankDuration < 0 {
+				t.Fatalf("warm query measurement: %+v", query)
+			}
+		}
+	}
 	for i, path := range indices {
 		after, err := os.ReadFile(path)
 		if err != nil || !reflect.DeepEqual(before[i], after) {
@@ -93,5 +120,10 @@ func TestHybridEvalReusesIndexAndOffKeepsBaseline(t *testing.T) {
 	off, err := Run(context.Background(), opts)
 	if err != nil || off.RecallAtK != 1 || off.Ranker != "BM25-lite" {
 		t.Fatalf("disabled embeddings changed frozen baseline: %+v %v", off, err)
+	}
+	for _, site := range off.Measurements {
+		if site.CachePath != "" || site.IndexDuration != 0 || site.ChunkEmbedding != (EmbeddingMeasurement{}) {
+			t.Fatalf("off mode touched embeddings: %+v", site)
+		}
 	}
 }

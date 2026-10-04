@@ -1,0 +1,343 @@
+{
+  "label": "hybrid-cold-hard",
+  "dataset": "golden-questions-hard.json",
+  "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions-hard.json --provider fake --embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/hard",
+  "started_utc": "2026-10-04T17:25:25.102325+00:00",
+  "wall_ns": 546072166,
+  "exit_code": 1,
+  "stdout": "Ask This Site evaluation: ask-this-site-hard\nRanker: BM25-lite + Ollama embeddings (RRF) \u00b7 K=5 \u00b7 provider=fake\n\nSITE     QUESTION                RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nstation  capture-and-share       1.00      0.50       0.50       -     PASS    [cistern rationing index water-pump] / []\nstation  passive-cooling         1.00      0.50       0.50       -     PASS    [air-conditioner night-purge thermal-mass index] / []\nstation  drinkable-backup        1.00      0.00       0.50       -     PASS    [rationing garden cistern first-aid] / []\nstation  unpowered-chill         1.00      0.00       0.40       -     PASS    [air-conditioner rationing thermal-mass night-purge first-aid] / []\nestuary  sensor-to-assay         1.00      0.50       0.50       0.67  PASS    [sensor assay sensor-catalog assay-manual] / []\nestuary  lot-custody-and-result  1.00      0.50       0.50       -     PASS    [assay registry sensor sensor-catalog] / []\nestuary  absent-answer-hard      n/a       no-answer  -          -     FAIL    [safety assay sensor-catalog assay-manual sensor] / []\nestuary  sensor-warranty-absent  n/a       no-answer  -          -     FAIL    [sensor sensor-catalog assay-manual assay] / []\n\nRecall@5: 1.0000 (6 answerable questions); questions passed: 6/8\nPrecision@5: 0.4833 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 0.5833; delta: +0.4167; floor passed: true\nClass multi-hop: recall=1.0000 precision=0.5000 n=1\nClass multi-page: recall=1.0000 precision=0.5000 n=3\nClass paraphrase: recall=1.0000 precision=0.4500 n=2\nPrecision floor passed: true; evaluation passed: false\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"station\",\"CorpusDigest\":\"18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973\",\"Chunks\":16,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/hard/662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3\",\"IndexDuration\":204492333,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":16,\"Vectors\":16,\"Duration\":203200792},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"capture-and-share\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7780125},\"RankDuration\":27208},{\"QuestionID\":\"passive-cooling\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":6152208},\"RankDuration\":32333},{\"QuestionID\":\"drinkable-backup\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7806584},\"RankDuration\":20499},{\"QuestionID\":\"unpowered-chill\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7344334},\"RankDuration\":17083}]},{\"SiteID\":\"estuary\",\"CorpusDigest\":\"7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771\",\"Chunks\":15,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/hard/a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02\",\"IndexDuration\":219430000,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":15,\"Vectors\":15,\"Duration\":218348541},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"sensor-to-assay\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7246292},\"RankDuration\":41541},{\"QuestionID\":\"lot-custody-and-result\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7510917},\"RankDuration\":42458},{\"QuestionID\":\"absent-answer-hard\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":8317750},\"RankDuration\":33875},{\"QuestionID\":\"sensor-warranty-absent\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":8208834},\"RankDuration\":24249}]}]\n",
+  "stderr": "time=2026-10-04T13:25:25.137-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2000849125/rag-archive\"\ntime=2026-10-04T13:25:25.138-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:25.138-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:25.139-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:25.391-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-1550802925/rag-archive\"\ntime=2026-10-04T13:25:25.391-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:25.391-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:25.392-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:25.647-04:00 level=ERROR msg=\"Application error\" error=\"ask eval: regression gates failed (2 questions failed, recall floor passed=true, precision floor passed=true)\"\n",
+  "measurements": [
+    {
+      "SiteID": "station",
+      "CorpusDigest": "18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973",
+      "Chunks": 16,
+      "EmbeddingModel": "nomic-embed-text",
+      "CachePath": "/tmp/la-famille-602.dbYmuu/hard/662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json",
+      "IndexSHA256Before": "absent",
+      "IndexSHA256After": "a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3",
+      "IndexDuration": 204492333,
+      "ChunkEmbedding": {
+        "Calls": 1,
+        "Inputs": 16,
+        "Vectors": 16,
+        "Duration": 203200792
+      },
+      "FallbackReason": "",
+      "Queries": [
+        {
+          "QuestionID": "capture-and-share",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+          "FallbackReason": "",
+          "Embedding": {
+            "Calls": 1,
+            "Inputs": 1,
+            "Vectors": 1,
+            "Duration": 7780125
+          },
+          "RankDuration": 27208
+        },
+        {
+          "QuestionID": "passive-cooling",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+          "FallbackReason": "",
+          "Embedding": {
+            "Calls": 1,
+            "Inputs": 1,
+            "Vectors": 1,
+            "Duration": 6152208
+          },
+          "RankDuration": 32333
+        },
+        {
+          "QuestionID": "drinkable-backup",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+          "FallbackReason": "",
+          "Embedding": {
+            "Calls": 1,
+            "Inputs": 1,
+            "Vectors": 1,
+            "Duration": 7806584
+          },
+          "RankDuration": 20499
+        },
+        {
+          "QuestionID": "unpowered-chill",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+          "FallbackReason": "",
+          "Embedding": {
+            "Calls": 1,
+            "Inputs": 1,
+            "Vectors": 1,
+            "Duration": 7344334
+          },
+          "RankDuration": 17083
+        }
+      ]
+    },
+    {
+      "SiteID": "estuary",
+      "CorpusDigest": "7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771",
+      "Chunks": 15,
+      "EmbeddingModel": "nomic-embed-text",
+      "CachePath": "/tmp/la-famille-602.dbYmuu/hard/a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json",
+      "IndexSHA256Before": "absent",
+      "IndexSHA256After": "a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02",
+      "IndexDuration": 219430000,
+      "ChunkEmbedding": {
+        "Calls": 1,
+        "Inputs": 15,
+        "Vectors": 15,
+        "Duration": 218348541
+      },
+      "FallbackReason": "",
+      "Queries": [
+        {
+          "QuestionID": "sensor-to-assay",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+          "FallbackReason": "",
+          "Embedding": {
+            "Calls": 1,
+            "Inputs": 1,
+            "Vectors": 1,
+            "Duration": 7246292
+          },
+          "RankDuration": 41541
+        },
+        {
+          "QuestionID": "lot-custody-and-result",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+          "FallbackReason": "",
+          "Embedding": {
+            "Calls": 1,
+            "Inputs": 1,
+            "Vectors": 1,
+            "Duration": 7510917
+          },
+          "RankDuration": 42458
+        },
+        {
+          "QuestionID": "absent-answer-hard",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+          "FallbackReason": "",
+          "Embedding": {
+            "Calls": 1,
+            "Inputs": 1,
+            "Vectors": 1,
+            "Duration": 8317750
+          },
+          "RankDuration": 33875
+        },
+        {
+          "QuestionID": "sensor-warranty-absent",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+          "FallbackReason": "",
+          "Embedding": {
+            "Calls": 1,
+            "Inputs": 1,
+            "Vectors": 1,
+            "Duration": 8208834
+          },
+          "RankDuration": 24249
+        }
+      ]
+    }
+  ],
+  "external_index_sha256_before": {},
+  "external_index_sha256_after": {
+    "a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json": "a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02",
+    "662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json": "a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3"
+  },
+  "external_existing_indices_byte_identical": false,
+  "question_results": [
+    {
+      "site": "station",
+      "question_id": "capture-and-share",
+      "question": "rain cistern daily resident allowances",
+      "acceptable_pages": [
+        "cistern",
+        "rationing"
+      ],
+      "retrieved_pages": [
+        "cistern",
+        "rationing",
+        "index",
+        "water-pump"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+    },
+    {
+      "site": "station",
+      "question_id": "passive-cooling",
+      "question": "cooling rooms electricity",
+      "acceptable_pages": [
+        "thermal-mass",
+        "night-purge"
+      ],
+      "retrieved_pages": [
+        "air-conditioner",
+        "night-purge",
+        "thermal-mass",
+        "index"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+    },
+    {
+      "site": "station",
+      "question_id": "drinkable-backup",
+      "question": "potable backup apportionment",
+      "acceptable_pages": [
+        "cistern",
+        "rationing"
+      ],
+      "retrieved_pages": [
+        "rationing",
+        "garden",
+        "cistern",
+        "first-aid"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+    },
+    {
+      "site": "station",
+      "question_id": "unpowered-chill",
+      "question": "unpowered dwelling refrigeration",
+      "acceptable_pages": [
+        "thermal-mass",
+        "night-purge"
+      ],
+      "retrieved_pages": [
+        "air-conditioner",
+        "rationing",
+        "thermal-mass",
+        "night-purge",
+        "first-aid"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.4,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+    },
+    {
+      "site": "estuary",
+      "question_id": "sensor-to-assay",
+      "question": "salinity sensor chloride",
+      "acceptable_pages": [
+        "sensor",
+        "assay"
+      ],
+      "retrieved_pages": [
+        "sensor",
+        "assay",
+        "sensor-catalog",
+        "assay-manual"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+    },
+    {
+      "site": "estuary",
+      "question_id": "lot-custody-and-result",
+      "question": "R17 courier elevated concentration",
+      "acceptable_pages": [
+        "registry",
+        "assay"
+      ],
+      "retrieved_pages": [
+        "assay",
+        "registry",
+        "sensor",
+        "sensor-catalog"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+    },
+    {
+      "site": "estuary",
+      "question_id": "absent-answer-hard",
+      "question": "quuxivorzz blarghmolecule",
+      "acceptable_pages": [],
+      "retrieved_pages": [
+        "safety",
+        "assay",
+        "sensor-catalog",
+        "assay-manual",
+        "sensor"
+      ],
+      "missing_pages": [],
+      "recall_at_5": null,
+      "precision_at_5": null,
+      "unanswerable": true,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": false,
+      "gate_passed": false,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+    },
+    {
+      "site": "estuary",
+      "question_id": "sensor-warranty-absent",
+      "question": "salinity sensor warranty duration",
+      "acceptable_pages": [],
+      "retrieved_pages": [
+        "sensor",
+        "sensor-catalog",
+        "assay-manual",
+        "assay"
+      ],
+      "missing_pages": [],
+      "recall_at_5": null,
+      "precision_at_5": null,
+      "unanswerable": true,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": false,
+      "gate_passed": false,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+    }
+  ],
+  "aggregates": {
+    "recall_at_5": 1.0,
+    "precision_at_5": 0.48333333333333334,
+    "answerable_questions": 6,
+    "passed_questions": 6,
+    "total_questions": 8,
+    "passed_abstention_controls": 0,
+    "total_abstention_controls": 2
+  }
+}

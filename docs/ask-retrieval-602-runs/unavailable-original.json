@@ -1,0 +1,414 @@
+{
+  "label": "unavailable-original",
+  "dataset": "golden-questions.json",
+  "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions.json --provider fake --embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/unavailable-original",
+  "started_utc": "2026-10-04T17:25:52.941587+00:00",
+  "wall_ns": 93206208,
+  "exit_code": 0,
+  "stdout": "Ask This Site evaluation: ask-this-site-phase-1\nRanker: BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable) \u00b7 K=5 \u00b7 provider=fake\n\nSITE                      QUESTION                   RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nanchor-links              other-page-heading         1.00      1.00       0.50       -     PASS    [other index] / []\nanchor-links              unanswerable               n/a       no-answer  -          -     PASS    [] / []\nartisanal-ceramics        shino-glaze                1.00      1.00       0.25       -     PASS    [collection/wheel-thrown-vessels index journal/2026-07-15-glazing-techniques care-guide] / []\nartisanal-ceramics        washing-stoneware          1.00      1.00       0.33       -     PASS    [care-guide collection/wheel-thrown-vessels index] / []\nartisanal-ceramics        pine-ash-firing            1.00      1.00       0.25       -     PASS    [journal/2026-07-15-glazing-techniques care-guide collection/wheel-thrown-vessels index] / []\nclean-urls                author-is-cool             1.00      1.00       1.00       -     PASS    [bio] / []\nclean-urls                blog-post                  1.00      1.00       0.50       -     PASS    [index blog/post] / []\nask-eval-deep-chain       northern-kiln-temperature  1.00      1.00       0.33       -     PASS    [observations/archive/blue-glass-run observations/field-log index] / []\nask-eval-research-branch  cobalt-concentration       1.00      1.00       0.33       -     PASS    [study/samples/cobalt-clay study/field-notes index] / []\n\nRecall@5: 1.0000 (8 answerable questions); questions passed: 9/9\nPrecision@5: 0.4375 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 1.0000; delta: +0.0000; floor passed: true\nClass standard: recall=1.0000 precision=0.4375 n=8\nPrecision floor passed: true; evaluation passed: true\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"anchor-links\",\"CorpusDigest\":\"536d3212b7b4e13a9ae8debae557657a6c614481c539f83a0862aaeda0c0a450\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-original/acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":212583,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":0,\"Duration\":208834},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"other-page-heading\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":5375},{\"QuestionID\":\"unanswerable\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":2375}]},{\"SiteID\":\"artisanal-ceramics\",\"CorpusDigest\":\"daeca4489ad0e3bf6e0efb5a19a9ab70321327f97573370886f0c342f765f688\",\"Chunks\":8,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-original/696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":186208,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":8,\"Vectors\":0,\"Duration\":180125},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"shino-glaze\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":6042},{\"QuestionID\":\"washing-stoneware\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":4750},{\"QuestionID\":\"pine-ash-firing\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":6875}]},{\"SiteID\":\"clean-urls\",\"CorpusDigest\":\"70258859b5fbd67095b32c86ef970a22c9aa11fe526691144a2621a15187cd69\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-original/f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":171708,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":0,\"Duration\":167042},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"author-is-cool\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":3334},{\"QuestionID\":\"blog-post\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":3291}]},{\"SiteID\":\"ask-eval-deep-chain\",\"CorpusDigest\":\"fa4998dd86d222c38757e85ae191ea936419ede6b5b142334df82418110b8d6c\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-original/49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":241416,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":0,\"Duration\":237375},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"northern-kiln-temperature\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":12542}]},{\"SiteID\":\"ask-eval-research-branch\",\"CorpusDigest\":\"f813384c91e1930a4d3ba562e53027dbde4d1f160644cb61a76798ef40e294b1\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-original/623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":278000,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":0,\"Duration\":259375},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"cobalt-concentration\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":7000}]}]\n",
+  "stderr": "time=2026-10-04T13:25:52.965-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2488010995/rag-archive\"\ntime=2026-10-04T13:25:52.965-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:52.965-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:52.966-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:52.982-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-1698329813/rag-archive\"\ntime=2026-10-04T13:25:52.983-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:52.983-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:52.984-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:52.997-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-419035684/rag-archive\"\ntime=2026-10-04T13:25:52.998-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:52.998-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:52.998-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:53.012-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2730177259/rag-archive\"\ntime=2026-10-04T13:25:53.014-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:53.015-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:53.016-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:53.027-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-3481598875/rag-archive\"\ntime=2026-10-04T13:25:53.029-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:53.029-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:53.031-04:00 level=INFO msg=\"Created rag-content.md\"\n",
+  "measurements": [
+    {
+      "SiteID": "anchor-links",
+      "CorpusDigest": "536d3212b7b4e13a9ae8debae557657a6c614481c539f83a0862aaeda0c0a450",
+      "Chunks": 3,
+      "EmbeddingModel": "nomic-embed-text",
+      "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-original/acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json",
+      "IndexSHA256Before": "absent",
+      "IndexSHA256After": "absent",
+      "IndexDuration": 212583,
+      "ChunkEmbedding": {
+        "Calls": 1,
+        "Inputs": 3,
+        "Vectors": 0,
+        "Duration": 208834
+      },
+      "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+      "Queries": [
+        {
+          "QuestionID": "other-page-heading",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 5375
+        },
+        {
+          "QuestionID": "unanswerable",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 2375
+        }
+      ]
+    },
+    {
+      "SiteID": "artisanal-ceramics",
+      "CorpusDigest": "daeca4489ad0e3bf6e0efb5a19a9ab70321327f97573370886f0c342f765f688",
+      "Chunks": 8,
+      "EmbeddingModel": "nomic-embed-text",
+      "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-original/696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json",
+      "IndexSHA256Before": "absent",
+      "IndexSHA256After": "absent",
+      "IndexDuration": 186208,
+      "ChunkEmbedding": {
+        "Calls": 1,
+        "Inputs": 8,
+        "Vectors": 0,
+        "Duration": 180125
+      },
+      "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+      "Queries": [
+        {
+          "QuestionID": "shino-glaze",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 6042
+        },
+        {
+          "QuestionID": "washing-stoneware",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 4750
+        },
+        {
+          "QuestionID": "pine-ash-firing",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 6875
+        }
+      ]
+    },
+    {
+      "SiteID": "clean-urls",
+      "CorpusDigest": "70258859b5fbd67095b32c86ef970a22c9aa11fe526691144a2621a15187cd69",
+      "Chunks": 3,
+      "EmbeddingModel": "nomic-embed-text",
+      "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-original/f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json",
+      "IndexSHA256Before": "absent",
+      "IndexSHA256After": "absent",
+      "IndexDuration": 171708,
+      "ChunkEmbedding": {
+        "Calls": 1,
+        "Inputs": 3,
+        "Vectors": 0,
+        "Duration": 167042
+      },
+      "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+      "Queries": [
+        {
+          "QuestionID": "author-is-cool",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 3334
+        },
+        {
+          "QuestionID": "blog-post",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 3291
+        }
+      ]
+    },
+    {
+      "SiteID": "ask-eval-deep-chain",
+      "CorpusDigest": "fa4998dd86d222c38757e85ae191ea936419ede6b5b142334df82418110b8d6c",
+      "Chunks": 3,
+      "EmbeddingModel": "nomic-embed-text",
+      "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-original/49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json",
+      "IndexSHA256Before": "absent",
+      "IndexSHA256After": "absent",
+      "IndexDuration": 241416,
+      "ChunkEmbedding": {
+        "Calls": 1,
+        "Inputs": 3,
+        "Vectors": 0,
+        "Duration": 237375
+      },
+      "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+      "Queries": [
+        {
+          "QuestionID": "northern-kiln-temperature",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 12542
+        }
+      ]
+    },
+    {
+      "SiteID": "ask-eval-research-branch",
+      "CorpusDigest": "f813384c91e1930a4d3ba562e53027dbde4d1f160644cb61a76798ef40e294b1",
+      "Chunks": 3,
+      "EmbeddingModel": "nomic-embed-text",
+      "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-original/623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json",
+      "IndexSHA256Before": "absent",
+      "IndexSHA256After": "absent",
+      "IndexDuration": 278000,
+      "ChunkEmbedding": {
+        "Calls": 1,
+        "Inputs": 3,
+        "Vectors": 0,
+        "Duration": 259375
+      },
+      "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+      "Queries": [
+        {
+          "QuestionID": "cobalt-concentration",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 7000
+        }
+      ]
+    }
+  ],
+  "external_index_sha256_before": {},
+  "external_index_sha256_after": {},
+  "external_existing_indices_byte_identical": true,
+  "offline_checks": {
+    "/api/version": "<urlopen error [Errno 61] Connection refused>",
+    "/api/tags": "<urlopen error [Errno 61] Connection refused>"
+  },
+  "question_results": [
+    {
+      "site": "anchor-links",
+      "question_id": "other-page-heading",
+      "question": "What is the heading on the other linked page?",
+      "acceptable_pages": [
+        "other"
+      ],
+      "retrieved_pages": [
+        "other",
+        "index"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "anchor-links",
+      "question_id": "unanswerable",
+      "question": "Which quuxivorzz blarghmolecule certifies zindlefex?",
+      "acceptable_pages": [],
+      "retrieved_pages": [],
+      "missing_pages": [],
+      "recall_at_5": null,
+      "precision_at_5": null,
+      "unanswerable": true,
+      "zero_retrieved_context": true,
+      "canonical_no_answer_verified": true,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "artisanal-ceramics",
+      "question_id": "shino-glaze",
+      "question": "What glaze is used on the Shino Tea Bowls?",
+      "acceptable_pages": [
+        "collection/wheel-thrown-vessels"
+      ],
+      "retrieved_pages": [
+        "collection/wheel-thrown-vessels",
+        "index",
+        "journal/2026-07-15-glazing-techniques",
+        "care-guide"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.25,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "artisanal-ceramics",
+      "question_id": "washing-stoneware",
+      "question": "How should I wash handmade stoneware without damaging it?",
+      "acceptable_pages": [
+        "care-guide"
+      ],
+      "retrieved_pages": [
+        "care-guide",
+        "collection/wheel-thrown-vessels",
+        "index"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.3333333333333333,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "artisanal-ceramics",
+      "question_id": "pine-ash-firing",
+      "question": "What happens to pine ash glaze during firing at 1280 degrees Celsius?",
+      "acceptable_pages": [
+        "journal/2026-07-15-glazing-techniques"
+      ],
+      "retrieved_pages": [
+        "journal/2026-07-15-glazing-techniques",
+        "care-guide",
+        "collection/wheel-thrown-vessels",
+        "index"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.25,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "clean-urls",
+      "question_id": "author-is-cool",
+      "question": "Who says they are cool?",
+      "acceptable_pages": [
+        "bio"
+      ],
+      "retrieved_pages": [
+        "bio"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 1.0,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "clean-urls",
+      "question_id": "blog-post",
+      "question": "What does the My Blog Post page say?",
+      "acceptable_pages": [
+        "blog/post"
+      ],
+      "retrieved_pages": [
+        "index",
+        "blog/post"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "ask-eval-deep-chain",
+      "question_id": "northern-kiln-temperature",
+      "question": "What temperature did the northern kiln reach during blue-glass firing?",
+      "acceptable_pages": [
+        "observations/archive/blue-glass-run"
+      ],
+      "retrieved_pages": [
+        "observations/archive/blue-glass-run",
+        "observations/field-log",
+        "index"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.3333333333333333,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "ask-eval-research-branch",
+      "question_id": "cobalt-concentration",
+      "question": "What cobalt concentration does the blue-clay assay report?",
+      "acceptable_pages": [
+        "study/samples/cobalt-clay"
+      ],
+      "retrieved_pages": [
+        "study/samples/cobalt-clay",
+        "study/field-notes",
+        "index"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.3333333333333333,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    }
+  ],
+  "aggregates": {
+    "recall_at_5": 1.0,
+    "precision_at_5": 0.4375,
+    "answerable_questions": 8,
+    "passed_questions": 9,
+    "total_questions": 9,
+    "passed_abstention_controls": 1,
+    "total_abstention_controls": 1
+  }
+}

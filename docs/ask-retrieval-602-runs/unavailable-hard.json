@@ -1,0 +1,328 @@
+{
+  "label": "unavailable-hard",
+  "dataset": "golden-questions-hard.json",
+  "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions-hard.json --provider fake --embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/unavailable-hard",
+  "started_utc": "2026-10-04T17:25:53.035399+00:00",
+  "wall_ns": 59864208,
+  "exit_code": 0,
+  "stdout": "Ask This Site evaluation: ask-this-site-hard\nRanker: BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable) \u00b7 K=5 \u00b7 provider=fake\n\nSITE     QUESTION                RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nstation  capture-and-share       1.00      0.50       0.50       -     PASS    [rationing cistern index water-pump] / []\nstation  passive-cooling         0.50      0.50       0.50       -     PASS    [air-conditioner night-purge] / [thermal-mass]\nstation  drinkable-backup        0.00      0.00       0.00       -     PASS    [] / [cistern rationing]\nstation  unpowered-chill         0.00      0.00       0.00       -     PASS    [] / [thermal-mass night-purge]\nestuary  sensor-to-assay         1.00      0.50       0.50       0.67  PASS    [sensor sensor-catalog assay assay-manual] / []\nestuary  lot-custody-and-result  1.00      0.50       0.50       -     PASS    [assay registry sensor-catalog sensor] / []\nestuary  absent-answer-hard      n/a       no-answer  -          -     PASS    [] / []\nestuary  sensor-warranty-absent  n/a       no-answer  -          -     PASS    [] / []\n\nRecall@5: 0.5833 (6 answerable questions); questions passed: 8/8\nPrecision@5: 0.3333 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 0.5833; delta: +0.0000; floor passed: true\nClass multi-hop: recall=1.0000 precision=0.5000 n=1\nClass multi-page: recall=0.8333 precision=0.5000 n=3\nClass paraphrase: recall=0.0000 precision=0.0000 n=2\nPrecision floor passed: true; evaluation passed: true\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"station\",\"CorpusDigest\":\"18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973\",\"Chunks\":16,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-hard/662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":407375,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":16,\"Vectors\":0,\"Duration\":288333},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"capture-and-share\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":5084},{\"QuestionID\":\"passive-cooling\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":2166},{\"QuestionID\":\"drinkable-backup\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":1292},{\"QuestionID\":\"unpowered-chill\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":1167}]},{\"SiteID\":\"estuary\",\"CorpusDigest\":\"7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771\",\"Chunks\":15,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-hard/a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":208792,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":15,\"Vectors\":0,\"Duration\":199292},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"sensor-to-assay\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":4500},{\"QuestionID\":\"lot-custody-and-result\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":3292},{\"QuestionID\":\"absent-answer-hard\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":1042},{\"QuestionID\":\"sensor-warranty-absent\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":1584}]}]\n",
+  "stderr": "time=2026-10-04T13:25:53.067-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2035179726/rag-archive\"\ntime=2026-10-04T13:25:53.068-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:53.068-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:53.069-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:53.085-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-4267407013/rag-archive\"\ntime=2026-10-04T13:25:53.086-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:53.086-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:53.088-04:00 level=INFO msg=\"Created rag-content.md\"\n",
+  "measurements": [
+    {
+      "SiteID": "station",
+      "CorpusDigest": "18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973",
+      "Chunks": 16,
+      "EmbeddingModel": "nomic-embed-text",
+      "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-hard/662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json",
+      "IndexSHA256Before": "absent",
+      "IndexSHA256After": "absent",
+      "IndexDuration": 407375,
+      "ChunkEmbedding": {
+        "Calls": 1,
+        "Inputs": 16,
+        "Vectors": 0,
+        "Duration": 288333
+      },
+      "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+      "Queries": [
+        {
+          "QuestionID": "capture-and-share",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 5084
+        },
+        {
+          "QuestionID": "passive-cooling",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 2166
+        },
+        {
+          "QuestionID": "drinkable-backup",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 1292
+        },
+        {
+          "QuestionID": "unpowered-chill",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 1167
+        }
+      ]
+    },
+    {
+      "SiteID": "estuary",
+      "CorpusDigest": "7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771",
+      "Chunks": 15,
+      "EmbeddingModel": "nomic-embed-text",
+      "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-hard/a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json",
+      "IndexSHA256Before": "absent",
+      "IndexSHA256After": "absent",
+      "IndexDuration": 208792,
+      "ChunkEmbedding": {
+        "Calls": 1,
+        "Inputs": 15,
+        "Vectors": 0,
+        "Duration": 199292
+      },
+      "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+      "Queries": [
+        {
+          "QuestionID": "sensor-to-assay",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 4500
+        },
+        {
+          "QuestionID": "lot-custody-and-result",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 3292
+        },
+        {
+          "QuestionID": "absent-answer-hard",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 1042
+        },
+        {
+          "QuestionID": "sensor-warranty-absent",
+          "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Embedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "RankDuration": 1584
+        }
+      ]
+    }
+  ],
+  "external_index_sha256_before": {},
+  "external_index_sha256_after": {},
+  "external_existing_indices_byte_identical": true,
+  "offline_checks": {
+    "/api/version": "<urlopen error [Errno 61] Connection refused>",
+    "/api/tags": "<urlopen error [Errno 61] Connection refused>"
+  },
+  "question_results": [
+    {
+      "site": "station",
+      "question_id": "capture-and-share",
+      "question": "rain cistern daily resident allowances",
+      "acceptable_pages": [
+        "cistern",
+        "rationing"
+      ],
+      "retrieved_pages": [
+        "rationing",
+        "cistern",
+        "index",
+        "water-pump"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "station",
+      "question_id": "passive-cooling",
+      "question": "cooling rooms electricity",
+      "acceptable_pages": [
+        "thermal-mass",
+        "night-purge"
+      ],
+      "retrieved_pages": [
+        "air-conditioner",
+        "night-purge"
+      ],
+      "missing_pages": [
+        "thermal-mass"
+      ],
+      "recall_at_5": 0.5,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "station",
+      "question_id": "drinkable-backup",
+      "question": "potable backup apportionment",
+      "acceptable_pages": [
+        "cistern",
+        "rationing"
+      ],
+      "retrieved_pages": [],
+      "missing_pages": [
+        "cistern",
+        "rationing"
+      ],
+      "recall_at_5": 0.0,
+      "precision_at_5": 0.0,
+      "unanswerable": false,
+      "zero_retrieved_context": true,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "station",
+      "question_id": "unpowered-chill",
+      "question": "unpowered dwelling refrigeration",
+      "acceptable_pages": [
+        "thermal-mass",
+        "night-purge"
+      ],
+      "retrieved_pages": [],
+      "missing_pages": [
+        "thermal-mass",
+        "night-purge"
+      ],
+      "recall_at_5": 0.0,
+      "precision_at_5": 0.0,
+      "unanswerable": false,
+      "zero_retrieved_context": true,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "estuary",
+      "question_id": "sensor-to-assay",
+      "question": "salinity sensor chloride",
+      "acceptable_pages": [
+        "sensor",
+        "assay"
+      ],
+      "retrieved_pages": [
+        "sensor",
+        "sensor-catalog",
+        "assay",
+        "assay-manual"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "estuary",
+      "question_id": "lot-custody-and-result",
+      "question": "R17 courier elevated concentration",
+      "acceptable_pages": [
+        "registry",
+        "assay"
+      ],
+      "retrieved_pages": [
+        "assay",
+        "registry",
+        "sensor-catalog",
+        "sensor"
+      ],
+      "missing_pages": [],
+      "recall_at_5": 1.0,
+      "precision_at_5": 0.5,
+      "unanswerable": false,
+      "zero_retrieved_context": false,
+      "canonical_no_answer_verified": null,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "estuary",
+      "question_id": "absent-answer-hard",
+      "question": "quuxivorzz blarghmolecule",
+      "acceptable_pages": [],
+      "retrieved_pages": [],
+      "missing_pages": [],
+      "recall_at_5": null,
+      "precision_at_5": null,
+      "unanswerable": true,
+      "zero_retrieved_context": true,
+      "canonical_no_answer_verified": true,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    },
+    {
+      "site": "estuary",
+      "question_id": "sensor-warranty-absent",
+      "question": "salinity sensor warranty duration",
+      "acceptable_pages": [],
+      "retrieved_pages": [],
+      "missing_pages": [],
+      "recall_at_5": null,
+      "precision_at_5": null,
+      "unanswerable": true,
+      "zero_retrieved_context": true,
+      "canonical_no_answer_verified": true,
+      "gate_passed": true,
+      "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+    }
+  ],
+  "aggregates": {
+    "recall_at_5": 0.5833333333333334,
+    "precision_at_5": 0.3333333333333333,
+    "answerable_questions": 6,
+    "passed_questions": 8,
+    "total_questions": 8,
+    "passed_abstention_controls": 2,
+    "total_abstention_controls": 2
+  }
+}
