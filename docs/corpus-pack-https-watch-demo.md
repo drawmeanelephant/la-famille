@@ -1,5 +1,10 @@
 # Corpus Packs finishing evidence (#626)
 
+> Historical evidence and checklist. Ask was retired in #629, so the
+> assistant/model steps below are no longer delivery requirements. Current
+> commands are in `content/docs/corpus-pack-feeds.md`; Corpus Pack delivery
+> continues in #583 without a model runtime.
+
 ## Status, not a completion claim
 
 Implementation baseline: `ffe8579` (`master`, 2026-10-03).

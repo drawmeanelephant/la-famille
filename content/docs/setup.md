@@ -125,5 +125,5 @@ release may not have. Always check `--version` and the command's `--help`.
 - [Themes and templates](templates.md): make the site look like you.
 - [The terminal UI](tui.md): the same workflow, with an octopus.
 - [Configuration](config.md): paths, names, and publishing addresses.
-- [Local Ask](ask.md): experimental questions with local models and citations.
+- [Corpus exports](rag.md): portable content for external tools.
 - [Real sites](../showcase/index.md): see what other content looks like.

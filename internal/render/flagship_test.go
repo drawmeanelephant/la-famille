@@ -108,10 +108,16 @@ func TestFlagshipLayoutsKeepContentAndAccessibleNavigation(t *testing.T) {
 					cfg.BasePath() + "/assets/css/site.css",
 					cfg.BasePath() + "/assets/js/search.js",
 					cfg.BasePath() + "/docs/", cfg.BasePath() + "/showcase/",
+					cfg.BasePath() + "/docs/corpus-packs/",
 					`rel="canonical" href="https://la-famille.filed.fyi/"`,
 				} {
 					if !strings.Contains(raw, want) {
 						t.Errorf("missing %q", want)
+					}
+				}
+				for _, retired := range []string{"/docs/ask/", "Ollama", "Local Ask", "Ask this site"} {
+					if strings.Contains(raw, retired) {
+						t.Errorf("layout still advertises retired assistant %q", retired)
 					}
 				}
 				doc := parseHTMLDocument(t, raw)

@@ -1,14 +1,13 @@
 package main
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tbuddy/la-famille/internal/ask"
 	"github.com/tbuddy/la-famille/internal/pack"
 )
 
@@ -41,7 +39,7 @@ func TestPackPullCompiledSubscriber(t *testing.T) {
 		t.Fatalf("compile: %v\n%s", err, output)
 	}
 	publisher, subscriber, feedDir := filepath.Join(work, "publisher"), filepath.Join(work, "subscriber"), filepath.Join(work, "feed")
-	if err := os.CopyFS(publisher, os.DirFS(filepath.Join(repo, "assets/testdata/pack-ask"))); err != nil {
+	if err := os.CopyFS(publisher, os.DirFS(filepath.Join(repo, "assets/testdata/pack-subscriber"))); err != nil {
 		t.Fatal(err)
 	}
 	for _, dir := range []string{subscriber, feedDir} {
@@ -127,72 +125,45 @@ func TestPackPullCompiledSubscriber(t *testing.T) {
 	run(subscriber, "pack", "verify", "updated.tar")
 	assertSubscriberFiles(t, subscriber)
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	address := listener.Addr().String()
-	_, port, err := net.SplitHostPort(address)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := listener.Close(); err != nil {
-		t.Fatal(err)
-	}
-	log, err := os.Create(filepath.Join(work, "ask.log"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer log.Close()
-	server := exec.CommandContext(ctx, binary, "ask", "--pack", applied, "--provider", "fake", "--no-browser", "--port", port)
-	server.Dir, server.Stdout, server.Stderr = subscriber, log, log
-	if err := server.Start(); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		_ = server.Process.Kill()
-		_ = server.Wait()
-	}()
-	client := &http.Client{Timeout: time.Second, Transport: &http.Transport{Proxy: nil}}
-	defer client.CloseIdleConnections()
-	url := "http://" + address
-	deadline := time.Now().Add(15 * time.Second)
+	// External tools can read the same verified archive and metadata without a
+	// model runtime or a source checkout. This replaces assistant-based checks.
+	reader := tar.NewReader(bytes.NewReader(read(applied)))
+	members := make(map[string][]byte)
 	for {
-		response, err := client.Get(url + "/api/status")
-		if err == nil {
-			var status ask.Status
-			decodeErr := json.NewDecoder(response.Body).Decode(&status)
-			_ = response.Body.Close()
-			if decodeErr != nil || response.StatusCode != http.StatusOK || !status.Ready ||
-				status.Provider != "fake" || status.DocumentCount != 2 || !status.LoopbackOnly {
-				t.Fatalf("subscriber status = %+v, %v", status, decodeErr)
-			}
-			t.Logf("Subscriber status: %+v", status)
+		header, err := reader.Next()
+		if err == io.EOF {
 			break
 		}
-		if time.Now().After(deadline) || ctx.Err() != nil {
-			t.Fatalf("Ask did not start: %v\n%s", err, read(log.Name()))
+		if err != nil {
+			t.Fatal(err)
 		}
-		time.Sleep(20 * time.Millisecond)
+		members[header.Name], err = io.ReadAll(reader)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
-	response, err := client.Post(url+"/api/ask", "application/json",
-		strings.NewReader(`{"question":"What is the migration survey interval?"}`))
-	if err != nil {
+	content := string(members["rag-content.md"])
+	if !strings.Contains(content, `<file path="notes/research/birds.md">`) ||
+		!strings.Contains(content, "three days") || strings.Contains(content, "seven days") ||
+		!strings.Contains(content, `<file path="notes/research/maps.md">`) {
+		t.Fatalf("subscriber archive has stale content or incompatible framing: %s", content)
+	}
+	for _, name := range []string{"meta.json", "search.json", "graph.json", "backlinks.json", "site-manifest.json"} {
+		if !json.Valid(members[name]) {
+			t.Fatalf("missing or invalid packaged metadata %s: %s", name, members[name])
+		}
+	}
+	var metadata map[string]struct {
+		Title string `json:"title"`
+		URL   string `json:"url"`
+	}
+	if err := json.Unmarshal(members["meta.json"], &metadata); err != nil {
 		t.Fatal(err)
 	}
-	defer response.Body.Close()
-	var answer ask.AnswerResponse
-	data, err := io.ReadAll(response.Body)
-	if err != nil || json.Unmarshal(data, &answer) != nil || response.StatusCode != http.StatusOK ||
-		answer.Status != "answered" || len(answer.Sources) != 1 || len(answer.DroppedCitations) != 0 {
-		t.Fatalf("subscriber answer: %s, %v", data, err)
+	birds := metadata["birds"]
+	if len(metadata) != 2 || birds.Title != "Bird Observation Notes" || birds.URL != "/field-guide/bird-observations/" {
+		t.Fatalf("packaged page identity changed: %+v", metadata)
 	}
-	source := answer.Sources[0]
-	if source.Title != "Bird Observation Notes" || source.URL != "/field-guide/bird-observations/" ||
-		!strings.Contains(source.Excerpt, "three days") || strings.Contains(source.Excerpt, "seven days") {
-		t.Fatalf("subscriber retrieved stale or incorrect evidence: %+v", source)
-	}
-	t.Logf("Subscriber answer: %s", data)
 	assertSubscriberFiles(t, subscriber)
 }
 

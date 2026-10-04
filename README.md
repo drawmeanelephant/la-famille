@@ -30,7 +30,6 @@ content-only corpus boundary and the independent GitHub Pages fallback.
 *   **Interactive TUI:** A sleek Bubbletea-powered terminal interface for managing builds, serving the site locally, and viewing project stats.
 *   **Robust CLI:** A powerful command-line interface built with `cobra` for tasks like initialization, building, serving, and RAG generation.
 *   **RAG Export:** Native tools to extract your site's content and metadata into clean archives optimized for LLM context windows (`rag-system.md`, `rag-content.md`, etc.).
-*   **Ask This Site (experimental):** A local, citation-grounded Q&A assistant that runs entirely on your machine. Binds only to loopback, never sends content off-device, and supports the Ollama daemon out of the box.
 *   **Flexible Templating:** Support for multiple HTML layouts (e.g., standard, cyberpunk, minimal) easily overridden via YAML frontmatter.
 *   **Taxonomy Archives:** Add `tags:` or `categories:` to any page's YAML frontmatter and the build emits `/tags/` and `/categories/` archive pages — linked from each article and from the site nav, with no template edits required.
 *   **Built-in Local Server:** Instantly preview your site with `go run ./cmd/la-famille serve`.
@@ -157,22 +156,17 @@ The TUI uses standard, frictionless keybindings for easy navigation (every scree
 *   **Diagnostics:** Press `d` from any screen to toggle the Diagnostics drawer (shows build warnings/errors with `Next:` action hints like `la-famille check` or `fix frontmatter in <path>`). In the drawer, `c` clears entries and `↑`/`↓` navigates.
 *   **Watch Mode:** Press `w` on the menu/stats/diagnostics to toggle Watch Mode (auto-rebuild on file changes) — equivalent to selecting "Toggle Watch Mode".
 *   **Help:** Press `?` or `h` from any screen to open the Help & Keybindings legend; press `?`, `h`, `q`, or `Esc` to return. Footer help lines expand to `↑/k, ↓/j: Navigate • Enter/Space: Select • m: Menu • d: Diagnostics • w: Watch • ?: Help • q: Quit`.
-*   **Active Server Views:** When you select "Serve Site" (or "Serve Site with Watch"), the TUI locks into an alternate screen buffer, displaying the dancing mascot animation (Raoul!). To gracefully tear down the network handle and exit back to the main menu, press `q` or `Esc`. From serve/ask screens you can also press `d` for diagnostics or `?`/`h` for help.
+*   **Active Server Views:** When you select "Serve Site" (or "Serve Site with Watch"), the TUI locks into an alternate screen buffer, displaying the dancing mascot animation (Raoul!). To gracefully tear down the network handle and exit back to the main menu, press `q` or `Esc`. From the serve screen you can also press `d` for diagnostics or `?`/`h` for help.
 
 To serve the generated site locally (defaults to port 8080):
 ```bash
 go run ./cmd/la-famille serve
 ```
 
-To launch the local-first **Ask This Site** assistant against your corpus:
-```bash
-go run ./cmd/la-famille rag                # refresh the corpus first
-go run ./cmd/la-famille ask --model llama3.2  # then serve the assistant on 127.0.0.1:8090
-# Or use a verified pack, with no checkout/config or generated directories:
-la-famille ask --pack /absolute/path/corpus.tar --provider fake --no-browser
-```
-
-> **Note:** `ask` is opt-in and experimental. It binds only to your loopback address, never sends your content off the machine, and never logs prompts or answers by default. See [content/docs/ask.md](content/docs/ask.md) for the full privacy and architecture notes.
+> **Breaking change:** Ask This Site has been retired in [#629](https://github.com/drawmeanelephant/la-famille/issues/629).
+> The `ask` command, API/UI, TUI entry, and Ollama integration are removed.
+> Search, RAG exports, and Corpus Packs remain supported. Existing caches,
+> archives, content, and installed models are left untouched.
 
 ## Documentation 📚
 
@@ -186,7 +180,6 @@ The commands above will get you started, but La Famille has a lot more to offer.
 *   **[Corpus Packs v1: Build and Verify](content/docs/corpus-packs.md)**
 *   **[Corpus Packs: Local Diff and Apply](content/docs/corpus-pack-deltas.md)**
 *   **[Corpus Packs: Publish, Pull, and Watch](content/docs/corpus-pack-feeds.md)**
-*   **[Ask This Site Guide](content/docs/ask.md)**
 *   **[Change Ledger Guide](content/docs/change-ledger.md)**
 *   **[How the Generator Works](content/docs/generator.md)**
 

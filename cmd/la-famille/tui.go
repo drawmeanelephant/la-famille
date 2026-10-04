@@ -18,7 +18,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
-	"github.com/tbuddy/la-famille/internal/ask"
 	"github.com/tbuddy/la-famille/internal/config"
 	sitediff "github.com/tbuddy/la-famille/internal/diff"
 	"github.com/tbuddy/la-famille/internal/generator"
@@ -91,7 +90,6 @@ const (
 	screenServe
 	screenDiagnostics
 	screenHelp
-	screenAsk
 	screenChanges
 )
 
@@ -134,11 +132,8 @@ type model struct {
 	changesCursor     int
 	regressionsOnly   bool
 	workErr           error
-	askServerErr      error
 	stats             *generator.BuildResult
 	server            *http.Server
-	askServerCancel   context.CancelFunc
-	askServer         *ask.Server
 	serverCancel      context.CancelFunc
 	watcherCancel     context.CancelFunc
 	cfg               config.Config
@@ -179,7 +174,6 @@ func initialModel(cfg config.Config) model {
 			{"Changes"},
 			{"Diagnostics"},
 			{"RAG Export"},
-			{"Ask This Site"},
 			{"Help"},
 			{"Just Raoul"},
 		},
@@ -322,12 +316,6 @@ func (m *model) stopServing() {
 		_ = m.server.Shutdown(ctx)
 		m.server = nil
 	}
-	if m.askServerCancel != nil {
-		m.askServerCancel()
-		m.askServerCancel = nil
-	}
-	m.askServer = nil
-	m.askServerErr = nil
 }
 
 func runServer(server *http.Server, report func(tea.Msg)) {
@@ -527,15 +515,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						err := ragexport.RunExport(m.cfg)
 						return workResultMsg{err: err, msg: "RAG Export complete"}
 					}, m.spinner.Tick)
-				case "Ask This Site":
-					m.screen = screenWorking
-					m.workMsg = "Preparing Ask This Site assistant..."
-					m.workErr = nil
-					m.workPhase = "Checking provider & corpus"
-					m.workCompleted, m.workTotal = 0, 4
-					m.workEvents = nil
-					m.progress.SetPercent(0)
-					return m, tea.Batch(launchAskServer(m.cfg), m.spinner.Tick)
 				case "Serve Site", "Serve Site with Watch":
 					isWatch := choice == "Serve Site with Watch" || m.cfg.WatchMode
 					if choice == "Serve Site with Watch" {
@@ -628,7 +607,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tickMsg:
 		switch m.screen {
-		case screenRaoul, screenServe, screenAsk:
+		case screenRaoul, screenServe:
 			m.frame = (m.frame + 1) % len(raoulPoses)
 			return m, tickCmd()
 		case screenWorking:
@@ -698,35 +677,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.screen = screenWorking
 		m.workMsg = "Unable to start server"
 		m.workErr = msg.err
-
-	case askServerReadyMsg:
-		if msg.err != nil {
-			m.addDiagnostic("error", msg.err)
-			m.stopServing()
-			m.screen = screenWorking
-			m.workMsg = "Unable to start Ask This Site"
-			m.workErr = msg.err
-			return m, nil
-		}
-		// Pre-flight check: warn if the provider is unreachable or the
-		// corpus is empty. We never refuse to start, but surfacing this
-		// before the user opens the browser is part of the spec.
-		m.askServer = msg.server
-		m.askServerCancel = msg.cancel
-		m.askServerErr = nil
-		if st := msg.server.Snapshot(context.Background()); !st.Ready {
-			m.askServerErr = fmt.Errorf("provider %s not reachable — answers will fail until you fix it", st.Provider)
-			m.addDiagnostic("warning", m.askServerErr)
-		} else if st.ChunkCount == 0 {
-			m.askServerErr = errors.New("RAG archive is empty — run `RAG Export` first")
-			m.addDiagnostic("warning", m.askServerErr)
-		}
-		m.screen = screenAsk
-		m.frame = 0
-		m.workCompleted, m.workTotal = 4, 4
-		m.progress.SetPercent(1)
-		askFlagBundle.port = msg.port
-		return m, tickCmd()
 
 	}
 
@@ -1164,31 +1114,6 @@ func (m model) View() string {
 		}
 		return s
 
-	case screenAsk:
-		port := askFlagBundle.port
-		if port == 0 {
-			port = ask.PortDefault
-		}
-		s := accentStyle.Render(animatedRaoul(m.frame))
-		s += "\n\n"
-		s += titleStyle.Render(fmt.Sprintf("Ask This Site — http://127.0.0.1:%d", port)) + "\n"
-		s += subtleStyle.Render("Local-only. Answers are grounded in your RAG archive and cite source pages.") + "\n"
-		s += infoBadge.Render("Provider: "+askFlagBundle.provider) + "\n"
-		modelLabel := askFlagBundle.model
-		if modelLabel == "" {
-			modelLabel = "(provider default)"
-		}
-		s += infoBadge.Render("Model: "+modelLabel) + "\n"
-		if m.askServerErr != nil {
-			s += errorBadge.Render(fmt.Sprintf("Server error: %v", m.askServerErr)) + "\n"
-		} else {
-			s += infoBadge.Render("Server Status: RUNNING") + " " + pulseDots(m.frame) + "\n"
-		}
-		s += "\nPress d for diagnostics • Press ?/h for help • Press Esc or q to stop the assistant and return to menu"
-		if m.width > 0 {
-			return lipgloss.NewStyle().MaxWidth(m.width).Render(s)
-		}
-		return s
 	}
 
 	return "Unknown screen"

@@ -1,5 +1,5 @@
-// Package ragfmt owns the one escaping rule shared by the RAG archive writer
-// (internal/ragexport) and its reader (internal/retrieval).
+// Package ragfmt owns the escaping rule used by the RAG archive writer
+// (internal/ragexport) and available to external archive readers.
 //
 // The archive wraps each file verbatim:
 //

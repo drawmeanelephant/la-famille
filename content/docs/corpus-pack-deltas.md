@@ -151,7 +151,7 @@ no-change, additions, modifications, removals, unknown members, wrong bases,
 corruption, truncation, unsafe paths, size limits and destination protection.
 See the [compiled-binary demonstration](https://github.com/drawmeanelephant/la-famille/blob/master/docs/corpus-pack-deltas-demo.md).
 
-Ask integration, pull/watch, subscriptions, remote access, signatures,
+Pull/watch, subscriptions, remote access, signatures,
 compression, deployments, releases and per-page repackaging are not part of
 this milestone. After review and merge, close #613, #614 and milestone 7.
 Keep #583 open for later milestones. New ideas belong in separate issues, not

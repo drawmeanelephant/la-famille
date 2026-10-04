@@ -193,7 +193,7 @@ in the repository.
 
 Pack diff/apply belongs to the separate
 [Local Diff and Apply milestone](corpus-pack-deltas.md). Subscriptions,
-pull/watch, remote downloads, pack-backed Ask, signatures, deployment, model
+pull/watch, remote downloads, signatures, deployment, model
 benchmarks and adoption evidence remain **not in scope**. New ideas belong in
 separate issues. After review and merge with the
 fixed criteria met, close #609, #610 and milestone 6; leave #583 open for later

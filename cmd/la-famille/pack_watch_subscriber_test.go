@@ -16,8 +16,8 @@ import (
 	"github.com/tbuddy/la-famille/internal/pack"
 )
 
-// This is compiled-binary local workflow coverage, not hosted HTTPS or a real
-// model demonstration. Network policy remains enabled in the compiled binary.
+// This is compiled-binary local workflow coverage, not hosted HTTPS evidence.
+// Network policy remains enabled in the compiled binary.
 func TestPackWatchCompiledSubscriber(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("compiled watch signal demonstration requires POSIX signals")
@@ -36,7 +36,7 @@ func TestPackWatchCompiledSubscriber(t *testing.T) {
 		t.Fatalf("compile: %v\n%s", err, output)
 	}
 	publisher, subscriber := filepath.Join(work, "publisher"), filepath.Join(work, "subscriber")
-	if err := os.CopyFS(publisher, os.DirFS(filepath.Join(repo, "assets/testdata/pack-ask"))); err != nil {
+	if err := os.CopyFS(publisher, os.DirFS(filepath.Join(repo, "assets/testdata/pack-subscriber"))); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Mkdir(subscriber, 0700); err != nil {
