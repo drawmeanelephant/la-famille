@@ -84,3 +84,28 @@
 - Recheck branch/staged diff, run the checked-in hook with the compatible
   already-installed linter, preserve the configured Git identity, and include
   the required Factory co-author trailer.
+
+## PR #628 file-size guard follow-up
+
+- CI's only failing step was `Check tracked file sizes`: the single raw evidence
+  JSON had 3108 lines, above the unchanged 1500-line limit. Required Go lint,
+  tests, website validation, and the semantic gate passed. Complexity reporting
+  was advisory. The local format check does not include this separate guard.
+- The owner explicitly authorized fixing this failure and pushing a follow-up
+  commit to PR #628. Do not change the guard or any measurement.
+- Split each of the eight complete run objects into a readable JSON file under
+  `docs/ask-retrieval-602-runs/`. Keep metadata, verification receipts, and
+  ordered relative run-file references in the existing raw-evidence index.
+- Update the report to explain the index and provide a reconstruction command.
+  Compare the reconstructed JSON with the committed pre-split evidence for
+  exact data equality, including every stdout/stderr byte and timing.
+- Stage the new files before running the tracked-file guard. Run every blocking
+  lint-workflow script, standard tests/vet/formatting, and staged diff checks.
+  Review the complete follow-up, commit with the required co-author trailer,
+  push, and inspect the new CI result. Do not close or merge the issue/PR.
+- Split completed: 101-line index plus eight complete 324–428-line run files.
+  Exact reconstructed JSON equals the original `e44f620` evidence, preserving
+  all eight runs / 68 results and every captured output/timing value.
+- Local format/lint/module hygiene, full tests/vet, technical-debt, tracked-file
+  size, AGENTS.md, Ask log-scrubbing, and working/staged whitespace guards passed.
+  No quality limit, Go source, dataset, or measured result changed.

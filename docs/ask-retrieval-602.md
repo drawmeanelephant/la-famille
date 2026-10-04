@@ -29,10 +29,49 @@ the unsupported questions; that is the observed hybrid abstention regression.
 
 ## Provenance and conditions
 
-The companion [raw evidence](ask-retrieval-602-results.json) contains exact
-commands, UTC timestamps, process exit codes, unabridged stdout/stderr,
-per-site/per-query nanosecond measurements, external hash/byte-comparison
-receipts, dataset/source hashes, and provider/build metadata.
+The companion [raw evidence index](ask-retrieval-602-results.json) retains
+provider/build metadata, dataset/source hashes, and verification receipts.
+Its ordered `run_files` entries point to eight complete per-run JSON records
+with exact commands, UTC timestamps, process exit codes, unabridged stdout/stderr,
+per-site/per-query nanosecond measurements, and external hash/byte-comparison
+receipts. Paths are relative to the index's directory.
+
+| Raw run | Evidence file |
+| --- | --- |
+| Lexical original | [lexical-original.json](ask-retrieval-602-runs/lexical-original.json) |
+| Lexical hard | [lexical-hard.json](ask-retrieval-602-runs/lexical-hard.json) |
+| Hybrid cold original | [hybrid-cold-original.json](ask-retrieval-602-runs/hybrid-cold-original.json) |
+| Hybrid warm original | [hybrid-warm-original.json](ask-retrieval-602-runs/hybrid-warm-original.json) |
+| Hybrid cold hard | [hybrid-cold-hard.json](ask-retrieval-602-runs/hybrid-cold-hard.json) |
+| Hybrid warm hard | [hybrid-warm-hard.json](ask-retrieval-602-runs/hybrid-warm-hard.json) |
+| Unavailable original | [unavailable-original.json](ask-retrieval-602-runs/unavailable-original.json) |
+| Unavailable hard | [unavailable-hard.json](ask-retrieval-602-runs/unavailable-hard.json) |
+
+To reconstruct the original evidence object and verify that the packaging
+change preserves every measurement, run from the repository root:
+
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+import subprocess
+
+index_path = Path("docs/ask-retrieval-602-results.json")
+evidence = json.loads(index_path.read_text())
+evidence["runs"] = [
+    json.loads((index_path.parent / path).read_text())
+    for path in evidence.pop("run_files")
+]
+original = json.loads(subprocess.check_output([
+    "git", "show",
+    "e44f6203b21f4f7ab649e92e91de616bb6c55bf2:docs/ask-retrieval-602-results.json",
+]))
+assert evidence == original
+assert len(evidence["runs"]) == 8
+assert sum(len(run["question_results"]) for run in evidence["runs"]) == 68
+print("All original evidence fields and 68 question results preserved exactly.")
+PY
+```
 
 | Item | Recorded identity |
 | --- | --- |
@@ -407,7 +446,12 @@ go vet ./...
 go test -race ./...
 go test -shuffle=on -count=2 -parallel=4 ./...
 PATH="/opt/homebrew/opt/golangci-lint/bin:$PATH" ./format_check.sh
+bash .github/scripts/quality/check-tech-debt.sh
+bash .github/scripts/quality/check-file-sizes.sh
+bash .github/scripts/quality/check-agents-md.sh
+bash .github/scripts/quality/check-log-scrub.sh
 git diff --check
+git diff --cached --check
 ```
 
 The first plain `./format_check.sh` attempt failed because PATH selected
@@ -415,6 +459,16 @@ The first plain `./format_check.sh` attempt failed because PATH selected
 Go 1.26 target. The already-installed Homebrew linter 2.14.0, built with Go
 1.27.1, passed with **0 issues** using the command above. No linter was
 installed and no quality check was disabled or skipped.
+
+The first PR #628 CI run passed Go lint, tests, website validation, and the
+semantic gate, but its separate tracked-file size check failed: the raw JSON
+had 3108 lines, above the unchanged 1500-line limit. The owner authorized the
+packaging-only follow-up. The index now has 101 lines and each complete run has
+324–428 lines, without minifying records, dropping evidence, or weakening the
+guard. Reconstruction equals the original committed JSON exactly, including
+all captured stdout/stderr strings and timing values. The blocking lint-workflow
+scripts above are now included in local validation; the advisory complexity
+report was not the failure cause.
 
 The complete intended change was reviewed, including all new files and the
 raw evidence. An independent evidence cross-check verified all 8 runs / 68
