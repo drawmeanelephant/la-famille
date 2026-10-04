@@ -247,6 +247,16 @@ cache directory (`la-famille/ask-eval` under the OS cache by default), keyed
 by fixture identity and content digest, or in `--embedding-cache`. The report
 identifies hybrid ranking or an explicit lexical fallback when Ollama is
 offline. No-answer controls retain their strict zero-retrieval gate.
+Per-site measurement JSON records corpus/index hashes, constructor time,
+chunk/query embedding counts and time, and each query's actual ranker mode;
+durations are nanoseconds and exclude completion.
+
+[Real Ollama measurements for #602](https://github.com/drawmeanelephant/la-famille/blob/master/docs/ask-retrieval-602.md)
+are complete: `nomic-embed-text` improves hard recall@5 from 0.5833 to 1.0000,
+but original precision regresses and hybrid fails all three abstention controls.
+Lexical and offline fallback pass them, including the warranty check fixed by
+#604. Warm indices are byte-identical with zero chunk re-embedding. This is
+retrieval/cache evidence, not a live-completion benchmark; ready for owner review.
 
 ```bash
 go run ./cmd/la-famille ask \
@@ -272,8 +282,8 @@ The paired report keeps both arms, per-question retrieved pages, route coverage,
 and aggregate deltas. It fails on a graph gate failure, decreased aggregate
 recall/precision, or decreased recall/precision on any single-page question.
 The lexical arm is expected to fail the new multi-hop grounding gates; this
-does not conceal its results. The frozen hard dataset still fails its known
-warranty-abstention gate.
+does not conceal its results. Lexical ranking passes the frozen hard warranty
+abstention gate; the separately measured hybrid arm does not.
 
 ### Examples
 

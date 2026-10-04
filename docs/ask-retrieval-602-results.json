@@ -1,0 +1,3108 @@
+{
+  "metadata": {
+    "date_utc": "2026-10-04T17:25:22.846233+00:00",
+    "project_root": "/Users/tbuddy/.factory/worktrees/b54d8513/fac-laf-001",
+    "run_dir": "/tmp/la-famille-602.dbYmuu",
+    "source_commit": "6f1764839576fe45bf5f3808aa9be92f8edee29d",
+    "go_version": "go version go1.27.1 darwin/arm64",
+    "go_build_info": "/tmp/la-famille-602.dbYmuu/la-famille: go1.27.1\n\tpath\tgithub.com/tbuddy/la-famille/cmd/la-famille\n\tmod\tgithub.com/tbuddy/la-famille\tv0.1.0-prealpha.0.20261003150341-6f1764839576+dirty\t\n\tdep\tgithub.com/BurntSushi/toml\tv0.3.1\th1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=\n\tdep\tgithub.com/adrg/frontmatter\tv0.2.0\th1:/DgnNe82o03riBd1S+ZDjd43wAmC6W35q67NHeLkPd4=\n\tdep\tgithub.com/aymanbagabas/go-osc52/v2\tv2.0.1\th1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=\n\tdep\tgithub.com/aymerick/douceur\tv0.2.0\th1:Mv+mAeH1Q+n9Fr+oyamOlAkUNPWPlA8PPGR0QAaYuPk=\n\tdep\tgithub.com/charmbracelet/bubbles\tv1.0.0\th1:12J8/ak/uCZEMQ6KU7pcfwceyjLlWsDLAxB5fXonfvc=\n\tdep\tgithub.com/charmbracelet/bubbletea\tv1.3.10\th1:otUDHWMMzQSB0Pkc87rm691KZ3SWa4KUlvF9nRvCICw=\n\tdep\tgithub.com/charmbracelet/colorprofile\tv0.4.1\th1:a1lO03qTrSIRaK8c3JRxJDZOvhvIeSco3ej+ngLk1kk=\n\tdep\tgithub.com/charmbracelet/harmonica\tv0.2.0\th1:8NxJWRWg/bzKqqEaaeFNipOu77YR5t8aSwG4pgaUBiQ=\n\tdep\tgithub.com/charmbracelet/lipgloss\tv1.1.0\th1:vYXsiLHVkK7fp74RkV7b2kq9+zDLoEU4MZoFqR/noCY=\n\tdep\tgithub.com/charmbracelet/x/ansi\tv0.11.6\th1:GhV21SiDz/45W9AnV2R61xZMRri5NlLnl6CVF7ihZW8=\n\tdep\tgithub.com/charmbracelet/x/cellbuf\tv0.0.15\th1:ur3pZy0o6z/R7EylET877CBxaiE1Sp1GMxoFPAIztPI=\n\tdep\tgithub.com/charmbracelet/x/term\tv0.2.2\th1:xVRT/S2ZcKdhhOuSP4t5cLi5o+JxklsoEObBSgfgZRk=\n\tdep\tgithub.com/clipperhouse/displaywidth\tv0.9.0\th1:Qb4KOhYwRiN3viMv1v/3cTBlz3AcAZX3+y9OLhMtAtA=\n\tdep\tgithub.com/clipperhouse/stringish\tv0.1.1\th1:+NSqMOr3GR6k1FdRhhnXrLfztGzuG+VuFDfatpWHKCs=\n\tdep\tgithub.com/clipperhouse/uax29/v2\tv2.5.0\th1:x7T0T4eTHDONxFJsL94uKNKPHrclyFI0lm7+w94cO8U=\n\tdep\tgithub.com/fsnotify/fsnotify\tv1.10.1\th1:b0/UzAf9yR5rhf3RPm9gf3ehBPpf0oZKIjtpKrx59Ho=\n\tdep\tgithub.com/gorilla/css\tv1.0.1\th1:ntNaBIghp6JmvWnxbZKANoLyuXTPZ4cAMlo6RyhlbO8=\n\tdep\tgithub.com/lucasb-eyer/go-colorful\tv1.3.0\th1:2/yBRLdWBZKrf7gB40FoiKfAWYQ0lqNcbuQwVHXptag=\n\tdep\tgithub.com/mattn/go-isatty\tv0.0.20\th1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=\n\tdep\tgithub.com/mattn/go-runewidth\tv0.0.19\th1:v++JhqYnZuu5jSKrk9RbgF5v4CGUjqRfBm05byFGLdw=\n\tdep\tgithub.com/microcosm-cc/bluemonday\tv1.0.27\th1:MpEUotklkwCSLeH+Qdx1VJgNqLlpY2KXwXFM08ygZfk=\n\tdep\tgithub.com/muesli/ansi\tv0.0.0-20230316100256-276c6243b2f6\th1:ZK8zHtRHOkbHy6Mmr5D264iyp3TiX5OmNcI5cIARiQI=\n\tdep\tgithub.com/muesli/cancelreader\tv0.2.2\th1:3I4Kt4BQjOR54NavqnDogx/MIoWBFa0StPA8ELUXHmA=\n\tdep\tgithub.com/muesli/termenv\tv0.16.0\th1:S5AlUN9dENB57rsbnkPyfdGuWIlkmzJjbFf0Tf5FWUc=\n\tdep\tgithub.com/rivo/uniseg\tv0.4.7\th1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=\n\tdep\tgithub.com/spf13/cobra\tv1.10.2\th1:DMTTonx5m65Ic0GOoRY2c16WCbHxOOw6xxezuLaBpcU=\n\tdep\tgithub.com/spf13/pflag\tv1.0.9\th1:9exaQaMOCwffKiiiYk6/BndUBv+iRViNW+4lEMi0PvY=\n\tdep\tgithub.com/xo/terminfo\tv0.0.0-20220910002029-abceb7e1c41e\th1:JVG44RsyaB9T2KIHavMF/ppJZNG9ZpyihvCd0w101no=\n\tdep\tgithub.com/yuin/goldmark\tv1.8.6\th1:d0VcaP1sx9GkFVkoW+KtggpGi2KZ965i14b0+bDQST4=\n\tdep\tgolang.org/x/net\tv0.59.0\th1:5zfYln+w5XCxwrnMMJPufRgNoXEaGxl0wo5GqPXyues=\n\tdep\tgolang.org/x/sys\tv0.48.0\th1:bbX/i/6MgT9BVLM9RT1thmxL04yeTAhbEz4SyadbXoo=\n\tdep\tgopkg.in/yaml.v2\tv2.4.0\th1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=\n\tdep\tgopkg.in/yaml.v3\tv3.0.1\th1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\tDefaultGODEBUG=tracebacklabels=0,x509sslcertoverrideplatform=0\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\n\tbuild\tGOARCH=arm64\n\tbuild\tGOOS=darwin\n\tbuild\tGOARM64=v8.0\n\tbuild\tvcs=git\n\tbuild\tvcs.revision=6f1764839576fe45bf5f3808aa9be92f8edee29d\n\tbuild\tvcs.time=2026-10-03T15:03:41Z\n\tbuild\tvcs.modified=true\n",
+    "binary_sha256": "a0184126ccbf7d70e684fed1fc5fd4a9eb1fc58ba146b04b5a84207a65b939ad",
+    "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t27.2\nBuildVersion:\t\t26B5091g\n",
+    "cpu": "Apple M4",
+    "memory_bytes": 17179869184,
+    "ollama_version": {
+      "version": "0.35.1"
+    },
+    "ollama_tags": {
+      "models": [
+        {
+          "name": "nomic-embed-text:latest",
+          "model": "nomic-embed-text:latest",
+          "modified_at": "2026-10-04T13:22:54.50884328-04:00",
+          "size": 274302450,
+          "digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "nomic-bert",
+            "families": [
+              "nomic-bert"
+            ],
+            "parameter_size": "137M",
+            "quantization_level": "F16",
+            "context_length": 2048,
+            "embedding_length": 768
+          },
+          "capabilities": [
+            "embedding"
+          ]
+        }
+      ]
+    },
+    "ollama_ps_before": {
+      "models": []
+    },
+    "dataset_sha256": {
+      "golden-questions.json": "96ca0f28e97014e53effd4e45e5ec2e8bcbb1c692368b56dc613926bf9823418",
+      "golden-questions-hard.json": "c34fdd10603a7c3bdfb5f4c87097e19e0ed03d327105f7f1a6e9b0946f02b5fd"
+    },
+    "instrumentation_sha256": {
+      "internal/askeval/eval.go": "942d4aeee555b58868795332ae1f9621510bbf7a156396dc7090162ab527fbe5",
+      "internal/askeval/measurement.go": "a7c02228b42efdcfd8b1d834932276c43e9cbdb143ddc1fe32b5a718eff1a30e",
+      "internal/askeval/hybrid_test.go": "98bafb94c8a246ccc2adc9c077cddf89cf7192d865faa1228f21e7bf5acd3618",
+      "internal/askeval/measurement_test.go": "023317870125ea8eb4e94b778f51db0ae4737d297e14fc38d0ca70ae8e6fadc0"
+    },
+    "ollama_ps_after": {
+      "models": [
+        {
+          "name": "nomic-embed-text:latest",
+          "model": "nomic-embed-text:latest",
+          "size": 370031984,
+          "digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "nomic-bert",
+            "families": [
+              "nomic-bert"
+            ],
+            "parameter_size": "137M",
+            "quantization_level": "F16"
+          },
+          "expires_at": "2026-10-04T13:30:25.761829-04:00",
+          "size_vram": 370031984,
+          "context_length": 2048
+        }
+      ]
+    },
+    "go_compiler_build_info": "/opt/homebrew/Cellar/go/1.27.1/libexec/pkg/tool/darwin_arm64/compile: go1.27.1\n\tpath\tcmd/compile\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\t-gcflags=cmd/...=-dwarf=false\n\tbuild\t-pgo=default.pgo\n\tbuild\t-trimpath=true\n\tbuild\tCGO_ENABLED=0\n\tbuild\tGOARCH=arm64\n\tbuild\tGOARM64=v8.0\n\tbuild\tGOOS=darwin\n",
+    "go_compiler_build_id": "uKjYHBFGYwkqi-xJqWFY/MuiVpFI_UydqAK6EKgaF/m2mGaat--G0d2NAYqTK-/xHQmP_HlJBsHwPbvoPCH",
+    "go_compiler_source_commit": null,
+    "completion_calls": 0
+  },
+  "runs": [
+    {
+      "label": "lexical-original",
+      "dataset": "golden-questions.json",
+      "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions.json --provider fake --no-embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/original",
+      "started_utc": "2026-10-04T17:25:22.992728+00:00",
+      "wall_ns": 387375208,
+      "exit_code": 0,
+      "stdout": "Ask This Site evaluation: ask-this-site-phase-1\nRanker: BM25-lite \u00b7 K=5 \u00b7 provider=fake\n\nSITE                      QUESTION                   RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nanchor-links              other-page-heading         1.00      1.00       0.50       -     PASS    [other index] / []\nanchor-links              unanswerable               n/a       no-answer  -          -     PASS    [] / []\nartisanal-ceramics        shino-glaze                1.00      1.00       0.25       -     PASS    [collection/wheel-thrown-vessels index journal/2026-07-15-glazing-techniques care-guide] / []\nartisanal-ceramics        washing-stoneware          1.00      1.00       0.33       -     PASS    [care-guide collection/wheel-thrown-vessels index] / []\nartisanal-ceramics        pine-ash-firing            1.00      1.00       0.25       -     PASS    [journal/2026-07-15-glazing-techniques care-guide collection/wheel-thrown-vessels index] / []\nclean-urls                author-is-cool             1.00      1.00       1.00       -     PASS    [bio] / []\nclean-urls                blog-post                  1.00      1.00       0.50       -     PASS    [index blog/post] / []\nask-eval-deep-chain       northern-kiln-temperature  1.00      1.00       0.33       -     PASS    [observations/archive/blue-glass-run observations/field-log index] / []\nask-eval-research-branch  cobalt-concentration       1.00      1.00       0.33       -     PASS    [study/samples/cobalt-clay study/field-notes index] / []\n\nRecall@5: 1.0000 (8 answerable questions); questions passed: 9/9\nPrecision@5: 0.4375 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 1.0000; delta: +0.0000; floor passed: true\nClass standard: recall=1.0000 precision=0.4375 n=8\nPrecision floor passed: true; evaluation passed: true\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"anchor-links\",\"CorpusDigest\":\"536d3212b7b4e13a9ae8debae557657a6c614481c539f83a0862aaeda0c0a450\",\"Chunks\":3,\"EmbeddingModel\":\"\",\"CachePath\":\"\",\"IndexSHA256Before\":\"\",\"IndexSHA256After\":\"\",\"IndexDuration\":0,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"other-page-heading\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":4125},{\"QuestionID\":\"unanswerable\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":2333}]},{\"SiteID\":\"artisanal-ceramics\",\"CorpusDigest\":\"daeca4489ad0e3bf6e0efb5a19a9ab70321327f97573370886f0c342f765f688\",\"Chunks\":8,\"EmbeddingModel\":\"\",\"CachePath\":\"\",\"IndexSHA256Before\":\"\",\"IndexSHA256After\":\"\",\"IndexDuration\":0,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"shino-glaze\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":5625},{\"QuestionID\":\"washing-stoneware\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":5000},{\"QuestionID\":\"pine-ash-firing\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":6584}]},{\"SiteID\":\"clean-urls\",\"CorpusDigest\":\"70258859b5fbd67095b32c86ef970a22c9aa11fe526691144a2621a15187cd69\",\"Chunks\":3,\"EmbeddingModel\":\"\",\"CachePath\":\"\",\"IndexSHA256Before\":\"\",\"IndexSHA256After\":\"\",\"IndexDuration\":0,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"author-is-cool\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":2834},{\"QuestionID\":\"blog-post\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":3208}]},{\"SiteID\":\"ask-eval-deep-chain\",\"CorpusDigest\":\"fa4998dd86d222c38757e85ae191ea936419ede6b5b142334df82418110b8d6c\",\"Chunks\":3,\"EmbeddingModel\":\"\",\"CachePath\":\"\",\"IndexSHA256Before\":\"\",\"IndexSHA256After\":\"\",\"IndexDuration\":0,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"northern-kiln-temperature\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":5709}]},{\"SiteID\":\"ask-eval-research-branch\",\"CorpusDigest\":\"f813384c91e1930a4d3ba562e53027dbde4d1f160644cb61a76798ef40e294b1\",\"Chunks\":3,\"EmbeddingModel\":\"\",\"CachePath\":\"\",\"IndexSHA256Before\":\"\",\"IndexSHA256After\":\"\",\"IndexDuration\":0,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"cobalt-concentration\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":5167}]}]\n",
+      "stderr": "time=2026-10-04T13:25:23.321-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2041344016/rag-archive\"\ntime=2026-10-04T13:25:23.322-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:23.322-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:23.322-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:23.338-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2527522552/rag-archive\"\ntime=2026-10-04T13:25:23.339-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:23.339-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:23.340-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:23.350-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-373375546/rag-archive\"\ntime=2026-10-04T13:25:23.351-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:23.351-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:23.352-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:23.362-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-1069121621/rag-archive\"\ntime=2026-10-04T13:25:23.363-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:23.363-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:23.364-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:23.375-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2010925063/rag-archive\"\ntime=2026-10-04T13:25:23.376-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:23.376-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:23.377-04:00 level=INFO msg=\"Created rag-content.md\"\n",
+      "measurements": [
+        {
+          "SiteID": "anchor-links",
+          "CorpusDigest": "536d3212b7b4e13a9ae8debae557657a6c614481c539f83a0862aaeda0c0a450",
+          "Chunks": 3,
+          "EmbeddingModel": "",
+          "CachePath": "",
+          "IndexSHA256Before": "",
+          "IndexSHA256After": "",
+          "IndexDuration": 0,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "other-page-heading",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 4125
+            },
+            {
+              "QuestionID": "unanswerable",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 2333
+            }
+          ]
+        },
+        {
+          "SiteID": "artisanal-ceramics",
+          "CorpusDigest": "daeca4489ad0e3bf6e0efb5a19a9ab70321327f97573370886f0c342f765f688",
+          "Chunks": 8,
+          "EmbeddingModel": "",
+          "CachePath": "",
+          "IndexSHA256Before": "",
+          "IndexSHA256After": "",
+          "IndexDuration": 0,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "shino-glaze",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 5625
+            },
+            {
+              "QuestionID": "washing-stoneware",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 5000
+            },
+            {
+              "QuestionID": "pine-ash-firing",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 6584
+            }
+          ]
+        },
+        {
+          "SiteID": "clean-urls",
+          "CorpusDigest": "70258859b5fbd67095b32c86ef970a22c9aa11fe526691144a2621a15187cd69",
+          "Chunks": 3,
+          "EmbeddingModel": "",
+          "CachePath": "",
+          "IndexSHA256Before": "",
+          "IndexSHA256After": "",
+          "IndexDuration": 0,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "author-is-cool",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 2834
+            },
+            {
+              "QuestionID": "blog-post",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 3208
+            }
+          ]
+        },
+        {
+          "SiteID": "ask-eval-deep-chain",
+          "CorpusDigest": "fa4998dd86d222c38757e85ae191ea936419ede6b5b142334df82418110b8d6c",
+          "Chunks": 3,
+          "EmbeddingModel": "",
+          "CachePath": "",
+          "IndexSHA256Before": "",
+          "IndexSHA256After": "",
+          "IndexDuration": 0,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "northern-kiln-temperature",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 5709
+            }
+          ]
+        },
+        {
+          "SiteID": "ask-eval-research-branch",
+          "CorpusDigest": "f813384c91e1930a4d3ba562e53027dbde4d1f160644cb61a76798ef40e294b1",
+          "Chunks": 3,
+          "EmbeddingModel": "",
+          "CachePath": "",
+          "IndexSHA256Before": "",
+          "IndexSHA256After": "",
+          "IndexDuration": 0,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "cobalt-concentration",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 5167
+            }
+          ]
+        }
+      ],
+      "external_index_sha256_before": {},
+      "external_index_sha256_after": {},
+      "external_existing_indices_byte_identical": true,
+      "question_results": [
+        {
+          "site": "anchor-links",
+          "question_id": "other-page-heading",
+          "question": "What is the heading on the other linked page?",
+          "acceptable_pages": [
+            "other"
+          ],
+          "retrieved_pages": [
+            "other",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "anchor-links",
+          "question_id": "unanswerable",
+          "question": "Which quuxivorzz blarghmolecule certifies zindlefex?",
+          "acceptable_pages": [],
+          "retrieved_pages": [],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": true,
+          "canonical_no_answer_verified": true,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "shino-glaze",
+          "question": "What glaze is used on the Shino Tea Bowls?",
+          "acceptable_pages": [
+            "collection/wheel-thrown-vessels"
+          ],
+          "retrieved_pages": [
+            "collection/wheel-thrown-vessels",
+            "index",
+            "journal/2026-07-15-glazing-techniques",
+            "care-guide"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.25,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "washing-stoneware",
+          "question": "How should I wash handmade stoneware without damaging it?",
+          "acceptable_pages": [
+            "care-guide"
+          ],
+          "retrieved_pages": [
+            "care-guide",
+            "collection/wheel-thrown-vessels",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "pine-ash-firing",
+          "question": "What happens to pine ash glaze during firing at 1280 degrees Celsius?",
+          "acceptable_pages": [
+            "journal/2026-07-15-glazing-techniques"
+          ],
+          "retrieved_pages": [
+            "journal/2026-07-15-glazing-techniques",
+            "care-guide",
+            "collection/wheel-thrown-vessels",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.25,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "clean-urls",
+          "question_id": "author-is-cool",
+          "question": "Who says they are cool?",
+          "acceptable_pages": [
+            "bio"
+          ],
+          "retrieved_pages": [
+            "bio"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 1.0,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "clean-urls",
+          "question_id": "blog-post",
+          "question": "What does the My Blog Post page say?",
+          "acceptable_pages": [
+            "blog/post"
+          ],
+          "retrieved_pages": [
+            "index",
+            "blog/post"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "ask-eval-deep-chain",
+          "question_id": "northern-kiln-temperature",
+          "question": "What temperature did the northern kiln reach during blue-glass firing?",
+          "acceptable_pages": [
+            "observations/archive/blue-glass-run"
+          ],
+          "retrieved_pages": [
+            "observations/archive/blue-glass-run",
+            "observations/field-log",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "ask-eval-research-branch",
+          "question_id": "cobalt-concentration",
+          "question": "What cobalt concentration does the blue-clay assay report?",
+          "acceptable_pages": [
+            "study/samples/cobalt-clay"
+          ],
+          "retrieved_pages": [
+            "study/samples/cobalt-clay",
+            "study/field-notes",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        }
+      ],
+      "aggregates": {
+        "recall_at_5": 1.0,
+        "precision_at_5": 0.4375,
+        "answerable_questions": 8,
+        "passed_questions": 9,
+        "total_questions": 9,
+        "passed_abstention_controls": 1,
+        "total_abstention_controls": 1
+      }
+    },
+    {
+      "label": "lexical-hard",
+      "dataset": "golden-questions-hard.json",
+      "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions-hard.json --provider fake --no-embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/hard",
+      "started_utc": "2026-10-04T17:25:23.380858+00:00",
+      "wall_ns": 53048083,
+      "exit_code": 0,
+      "stdout": "Ask This Site evaluation: ask-this-site-hard\nRanker: BM25-lite \u00b7 K=5 \u00b7 provider=fake\n\nSITE     QUESTION                RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nstation  capture-and-share       1.00      0.50       0.50       -     PASS    [rationing cistern index water-pump] / []\nstation  passive-cooling         0.50      0.50       0.50       -     PASS    [air-conditioner night-purge] / [thermal-mass]\nstation  drinkable-backup        0.00      0.00       0.00       -     PASS    [] / [cistern rationing]\nstation  unpowered-chill         0.00      0.00       0.00       -     PASS    [] / [thermal-mass night-purge]\nestuary  sensor-to-assay         1.00      0.50       0.50       0.67  PASS    [sensor sensor-catalog assay assay-manual] / []\nestuary  lot-custody-and-result  1.00      0.50       0.50       -     PASS    [assay registry sensor-catalog sensor] / []\nestuary  absent-answer-hard      n/a       no-answer  -          -     PASS    [] / []\nestuary  sensor-warranty-absent  n/a       no-answer  -          -     PASS    [] / []\n\nRecall@5: 0.5833 (6 answerable questions); questions passed: 8/8\nPrecision@5: 0.3333 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 0.5833; delta: +0.0000; floor passed: true\nClass multi-hop: recall=1.0000 precision=0.5000 n=1\nClass multi-page: recall=0.8333 precision=0.5000 n=3\nClass paraphrase: recall=0.0000 precision=0.0000 n=2\nPrecision floor passed: true; evaluation passed: true\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"station\",\"CorpusDigest\":\"18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973\",\"Chunks\":16,\"EmbeddingModel\":\"\",\"CachePath\":\"\",\"IndexSHA256Before\":\"\",\"IndexSHA256After\":\"\",\"IndexDuration\":0,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"capture-and-share\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":5166},{\"QuestionID\":\"passive-cooling\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":24083},{\"QuestionID\":\"drinkable-backup\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":3000},{\"QuestionID\":\"unpowered-chill\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":2375}]},{\"SiteID\":\"estuary\",\"CorpusDigest\":\"7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771\",\"Chunks\":15,\"EmbeddingModel\":\"\",\"CachePath\":\"\",\"IndexSHA256Before\":\"\",\"IndexSHA256After\":\"\",\"IndexDuration\":0,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"sensor-to-assay\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":3459},{\"QuestionID\":\"lot-custody-and-result\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":2834},{\"QuestionID\":\"absent-answer-hard\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":1084},{\"QuestionID\":\"sensor-warranty-absent\",\"Ranker\":\"BM25-lite\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":1625}]}]\n",
+      "stderr": "time=2026-10-04T13:25:23.410-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2611230202/rag-archive\"\ntime=2026-10-04T13:25:23.411-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:23.411-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:23.412-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:23.427-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-3503585168/rag-archive\"\ntime=2026-10-04T13:25:23.427-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:23.428-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:23.428-04:00 level=INFO msg=\"Created rag-content.md\"\n",
+      "measurements": [
+        {
+          "SiteID": "station",
+          "CorpusDigest": "18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973",
+          "Chunks": 16,
+          "EmbeddingModel": "",
+          "CachePath": "",
+          "IndexSHA256Before": "",
+          "IndexSHA256After": "",
+          "IndexDuration": 0,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "capture-and-share",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 5166
+            },
+            {
+              "QuestionID": "passive-cooling",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 24083
+            },
+            {
+              "QuestionID": "drinkable-backup",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 3000
+            },
+            {
+              "QuestionID": "unpowered-chill",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 2375
+            }
+          ]
+        },
+        {
+          "SiteID": "estuary",
+          "CorpusDigest": "7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771",
+          "Chunks": 15,
+          "EmbeddingModel": "",
+          "CachePath": "",
+          "IndexSHA256Before": "",
+          "IndexSHA256After": "",
+          "IndexDuration": 0,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "sensor-to-assay",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 3459
+            },
+            {
+              "QuestionID": "lot-custody-and-result",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 2834
+            },
+            {
+              "QuestionID": "absent-answer-hard",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 1084
+            },
+            {
+              "QuestionID": "sensor-warranty-absent",
+              "Ranker": "BM25-lite",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 1625
+            }
+          ]
+        }
+      ],
+      "external_index_sha256_before": {},
+      "external_index_sha256_after": {},
+      "external_existing_indices_byte_identical": true,
+      "question_results": [
+        {
+          "site": "station",
+          "question_id": "capture-and-share",
+          "question": "rain cistern daily resident allowances",
+          "acceptable_pages": [
+            "cistern",
+            "rationing"
+          ],
+          "retrieved_pages": [
+            "rationing",
+            "cistern",
+            "index",
+            "water-pump"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "station",
+          "question_id": "passive-cooling",
+          "question": "cooling rooms electricity",
+          "acceptable_pages": [
+            "thermal-mass",
+            "night-purge"
+          ],
+          "retrieved_pages": [
+            "air-conditioner",
+            "night-purge"
+          ],
+          "missing_pages": [
+            "thermal-mass"
+          ],
+          "recall_at_5": 0.5,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "station",
+          "question_id": "drinkable-backup",
+          "question": "potable backup apportionment",
+          "acceptable_pages": [
+            "cistern",
+            "rationing"
+          ],
+          "retrieved_pages": [],
+          "missing_pages": [
+            "cistern",
+            "rationing"
+          ],
+          "recall_at_5": 0.0,
+          "precision_at_5": 0.0,
+          "unanswerable": false,
+          "zero_retrieved_context": true,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "station",
+          "question_id": "unpowered-chill",
+          "question": "unpowered dwelling refrigeration",
+          "acceptable_pages": [
+            "thermal-mass",
+            "night-purge"
+          ],
+          "retrieved_pages": [],
+          "missing_pages": [
+            "thermal-mass",
+            "night-purge"
+          ],
+          "recall_at_5": 0.0,
+          "precision_at_5": 0.0,
+          "unanswerable": false,
+          "zero_retrieved_context": true,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "estuary",
+          "question_id": "sensor-to-assay",
+          "question": "salinity sensor chloride",
+          "acceptable_pages": [
+            "sensor",
+            "assay"
+          ],
+          "retrieved_pages": [
+            "sensor",
+            "sensor-catalog",
+            "assay",
+            "assay-manual"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "estuary",
+          "question_id": "lot-custody-and-result",
+          "question": "R17 courier elevated concentration",
+          "acceptable_pages": [
+            "registry",
+            "assay"
+          ],
+          "retrieved_pages": [
+            "assay",
+            "registry",
+            "sensor-catalog",
+            "sensor"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "estuary",
+          "question_id": "absent-answer-hard",
+          "question": "quuxivorzz blarghmolecule",
+          "acceptable_pages": [],
+          "retrieved_pages": [],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": true,
+          "canonical_no_answer_verified": true,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        },
+        {
+          "site": "estuary",
+          "question_id": "sensor-warranty-absent",
+          "question": "salinity sensor warranty duration",
+          "acceptable_pages": [],
+          "retrieved_pages": [],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": true,
+          "canonical_no_answer_verified": true,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite"
+        }
+      ],
+      "aggregates": {
+        "recall_at_5": 0.5833333333333334,
+        "precision_at_5": 0.3333333333333333,
+        "answerable_questions": 6,
+        "passed_questions": 8,
+        "total_questions": 8,
+        "passed_abstention_controls": 2,
+        "total_abstention_controls": 2
+      }
+    },
+    {
+      "label": "hybrid-cold-original",
+      "dataset": "golden-questions.json",
+      "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions.json --provider fake --embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/original",
+      "started_utc": "2026-10-04T17:25:23.434521+00:00",
+      "wall_ns": 1458824750,
+      "exit_code": 1,
+      "stdout": "Ask This Site evaluation: ask-this-site-phase-1\nRanker: BM25-lite + Ollama embeddings (RRF) \u00b7 K=5 \u00b7 provider=fake\n\nSITE                      QUESTION                   RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nanchor-links              other-page-heading         1.00      1.00       0.50       -     PASS    [other index] / []\nanchor-links              unanswerable               n/a       no-answer  -          -     FAIL    [index other] / []\nartisanal-ceramics        shino-glaze                1.00      1.00       0.25       -     PASS    [collection/wheel-thrown-vessels index care-guide journal/2026-07-15-glazing-techniques] / []\nartisanal-ceramics        washing-stoneware          1.00      1.00       0.33       -     PASS    [care-guide index journal/2026-07-15-glazing-techniques] / []\nartisanal-ceramics        pine-ash-firing            1.00      1.00       0.25       -     PASS    [journal/2026-07-15-glazing-techniques care-guide collection/wheel-thrown-vessels index] / []\nclean-urls                author-is-cool             1.00      1.00       0.33       -     PASS    [bio index blog/post] / []\nclean-urls                blog-post                  1.00      1.00       0.33       -     PASS    [blog/post index bio] / []\nask-eval-deep-chain       northern-kiln-temperature  1.00      1.00       0.33       -     PASS    [observations/archive/blue-glass-run observations/field-log index] / []\nask-eval-research-branch  cobalt-concentration       1.00      1.00       0.33       -     PASS    [study/samples/cobalt-clay study/field-notes index] / []\n\nRecall@5: 1.0000 (8 answerable questions); questions passed: 8/9\nPrecision@5: 0.3333 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 1.0000; delta: +0.0000; floor passed: true\nClass standard: recall=1.0000 precision=0.3333 n=8\nPrecision floor passed: true; evaluation passed: false\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"anchor-links\",\"CorpusDigest\":\"536d3212b7b4e13a9ae8debae557657a6c614481c539f83a0862aaeda0c0a450\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/original/acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"df56ed0bccf85fcff205d230208ceaa8a8ce2495c6d0a213382ea23715d07697\",\"IndexDuration\":935216041,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":3,\"Duration\":934307208},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"other-page-heading\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":11406542},\"RankDuration\":164416},{\"QuestionID\":\"unanswerable\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":11533958},\"RankDuration\":65625}]},{\"SiteID\":\"artisanal-ceramics\",\"CorpusDigest\":\"daeca4489ad0e3bf6e0efb5a19a9ab70321327f97573370886f0c342f765f688\",\"Chunks\":8,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/original/696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"169641782966ed45d123b64ff860e4cdaa22d6213fbca23671170d46d60e22a9\",\"IndexDuration\":183874500,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":8,\"Vectors\":8,\"Duration\":182155708},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"shino-glaze\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":9444291},\"RankDuration\":141500},{\"QuestionID\":\"washing-stoneware\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":9338542},\"RankDuration\":26249},{\"QuestionID\":\"pine-ash-firing\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":10097542},\"RankDuration\":23875}]},{\"SiteID\":\"clean-urls\",\"CorpusDigest\":\"70258859b5fbd67095b32c86ef970a22c9aa11fe526691144a2621a15187cd69\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/original/f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"01acca1d80e693b32e7fd8cfae814c6dd5406e8612b81030c078a58b747f0e59\",\"IndexDuration\":26777667,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":3,\"Duration\":25940792},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"author-is-cool\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":24209042},\"RankDuration\":28625},{\"QuestionID\":\"blog-post\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":9287792},\"RankDuration\":35624}]},{\"SiteID\":\"ask-eval-deep-chain\",\"CorpusDigest\":\"fa4998dd86d222c38757e85ae191ea936419ede6b5b142334df82418110b8d6c\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/original/49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"7042bb07754984f60aae5e1151b7ef280329a34b77ecc2ae3b2c8496e78d2cb8\",\"IndexDuration\":28102042,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":3,\"Duration\":27142959},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"northern-kiln-temperature\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":10836416},\"RankDuration\":19459}]},{\"SiteID\":\"ask-eval-research-branch\",\"CorpusDigest\":\"f813384c91e1930a4d3ba562e53027dbde4d1f160644cb61a76798ef40e294b1\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/original/623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"764ab4dfbe09fbb4e6747fa3f4681787f617a51e20ae480c29f7b77d5ff76bf0\",\"IndexDuration\":78657583,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":3,\"Duration\":78199666},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"cobalt-concentration\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":9455833},\"RankDuration\":13417}]}]\n",
+      "stderr": "time=2026-10-04T13:25:23.456-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-3881618883/rag-archive\"\ntime=2026-10-04T13:25:23.456-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:23.456-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:23.457-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:24.436-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2541834490/rag-archive\"\ntime=2026-10-04T13:25:24.438-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:24.439-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:24.441-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:24.673-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-189969945/rag-archive\"\ntime=2026-10-04T13:25:24.674-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:24.675-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:24.675-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:24.748-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2474637235/rag-archive\"\ntime=2026-10-04T13:25:24.748-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:24.749-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:24.749-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:24.798-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2416459547/rag-archive\"\ntime=2026-10-04T13:25:24.800-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:24.801-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:24.801-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:24.892-04:00 level=ERROR msg=\"Application error\" error=\"ask eval: regression gates failed (1 questions failed, recall floor passed=true, precision floor passed=true)\"\n",
+      "measurements": [
+        {
+          "SiteID": "anchor-links",
+          "CorpusDigest": "536d3212b7b4e13a9ae8debae557657a6c614481c539f83a0862aaeda0c0a450",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/original/acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "df56ed0bccf85fcff205d230208ceaa8a8ce2495c6d0a213382ea23715d07697",
+          "IndexDuration": 935216041,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 3,
+            "Vectors": 3,
+            "Duration": 934307208
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "other-page-heading",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 11406542
+              },
+              "RankDuration": 164416
+            },
+            {
+              "QuestionID": "unanswerable",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 11533958
+              },
+              "RankDuration": 65625
+            }
+          ]
+        },
+        {
+          "SiteID": "artisanal-ceramics",
+          "CorpusDigest": "daeca4489ad0e3bf6e0efb5a19a9ab70321327f97573370886f0c342f765f688",
+          "Chunks": 8,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/original/696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "169641782966ed45d123b64ff860e4cdaa22d6213fbca23671170d46d60e22a9",
+          "IndexDuration": 183874500,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 8,
+            "Vectors": 8,
+            "Duration": 182155708
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "shino-glaze",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 9444291
+              },
+              "RankDuration": 141500
+            },
+            {
+              "QuestionID": "washing-stoneware",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 9338542
+              },
+              "RankDuration": 26249
+            },
+            {
+              "QuestionID": "pine-ash-firing",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 10097542
+              },
+              "RankDuration": 23875
+            }
+          ]
+        },
+        {
+          "SiteID": "clean-urls",
+          "CorpusDigest": "70258859b5fbd67095b32c86ef970a22c9aa11fe526691144a2621a15187cd69",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/original/f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "01acca1d80e693b32e7fd8cfae814c6dd5406e8612b81030c078a58b747f0e59",
+          "IndexDuration": 26777667,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 3,
+            "Vectors": 3,
+            "Duration": 25940792
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "author-is-cool",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 24209042
+              },
+              "RankDuration": 28625
+            },
+            {
+              "QuestionID": "blog-post",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 9287792
+              },
+              "RankDuration": 35624
+            }
+          ]
+        },
+        {
+          "SiteID": "ask-eval-deep-chain",
+          "CorpusDigest": "fa4998dd86d222c38757e85ae191ea936419ede6b5b142334df82418110b8d6c",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/original/49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "7042bb07754984f60aae5e1151b7ef280329a34b77ecc2ae3b2c8496e78d2cb8",
+          "IndexDuration": 28102042,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 3,
+            "Vectors": 3,
+            "Duration": 27142959
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "northern-kiln-temperature",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 10836416
+              },
+              "RankDuration": 19459
+            }
+          ]
+        },
+        {
+          "SiteID": "ask-eval-research-branch",
+          "CorpusDigest": "f813384c91e1930a4d3ba562e53027dbde4d1f160644cb61a76798ef40e294b1",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/original/623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "764ab4dfbe09fbb4e6747fa3f4681787f617a51e20ae480c29f7b77d5ff76bf0",
+          "IndexDuration": 78657583,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 3,
+            "Vectors": 3,
+            "Duration": 78199666
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "cobalt-concentration",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 9455833
+              },
+              "RankDuration": 13417
+            }
+          ]
+        }
+      ],
+      "external_index_sha256_before": {},
+      "external_index_sha256_after": {
+        "f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json": "01acca1d80e693b32e7fd8cfae814c6dd5406e8612b81030c078a58b747f0e59",
+        "49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json": "7042bb07754984f60aae5e1151b7ef280329a34b77ecc2ae3b2c8496e78d2cb8",
+        "696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json": "169641782966ed45d123b64ff860e4cdaa22d6213fbca23671170d46d60e22a9",
+        "acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json": "df56ed0bccf85fcff205d230208ceaa8a8ce2495c6d0a213382ea23715d07697",
+        "623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json": "764ab4dfbe09fbb4e6747fa3f4681787f617a51e20ae480c29f7b77d5ff76bf0"
+      },
+      "external_existing_indices_byte_identical": false,
+      "question_results": [
+        {
+          "site": "anchor-links",
+          "question_id": "other-page-heading",
+          "question": "What is the heading on the other linked page?",
+          "acceptable_pages": [
+            "other"
+          ],
+          "retrieved_pages": [
+            "other",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "anchor-links",
+          "question_id": "unanswerable",
+          "question": "Which quuxivorzz blarghmolecule certifies zindlefex?",
+          "acceptable_pages": [],
+          "retrieved_pages": [
+            "index",
+            "other"
+          ],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": false,
+          "gate_passed": false,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "shino-glaze",
+          "question": "What glaze is used on the Shino Tea Bowls?",
+          "acceptable_pages": [
+            "collection/wheel-thrown-vessels"
+          ],
+          "retrieved_pages": [
+            "collection/wheel-thrown-vessels",
+            "index",
+            "care-guide",
+            "journal/2026-07-15-glazing-techniques"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.25,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "washing-stoneware",
+          "question": "How should I wash handmade stoneware without damaging it?",
+          "acceptable_pages": [
+            "care-guide"
+          ],
+          "retrieved_pages": [
+            "care-guide",
+            "index",
+            "journal/2026-07-15-glazing-techniques"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "pine-ash-firing",
+          "question": "What happens to pine ash glaze during firing at 1280 degrees Celsius?",
+          "acceptable_pages": [
+            "journal/2026-07-15-glazing-techniques"
+          ],
+          "retrieved_pages": [
+            "journal/2026-07-15-glazing-techniques",
+            "care-guide",
+            "collection/wheel-thrown-vessels",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.25,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "clean-urls",
+          "question_id": "author-is-cool",
+          "question": "Who says they are cool?",
+          "acceptable_pages": [
+            "bio"
+          ],
+          "retrieved_pages": [
+            "bio",
+            "index",
+            "blog/post"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "clean-urls",
+          "question_id": "blog-post",
+          "question": "What does the My Blog Post page say?",
+          "acceptable_pages": [
+            "blog/post"
+          ],
+          "retrieved_pages": [
+            "blog/post",
+            "index",
+            "bio"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "ask-eval-deep-chain",
+          "question_id": "northern-kiln-temperature",
+          "question": "What temperature did the northern kiln reach during blue-glass firing?",
+          "acceptable_pages": [
+            "observations/archive/blue-glass-run"
+          ],
+          "retrieved_pages": [
+            "observations/archive/blue-glass-run",
+            "observations/field-log",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "ask-eval-research-branch",
+          "question_id": "cobalt-concentration",
+          "question": "What cobalt concentration does the blue-clay assay report?",
+          "acceptable_pages": [
+            "study/samples/cobalt-clay"
+          ],
+          "retrieved_pages": [
+            "study/samples/cobalt-clay",
+            "study/field-notes",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        }
+      ],
+      "aggregates": {
+        "recall_at_5": 1.0,
+        "precision_at_5": 0.3333333333333333,
+        "answerable_questions": 8,
+        "passed_questions": 8,
+        "total_questions": 9,
+        "passed_abstention_controls": 0,
+        "total_abstention_controls": 1
+      }
+    },
+    {
+      "label": "hybrid-warm-original",
+      "dataset": "golden-questions.json",
+      "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions.json --provider fake --embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/original",
+      "started_utc": "2026-10-04T17:25:24.894907+00:00",
+      "wall_ns": 206121792,
+      "exit_code": 1,
+      "stdout": "Ask This Site evaluation: ask-this-site-phase-1\nRanker: BM25-lite + Ollama embeddings (RRF) \u00b7 K=5 \u00b7 provider=fake\n\nSITE                      QUESTION                   RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nanchor-links              other-page-heading         1.00      1.00       0.50       -     PASS    [other index] / []\nanchor-links              unanswerable               n/a       no-answer  -          -     FAIL    [index other] / []\nartisanal-ceramics        shino-glaze                1.00      1.00       0.25       -     PASS    [collection/wheel-thrown-vessels index care-guide journal/2026-07-15-glazing-techniques] / []\nartisanal-ceramics        washing-stoneware          1.00      1.00       0.33       -     PASS    [care-guide index journal/2026-07-15-glazing-techniques] / []\nartisanal-ceramics        pine-ash-firing            1.00      1.00       0.25       -     PASS    [journal/2026-07-15-glazing-techniques care-guide collection/wheel-thrown-vessels index] / []\nclean-urls                author-is-cool             1.00      1.00       0.33       -     PASS    [bio index blog/post] / []\nclean-urls                blog-post                  1.00      1.00       0.33       -     PASS    [blog/post index bio] / []\nask-eval-deep-chain       northern-kiln-temperature  1.00      1.00       0.33       -     PASS    [observations/archive/blue-glass-run observations/field-log index] / []\nask-eval-research-branch  cobalt-concentration       1.00      1.00       0.33       -     PASS    [study/samples/cobalt-clay study/field-notes index] / []\n\nRecall@5: 1.0000 (8 answerable questions); questions passed: 8/9\nPrecision@5: 0.3333 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 1.0000; delta: +0.0000; floor passed: true\nClass standard: recall=1.0000 precision=0.3333 n=8\nPrecision floor passed: true; evaluation passed: false\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"anchor-links\",\"CorpusDigest\":\"536d3212b7b4e13a9ae8debae557657a6c614481c539f83a0862aaeda0c0a450\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/original/acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json\",\"IndexSHA256Before\":\"df56ed0bccf85fcff205d230208ceaa8a8ce2495c6d0a213382ea23715d07697\",\"IndexSHA256After\":\"df56ed0bccf85fcff205d230208ceaa8a8ce2495c6d0a213382ea23715d07697\",\"IndexDuration\":257125,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"other-page-heading\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":10978458},\"RankDuration\":10708},{\"QuestionID\":\"unanswerable\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":9851333},\"RankDuration\":9542}]},{\"SiteID\":\"artisanal-ceramics\",\"CorpusDigest\":\"daeca4489ad0e3bf6e0efb5a19a9ab70321327f97573370886f0c342f765f688\",\"Chunks\":8,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/original/696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json\",\"IndexSHA256Before\":\"169641782966ed45d123b64ff860e4cdaa22d6213fbca23671170d46d60e22a9\",\"IndexSHA256After\":\"169641782966ed45d123b64ff860e4cdaa22d6213fbca23671170d46d60e22a9\",\"IndexDuration\":1344375,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"shino-glaze\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":11809042},\"RankDuration\":39499},{\"QuestionID\":\"washing-stoneware\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":12596875},\"RankDuration\":28709},{\"QuestionID\":\"pine-ash-firing\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":13782833},\"RankDuration\":28751}]},{\"SiteID\":\"clean-urls\",\"CorpusDigest\":\"70258859b5fbd67095b32c86ef970a22c9aa11fe526691144a2621a15187cd69\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/original/f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json\",\"IndexSHA256Before\":\"01acca1d80e693b32e7fd8cfae814c6dd5406e8612b81030c078a58b747f0e59\",\"IndexSHA256After\":\"01acca1d80e693b32e7fd8cfae814c6dd5406e8612b81030c078a58b747f0e59\",\"IndexDuration\":245458,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"author-is-cool\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":14439875},\"RankDuration\":9042},{\"QuestionID\":\"blog-post\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":11674833},\"RankDuration\":9959}]},{\"SiteID\":\"ask-eval-deep-chain\",\"CorpusDigest\":\"fa4998dd86d222c38757e85ae191ea936419ede6b5b142334df82418110b8d6c\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/original/49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json\",\"IndexSHA256Before\":\"7042bb07754984f60aae5e1151b7ef280329a34b77ecc2ae3b2c8496e78d2cb8\",\"IndexSHA256After\":\"7042bb07754984f60aae5e1151b7ef280329a34b77ecc2ae3b2c8496e78d2cb8\",\"IndexDuration\":248042,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"northern-kiln-temperature\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":12207167},\"RankDuration\":10916}]},{\"SiteID\":\"ask-eval-research-branch\",\"CorpusDigest\":\"f813384c91e1930a4d3ba562e53027dbde4d1f160644cb61a76798ef40e294b1\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/original/623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json\",\"IndexSHA256Before\":\"764ab4dfbe09fbb4e6747fa3f4681787f617a51e20ae480c29f7b77d5ff76bf0\",\"IndexSHA256After\":\"764ab4dfbe09fbb4e6747fa3f4681787f617a51e20ae480c29f7b77d5ff76bf0\",\"IndexDuration\":248375,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"cobalt-concentration\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":12887459},\"RankDuration\":23291}]}]\n",
+      "stderr": "time=2026-10-04T13:25:24.916-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2519742343/rag-archive\"\ntime=2026-10-04T13:25:24.917-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:24.917-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:24.917-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:24.958-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-3685328536/rag-archive\"\ntime=2026-10-04T13:25:24.960-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:24.960-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:24.961-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:25.016-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-955774387/rag-archive\"\ntime=2026-10-04T13:25:25.017-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:25.017-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:25.017-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:25.055-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-349646469/rag-archive\"\ntime=2026-10-04T13:25:25.056-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:25.056-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:25.056-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:25.080-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-3821741546/rag-archive\"\ntime=2026-10-04T13:25:25.082-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:25.083-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:25.084-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:25.100-04:00 level=ERROR msg=\"Application error\" error=\"ask eval: regression gates failed (1 questions failed, recall floor passed=true, precision floor passed=true)\"\n",
+      "measurements": [
+        {
+          "SiteID": "anchor-links",
+          "CorpusDigest": "536d3212b7b4e13a9ae8debae557657a6c614481c539f83a0862aaeda0c0a450",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/original/acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json",
+          "IndexSHA256Before": "df56ed0bccf85fcff205d230208ceaa8a8ce2495c6d0a213382ea23715d07697",
+          "IndexSHA256After": "df56ed0bccf85fcff205d230208ceaa8a8ce2495c6d0a213382ea23715d07697",
+          "IndexDuration": 257125,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "other-page-heading",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 10978458
+              },
+              "RankDuration": 10708
+            },
+            {
+              "QuestionID": "unanswerable",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 9851333
+              },
+              "RankDuration": 9542
+            }
+          ]
+        },
+        {
+          "SiteID": "artisanal-ceramics",
+          "CorpusDigest": "daeca4489ad0e3bf6e0efb5a19a9ab70321327f97573370886f0c342f765f688",
+          "Chunks": 8,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/original/696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json",
+          "IndexSHA256Before": "169641782966ed45d123b64ff860e4cdaa22d6213fbca23671170d46d60e22a9",
+          "IndexSHA256After": "169641782966ed45d123b64ff860e4cdaa22d6213fbca23671170d46d60e22a9",
+          "IndexDuration": 1344375,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "shino-glaze",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 11809042
+              },
+              "RankDuration": 39499
+            },
+            {
+              "QuestionID": "washing-stoneware",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 12596875
+              },
+              "RankDuration": 28709
+            },
+            {
+              "QuestionID": "pine-ash-firing",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 13782833
+              },
+              "RankDuration": 28751
+            }
+          ]
+        },
+        {
+          "SiteID": "clean-urls",
+          "CorpusDigest": "70258859b5fbd67095b32c86ef970a22c9aa11fe526691144a2621a15187cd69",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/original/f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json",
+          "IndexSHA256Before": "01acca1d80e693b32e7fd8cfae814c6dd5406e8612b81030c078a58b747f0e59",
+          "IndexSHA256After": "01acca1d80e693b32e7fd8cfae814c6dd5406e8612b81030c078a58b747f0e59",
+          "IndexDuration": 245458,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "author-is-cool",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 14439875
+              },
+              "RankDuration": 9042
+            },
+            {
+              "QuestionID": "blog-post",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 11674833
+              },
+              "RankDuration": 9959
+            }
+          ]
+        },
+        {
+          "SiteID": "ask-eval-deep-chain",
+          "CorpusDigest": "fa4998dd86d222c38757e85ae191ea936419ede6b5b142334df82418110b8d6c",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/original/49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json",
+          "IndexSHA256Before": "7042bb07754984f60aae5e1151b7ef280329a34b77ecc2ae3b2c8496e78d2cb8",
+          "IndexSHA256After": "7042bb07754984f60aae5e1151b7ef280329a34b77ecc2ae3b2c8496e78d2cb8",
+          "IndexDuration": 248042,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "northern-kiln-temperature",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 12207167
+              },
+              "RankDuration": 10916
+            }
+          ]
+        },
+        {
+          "SiteID": "ask-eval-research-branch",
+          "CorpusDigest": "f813384c91e1930a4d3ba562e53027dbde4d1f160644cb61a76798ef40e294b1",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/original/623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json",
+          "IndexSHA256Before": "764ab4dfbe09fbb4e6747fa3f4681787f617a51e20ae480c29f7b77d5ff76bf0",
+          "IndexSHA256After": "764ab4dfbe09fbb4e6747fa3f4681787f617a51e20ae480c29f7b77d5ff76bf0",
+          "IndexDuration": 248375,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "cobalt-concentration",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 12887459
+              },
+              "RankDuration": 23291
+            }
+          ]
+        }
+      ],
+      "external_index_sha256_before": {
+        "f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json": "01acca1d80e693b32e7fd8cfae814c6dd5406e8612b81030c078a58b747f0e59",
+        "49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json": "7042bb07754984f60aae5e1151b7ef280329a34b77ecc2ae3b2c8496e78d2cb8",
+        "696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json": "169641782966ed45d123b64ff860e4cdaa22d6213fbca23671170d46d60e22a9",
+        "acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json": "df56ed0bccf85fcff205d230208ceaa8a8ce2495c6d0a213382ea23715d07697",
+        "623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json": "764ab4dfbe09fbb4e6747fa3f4681787f617a51e20ae480c29f7b77d5ff76bf0"
+      },
+      "external_index_sha256_after": {
+        "f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json": "01acca1d80e693b32e7fd8cfae814c6dd5406e8612b81030c078a58b747f0e59",
+        "49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json": "7042bb07754984f60aae5e1151b7ef280329a34b77ecc2ae3b2c8496e78d2cb8",
+        "696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json": "169641782966ed45d123b64ff860e4cdaa22d6213fbca23671170d46d60e22a9",
+        "acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json": "df56ed0bccf85fcff205d230208ceaa8a8ce2495c6d0a213382ea23715d07697",
+        "623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json": "764ab4dfbe09fbb4e6747fa3f4681787f617a51e20ae480c29f7b77d5ff76bf0"
+      },
+      "external_existing_indices_byte_identical": true,
+      "question_results": [
+        {
+          "site": "anchor-links",
+          "question_id": "other-page-heading",
+          "question": "What is the heading on the other linked page?",
+          "acceptable_pages": [
+            "other"
+          ],
+          "retrieved_pages": [
+            "other",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "anchor-links",
+          "question_id": "unanswerable",
+          "question": "Which quuxivorzz blarghmolecule certifies zindlefex?",
+          "acceptable_pages": [],
+          "retrieved_pages": [
+            "index",
+            "other"
+          ],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": false,
+          "gate_passed": false,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "shino-glaze",
+          "question": "What glaze is used on the Shino Tea Bowls?",
+          "acceptable_pages": [
+            "collection/wheel-thrown-vessels"
+          ],
+          "retrieved_pages": [
+            "collection/wheel-thrown-vessels",
+            "index",
+            "care-guide",
+            "journal/2026-07-15-glazing-techniques"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.25,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "washing-stoneware",
+          "question": "How should I wash handmade stoneware without damaging it?",
+          "acceptable_pages": [
+            "care-guide"
+          ],
+          "retrieved_pages": [
+            "care-guide",
+            "index",
+            "journal/2026-07-15-glazing-techniques"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "pine-ash-firing",
+          "question": "What happens to pine ash glaze during firing at 1280 degrees Celsius?",
+          "acceptable_pages": [
+            "journal/2026-07-15-glazing-techniques"
+          ],
+          "retrieved_pages": [
+            "journal/2026-07-15-glazing-techniques",
+            "care-guide",
+            "collection/wheel-thrown-vessels",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.25,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "clean-urls",
+          "question_id": "author-is-cool",
+          "question": "Who says they are cool?",
+          "acceptable_pages": [
+            "bio"
+          ],
+          "retrieved_pages": [
+            "bio",
+            "index",
+            "blog/post"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "clean-urls",
+          "question_id": "blog-post",
+          "question": "What does the My Blog Post page say?",
+          "acceptable_pages": [
+            "blog/post"
+          ],
+          "retrieved_pages": [
+            "blog/post",
+            "index",
+            "bio"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "ask-eval-deep-chain",
+          "question_id": "northern-kiln-temperature",
+          "question": "What temperature did the northern kiln reach during blue-glass firing?",
+          "acceptable_pages": [
+            "observations/archive/blue-glass-run"
+          ],
+          "retrieved_pages": [
+            "observations/archive/blue-glass-run",
+            "observations/field-log",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "ask-eval-research-branch",
+          "question_id": "cobalt-concentration",
+          "question": "What cobalt concentration does the blue-clay assay report?",
+          "acceptable_pages": [
+            "study/samples/cobalt-clay"
+          ],
+          "retrieved_pages": [
+            "study/samples/cobalt-clay",
+            "study/field-notes",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        }
+      ],
+      "aggregates": {
+        "recall_at_5": 1.0,
+        "precision_at_5": 0.3333333333333333,
+        "answerable_questions": 8,
+        "passed_questions": 8,
+        "total_questions": 9,
+        "passed_abstention_controls": 0,
+        "total_abstention_controls": 1
+      }
+    },
+    {
+      "label": "hybrid-cold-hard",
+      "dataset": "golden-questions-hard.json",
+      "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions-hard.json --provider fake --embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/hard",
+      "started_utc": "2026-10-04T17:25:25.102325+00:00",
+      "wall_ns": 546072166,
+      "exit_code": 1,
+      "stdout": "Ask This Site evaluation: ask-this-site-hard\nRanker: BM25-lite + Ollama embeddings (RRF) \u00b7 K=5 \u00b7 provider=fake\n\nSITE     QUESTION                RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nstation  capture-and-share       1.00      0.50       0.50       -     PASS    [cistern rationing index water-pump] / []\nstation  passive-cooling         1.00      0.50       0.50       -     PASS    [air-conditioner night-purge thermal-mass index] / []\nstation  drinkable-backup        1.00      0.00       0.50       -     PASS    [rationing garden cistern first-aid] / []\nstation  unpowered-chill         1.00      0.00       0.40       -     PASS    [air-conditioner rationing thermal-mass night-purge first-aid] / []\nestuary  sensor-to-assay         1.00      0.50       0.50       0.67  PASS    [sensor assay sensor-catalog assay-manual] / []\nestuary  lot-custody-and-result  1.00      0.50       0.50       -     PASS    [assay registry sensor sensor-catalog] / []\nestuary  absent-answer-hard      n/a       no-answer  -          -     FAIL    [safety assay sensor-catalog assay-manual sensor] / []\nestuary  sensor-warranty-absent  n/a       no-answer  -          -     FAIL    [sensor sensor-catalog assay-manual assay] / []\n\nRecall@5: 1.0000 (6 answerable questions); questions passed: 6/8\nPrecision@5: 0.4833 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 0.5833; delta: +0.4167; floor passed: true\nClass multi-hop: recall=1.0000 precision=0.5000 n=1\nClass multi-page: recall=1.0000 precision=0.5000 n=3\nClass paraphrase: recall=1.0000 precision=0.4500 n=2\nPrecision floor passed: true; evaluation passed: false\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"station\",\"CorpusDigest\":\"18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973\",\"Chunks\":16,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/hard/662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3\",\"IndexDuration\":204492333,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":16,\"Vectors\":16,\"Duration\":203200792},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"capture-and-share\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7780125},\"RankDuration\":27208},{\"QuestionID\":\"passive-cooling\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":6152208},\"RankDuration\":32333},{\"QuestionID\":\"drinkable-backup\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7806584},\"RankDuration\":20499},{\"QuestionID\":\"unpowered-chill\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7344334},\"RankDuration\":17083}]},{\"SiteID\":\"estuary\",\"CorpusDigest\":\"7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771\",\"Chunks\":15,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/hard/a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02\",\"IndexDuration\":219430000,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":15,\"Vectors\":15,\"Duration\":218348541},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"sensor-to-assay\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7246292},\"RankDuration\":41541},{\"QuestionID\":\"lot-custody-and-result\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7510917},\"RankDuration\":42458},{\"QuestionID\":\"absent-answer-hard\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":8317750},\"RankDuration\":33875},{\"QuestionID\":\"sensor-warranty-absent\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":8208834},\"RankDuration\":24249}]}]\n",
+      "stderr": "time=2026-10-04T13:25:25.137-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2000849125/rag-archive\"\ntime=2026-10-04T13:25:25.138-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:25.138-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:25.139-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:25.391-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-1550802925/rag-archive\"\ntime=2026-10-04T13:25:25.391-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:25.391-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:25.392-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:25.647-04:00 level=ERROR msg=\"Application error\" error=\"ask eval: regression gates failed (2 questions failed, recall floor passed=true, precision floor passed=true)\"\n",
+      "measurements": [
+        {
+          "SiteID": "station",
+          "CorpusDigest": "18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973",
+          "Chunks": 16,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/hard/662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3",
+          "IndexDuration": 204492333,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 16,
+            "Vectors": 16,
+            "Duration": 203200792
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "capture-and-share",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 7780125
+              },
+              "RankDuration": 27208
+            },
+            {
+              "QuestionID": "passive-cooling",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 6152208
+              },
+              "RankDuration": 32333
+            },
+            {
+              "QuestionID": "drinkable-backup",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 7806584
+              },
+              "RankDuration": 20499
+            },
+            {
+              "QuestionID": "unpowered-chill",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 7344334
+              },
+              "RankDuration": 17083
+            }
+          ]
+        },
+        {
+          "SiteID": "estuary",
+          "CorpusDigest": "7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771",
+          "Chunks": 15,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/hard/a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02",
+          "IndexDuration": 219430000,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 15,
+            "Vectors": 15,
+            "Duration": 218348541
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "sensor-to-assay",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 7246292
+              },
+              "RankDuration": 41541
+            },
+            {
+              "QuestionID": "lot-custody-and-result",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 7510917
+              },
+              "RankDuration": 42458
+            },
+            {
+              "QuestionID": "absent-answer-hard",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 8317750
+              },
+              "RankDuration": 33875
+            },
+            {
+              "QuestionID": "sensor-warranty-absent",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 8208834
+              },
+              "RankDuration": 24249
+            }
+          ]
+        }
+      ],
+      "external_index_sha256_before": {},
+      "external_index_sha256_after": {
+        "a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json": "a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02",
+        "662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json": "a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3"
+      },
+      "external_existing_indices_byte_identical": false,
+      "question_results": [
+        {
+          "site": "station",
+          "question_id": "capture-and-share",
+          "question": "rain cistern daily resident allowances",
+          "acceptable_pages": [
+            "cistern",
+            "rationing"
+          ],
+          "retrieved_pages": [
+            "cistern",
+            "rationing",
+            "index",
+            "water-pump"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "station",
+          "question_id": "passive-cooling",
+          "question": "cooling rooms electricity",
+          "acceptable_pages": [
+            "thermal-mass",
+            "night-purge"
+          ],
+          "retrieved_pages": [
+            "air-conditioner",
+            "night-purge",
+            "thermal-mass",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "station",
+          "question_id": "drinkable-backup",
+          "question": "potable backup apportionment",
+          "acceptable_pages": [
+            "cistern",
+            "rationing"
+          ],
+          "retrieved_pages": [
+            "rationing",
+            "garden",
+            "cistern",
+            "first-aid"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "station",
+          "question_id": "unpowered-chill",
+          "question": "unpowered dwelling refrigeration",
+          "acceptable_pages": [
+            "thermal-mass",
+            "night-purge"
+          ],
+          "retrieved_pages": [
+            "air-conditioner",
+            "rationing",
+            "thermal-mass",
+            "night-purge",
+            "first-aid"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.4,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "sensor-to-assay",
+          "question": "salinity sensor chloride",
+          "acceptable_pages": [
+            "sensor",
+            "assay"
+          ],
+          "retrieved_pages": [
+            "sensor",
+            "assay",
+            "sensor-catalog",
+            "assay-manual"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "lot-custody-and-result",
+          "question": "R17 courier elevated concentration",
+          "acceptable_pages": [
+            "registry",
+            "assay"
+          ],
+          "retrieved_pages": [
+            "assay",
+            "registry",
+            "sensor",
+            "sensor-catalog"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "absent-answer-hard",
+          "question": "quuxivorzz blarghmolecule",
+          "acceptable_pages": [],
+          "retrieved_pages": [
+            "safety",
+            "assay",
+            "sensor-catalog",
+            "assay-manual",
+            "sensor"
+          ],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": false,
+          "gate_passed": false,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "sensor-warranty-absent",
+          "question": "salinity sensor warranty duration",
+          "acceptable_pages": [],
+          "retrieved_pages": [
+            "sensor",
+            "sensor-catalog",
+            "assay-manual",
+            "assay"
+          ],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": false,
+          "gate_passed": false,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        }
+      ],
+      "aggregates": {
+        "recall_at_5": 1.0,
+        "precision_at_5": 0.48333333333333334,
+        "answerable_questions": 6,
+        "passed_questions": 6,
+        "total_questions": 8,
+        "passed_abstention_controls": 0,
+        "total_abstention_controls": 2
+      }
+    },
+    {
+      "label": "hybrid-warm-hard",
+      "dataset": "golden-questions-hard.json",
+      "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions-hard.json --provider fake --embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/hard",
+      "started_utc": "2026-10-04T17:25:25.649586+00:00",
+      "wall_ns": 116008167,
+      "exit_code": 1,
+      "stdout": "Ask This Site evaluation: ask-this-site-hard\nRanker: BM25-lite + Ollama embeddings (RRF) \u00b7 K=5 \u00b7 provider=fake\n\nSITE     QUESTION                RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nstation  capture-and-share       1.00      0.50       0.50       -     PASS    [cistern rationing index water-pump] / []\nstation  passive-cooling         1.00      0.50       0.50       -     PASS    [air-conditioner night-purge thermal-mass index] / []\nstation  drinkable-backup        1.00      0.00       0.50       -     PASS    [rationing garden cistern first-aid] / []\nstation  unpowered-chill         1.00      0.00       0.40       -     PASS    [air-conditioner rationing thermal-mass night-purge first-aid] / []\nestuary  sensor-to-assay         1.00      0.50       0.50       0.67  PASS    [sensor assay sensor-catalog assay-manual] / []\nestuary  lot-custody-and-result  1.00      0.50       0.50       -     PASS    [assay registry sensor sensor-catalog] / []\nestuary  absent-answer-hard      n/a       no-answer  -          -     FAIL    [safety assay sensor-catalog assay-manual sensor] / []\nestuary  sensor-warranty-absent  n/a       no-answer  -          -     FAIL    [sensor sensor-catalog assay-manual assay] / []\n\nRecall@5: 1.0000 (6 answerable questions); questions passed: 6/8\nPrecision@5: 0.4833 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 0.5833; delta: +0.4167; floor passed: true\nClass multi-hop: recall=1.0000 precision=0.5000 n=1\nClass multi-page: recall=1.0000 precision=0.5000 n=3\nClass paraphrase: recall=1.0000 precision=0.4500 n=2\nPrecision floor passed: true; evaluation passed: false\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"station\",\"CorpusDigest\":\"18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973\",\"Chunks\":16,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/hard/662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json\",\"IndexSHA256Before\":\"a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3\",\"IndexSHA256After\":\"a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3\",\"IndexDuration\":1594875,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"capture-and-share\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":8158333},\"RankDuration\":35667},{\"QuestionID\":\"passive-cooling\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":6412875},\"RankDuration\":162833},{\"QuestionID\":\"drinkable-backup\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":8216166},\"RankDuration\":36334},{\"QuestionID\":\"unpowered-chill\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":8558750},\"RankDuration\":22625}]},{\"SiteID\":\"estuary\",\"CorpusDigest\":\"7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771\",\"Chunks\":15,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/hard/a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json\",\"IndexSHA256Before\":\"a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02\",\"IndexSHA256After\":\"a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02\",\"IndexDuration\":1469084,\"ChunkEmbedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"FallbackReason\":\"\",\"Queries\":[{\"QuestionID\":\"sensor-to-assay\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7470458},\"RankDuration\":37375},{\"QuestionID\":\"lot-custody-and-result\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":8133541},\"RankDuration\":25375},{\"QuestionID\":\"absent-answer-hard\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":8403625},\"RankDuration\":16750},{\"QuestionID\":\"sensor-warranty-absent\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF)\",\"FallbackReason\":\"\",\"Embedding\":{\"Calls\":1,\"Inputs\":1,\"Vectors\":1,\"Duration\":7486958},\"RankDuration\":17209}]}]\n",
+      "stderr": "time=2026-10-04T13:25:25.676-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-739848026/rag-archive\"\ntime=2026-10-04T13:25:25.677-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:25.677-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:25.678-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:25.726-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-160489132/rag-archive\"\ntime=2026-10-04T13:25:25.727-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:25.727-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:25.728-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:25.764-04:00 level=ERROR msg=\"Application error\" error=\"ask eval: regression gates failed (2 questions failed, recall floor passed=true, precision floor passed=true)\"\n",
+      "measurements": [
+        {
+          "SiteID": "station",
+          "CorpusDigest": "18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973",
+          "Chunks": 16,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/hard/662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json",
+          "IndexSHA256Before": "a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3",
+          "IndexSHA256After": "a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3",
+          "IndexDuration": 1594875,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "capture-and-share",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 8158333
+              },
+              "RankDuration": 35667
+            },
+            {
+              "QuestionID": "passive-cooling",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 6412875
+              },
+              "RankDuration": 162833
+            },
+            {
+              "QuestionID": "drinkable-backup",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 8216166
+              },
+              "RankDuration": 36334
+            },
+            {
+              "QuestionID": "unpowered-chill",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 8558750
+              },
+              "RankDuration": 22625
+            }
+          ]
+        },
+        {
+          "SiteID": "estuary",
+          "CorpusDigest": "7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771",
+          "Chunks": 15,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/hard/a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json",
+          "IndexSHA256Before": "a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02",
+          "IndexSHA256After": "a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02",
+          "IndexDuration": 1469084,
+          "ChunkEmbedding": {
+            "Calls": 0,
+            "Inputs": 0,
+            "Vectors": 0,
+            "Duration": 0
+          },
+          "FallbackReason": "",
+          "Queries": [
+            {
+              "QuestionID": "sensor-to-assay",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 7470458
+              },
+              "RankDuration": 37375
+            },
+            {
+              "QuestionID": "lot-custody-and-result",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 8133541
+              },
+              "RankDuration": 25375
+            },
+            {
+              "QuestionID": "absent-answer-hard",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 8403625
+              },
+              "RankDuration": 16750
+            },
+            {
+              "QuestionID": "sensor-warranty-absent",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF)",
+              "FallbackReason": "",
+              "Embedding": {
+                "Calls": 1,
+                "Inputs": 1,
+                "Vectors": 1,
+                "Duration": 7486958
+              },
+              "RankDuration": 17209
+            }
+          ]
+        }
+      ],
+      "external_index_sha256_before": {
+        "a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json": "a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02",
+        "662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json": "a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3"
+      },
+      "external_index_sha256_after": {
+        "a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json": "a4dad3d3d3893f8af63be66c52e98f2fc42e5b68ad82e49a81b544b1c1320f02",
+        "662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json": "a859a9f2b64693183ae76a99aa32a7e480833689afbb877d0b7633fb5fababa3"
+      },
+      "external_existing_indices_byte_identical": true,
+      "question_results": [
+        {
+          "site": "station",
+          "question_id": "capture-and-share",
+          "question": "rain cistern daily resident allowances",
+          "acceptable_pages": [
+            "cistern",
+            "rationing"
+          ],
+          "retrieved_pages": [
+            "cistern",
+            "rationing",
+            "index",
+            "water-pump"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "station",
+          "question_id": "passive-cooling",
+          "question": "cooling rooms electricity",
+          "acceptable_pages": [
+            "thermal-mass",
+            "night-purge"
+          ],
+          "retrieved_pages": [
+            "air-conditioner",
+            "night-purge",
+            "thermal-mass",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "station",
+          "question_id": "drinkable-backup",
+          "question": "potable backup apportionment",
+          "acceptable_pages": [
+            "cistern",
+            "rationing"
+          ],
+          "retrieved_pages": [
+            "rationing",
+            "garden",
+            "cistern",
+            "first-aid"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "station",
+          "question_id": "unpowered-chill",
+          "question": "unpowered dwelling refrigeration",
+          "acceptable_pages": [
+            "thermal-mass",
+            "night-purge"
+          ],
+          "retrieved_pages": [
+            "air-conditioner",
+            "rationing",
+            "thermal-mass",
+            "night-purge",
+            "first-aid"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.4,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "sensor-to-assay",
+          "question": "salinity sensor chloride",
+          "acceptable_pages": [
+            "sensor",
+            "assay"
+          ],
+          "retrieved_pages": [
+            "sensor",
+            "assay",
+            "sensor-catalog",
+            "assay-manual"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "lot-custody-and-result",
+          "question": "R17 courier elevated concentration",
+          "acceptable_pages": [
+            "registry",
+            "assay"
+          ],
+          "retrieved_pages": [
+            "assay",
+            "registry",
+            "sensor",
+            "sensor-catalog"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "absent-answer-hard",
+          "question": "quuxivorzz blarghmolecule",
+          "acceptable_pages": [],
+          "retrieved_pages": [
+            "safety",
+            "assay",
+            "sensor-catalog",
+            "assay-manual",
+            "sensor"
+          ],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": false,
+          "gate_passed": false,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "sensor-warranty-absent",
+          "question": "salinity sensor warranty duration",
+          "acceptable_pages": [],
+          "retrieved_pages": [
+            "sensor",
+            "sensor-catalog",
+            "assay-manual",
+            "assay"
+          ],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": false,
+          "gate_passed": false,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF)"
+        }
+      ],
+      "aggregates": {
+        "recall_at_5": 1.0,
+        "precision_at_5": 0.48333333333333334,
+        "answerable_questions": 6,
+        "passed_questions": 6,
+        "total_questions": 8,
+        "passed_abstention_controls": 0,
+        "total_abstention_controls": 2
+      }
+    },
+    {
+      "label": "unavailable-original",
+      "dataset": "golden-questions.json",
+      "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions.json --provider fake --embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/unavailable-original",
+      "started_utc": "2026-10-04T17:25:52.941587+00:00",
+      "wall_ns": 93206208,
+      "exit_code": 0,
+      "stdout": "Ask This Site evaluation: ask-this-site-phase-1\nRanker: BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable) \u00b7 K=5 \u00b7 provider=fake\n\nSITE                      QUESTION                   RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nanchor-links              other-page-heading         1.00      1.00       0.50       -     PASS    [other index] / []\nanchor-links              unanswerable               n/a       no-answer  -          -     PASS    [] / []\nartisanal-ceramics        shino-glaze                1.00      1.00       0.25       -     PASS    [collection/wheel-thrown-vessels index journal/2026-07-15-glazing-techniques care-guide] / []\nartisanal-ceramics        washing-stoneware          1.00      1.00       0.33       -     PASS    [care-guide collection/wheel-thrown-vessels index] / []\nartisanal-ceramics        pine-ash-firing            1.00      1.00       0.25       -     PASS    [journal/2026-07-15-glazing-techniques care-guide collection/wheel-thrown-vessels index] / []\nclean-urls                author-is-cool             1.00      1.00       1.00       -     PASS    [bio] / []\nclean-urls                blog-post                  1.00      1.00       0.50       -     PASS    [index blog/post] / []\nask-eval-deep-chain       northern-kiln-temperature  1.00      1.00       0.33       -     PASS    [observations/archive/blue-glass-run observations/field-log index] / []\nask-eval-research-branch  cobalt-concentration       1.00      1.00       0.33       -     PASS    [study/samples/cobalt-clay study/field-notes index] / []\n\nRecall@5: 1.0000 (8 answerable questions); questions passed: 9/9\nPrecision@5: 0.4375 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 1.0000; delta: +0.0000; floor passed: true\nClass standard: recall=1.0000 precision=0.4375 n=8\nPrecision floor passed: true; evaluation passed: true\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"anchor-links\",\"CorpusDigest\":\"536d3212b7b4e13a9ae8debae557657a6c614481c539f83a0862aaeda0c0a450\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-original/acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":212583,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":0,\"Duration\":208834},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"other-page-heading\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":5375},{\"QuestionID\":\"unanswerable\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":2375}]},{\"SiteID\":\"artisanal-ceramics\",\"CorpusDigest\":\"daeca4489ad0e3bf6e0efb5a19a9ab70321327f97573370886f0c342f765f688\",\"Chunks\":8,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-original/696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":186208,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":8,\"Vectors\":0,\"Duration\":180125},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"shino-glaze\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":6042},{\"QuestionID\":\"washing-stoneware\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":4750},{\"QuestionID\":\"pine-ash-firing\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":6875}]},{\"SiteID\":\"clean-urls\",\"CorpusDigest\":\"70258859b5fbd67095b32c86ef970a22c9aa11fe526691144a2621a15187cd69\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-original/f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":171708,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":0,\"Duration\":167042},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"author-is-cool\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":3334},{\"QuestionID\":\"blog-post\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":3291}]},{\"SiteID\":\"ask-eval-deep-chain\",\"CorpusDigest\":\"fa4998dd86d222c38757e85ae191ea936419ede6b5b142334df82418110b8d6c\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-original/49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":241416,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":0,\"Duration\":237375},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"northern-kiln-temperature\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":12542}]},{\"SiteID\":\"ask-eval-research-branch\",\"CorpusDigest\":\"f813384c91e1930a4d3ba562e53027dbde4d1f160644cb61a76798ef40e294b1\",\"Chunks\":3,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-original/623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":278000,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":3,\"Vectors\":0,\"Duration\":259375},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"cobalt-concentration\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":7000}]}]\n",
+      "stderr": "time=2026-10-04T13:25:52.965-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2488010995/rag-archive\"\ntime=2026-10-04T13:25:52.965-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:52.965-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:52.966-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:52.982-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-1698329813/rag-archive\"\ntime=2026-10-04T13:25:52.983-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:52.983-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:52.984-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:52.997-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-419035684/rag-archive\"\ntime=2026-10-04T13:25:52.998-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:52.998-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:52.998-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:53.012-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2730177259/rag-archive\"\ntime=2026-10-04T13:25:53.014-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:53.015-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:53.016-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:53.027-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-3481598875/rag-archive\"\ntime=2026-10-04T13:25:53.029-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:53.029-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:53.031-04:00 level=INFO msg=\"Created rag-content.md\"\n",
+      "measurements": [
+        {
+          "SiteID": "anchor-links",
+          "CorpusDigest": "536d3212b7b4e13a9ae8debae557657a6c614481c539f83a0862aaeda0c0a450",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-original/acce4fe45ece5c7cd93aeba5ebb4cf8f412a842bbd288415c175fc6e5910120d/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "absent",
+          "IndexDuration": 212583,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 3,
+            "Vectors": 0,
+            "Duration": 208834
+          },
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Queries": [
+            {
+              "QuestionID": "other-page-heading",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 5375
+            },
+            {
+              "QuestionID": "unanswerable",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 2375
+            }
+          ]
+        },
+        {
+          "SiteID": "artisanal-ceramics",
+          "CorpusDigest": "daeca4489ad0e3bf6e0efb5a19a9ab70321327f97573370886f0c342f765f688",
+          "Chunks": 8,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-original/696ab8c3e51b9aba044c33d477b3bb988cb39056d9cbdf5ea3282c6a609637df/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "absent",
+          "IndexDuration": 186208,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 8,
+            "Vectors": 0,
+            "Duration": 180125
+          },
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Queries": [
+            {
+              "QuestionID": "shino-glaze",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 6042
+            },
+            {
+              "QuestionID": "washing-stoneware",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 4750
+            },
+            {
+              "QuestionID": "pine-ash-firing",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 6875
+            }
+          ]
+        },
+        {
+          "SiteID": "clean-urls",
+          "CorpusDigest": "70258859b5fbd67095b32c86ef970a22c9aa11fe526691144a2621a15187cd69",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-original/f964b0fa80210a146eb7573786529375fd6f014c44e4f51f74add2a4d882d668/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "absent",
+          "IndexDuration": 171708,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 3,
+            "Vectors": 0,
+            "Duration": 167042
+          },
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Queries": [
+            {
+              "QuestionID": "author-is-cool",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 3334
+            },
+            {
+              "QuestionID": "blog-post",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 3291
+            }
+          ]
+        },
+        {
+          "SiteID": "ask-eval-deep-chain",
+          "CorpusDigest": "fa4998dd86d222c38757e85ae191ea936419ede6b5b142334df82418110b8d6c",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-original/49d3dce271de3a990fef7e1d92ffa0c0377209d6aaa0f8f5452b0859f6bd1ba8/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "absent",
+          "IndexDuration": 241416,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 3,
+            "Vectors": 0,
+            "Duration": 237375
+          },
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Queries": [
+            {
+              "QuestionID": "northern-kiln-temperature",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 12542
+            }
+          ]
+        },
+        {
+          "SiteID": "ask-eval-research-branch",
+          "CorpusDigest": "f813384c91e1930a4d3ba562e53027dbde4d1f160644cb61a76798ef40e294b1",
+          "Chunks": 3,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-original/623d710feaf1b24033e85220a4b761bec6e111d214763f1a9b1b66405807b391/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "absent",
+          "IndexDuration": 278000,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 3,
+            "Vectors": 0,
+            "Duration": 259375
+          },
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Queries": [
+            {
+              "QuestionID": "cobalt-concentration",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 7000
+            }
+          ]
+        }
+      ],
+      "external_index_sha256_before": {},
+      "external_index_sha256_after": {},
+      "external_existing_indices_byte_identical": true,
+      "offline_checks": {
+        "/api/version": "<urlopen error [Errno 61] Connection refused>",
+        "/api/tags": "<urlopen error [Errno 61] Connection refused>"
+      },
+      "question_results": [
+        {
+          "site": "anchor-links",
+          "question_id": "other-page-heading",
+          "question": "What is the heading on the other linked page?",
+          "acceptable_pages": [
+            "other"
+          ],
+          "retrieved_pages": [
+            "other",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "anchor-links",
+          "question_id": "unanswerable",
+          "question": "Which quuxivorzz blarghmolecule certifies zindlefex?",
+          "acceptable_pages": [],
+          "retrieved_pages": [],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": true,
+          "canonical_no_answer_verified": true,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "shino-glaze",
+          "question": "What glaze is used on the Shino Tea Bowls?",
+          "acceptable_pages": [
+            "collection/wheel-thrown-vessels"
+          ],
+          "retrieved_pages": [
+            "collection/wheel-thrown-vessels",
+            "index",
+            "journal/2026-07-15-glazing-techniques",
+            "care-guide"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.25,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "washing-stoneware",
+          "question": "How should I wash handmade stoneware without damaging it?",
+          "acceptable_pages": [
+            "care-guide"
+          ],
+          "retrieved_pages": [
+            "care-guide",
+            "collection/wheel-thrown-vessels",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "artisanal-ceramics",
+          "question_id": "pine-ash-firing",
+          "question": "What happens to pine ash glaze during firing at 1280 degrees Celsius?",
+          "acceptable_pages": [
+            "journal/2026-07-15-glazing-techniques"
+          ],
+          "retrieved_pages": [
+            "journal/2026-07-15-glazing-techniques",
+            "care-guide",
+            "collection/wheel-thrown-vessels",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.25,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "clean-urls",
+          "question_id": "author-is-cool",
+          "question": "Who says they are cool?",
+          "acceptable_pages": [
+            "bio"
+          ],
+          "retrieved_pages": [
+            "bio"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 1.0,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "clean-urls",
+          "question_id": "blog-post",
+          "question": "What does the My Blog Post page say?",
+          "acceptable_pages": [
+            "blog/post"
+          ],
+          "retrieved_pages": [
+            "index",
+            "blog/post"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "ask-eval-deep-chain",
+          "question_id": "northern-kiln-temperature",
+          "question": "What temperature did the northern kiln reach during blue-glass firing?",
+          "acceptable_pages": [
+            "observations/archive/blue-glass-run"
+          ],
+          "retrieved_pages": [
+            "observations/archive/blue-glass-run",
+            "observations/field-log",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "ask-eval-research-branch",
+          "question_id": "cobalt-concentration",
+          "question": "What cobalt concentration does the blue-clay assay report?",
+          "acceptable_pages": [
+            "study/samples/cobalt-clay"
+          ],
+          "retrieved_pages": [
+            "study/samples/cobalt-clay",
+            "study/field-notes",
+            "index"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.3333333333333333,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        }
+      ],
+      "aggregates": {
+        "recall_at_5": 1.0,
+        "precision_at_5": 0.4375,
+        "answerable_questions": 8,
+        "passed_questions": 9,
+        "total_questions": 9,
+        "passed_abstention_controls": 1,
+        "total_abstention_controls": 1
+      }
+    },
+    {
+      "label": "unavailable-hard",
+      "dataset": "golden-questions-hard.json",
+      "command": "/tmp/la-famille-602.dbYmuu/la-famille ask --eval assets/testdata/ask-eval/golden-questions-hard.json --provider fake --embeddings --embedding-model nomic-embed-text --embedding-cache /tmp/la-famille-602.dbYmuu/unavailable-hard",
+      "started_utc": "2026-10-04T17:25:53.035399+00:00",
+      "wall_ns": 59864208,
+      "exit_code": 0,
+      "stdout": "Ask This Site evaluation: ask-this-site-hard\nRanker: BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable) \u00b7 K=5 \u00b7 provider=fake\n\nSITE     QUESTION                RECALL@K  MINIMUM    PRECISION  PATH  STATUS  RETRIEVED / MISSING PAGES\nstation  capture-and-share       1.00      0.50       0.50       -     PASS    [rationing cistern index water-pump] / []\nstation  passive-cooling         0.50      0.50       0.50       -     PASS    [air-conditioner night-purge] / [thermal-mass]\nstation  drinkable-backup        0.00      0.00       0.00       -     PASS    [] / [cistern rationing]\nstation  unpowered-chill         0.00      0.00       0.00       -     PASS    [] / [thermal-mass night-purge]\nestuary  sensor-to-assay         1.00      0.50       0.50       0.67  PASS    [sensor sensor-catalog assay assay-manual] / []\nestuary  lot-custody-and-result  1.00      0.50       0.50       -     PASS    [assay registry sensor-catalog sensor] / []\nestuary  absent-answer-hard      n/a       no-answer  -          -     PASS    [] / []\nestuary  sensor-warranty-absent  n/a       no-answer  -          -     PASS    [] / []\n\nRecall@5: 0.5833 (6 answerable questions); questions passed: 8/8\nPrecision@5: 0.3333 (unique pages within top 5 chunks)\nrecorded BM25-lite recall@5 baseline: 0.5833; delta: +0.0000; floor passed: true\nClass multi-hop: recall=1.0000 precision=0.5000 n=1\nClass multi-page: recall=0.8333 precision=0.5000 n=3\nClass paraphrase: recall=0.0000 precision=0.0000 n=2\nPrecision floor passed: true; evaluation passed: true\n\nMeasurement JSON (durations in ns; excludes completion): [{\"SiteID\":\"station\",\"CorpusDigest\":\"18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973\",\"Chunks\":16,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-hard/662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":407375,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":16,\"Vectors\":0,\"Duration\":288333},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"capture-and-share\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":5084},{\"QuestionID\":\"passive-cooling\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":2166},{\"QuestionID\":\"drinkable-backup\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":1292},{\"QuestionID\":\"unpowered-chill\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":1167}]},{\"SiteID\":\"estuary\",\"CorpusDigest\":\"7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771\",\"Chunks\":15,\"EmbeddingModel\":\"nomic-embed-text\",\"CachePath\":\"/tmp/la-famille-602.dbYmuu/unavailable-hard/a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json\",\"IndexSHA256Before\":\"absent\",\"IndexSHA256After\":\"absent\",\"IndexDuration\":208792,\"ChunkEmbedding\":{\"Calls\":1,\"Inputs\":15,\"Vectors\":0,\"Duration\":199292},\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Queries\":[{\"QuestionID\":\"sensor-to-assay\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":4500},{\"QuestionID\":\"lot-custody-and-result\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":3292},{\"QuestionID\":\"absent-answer-hard\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":1042},{\"QuestionID\":\"sensor-warranty-absent\",\"Ranker\":\"BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)\",\"FallbackReason\":\"llm provider unavailable: Post \\\"http://127.0.0.1:11434/api/embed\\\": dial tcp 127.0.0.1:11434: connect: connection refused\",\"Embedding\":{\"Calls\":0,\"Inputs\":0,\"Vectors\":0,\"Duration\":0},\"RankDuration\":1584}]}]\n",
+      "stderr": "time=2026-10-04T13:25:53.067-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-2035179726/rag-archive\"\ntime=2026-10-04T13:25:53.068-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:53.068-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:53.069-04:00 level=INFO msg=\"Created rag-content.md\"\ntime=2026-10-04T13:25:53.085-04:00 level=INFO msg=\"RAG archive directory created at /var/folders/p_/h710w89x7b16x249r_061lkw0000gn/T/la-famille-ask-eval-4267407013/rag-archive\"\ntime=2026-10-04T13:25:53.086-04:00 level=INFO msg=\"Created rag-system.md\"\ntime=2026-10-04T13:25:53.086-04:00 level=INFO msg=\"Created rag-config.md\"\ntime=2026-10-04T13:25:53.088-04:00 level=INFO msg=\"Created rag-content.md\"\n",
+      "measurements": [
+        {
+          "SiteID": "station",
+          "CorpusDigest": "18272b4ca1583de4768e99e821a42db7c3c25c27d2c3c6d4e80698e8cc708973",
+          "Chunks": 16,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-hard/662644021c61d653961364dfa1128735ff3bc07eff8dcace92be2f9ac6327cd0/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "absent",
+          "IndexDuration": 407375,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 16,
+            "Vectors": 0,
+            "Duration": 288333
+          },
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Queries": [
+            {
+              "QuestionID": "capture-and-share",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 5084
+            },
+            {
+              "QuestionID": "passive-cooling",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 2166
+            },
+            {
+              "QuestionID": "drinkable-backup",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 1292
+            },
+            {
+              "QuestionID": "unpowered-chill",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 1167
+            }
+          ]
+        },
+        {
+          "SiteID": "estuary",
+          "CorpusDigest": "7ce42addfd652c37c52752a3edfcea286d580cd3f1a1ff16183087e0511e5771",
+          "Chunks": 15,
+          "EmbeddingModel": "nomic-embed-text",
+          "CachePath": "/tmp/la-famille-602.dbYmuu/unavailable-hard/a38d881493bd3d3a852857ce600b62e6f6b8b0ce44bb81df2c451dd62e4ac636/.la-famille-vectors.json",
+          "IndexSHA256Before": "absent",
+          "IndexSHA256After": "absent",
+          "IndexDuration": 208792,
+          "ChunkEmbedding": {
+            "Calls": 1,
+            "Inputs": 15,
+            "Vectors": 0,
+            "Duration": 199292
+          },
+          "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+          "Queries": [
+            {
+              "QuestionID": "sensor-to-assay",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 4500
+            },
+            {
+              "QuestionID": "lot-custody-and-result",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 3292
+            },
+            {
+              "QuestionID": "absent-answer-hard",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 1042
+            },
+            {
+              "QuestionID": "sensor-warranty-absent",
+              "Ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)",
+              "FallbackReason": "llm provider unavailable: Post \"http://127.0.0.1:11434/api/embed\": dial tcp 127.0.0.1:11434: connect: connection refused",
+              "Embedding": {
+                "Calls": 0,
+                "Inputs": 0,
+                "Vectors": 0,
+                "Duration": 0
+              },
+              "RankDuration": 1584
+            }
+          ]
+        }
+      ],
+      "external_index_sha256_before": {},
+      "external_index_sha256_after": {},
+      "external_existing_indices_byte_identical": true,
+      "offline_checks": {
+        "/api/version": "<urlopen error [Errno 61] Connection refused>",
+        "/api/tags": "<urlopen error [Errno 61] Connection refused>"
+      },
+      "question_results": [
+        {
+          "site": "station",
+          "question_id": "capture-and-share",
+          "question": "rain cistern daily resident allowances",
+          "acceptable_pages": [
+            "cistern",
+            "rationing"
+          ],
+          "retrieved_pages": [
+            "rationing",
+            "cistern",
+            "index",
+            "water-pump"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "station",
+          "question_id": "passive-cooling",
+          "question": "cooling rooms electricity",
+          "acceptable_pages": [
+            "thermal-mass",
+            "night-purge"
+          ],
+          "retrieved_pages": [
+            "air-conditioner",
+            "night-purge"
+          ],
+          "missing_pages": [
+            "thermal-mass"
+          ],
+          "recall_at_5": 0.5,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "station",
+          "question_id": "drinkable-backup",
+          "question": "potable backup apportionment",
+          "acceptable_pages": [
+            "cistern",
+            "rationing"
+          ],
+          "retrieved_pages": [],
+          "missing_pages": [
+            "cistern",
+            "rationing"
+          ],
+          "recall_at_5": 0.0,
+          "precision_at_5": 0.0,
+          "unanswerable": false,
+          "zero_retrieved_context": true,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "station",
+          "question_id": "unpowered-chill",
+          "question": "unpowered dwelling refrigeration",
+          "acceptable_pages": [
+            "thermal-mass",
+            "night-purge"
+          ],
+          "retrieved_pages": [],
+          "missing_pages": [
+            "thermal-mass",
+            "night-purge"
+          ],
+          "recall_at_5": 0.0,
+          "precision_at_5": 0.0,
+          "unanswerable": false,
+          "zero_retrieved_context": true,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "sensor-to-assay",
+          "question": "salinity sensor chloride",
+          "acceptable_pages": [
+            "sensor",
+            "assay"
+          ],
+          "retrieved_pages": [
+            "sensor",
+            "sensor-catalog",
+            "assay",
+            "assay-manual"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "lot-custody-and-result",
+          "question": "R17 courier elevated concentration",
+          "acceptable_pages": [
+            "registry",
+            "assay"
+          ],
+          "retrieved_pages": [
+            "assay",
+            "registry",
+            "sensor-catalog",
+            "sensor"
+          ],
+          "missing_pages": [],
+          "recall_at_5": 1.0,
+          "precision_at_5": 0.5,
+          "unanswerable": false,
+          "zero_retrieved_context": false,
+          "canonical_no_answer_verified": null,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "absent-answer-hard",
+          "question": "quuxivorzz blarghmolecule",
+          "acceptable_pages": [],
+          "retrieved_pages": [],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": true,
+          "canonical_no_answer_verified": true,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        },
+        {
+          "site": "estuary",
+          "question_id": "sensor-warranty-absent",
+          "question": "salinity sensor warranty duration",
+          "acceptable_pages": [],
+          "retrieved_pages": [],
+          "missing_pages": [],
+          "recall_at_5": null,
+          "precision_at_5": null,
+          "unanswerable": true,
+          "zero_retrieved_context": true,
+          "canonical_no_answer_verified": true,
+          "gate_passed": true,
+          "actual_ranker": "BM25-lite + Ollama embeddings (RRF; lexical fallback: unavailable)"
+        }
+      ],
+      "aggregates": {
+        "recall_at_5": 0.5833333333333334,
+        "precision_at_5": 0.3333333333333333,
+        "answerable_questions": 6,
+        "passed_questions": 8,
+        "total_questions": 8,
+        "passed_abstention_controls": 2,
+        "total_abstention_controls": 2
+      }
+    }
+  ],
+  "verification": {
+    "lexical_fallback_question_results_equal": true,
+    "cold_warm_question_results_equal": true,
+    "external_warm_indices_direct_byte_equal": true,
+    "warm_chunk_provider_calls": 0,
+    "fresh_cold_indices_absent": true,
+    "frozen_dataset_hashes_unchanged": true
+  }
+}
