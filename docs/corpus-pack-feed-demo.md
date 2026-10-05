@@ -1,5 +1,10 @@
 # Local-feed pull: compiled subscriber evidence
 
+> Historical evidence. Ask was retired in #629. Current subscriber tests
+> inspect verified archive content and metadata directly, using the renamed
+> `assets/testdata/pack-subscriber` fixture. The old Ask steps below no longer
+> apply; use `content/docs/corpus-pack-feeds.md` for current commands.
+
 Scope: #583, milestone 9, #623 and #624. Baseline: fetched `origin/master`,
 `1af408c`, on 2026-10-02. No overlapping local-feed implementation or issue
 was found before creating tracking. Existing #612/#618/#621/#622 were reused,

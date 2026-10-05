@@ -58,20 +58,14 @@ When the export process completes, it places the resulting datasets into the `ra
 
 You can take these generated files and use them as system context when configuring custom GPTs, uploading them to Claude Projects, or using them in local AI pipelines (like LangChain or LlamaIndex) to allow the model to answer questions accurately based exclusively on your site's data.
 
-## Consuming the Archive with `la-famille ask`
+## Archive compatibility
 
-`la-famille ask` (introduced alongside this guide) consumes the same
-archive end-to-end:
+The archive format remains available to external tools. Each file uses
+`<file path="...">`, `<content>`, `</content>`, and `</file>` framing.
+Body lines beginning with a framing marker (including already-escaped markers)
+gain one leading backslash. Readers remove exactly one backslash from those
+escaped marker lines to recover the original content.
 
-```bash
-go run ./cmd/la-famille rag      # refresh rag-archive/
-go run ./cmd/la-famille ask       # serve the local Q&A UI on 127.0.0.1:8090
-```
-
-The accelerator bundle parses the `<file path="..."><content>...</content></file>`
-blocks above, splits each file at heading-2/heading-3 boundaries, ranks
-chunks with a small lexical BM25-lite scorer, and returns only verified
-citations in the response. Vector embeddings are not required for the
-default path; if you later opt into embeddings, the chunks here remain the
-authoritative source. See [Ask This Site Guide](ask.md) for the full
-architecture and privacy story.
+[Corpus Packs](corpus-packs.md) package `rag-content.md` together with generated
+site metadata for verification and delivery without the source checkout.
+The retired built-in assistant does not change RAG export or its archive format.

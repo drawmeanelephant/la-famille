@@ -11,8 +11,9 @@ not the publisher's source checkout, configuration, templates, public output,
 or a site build. The HTTPS and watch finishing slice is tracked by
 [#626](https://github.com/drawmeanelephant/la-famille/issues/626) under
 [#583](https://github.com/drawmeanelephant/la-famille/issues/583).
-It reuses the existing [v1 pack format](corpus-packs.md),
-[local deltas](corpus-pack-deltas.md), and [pack-backed Ask](ask.md).
+It reuses the existing [v1 pack format](corpus-packs.md) and
+[local deltas](corpus-pack-deltas.md). Verified archives remain consumable by
+external tools without a built-in assistant or model runtime.
 
 ## Subscriber commands
 
@@ -20,7 +21,6 @@ It reuses the existing [v1 pack format](corpus-packs.md),
 la-famille pack pull /path/to/feed --output subscriber-v1.tar
 la-famille pack pull /path/to/feed --base subscriber-v1.tar --output subscriber-v2.tar
 la-famille pack verify subscriber-v2.tar
-la-famille ask --pack /absolute/path/subscriber-v2.tar --provider fake --no-browser
 ```
 
 `--output` (`-o`) is required. Its parent directory must exist and its
@@ -210,17 +210,14 @@ Verified versions are immutable `packs/<sha256>.tar` files. `current.json`
 contains the schema version, exact archive hash and relative path of the current
 verified pack. Watch syncs the new archive and version directory, then atomically
 replaces and syncs the metadata. The previous verified version is never modified.
-Use this pointer to select a pack for Ask:
+Use this pointer to select the current pack for verification or external tools:
 
 ```bash
 CURRENT=$(python3 -c 'import json; print(json.load(open("/path/to/subscriber/current.json"))["path"])')
 la-famille pack verify "/path/to/subscriber/$CURRENT"
-la-famille ask --pack "/path/to/subscriber/$CURRENT" \
-  --provider ollama --model <installed-local-model> --no-browser
 ```
 
-An already-running Ask keeps its own verified snapshot. Restart it with the new
-pack to consume a watch update. Watch's unchanged polls fetch only the manifest,
+Watch's unchanged polls fetch only the manifest,
 not a full archive or delta, do not rewrite the pointer, and emit no false changes.
 Updates report member additions/changes/removals and named pages through the
 existing Ledger when both packs support it. Otherwise page semantics are
@@ -262,15 +259,16 @@ Trust the feed source and inspect what you publish.
 ## Evidence and boundary
 
 The [compiled subscriber demonstration](https://github.com/drawmeanelephant/la-famille/blob/master/docs/corpus-pack-feed-demo.md)
-covers cold pull → delta update → verify → fake-provider Ask, with the full
-target unavailable and no subscriber source checkout or build.
-The fake provider's prose is synthetic; the updated fact is checked in the
-retrieved citation excerpt.
+covers the historical cold pull → delta update → verify workflow, with the
+full target unavailable and no subscriber source checkout or build.
+Current compiled subscriber tests check the updated archive text and packaged
+search/graph/page metadata directly, without a model or assistant.
 
 The [finishing demonstration and operator checklist](https://github.com/drawmeanelephant/la-famille/blob/master/docs/corpus-pack-https-watch-demo.md)
-separates automated/local evidence from the still-required hosted HTTPS and real
-Ollama factual-answer evidence. Do not close #626 or #583 until the implementation
-is merged and that evidence is accepted.
+records the historical automated/local evidence and hosted HTTPS checklist.
+Ask and real-model answer demonstrations are retired by
+[#629](https://github.com/drawmeanelephant/la-famille/issues/629), not remaining
+acceptance requirements for Corpus Packs. Ongoing delivery work remains in #583.
 
 **Git-ref sources are deferred, not delivered.** This slice delivers local
 directory and opt-in HTTPS subscription only. Signatures/authenticity,

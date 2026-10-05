@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/tbuddy/la-famille/internal/config"
 )
 
@@ -91,14 +90,6 @@ func loadProjectConfig(args []string) (config.Config, error) {
 	if err != nil {
 		return config.Config{}, err
 	}
-	if packAskInvocation(args) {
-		// Pack-backed Ask must not read even an unrelated config.yaml. Cobra
-		// still parses global flags; Ask rejects site/directory input flags.
-		cfg := config.DefaultConfig()
-		cfg.ProjectRoot, cfg.ConfigPath = boot.ProjectRoot, boot.ConfigPath
-		return cfg, nil
-	}
-
 	raw, loadErr := config.Load(boot.ConfigPath)
 	root := boot.ProjectRoot
 	if !boot.explicitProjectRoot && loadErr == nil {
@@ -130,22 +121,6 @@ func loadProjectConfig(args []string) (config.Config, error) {
 		return resolved, fmt.Errorf("invalid %s: %w", boot.ConfigPath, err)
 	}
 	return resolved, nil
-}
-
-func packAskInvocation(args []string) bool {
-	root := &cobra.Command{Use: "la-famille"}
-	for _, name := range []string{"project-root", "config", "log-file"} {
-		root.PersistentFlags().String(name, "", "")
-	}
-	root.AddCommand(setupAskCmd(config.Config{}))
-	cmd, remaining, err := root.Find(args)
-	if err != nil || cmd.Name() != "ask" {
-		return false
-	}
-	if err := cmd.ParseFlags(remaining); err != nil {
-		return false
-	}
-	return cmd.Flags().Changed("pack")
 }
 
 func absolutePath(base, value string) (string, error) {

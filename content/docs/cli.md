@@ -196,22 +196,6 @@ path/size/count limits, verified cold copies, exact-base delta selection,
 explicit full-pack fallback when no delta matches, bounded publishing history,
 HTTPS network restrictions/timeouts, durable watch state and subscriber-only updates.
 
-### `ask`
-
-Serves the local citation-grounded assistant from directories or a verified
-Corpus Pack:
-
-```bash
-la-famille ask --pack /absolute/path/corpus.tar --provider fake --no-browser
-```
-
-Pack mode requires no config/site checkout or generated directories, consumes
-the exact verified snapshot bytes, and never extracts or executes members.
-It rejects directory inputs (`--rag-dir`, `--output`, `--config`,
-`--project-root`), rebuild, and dataset-evaluation flags. Citation titles,
-slugs, and deployment subpaths come from packaged metadata. See
-[Ask This Site](ask.md) for provider, privacy, and optional retrieval flags.
-
 ### `pr`
 
 Manages GitHub Pull Requests (Clear the Litterbox).

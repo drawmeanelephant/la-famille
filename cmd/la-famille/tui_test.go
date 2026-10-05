@@ -898,7 +898,6 @@ func TestTUIMenuFooterShowsAllKeys(t *testing.T) {
 		{screenStats, []string{"d for diagnostics", "?/h for help"}},
 		{screenWorking, []string{"d for diagnostics", "?/h for help"}},
 		{screenServe, []string{"d for diagnostics", "?/h for help", "w to toggle watch"}},
-		{screenAsk, []string{"d for diagnostics", "?/h for help"}},
 		{screenRaoul, []string{"d for diagnostics", "?/h for help"}},
 		{screenHelp, []string{"d for diagnostics", "w: Toggle watch"}},
 		{screenDiagnostics, []string{"c: Clear", "?: Help", "w: Watch"}},

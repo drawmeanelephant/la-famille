@@ -79,7 +79,7 @@ func TestGuardUnusableConfigBlocksOnlyConfigConsumers(t *testing.T) {
 
 	// Names are checked against the live command tree so a renamed or newly
 	// added command cannot silently drift out of the blocked set.
-	blocked := []string{"build", "serve", "rag", "check", "new", "ask", "tui"}
+	blocked := []string{"build", "serve", "rag", "check", "new", "tui"}
 	allowed := []string{"init", "pr", "diff", "help"}
 
 	root := setupRootCmd(config.Config{})

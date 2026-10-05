@@ -113,7 +113,6 @@ below — `--help` lists them all, and none needs a source checkout:
   `serve --watch` point at it; run it after writing content.
 - **`rag`** — export the project into RAG-friendly markdown bundles
   (`rag-archive/` by default).
-- **`ask`** — local citation-grounded Q&A over the RAG archive.
 - **`tui`** — a semi-graphical full-screen interface.
 - **`pr`** — manage GitHub PRs (`pr sync`).
 - **`completion`** — shell autocompletion.

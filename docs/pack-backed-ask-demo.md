@@ -1,5 +1,9 @@
 # Pack-backed Ask: compiled-binary evidence
 
+> Historical evidence. Ask was retired in #629; the commands and tests below
+> describe the old implementation and are not current setup instructions.
+> Corpus Packs remain supported independently of Ask.
+
 Scope: #583, milestone 8, #619 and #620. Baseline: `4b95932`.
 This demonstrates the new Ask input only, not the already-complete
 build/verify or diff/apply milestone contracts.

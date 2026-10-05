@@ -24,7 +24,6 @@ or a build service to make a site.
 | Understand client-side search | [Search](search.md) |
 | Export content for other tools | [Corpus exports](rag.md) |
 | Package and verify public corpus artifacts | [Corpus Packs v1](corpus-packs.md), source-build feature |
-| Try local, citation-grounded questions | [Ask This Site](ask.md), experimental |
 | Compare builds and gate regressions | [Change Ledger](change-ledger.md), source-build feature |
 | Manage repository pull requests locally | [PR management](pr.md) |
 
@@ -44,8 +43,8 @@ starting points, use [the template gallery](../showcase/templates.md).
 This website is built from the repository's source. The latest released
 pre-alpha binary may not contain every feature described here. Run
 `la-famille --version`, then use the command's `--help` to check available flags.
-The core quickstart uses the released publishing path; newer graph retrieval,
-hybrid retrieval, and Change Ledger work require a current source build.
+The core quickstart uses the released publishing path; Corpus Packs and
+Change Ledger work require a current source build.
 
 ## Small examples
 

@@ -21,7 +21,8 @@ import (
 // between the generator and publisher checks.
 const CacheFileName = ".la-famille-cache.json"
 
-// VectorFileName is private retrieval state, never a static site artifact.
+// VectorFileName is a legacy private assistant cache, never a static site
+// artifact. Keep rejecting existing copies even though new caches are not made.
 const VectorFileName = ".la-famille-vectors.json"
 
 // stagingDirPrefix marks temporary atomic-build directories. A correct build

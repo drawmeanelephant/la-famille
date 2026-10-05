@@ -25,5 +25,3 @@ jobs:
         run: bash .github/scripts/quality/check-file-sizes.sh
       - name: Validate AGENTS.md
         run: bash .github/scripts/quality/check-agents-md.sh
-      - name: Guard Ask log scrubbing
-        run: bash .github/scripts/quality/check-log-scrub.sh

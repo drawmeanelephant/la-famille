@@ -20,10 +20,9 @@ checks, and publishing. Want proof beyond a feature list? Meet
 
 La Famille is pre-alpha. The released binary supports the core publishing
 workflow; some newer features, including [Change Ledger](docs/change-ledger.md)
-and retrieval upgrades, currently require a source build. Check your binary's
+and [Corpus Packs](docs/corpus-packs.md), currently require a source build.
+Check your binary's
 `--version` and command help before copying commands from newer documentation.
-[Local Ask](docs/ask.md) is experimental, opt-in, and runs on your machine.
-This website does not expose an online assistant.
 
 The personality is part of the project, too: meet [Jules](jules/index.md),
 get to know [Raoul(s), our Multipersonality Octodeveloper](meta/mascot-raouls.md),

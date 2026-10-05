@@ -1,5 +1,12 @@
 # La Famille — Moonshots
 
+> **Retirement update (#629, 2026-10-04):** Ask This Site and its model,
+> retrieval, and evaluation surfaces are retired. The Ask proposals and
+> assistant-dependent phases below are historical, not active roadmap work.
+> Corpus Pack generation, verification, diffing, and delivery continue in #583
+> independently of an assistant. The original proposals and reviews are
+> retained for context.
+
 > **Read the [adversarial review](#adversarial-review-2026-09-29) before acting
 > on this catalogue.** The original proposals below are preserved so their
 > claims, costs, and ranking can be inspected. The review challenges them
