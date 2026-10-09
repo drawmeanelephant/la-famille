@@ -436,28 +436,26 @@ Link to [broken backlink](../missing_root.md).
 		t.Fatalf("Validate failed: %v", err)
 	}
 
-	if res.ErrorCount() < 3 {
-		t.Errorf("expected at least 3 broken link errors, got ErrorCount() = %d (%v)", res.ErrorCount(), res.Findings)
-	}
-
-	brokenLinksFound := 0
+	// The three missing .md targets all resolve to generated "Missing Page"
+	// stubs at build, so they warn rather than error (#647).
+	stubLinksFound := 0
 	for _, f := range res.Findings {
-		if f.Level == LevelError && strings.Contains(f.Message, "broken internal link") {
-			brokenLinksFound++
+		if f.Level == LevelWarn && f.Category == CategoryBrokenLink && strings.Contains(f.Message, "Missing Page") {
+			stubLinksFound++
 			if f.File == "root.md" && strings.Contains(f.Message, "nonexistent.md") {
 				if f.Line != 7 {
-					t.Errorf("expected broken link on line 7, got line %d", f.Line)
+					t.Errorf("expected stub link warning on line 7, got line %d", f.Line)
 				}
 			}
 			if f.File == "root.md" && strings.Contains(f.Message, "/sub/missing.md") {
 				if f.Line != 8 {
-					t.Errorf("expected broken link on line 8, got line %d", f.Line)
+					t.Errorf("expected stub link warning on line 8, got line %d", f.Line)
 				}
 			}
 		}
 	}
-	if brokenLinksFound != 3 {
-		t.Errorf("expected 3 broken link findings, got %d", brokenLinksFound)
+	if stubLinksFound != 3 {
+		t.Errorf("expected 3 stub link warnings, got %d: %v", stubLinksFound, res.Findings)
 	}
 }
 
@@ -931,14 +929,15 @@ func TestValidate_CategoryCounts(t *testing.T) {
 	_ = os.MkdirAll(contentDir, 0755)
 	_ = os.MkdirAll(assetDir, 0755)
 
-	// missing description + malformed tag => missing_metadata
+	// missing description + malformed tag => missing_metadata;
+	// broken output-style link => error (a .md target would only warn via stub)
 	doc1 := `---
 title: Page1
 tags:
   - Bad Tag!
 ---
 # Page1
-Link to [missing](missing.md).
+Link to [missing](/missing).
 `
 	// orphan page
 	doc2 := `---

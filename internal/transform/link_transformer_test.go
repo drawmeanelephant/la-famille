@@ -96,11 +96,14 @@ func TestLinkTransformer(t *testing.T) {
 			expectedMiss: map[string][]string{},
 		},
 		{
-			name:         "path traversal link ignored",
+			// Issue #648: a link whose target escapes the content root can
+			// never resolve after build — refuse it (unwrap to text) rather
+			// than shipping a guaranteed-broken href verbatim.
+			name:         "path traversal link refused",
 			currentFile:  "index.md",
 			markdown:     "[Link](../../../etc/passwd.md)",
 			fileMap:      map[string]*content.FileMeta{},
-			expectedHTML: "<p><a href=\"../../../etc/passwd.md\">Link</a></p>\n",
+			expectedHTML: "<p>Link</p>\n",
 			expectedMiss: map[string][]string{},
 		},
 		{
@@ -232,11 +235,13 @@ func TestLinkTransformerExtended(t *testing.T) {
 			expectedMiss: map[string][]string{},
 		},
 		{
-			name:         "percent encoded traversal link ignored",
+			// Issue #648: the percent-encoded traversal form decodes to the
+			// same escaping path and is refused the same way.
+			name:         "percent encoded traversal link refused",
 			currentFile:  "index.md",
 			markdown:     "[Trav](%2E%2E%2F%2E%2E%2Fetc%2Fpasswd.md)",
 			fileMap:      map[string]*content.FileMeta{},
-			expectedHTML: "<p><a href=\"%2E%2E%2F%2E%2E%2Fetc%2Fpasswd.md\">Trav</a></p>\n",
+			expectedHTML: "<p>Trav</p>\n",
 			expectedMiss: map[string][]string{},
 		},
 		{

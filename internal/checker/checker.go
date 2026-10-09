@@ -192,8 +192,16 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 	mdEngine := markdown.NewEngine(nil)
 
 	// Output-tree links (extension-less and .html) are validated against where
-	// a build will actually write, so compute that once up front (#506).
-	expectedOutputs := buildExpectedOutputs(fileMap, cfg.GraphExplorer)
+	// a build will actually write, so compute that once up front (#506). Stub
+	// targets extend the set: the build publishes a generated "Missing Page"
+	// for every missing .md/wiki destination, so a link landing there is a
+	// warning at most (#647). Skipped when a manifest drives the link checks —
+	// its recorded resolution already encodes the build-time outcome.
+	var expectedOutputs, stubOnlyOutputs map[string]bool
+	if manifestPages == nil {
+		stubTargets := collectStubTargets(fileMap, allFileMap)
+		expectedOutputs, stubOnlyOutputs = buildExpectedOutputs(fileMap, cfg.GraphExplorer, stubTargets)
+	}
 
 	for _, relPath := range keys {
 		meta := fileMap[relPath]
@@ -323,13 +331,25 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 				if link.Resolved {
 					continue
 				}
-				findings = append(findings, Finding{
+				finding := Finding{
 					File:     relPath,
 					Line:     link.Line,
 					Level:    LevelError,
 					Category: CategoryBrokenLink,
 					Message:  fmt.Sprintf("broken internal link %q -> %q", link.Destination, link.Target),
-				})
+				}
+				switch {
+				case !filepath.IsLocal(filepath.FromSlash(link.Target)):
+					// The link's target climbs out of the content root; it can
+					// only ship verbatim and 404 (#648).
+					finding.Message = fmt.Sprintf("internal link %q escapes the content root (-> %q)", link.Destination, link.Target)
+				case strings.HasSuffix(strings.ToLower(link.Target), ".md"):
+					// A local .md target the build could not resolve becomes a
+					// generated "Missing Page" stub — a warning at most (#647).
+					finding.Level = LevelWarn
+					finding.Message = fmt.Sprintf("internal link %q -> %q resolves to a generated \"Missing Page\" stub", link.Destination, link.Target)
+				}
+				findings = append(findings, finding)
 			}
 		} else if len(meta.Rest) > 0 {
 			doc := mdEngine.Parser().Parse(text.NewReader(meta.Rest))
@@ -345,20 +365,14 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 
 				dest := string(link.Destination)
 				if wikiTarget, _, isWikiLink := transform.ParseWikiLinkDestination(dest); isWikiLink {
-					if _, target, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, allFileMap); resolved {
-						if !content.IsPublished(target) {
-							return ast.WalkContinue, nil
-						}
+					if _, _, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, allFileMap); resolved {
 						return ast.WalkContinue, nil
 					}
 					targetRelPath := transform.UnresolvedWikiTargetPath(relPath, wikiTarget)
-					findings = append(findings, Finding{
-						File:     relPath,
-						Line:     findLinkLine(meta.Content, meta.Rest, n, dest),
-						Level:    LevelError,
-						Category: CategoryBrokenLink,
-						Message:  fmt.Sprintf("broken internal link %q -> %q", wikiTarget, targetRelPath),
-					})
+					lineNo := findLinkLine(meta.Content, meta.Rest, n, dest)
+					if f, ok := stubLinkFinding(relPath, lineNo, wikiTarget, targetRelPath, stubOnlyOutputs); ok {
+						findings = append(findings, f)
+					}
 					return ast.WalkContinue, nil
 				}
 				u, err := url.Parse(dest)
@@ -379,18 +393,20 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 
 				var targetRelPath string
 				if isSourceRef {
-					if strings.HasPrefix(u.Path, "/") {
-						targetRelPath = filepath.ToSlash(filepath.Clean(strings.TrimPrefix(u.Path, "/")))
-					} else {
-						dir := filepath.Dir(relPath)
-						if dir == "." {
-							targetRelPath = filepath.ToSlash(filepath.Clean(u.Path))
-						} else {
-							targetRelPath = filepath.ToSlash(filepath.Clean(dir + "/" + u.Path))
-						}
-					}
+					targetRelPath = sourceTreeTarget(relPath, u.Path)
 
-					if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) || strings.Contains(dest, "%2E%2E") {
+					// A target that climbs out of the content root ships
+					// verbatim into the artifact and 404s (#648) — report it
+					// instead of skipping it. Locality is judged on the
+					// decoded path, which covers %-encoded ".." segments too.
+					if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) {
+						findings = append(findings, Finding{
+							File:     relPath,
+							Line:     findLinkLine(meta.Content, meta.Rest, n, dest),
+							Level:    LevelError,
+							Category: CategoryBrokenLink,
+							Message:  fmt.Sprintf("internal link %q escapes the content root (-> %q)", dest, targetRelPath),
+						})
 						return ast.WalkContinue, nil
 					}
 
@@ -400,21 +416,21 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 						}
 						return ast.WalkContinue, nil
 					}
-				} else {
-					// Resolve against the output tree: join onto the page's
-					// directory for relative links before cleaning, so ../
-					// spellings are validated against where a build writes.
-					raw := u.Path
-					if strings.HasPrefix(raw, "/") {
-						raw = strings.TrimPrefix(raw, "/")
-					} else if dir := filepath.ToSlash(filepath.Dir(relPath)); dir != "." {
-						raw = dir + "/" + raw
-					}
-					cleaned := path.Clean(raw)
-					if cleaned == ".." || strings.HasPrefix(cleaned, "../") || strings.Contains(dest, "%2E%2E") {
+
+					// The target does not exist. When the link spells it the
+					// way LinkTransformer records missing files (".md" suffix),
+					// the build publishes a generated stub there — a warning
+					// at most (#647). If some other writer already owns the
+					// output path the link lands on real content, not a stub.
+					if strings.HasSuffix(u.Path, ".md") {
+						lineNo := findLinkLine(meta.Content, meta.Rest, n, dest)
+						if f, ok := stubLinkFinding(relPath, lineNo, dest, targetRelPath, stubOnlyOutputs); ok {
+							findings = append(findings, f)
+						}
 						return ast.WalkContinue, nil
 					}
-					candidate := normalizeOutputCandidate(cleaned)
+				} else {
+					candidate := normalizeOutputCandidate(outputTreeTarget(relPath, u.Path, meta))
 					if expectedOutputFor(expectedOutputs, candidate) {
 						return ast.WalkContinue, nil
 					}
@@ -496,6 +512,28 @@ func ValidateWithManifest(cfg config.Config, manifestPath string) (*Result, erro
 }
 
 func detectManifestOrphans(fileMap map[string]*content.FileMeta, pages map[string]sitedata.ManifestPage) []Finding {
+	// The manifest's inbound counts only cover links the link transformer
+	// graphs (.md and wiki); output-style links are recorded per page with an
+	// empty GraphTarget, so count their resolved targets here too (#652).
+	owners := outputOwners(fileMap)
+	outputInbound := make(map[string]int)
+	for _, page := range pages {
+		for _, link := range page.Links {
+			if !link.Resolved || link.GraphTarget != "" {
+				continue
+			}
+			if id, ok := owners[link.Target]; ok {
+				outputInbound[id]++
+				continue
+			}
+			if strings.HasSuffix(link.Target, ".html") {
+				if id, ok := owners[strings.TrimSuffix(link.Target, ".html")+"/index.html"]; ok {
+					outputInbound[id]++
+				}
+			}
+		}
+	}
+
 	var findings []Finding
 	for relPath, meta := range fileMap {
 		if meta == nil || (meta.Render != nil && !*meta.Render) {
@@ -503,7 +541,7 @@ func detectManifestOrphans(fileMap map[string]*content.FileMeta, pages map[strin
 		}
 		identity := strings.TrimSuffix(relPath, ".md")
 		page := pages[relPath]
-		if page.InboundLinkCount == 0 && identity != "index" {
+		if page.InboundLinkCount+outputInbound[identity] == 0 && identity != "index" {
 			findings = append(findings, Finding{
 				File:     relPath,
 				Level:    LevelWarn,
@@ -535,6 +573,9 @@ func detectOrphans(fileMap, allFileMap map[string]*content.FileMeta) []Finding {
 	}
 
 	mdEngine := markdown.NewEngine(nil)
+	// Output-style internal links (extension-less and .html) land on a page's
+	// output path, so they count as inbound references too (#652).
+	owners := outputOwners(fileMap)
 	for relPath, meta := range fileMap {
 		if len(meta.Rest) == 0 {
 			continue
@@ -567,21 +608,32 @@ func detectOrphans(fileMap, allFileMap map[string]*content.FileMeta) []Finding {
 				return ast.WalkContinue, nil
 			}
 			u, err := url.Parse(dest)
-			if err != nil || u.IsAbs() || strings.HasPrefix(dest, "//") || !strings.HasSuffix(u.Path, ".md") {
+			if err != nil || u.IsAbs() || strings.HasPrefix(dest, "//") || u.Path == "" {
 				return ast.WalkContinue, nil
 			}
-			var targetRelPath string
-			if strings.HasPrefix(u.Path, "/") {
-				targetRelPath = filepath.ToSlash(filepath.Clean(strings.TrimPrefix(u.Path, "/")))
-			} else {
-				dir := filepath.Dir(relPath)
-				if dir == "." {
-					targetRelPath = filepath.ToSlash(filepath.Clean(u.Path))
-				} else {
-					targetRelPath = filepath.ToSlash(filepath.Clean(dir + "/" + u.Path))
+			if !strings.HasSuffix(u.Path, ".md") {
+				ext := strings.ToLower(path.Ext(u.Path))
+				if ext != "" && ext != ".html" {
+					return ast.WalkContinue, nil
 				}
+				candidate := normalizeOutputCandidate(outputTreeTarget(relPath, u.Path, meta))
+				if id, ok := owners[candidate]; ok {
+					if _, tracked := inbound[id]; tracked {
+						inbound[id]++
+					}
+					return ast.WalkContinue, nil
+				}
+				if strings.HasSuffix(candidate, ".html") {
+					if id, ok := owners[strings.TrimSuffix(candidate, ".html")+"/index.html"]; ok {
+						if _, tracked := inbound[id]; tracked {
+							inbound[id]++
+						}
+					}
+				}
+				return ast.WalkContinue, nil
 			}
-			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) || strings.Contains(dest, "%2E%2E") {
+			targetRelPath := sourceTreeTarget(relPath, u.Path)
+			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) {
 				return ast.WalkContinue, nil
 			}
 			targetMeta, exists := allFileMap[targetRelPath]
@@ -1032,15 +1084,23 @@ func lineFromOffset(content []byte, offset int) int {
 
 // buildExpectedOutputs returns the set of output-relative paths a build is
 // expected to emit: every rendered and unrendered page, taxonomy listings for
-// terms actually present, the graph explorer when enabled, and the homepage.
-// It mirrors transform.GetOutputURL so a link that will resolve after build is
-// never flagged as broken.
-func buildExpectedOutputs(fileMap map[string]*content.FileMeta, graphExplorer bool) map[string]bool {
+// terms actually present, the graph explorer when enabled, the unresolved-notes
+// index, generated "Missing Page" stubs for the supplied missing targets, and
+// the homepage. It mirrors transform.GetOutputURL so a link that will resolve
+// after build is never flagged as broken.
+//
+// The second return value is the subset of outputs that exist only because a
+// stub will be written — the paths where a link lands on generated placeholder
+// content rather than a real page.
+func buildExpectedOutputs(fileMap map[string]*content.FileMeta, graphExplorer bool, stubTargets map[string]bool) (map[string]bool, map[string]bool) {
 	outputs := make(map[string]bool)
 	tags := make(map[string]bool)
 	categories := make(map[string]bool)
 
 	outputs["index.html"] = true
+	// The build writes the unresolved-notes index even when it is empty
+	// (generator.writeUnresolvedNotesIndex).
+	outputs["unresolved-notes/index.html"] = true
 
 	addTerm := func(kind string, term string) {
 		if term == "" {
@@ -1050,14 +1110,10 @@ func buildExpectedOutputs(fileMap map[string]*content.FileMeta, graphExplorer bo
 	}
 
 	for relPath, meta := range fileMap {
-		render := meta.Render == nil || *meta.Render
-		slug := meta.Slug
-		if slug != "" && !transform.IsUsableSlug(slug) {
-			slug = ""
-		}
-		out := filepath.ToSlash(filepath.Clean(transform.GetOutputURL(relPath, slug, render)))
+		out := pageOutputPath(relPath, meta)
 		outputs[out] = true
 
+		render := meta.Render == nil || *meta.Render
 		if !render {
 			continue
 		}
@@ -1088,7 +1144,148 @@ func buildExpectedOutputs(fileMap map[string]*content.FileMeta, graphExplorer bo
 	if graphExplorer {
 		outputs["graph/index.html"] = true
 	}
-	return outputs
+
+	// Stubs are generated last and lose to any writer that already claimed
+	// their path, so only a previously-unclaimed output is a stub write.
+	stubOnly := make(map[string]bool, len(stubTargets))
+	for target := range stubTargets {
+		out := filepath.ToSlash(filepath.Clean(transform.GetOutputURL(target, "", true)))
+		if !outputs[out] {
+			stubOnly[out] = true
+			outputs[out] = true
+		}
+	}
+	return outputs, stubOnly
+}
+
+// sourceTreeTarget resolves a .md link target to its content-tree path the way
+// LinkTransformer does: root-relative paths anchor at the content root, others
+// join onto the linking page's source directory.
+func sourceTreeTarget(relPath, urlPath string) string {
+	if strings.HasPrefix(urlPath, "/") {
+		return filepath.ToSlash(filepath.Clean(strings.TrimPrefix(urlPath, "/")))
+	}
+	if dir := filepath.Dir(relPath); dir != "." {
+		return filepath.ToSlash(filepath.Clean(dir + "/" + urlPath))
+	}
+	return filepath.ToSlash(filepath.Clean(urlPath))
+}
+
+// outputTreeTarget resolves an output-tree link the way a browser resolves it
+// against the rendered page's URL: relative to the page's output directory,
+// with ".." segments that climb above the output root clamped there (#648).
+func outputTreeTarget(relPath, urlPath string, meta *content.FileMeta) string {
+	raw := urlPath
+	if strings.HasPrefix(raw, "/") {
+		raw = strings.TrimPrefix(raw, "/")
+	} else if dir := pageOutputDir(relPath, meta); dir != "." {
+		raw = dir + "/" + raw
+	}
+	cleaned := path.Clean(raw)
+	for strings.HasPrefix(cleaned, "../") {
+		cleaned = strings.TrimPrefix(cleaned, "../")
+	}
+	if cleaned == ".." {
+		cleaned = "."
+	}
+	return cleaned
+}
+
+// pageOutputPath returns the output-relative path a page is written to,
+// honouring the same slug/render rules the renderer applies.
+func pageOutputPath(relPath string, meta *content.FileMeta) string {
+	render := meta.Render == nil || *meta.Render
+	slug := meta.Slug
+	if slug != "" && !transform.IsUsableSlug(slug) {
+		slug = ""
+	}
+	return filepath.ToSlash(filepath.Clean(transform.GetOutputURL(relPath, slug, render)))
+}
+
+// pageOutputDir returns the URL directory a page is served from — the base for
+// resolving relative output-tree links.
+func pageOutputDir(relPath string, meta *content.FileMeta) string {
+	return path.Dir(pageOutputPath(relPath, meta))
+}
+
+// outputOwners maps each page's output path to the page id that owns it, so
+// output-style links can be credited as inbound references (#652).
+func outputOwners(fileMap map[string]*content.FileMeta) map[string]string {
+	owners := make(map[string]string, len(fileMap))
+	for relPath, meta := range fileMap {
+		if meta == nil {
+			continue
+		}
+		id := strings.TrimSuffix(relPath, ".md")
+		if meta.Render != nil && !*meta.Render {
+			id = relPath
+		}
+		owners[pageOutputPath(relPath, meta)] = id
+	}
+	return owners
+}
+
+// stubLinkFinding reports a link whose missing target a build satisfies with a
+// generated "Missing Page" stub — a warning matching publish-check semantics
+// (#647). When the target's output path is already owned by real content (the
+// stub's claim would be denied) the link resolves to that content and there is
+// nothing to report.
+func stubLinkFinding(relPath string, line int, dest, targetRelPath string, stubOnly map[string]bool) (Finding, bool) {
+	stubOut := filepath.ToSlash(filepath.Clean(transform.GetOutputURL(targetRelPath, "", true)))
+	if !stubOnly[stubOut] {
+		return Finding{}, false
+	}
+	return Finding{
+		File:     relPath,
+		Line:     line,
+		Level:    LevelWarn,
+		Category: CategoryBrokenLink,
+		Message:  fmt.Sprintf("internal link %q -> %q resolves to a generated \"Missing Page\" stub", dest, targetRelPath),
+	}, true
+}
+
+// collectStubTargets returns the content-tree paths a build satisfies with
+// generated "Missing Page" stubs: local .md link targets absent from the file
+// map, and unresolved wiki targets. It mirrors LinkTransformer's missing-file
+// collection, which is what feeds stub.GenerateStubs.
+func collectStubTargets(published, fileMap map[string]*content.FileMeta) map[string]bool {
+	mdEngine := markdown.NewEngine(nil)
+	targets := make(map[string]bool)
+	for relPath, meta := range published {
+		if meta == nil || len(meta.Rest) == 0 {
+			continue
+		}
+		doc := mdEngine.Parser().Parse(text.NewReader(meta.Rest))
+		_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+			if !entering {
+				return ast.WalkContinue, nil
+			}
+			link, ok := n.(*ast.Link)
+			if !ok {
+				return ast.WalkContinue, nil
+			}
+			dest := string(link.Destination)
+			if wikiTarget, _, isWiki := transform.ParseWikiLinkDestination(dest); isWiki {
+				if _, _, resolved := transform.ResolveWikiTarget(relPath, wikiTarget, fileMap); !resolved {
+					targets[transform.UnresolvedWikiTargetPath(relPath, wikiTarget)] = true
+				}
+				return ast.WalkContinue, nil
+			}
+			u, err := url.Parse(dest)
+			if err != nil || u.IsAbs() || strings.HasPrefix(dest, "//") || !strings.HasSuffix(u.Path, ".md") {
+				return ast.WalkContinue, nil
+			}
+			targetRelPath := sourceTreeTarget(relPath, u.Path)
+			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) {
+				return ast.WalkContinue, nil
+			}
+			if _, exists := fileMap[targetRelPath]; !exists {
+				targets[targetRelPath] = true
+			}
+			return ast.WalkContinue, nil
+		})
+	}
+	return targets
 }
 
 // normalizeOutputCandidate canonicalizes an already-clean output-tree path to
