@@ -138,6 +138,103 @@ func TestBuild_TaxonomyArchivesReachable(t *testing.T) {
 	})
 }
 
+// Issue #653: a term used as both tag and category must contribute both
+// archive URLs to the page's search item. The shared dedupe set used to drop
+// the category's URL, leaving /categories/go/ generated but unreferenced.
+func TestBuild_SearchIndexLinksTagAndCategoryArchives(t *testing.T) {
+	cfg := setupCollisionSite(t, map[string]string{
+		"gopage.md": "---\ntitle: Go Page\ntags: [go]\ncategories: [go]\n---\nGO_BODY\n",
+	})
+	if _, err := Build(cfg); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+
+	for _, rel := range []string{"tags/go/index.html", "categories/go/index.html"} {
+		if _, err := os.Stat(filepath.Join(cfg.OutputDir, filepath.FromSlash(rel))); err != nil {
+			t.Fatalf("expected %s to exist: %v", rel, err)
+		}
+	}
+
+	searchBytes, err := os.ReadFile(filepath.Join(cfg.OutputDir, "search.json"))
+	if err != nil {
+		t.Fatalf("read search.json: %v", err)
+	}
+	var items []search.Item
+	if err := json.Unmarshal(searchBytes, &items); err != nil {
+		t.Fatalf("parse search.json: %v", err)
+	}
+	for _, item := range items {
+		if item.URL != "/gopage/" {
+			continue
+		}
+		if !slices.Equal(item.Tags, []string{"go", "go"}) ||
+			!slices.Equal(item.TagURLs, []string{"/tags/go/", "/categories/go/"}) {
+			t.Fatalf("search entry for /gopage/ has g/gu = %v/%v, want both archive URLs", item.Tags, item.TagURLs)
+		}
+		return
+	}
+	t.Fatal("search.json has no item for /gopage/")
+}
+
+// Issue #649: NFC "café" and NFD "café" (e + combining acute) are one term.
+// Kept byte-verbatim they produced two byte-distinct archive paths that
+// resolve to a single file on normalization-insensitive filesystems — one
+// archive on disk, two sitemap URLs, and one page's listing silently lost.
+// Assertions inspect search.json and the archive contents, never the
+// filesystem's normalization behavior, so they hold on every host.
+func TestBuild_NormalizationEquivalentTermsShareArchive(t *testing.T) {
+	cfg := setupCollisionSite(t, map[string]string{
+		"a.md": "---\ntitle: Page A\ntags: [\"caf\u00e9\"]\n---\nA_BODY\n",
+		"b.md": "---\ntitle: Page B\ntags: [\"cafe\u0301\"]\n---\nB_BODY\n",
+	})
+	if _, err := Build(cfg); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+
+	// The merged archive lists both pages.
+	archive := readOutput(t, cfg, "tags/caf\u00e9/index.html")
+	for _, want := range []string{"Page A", "Page B"} {
+		if !strings.Contains(archive, want) {
+			t.Errorf("tags/caf\u00e9 archive missing %q: %s", want, archive)
+		}
+	}
+
+	searchBytes, err := os.ReadFile(filepath.Join(cfg.OutputDir, "search.json"))
+	if err != nil {
+		t.Fatalf("read search.json: %v", err)
+	}
+	var items []search.Item
+	if err := json.Unmarshal(searchBytes, &items); err != nil {
+		t.Fatalf("parse search.json: %v", err)
+	}
+	// NFC café escapes as caf%C3%A9 and NFD as cafe%CC%81, so two distinct
+	// /tags/caf URLs mean the term is still split.
+	var archiveURLs []string
+	seenPages := 0
+	for _, item := range items {
+		if strings.HasPrefix(item.URL, "/tags/caf") {
+			archiveURLs = append(archiveURLs, item.URL)
+		}
+		if item.URL == "/a/" || item.URL == "/b/" {
+			seenPages++
+			if !slices.Equal(item.TagURLs, []string{"/tags/caf%C3%A9/"}) {
+				t.Errorf("search entry %s has gu = %v, want the single NFC archive URL", item.URL, item.TagURLs)
+			}
+		}
+	}
+	if len(archiveURLs) != 1 || archiveURLs[0] != "/tags/caf%C3%A9/" {
+		t.Errorf("tag archive URLs = %v, want exactly [/tags/caf%%C3%%A9/]", archiveURLs)
+	}
+	if seenPages != 2 {
+		t.Errorf("search.json indexed %d of the two pages", seenPages)
+	}
+
+	sitemap := readOutput(t, cfg, "sitemap.xml")
+	if n := strings.Count(sitemap, "/tags/caf"); n != 1 {
+		t.Errorf("sitemap advertises %d caf\u00e9 archive URLs, want 1: %s", n, sitemap)
+	}
+}
+
 func TestBuild_NativeLanguageTaxonomyArchives(t *testing.T) {
 	dir := t.TempDir()
 	contentDir := filepath.Join(dir, "content")
