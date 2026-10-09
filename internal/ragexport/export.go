@@ -20,10 +20,43 @@ func RunExport(cfg config.Config) error {
 	if outDir == "" {
 		outDir = "rag-archive"
 	}
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	absOut, err := filepath.Abs(outDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve output directory: %w", err)
+	}
+	outDir = absOut
+
+	// A RAG directory at or above the project root makes the walk's own
+	// output exclusion match every source file, producing empty bundles that
+	// look successful — refuse it outright (#643).
+	if isWithinDir(cfg.ProjectRoot, outDir) {
+		return fmt.Errorf("RagDir (%s) must not be the project root or contain it; the archive walk would exclude every source file", cfg.RagDir)
+	}
+
+	// Only a real directory holding regular (or absent) bundle files may be
+	// replaced: a symlink planted in a cloned repository must not be
+	// followed (#646).
+	if err := checkArchiveDestination(outDir); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outDir), 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-	slog.Info(fmt.Sprintf("RAG archive directory created at %s", outDir))
+	// Bundles are written into a fresh staging sibling and swapped into
+	// place only once all three are complete, so a failed run leaves the
+	// previous archive untouched rather than a mixed generation (#645).
+	stagingDir, err := os.MkdirTemp(filepath.Dir(outDir), "."+filepath.Base(outDir)+".staging-")
+	if err != nil {
+		return fmt.Errorf("failed to create staging directory: %w", err)
+	}
+	defer func() { _ = os.RemoveAll(stagingDir) }()
+
+	// Walks exclude the real archive dir (it may hold a stale generation
+	// inside the project) and the staging dir (it sits beside the archive,
+	// inside the project in the common public/rag-archive layout, and would
+	// otherwise leak its half-written bundles into the next generation).
+	excludeDirs := []string{outDir, stagingDir}
 
 	contentDir := bundleDir(cfg.ContentDir, "content", cfg.ProjectRoot)
 	assetDir := bundleDir(cfg.AssetDir, "assets", cfg.ProjectRoot)
@@ -31,7 +64,7 @@ func RunExport(cfg config.Config) error {
 
 	// 1. System Bundle
 	if err := writeBundle(
-		filepath.Join(outDir, "rag-system.md"),
+		filepath.Join(stagingDir, "rag-system.md"),
 		[]string{
 			"cmd/**/*.go",
 			"internal/**/*.go",
@@ -45,41 +78,39 @@ func RunExport(cfg config.Config) error {
 		},
 		[]string{"internal/config"},
 		nil,
-		outDir,
+		excludeDirs,
 		cfg.ProjectRoot,
 	); err != nil {
 		return fmt.Errorf("failed to write system bundle: %w", err)
 	}
-	slog.Info("Created rag-system.md")
 
 	// 2. Config/Templates Bundle
 	if err := writeBundle(
-		filepath.Join(outDir, "rag-config.md"),
+		filepath.Join(stagingDir, "rag-config.md"),
 		[]string{
 			"internal/config/**/*.go",
 			".jules/**/*.md",
 		},
 		nil,
 		nil,
-		outDir,
+		excludeDirs,
 		cfg.ProjectRoot,
 	); err != nil {
 		return fmt.Errorf("failed to write config bundle: %w", err)
 	}
 
 	// Append assets listing to Config/Templates Bundle
-	cfgFile, err := os.OpenFile(filepath.Join(outDir, "rag-config.md"), os.O_APPEND|os.O_WRONLY, 0644)
+	cfgFile, err := os.OpenFile(filepath.Join(stagingDir, "rag-config.md"), os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open config bundle for appending assets: %w", err)
 	}
-	defer cfgFile.Close()
 
 	_, _ = cfgFile.WriteString(fmt.Sprintf("<file path=\"%s/\">\n<content>\n", assetDir))
 	_ = filepath.WalkDir(filepath.Join(cfg.ProjectRoot, assetDir), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // ignore missing assets dir
 		}
-		if isWithinDir(path, outDir) {
+		if withinAnyDir(path, excludeDirs) {
 			if d.IsDir() {
 				return filepath.SkipDir
 			}
@@ -116,7 +147,7 @@ func RunExport(cfg config.Config) error {
 			if err != nil {
 				return nil // ignore missing templates dir
 			}
-			if isWithinDir(path, outDir) {
+			if withinAnyDir(path, excludeDirs) {
 				if d.IsDir() {
 					return filepath.SkipDir
 				}
@@ -139,7 +170,11 @@ func RunExport(cfg config.Config) error {
 	}
 	_, _ = cfgFile.WriteString("</content>\n</file>\n\n")
 
-	slog.Info("Created rag-config.md")
+	// The config bundle must be closed before the swap: renaming a
+	// directory that still holds an open file fails on Windows.
+	if err := cfgFile.Close(); err != nil {
+		return fmt.Errorf("failed to finish config bundle: %w", err)
+	}
 
 	// 3. Content Bundle
 	contentExcludes, err := unpublishedContentExcludes(cfg, contentDir)
@@ -149,17 +184,25 @@ func RunExport(cfg config.Config) error {
 	contentExcludes = append(contentExcludes, contentDir+"/jules")
 	if err :=
 		writeBundle(
-			filepath.Join(outDir, "rag-content.md"),
+			filepath.Join(stagingDir, "rag-content.md"),
 			[]string{
 				contentDir + "/**/*.md",
 			},
 			contentExcludes,
 			nil, // Default formatting is verbatim with XML tags, which preserves the YAML frontmatter
-			outDir,
+			excludeDirs,
 			cfg.ProjectRoot,
 		); err != nil {
 		return fmt.Errorf("failed to write content bundle: %w", err)
 	}
+
+	if err := swapArchiveDir(outDir, stagingDir); err != nil {
+		return err
+	}
+
+	slog.Info(fmt.Sprintf("RAG archive directory created at %s", outDir))
+	slog.Info("Created rag-system.md")
+	slog.Info("Created rag-config.md")
 	slog.Info("Created rag-content.md")
 
 	return nil
@@ -188,7 +231,7 @@ func unpublishedContentExcludes(cfg config.Config, contentDir string) ([]string,
 	return excludes, nil
 }
 
-func writeBundle(outPath string, patterns []string, excludes []string, formatFunc func(path string, content []byte) string, outDir string, projectRoot string) error {
+func writeBundle(outPath string, patterns []string, excludes []string, formatFunc func(path string, content []byte) string, excludeDirs []string, projectRoot string) error {
 	f, err := os.Create(outPath)
 	if err != nil {
 		return err
@@ -201,7 +244,7 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 			if err != nil {
 				return err
 			}
-			if isWithinDir(path, outDir) {
+			if withinAnyDir(path, excludeDirs) {
 				if d.IsDir() {
 					return filepath.SkipDir
 				}
@@ -249,19 +292,22 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 	sort.Strings(matchedFiles)
 
 	for _, path := range matchedFiles {
-		content, err := os.ReadFile(path)
+		body, err := os.ReadFile(path)
 		if err != nil {
-			continue
+			// A matched file that cannot be read must not vanish from the
+			// bundle silently: the archive would look complete while
+			// missing content the matched set promised (#644).
+			return fmt.Errorf("failed to read %s: %w", filepath.ToSlash(getRel(projectRoot, path)), err)
 		}
 
 		var output string
 		if formatFunc != nil {
-			output = formatFunc(path, content)
+			output = formatFunc(path, body)
 		} else {
 			// Escape any line of the file body that would otherwise read as
 			// archive structure, so a source file or Markdown page that
 			// documents this format cannot corrupt the bundle.
-			output = fmt.Sprintf("<file path=\"%s\">\n<content>\n%s\n</content>\n</file>\n\n", filepath.ToSlash(getRel(projectRoot, path)), ragfmt.EscapeContent(string(content)))
+			output = fmt.Sprintf("<file path=\"%s\">\n<content>\n%s\n</content>\n</file>\n\n", filepath.ToSlash(getRel(projectRoot, path)), ragfmt.EscapeContent(string(body)))
 		}
 		if _, err := f.WriteString(output); err != nil {
 			return err
@@ -269,6 +315,102 @@ func writeBundle(outPath string, patterns []string, excludes []string, formatFun
 	}
 
 	return nil
+}
+
+// checkArchiveDestination verifies that an existing archive directory can be
+// replaced safely: it must be a real directory — never a symlink — and every
+// bundle path it contains must be a regular file. A symlink planted in a
+// cloned repository at one of these paths would otherwise redirect the
+// export's writes outside the project (#646).
+func checkArchiveDestination(outDir string) error {
+	info, err := os.Lstat(outDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to inspect RAG archive directory: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("RAG archive path %s is not a directory", outDir)
+	}
+	for _, name := range []string{"rag-system.md", "rag-config.md", "rag-content.md"} {
+		bundlePath := filepath.Join(outDir, name)
+		info, err := os.Lstat(bundlePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return fmt.Errorf("failed to inspect RAG bundle %s: %w", bundlePath, err)
+		}
+		if !info.Mode().IsRegular() {
+			kind := info.Mode().Type().String()
+			if info.Mode()&os.ModeSymlink != 0 {
+				kind = "symlink"
+			}
+			return fmt.Errorf("refusing to replace %s: expected a regular file, found %s", bundlePath, kind)
+		}
+	}
+	return nil
+}
+
+// swapArchiveDir installs a fully written staging directory as the archive,
+// keeping a failed swap recoverable: the previous archive is renamed aside
+// first, so nothing is lost if the staging rename fails. It mirrors
+// replaceOutputDirectory in internal/generator.
+func swapArchiveDir(outDir, stagingDir string) error {
+	parent := filepath.Dir(outDir)
+	if filepath.Dir(stagingDir) != parent {
+		return fmt.Errorf("staging directory must be a sibling of the RAG archive directory")
+	}
+
+	archiveExists := false
+	if info, err := os.Lstat(outDir); err == nil {
+		if !info.IsDir() {
+			return fmt.Errorf("RAG archive path %s is not a directory", outDir)
+		}
+		archiveExists = true
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to inspect RAG archive directory: %w", err)
+	}
+
+	backupDir, err := os.MkdirTemp(parent, "."+filepath.Base(outDir)+".previous-")
+	if err != nil {
+		return fmt.Errorf("failed to create archive backup path: %w", err)
+	}
+	if err := os.Remove(backupDir); err != nil {
+		return fmt.Errorf("failed to prepare archive backup path: %w", err)
+	}
+
+	if archiveExists {
+		if err := os.Rename(outDir, backupDir); err != nil {
+			return fmt.Errorf("failed to move existing archive aside: %w", err)
+		}
+	}
+	if err := os.Rename(stagingDir, outDir); err != nil {
+		if archiveExists {
+			if restoreErr := os.Rename(backupDir, outDir); restoreErr != nil {
+				return fmt.Errorf("failed to install RAG archive: %w; restoring previous archive from %s also failed: %v", err, backupDir, restoreErr)
+			}
+		}
+		return fmt.Errorf("failed to install RAG archive: %w", err)
+	}
+	if archiveExists {
+		if err := os.RemoveAll(backupDir); err != nil {
+			slog.Warn("Failed to remove replaced RAG archive", "path", backupDir, "error", err)
+		}
+	}
+	return nil
+}
+
+// withinAnyDir reports whether path is one of the given directories or a
+// descendant of one of them.
+func withinAnyDir(path string, dirs []string) bool {
+	for _, dir := range dirs {
+		if isWithinDir(path, dir) {
+			return true
+		}
+	}
+	return false
 }
 
 // templateBundleTarget decides what the config bundle should list for

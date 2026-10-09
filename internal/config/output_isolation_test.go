@@ -216,6 +216,51 @@ func TestValidateResolvedAllowsDirectoryAssetDir(t *testing.T) {
 	}
 }
 
+// TestValidateRejectsRagDirContainingProjectRoot covers #643: a RAG output
+// directory that is — or contains — the project root makes the export's own
+// exclusion match every source file, so the command would write empty
+// bundles and report success. Validation must refuse the layout.
+func TestValidateRejectsRagDirContainingProjectRoot(t *testing.T) {
+	t.Run("rag dir is the project root", func(t *testing.T) {
+		cfg := baseValidConfig()
+		cfg.RagDir = "."
+		if err := cfg.Validate(); err == nil {
+			t.Fatal("rag_dir equal to the project root must be rejected")
+		} else if !strings.Contains(err.Error(), "RagDir") {
+			t.Errorf("error should name RagDir, got: %v", err)
+		}
+	})
+
+	t.Run("resolved rag dir is the project root", func(t *testing.T) {
+		root := t.TempDir()
+		cfg := baseValidConfig()
+		cfg.ProjectRoot = root
+		cfg.RagDir = root
+		if err := cfg.ValidateResolved(); err == nil {
+			t.Fatal("a resolved RagDir equal to the project root must be rejected")
+		} else if !strings.Contains(err.Error(), "RagDir") {
+			t.Errorf("error should name RagDir, got: %v", err)
+		}
+	})
+
+	t.Run("rag dir contains the project root", func(t *testing.T) {
+		root := t.TempDir()
+		cfg := baseValidConfig()
+		// The project root must exist for canonical comparison: only then do
+		// both sides resolve through the same symlinked path components.
+		if err := os.MkdirAll(filepath.Join(root, "site"), 0755); err != nil {
+			t.Fatal(err)
+		}
+		cfg.ProjectRoot = filepath.Join(root, "site")
+		cfg.RagDir = root
+		if err := cfg.ValidateResolved(); err == nil {
+			t.Fatal("a RagDir containing the project root must be rejected")
+		} else if !strings.Contains(err.Error(), "RagDir") {
+			t.Errorf("error should name RagDir, got: %v", err)
+		}
+	})
+}
+
 func TestValidateAllowsRagArchiveInsidePublishOutput(t *testing.T) {
 	cfg := baseValidConfig()
 	cfg.RagDir = filepath.Join(cfg.OutputDir, "rag-archive")

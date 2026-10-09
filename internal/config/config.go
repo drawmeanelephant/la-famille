@@ -422,7 +422,20 @@ func (c Config) validateOutputIsolation() error {
 			if in.name == "AssetDir" {
 				return fmt.Errorf("AssetDir (%s) is the project root; the asset copier would publish the entire project tree, output directory included — point asset_dir at a dedicated subdirectory (e.g. \"assets\")", in.path)
 			}
+			if in.name == "RagDir" {
+				// RagDir is an output, not an input: an archive rooted at the
+				// project root makes the export's own exclusion match every
+				// source file, producing empty bundles that report success
+				// (#643).
+				return fmt.Errorf("RagDir (%s) is the project root; the export would exclude every source file and write empty bundles", in.path)
+			}
 			continue
+		}
+		if in.name == "RagDir" && pathutil.IsPathWithin(other, root) {
+			// A RagDir that contains the project root has the same
+			// empty-archive effect as RagDir == root: every walked file is
+			// inside the output directory and gets excluded (#643).
+			return fmt.Errorf("RagDir (%s) contains the project root (%s); the export would exclude every source file and write empty bundles", in.path, c.ProjectRoot)
 		}
 		switch {
 		case other == output:

@@ -5,8 +5,11 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/tbuddy/la-famille/internal/sitedata"
 )
 
 // A cache hit republishes whatever is already in the output directory, so the
@@ -183,5 +186,36 @@ func TestBuild_SymlinkedAssetDirIsFingerprinted(t *testing.T) {
 	}
 	if res.CacheHit {
 		t.Errorf("editing an asset behind a symlinked directory should invalidate the cache, got a hit")
+	}
+}
+
+// A symlink planted at the cache temp path must not be written through: a
+// cloned repository can pre-create `.la-famille-cache.json.tmp` pointing at
+// an arbitrary file, so the write has to refuse rather than clobber the
+// link target (#646).
+func TestWriteBuildCache_RefusesSymlinkedTmp(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires privileges on Windows")
+	}
+	dir := t.TempDir()
+	victim := filepath.Join(dir, "victim")
+	if err := os.WriteFile(victim, []byte("PRECIOUS"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, cacheFileName)
+	if err := os.Symlink(victim, path+".tmp"); err != nil {
+		t.Fatal(err)
+	}
+
+	err := writeBuildCache(path, "fingerprint", nil, 0, ContentHealth{}, nil, sitedata.Manifest{}, nil)
+	if err == nil {
+		t.Fatal("writeBuildCache must refuse a symlinked temp path")
+	}
+	data, err := os.ReadFile(victim)
+	if err != nil {
+		t.Fatalf("read victim: %v", err)
+	}
+	if string(data) != "PRECIOUS" {
+		t.Error("cache write went through the symlinked temp path")
 	}
 }

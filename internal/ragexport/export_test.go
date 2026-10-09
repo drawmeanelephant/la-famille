@@ -1,8 +1,10 @@
 package ragexport
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -391,6 +393,190 @@ func TestRunExportExcludesUnpublishedNotes(t *testing.T) {
 	if strings.Contains(got, `<file path="vault/private.md">`) ||
 		strings.Contains(got, `<file path="vault/private-raw.md">`) || strings.Contains(got, canary) {
 		t.Errorf("content bundle includes an unpublished note:\n%s", got)
+	}
+}
+
+// TestRunExport_RagDirIsProjectRoot covers #643: a RAG output directory that
+// is — or contains — the project root makes the walk's own exclusion match
+// every source file, so the export must refuse it instead of writing empty
+// bundles and reporting success.
+func TestRunExport_RagDirIsProjectRoot(t *testing.T) {
+	t.Run("RagDir equals project root", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		writeExportTestFile(t, filepath.Join(projectRoot, "main.go"), "package main")
+		writeExportTestFile(t, filepath.Join(projectRoot, "content", "index.md"), "# Hello")
+
+		err := RunExport(config.Config{ProjectRoot: projectRoot, RagDir: projectRoot})
+		if err == nil {
+			t.Fatal("RunExport must refuse a RagDir that is the project root")
+		}
+		for _, name := range []string{"rag-system.md", "rag-config.md", "rag-content.md"} {
+			if info, statErr := os.Stat(filepath.Join(projectRoot, name)); statErr == nil && info.Size() == 0 {
+				t.Errorf("empty bundle %s left behind and reported as created", name)
+			}
+		}
+	})
+
+	t.Run("RagDir contains project root", func(t *testing.T) {
+		parent := t.TempDir()
+		projectRoot := filepath.Join(parent, "site")
+		writeExportTestFile(t, filepath.Join(projectRoot, "main.go"), "package main")
+
+		err := RunExport(config.Config{ProjectRoot: projectRoot, RagDir: parent})
+		if err == nil {
+			t.Fatal("RunExport must refuse a RagDir that contains the project root")
+		}
+		for _, name := range []string{"rag-system.md", "rag-config.md", "rag-content.md"} {
+			if info, statErr := os.Stat(filepath.Join(parent, name)); statErr == nil && info.Size() == 0 {
+				t.Errorf("empty bundle %s left behind and reported as created", name)
+			}
+		}
+	})
+}
+
+// TestRunExport_UnreadableMatchedFile covers #644: a matched file that fails
+// to read must surface an error instead of being silently omitted from the
+// bundle while the command reports success.
+func TestRunExport_UnreadableMatchedFile(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("running as root: mode 0000 is still readable")
+	}
+	projectRoot := t.TempDir()
+	blocked := filepath.Join(projectRoot, "blocked.go")
+	writeExportTestFile(t, blocked, "package main")
+	if err := os.Chmod(blocked, 0000); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(blocked, 0600) })
+
+	ragDir := filepath.Join(t.TempDir(), "rag")
+	err := RunExport(config.Config{ProjectRoot: projectRoot, RagDir: ragDir})
+	if err == nil {
+		t.Fatal("RunExport must fail when a matched file cannot be read")
+	}
+	if !strings.Contains(err.Error(), "blocked.go") {
+		t.Errorf("error should name the unreadable file, got: %v", err)
+	}
+}
+
+// TestRunExport_FailureLeavesArchiveIntact covers #645: a failed export must
+// not leave a mixed-generation archive. Bundles are staged beside the
+// destination and swapped in only once every stage succeeded, so the
+// previous archive stays byte-for-byte intact.
+func TestRunExport_FailureLeavesArchiveIntact(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("running as root: mode 0000 is still readable")
+	}
+	projectRoot := t.TempDir()
+	writeExportTestFile(t, filepath.Join(projectRoot, "main.go"), "package main // v1")
+	writeExportTestFile(t, filepath.Join(projectRoot, "content", "index.md"), "# Hello")
+
+	ragDir := filepath.Join(t.TempDir(), "rag")
+	cfg := config.Config{ProjectRoot: projectRoot, RagDir: ragDir}
+	if err := RunExport(cfg); err != nil {
+		t.Fatalf("first export failed: %v", err)
+	}
+
+	names := []string{"rag-system.md", "rag-config.md", "rag-content.md"}
+	firstGen := map[string][]byte{}
+	for _, name := range names {
+		data, err := os.ReadFile(filepath.Join(ragDir, name))
+		if err != nil {
+			t.Fatalf("read first-generation %s: %v", name, err)
+		}
+		firstGen[name] = data
+	}
+
+	// The second generation would differ (v2 marker), then fail on the
+	// unreadable content file — proving anything new on disk was committed
+	// despite the failure.
+	writeExportTestFile(t, filepath.Join(projectRoot, "main.go"), "package main // v2 marker")
+	blocked := filepath.Join(projectRoot, "content", "blocked.md")
+	writeExportTestFile(t, blocked, "# Blocked")
+	if err := os.Chmod(blocked, 0000); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(blocked, 0600) })
+
+	if err := RunExport(cfg); err == nil {
+		t.Fatal("second export should fail on the unreadable content file")
+	}
+
+	for _, name := range names {
+		got, err := os.ReadFile(filepath.Join(ragDir, name))
+		if err != nil {
+			t.Fatalf("read post-failure %s: %v", name, err)
+		}
+		if !bytes.Equal(got, firstGen[name]) {
+			t.Errorf("failed export left a mixed-generation archive: %s was replaced", name)
+		}
+	}
+
+	leftovers, err := filepath.Glob(filepath.Join(filepath.Dir(ragDir), ".*.staging-*"))
+	if err != nil {
+		t.Fatalf("glob staging leftovers: %v", err)
+	}
+	if len(leftovers) > 0 {
+		t.Errorf("staging directories left behind after failed export: %v", leftovers)
+	}
+}
+
+// TestRunExport_RefusesSymlinkedDestination covers #646: a symlink planted at
+// a bundle path must make the export fail with a clear error, never write
+// through to the link target outside the project.
+func TestRunExport_RefusesSymlinkedDestination(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires privileges on Windows")
+	}
+	projectRoot := t.TempDir()
+	writeExportTestFile(t, filepath.Join(projectRoot, "main.go"), "package main")
+
+	ragDir := filepath.Join(t.TempDir(), "rag")
+	if err := os.MkdirAll(ragDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	victim := filepath.Join(t.TempDir(), "victim")
+	if err := os.WriteFile(victim, []byte("PRECIOUS"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, filepath.Join(ragDir, "rag-system.md")); err != nil {
+		t.Fatal(err)
+	}
+
+	err := RunExport(config.Config{ProjectRoot: projectRoot, RagDir: ragDir})
+	if err == nil {
+		t.Fatal("RunExport must refuse a symlinked bundle destination")
+	}
+	data, err := os.ReadFile(victim)
+	if err != nil {
+		t.Fatalf("read victim: %v", err)
+	}
+	if string(data) != "PRECIOUS" {
+		t.Error("export wrote through the symlinked destination")
+	}
+}
+
+// TestRunExport_RefusesSymlinkedArchiveDir: a RagDir that is itself a symlink
+// must be refused rather than replaced or written through.
+func TestRunExport_RefusesSymlinkedArchiveDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires privileges on Windows")
+	}
+	projectRoot := t.TempDir()
+	writeExportTestFile(t, filepath.Join(projectRoot, "main.go"), "package main")
+
+	target := t.TempDir()
+	link := filepath.Join(t.TempDir(), "rag")
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatal(err)
+	}
+
+	err := RunExport(config.Config{ProjectRoot: projectRoot, RagDir: link})
+	if err == nil {
+		t.Fatal("RunExport must refuse a symlinked archive directory")
+	}
+	if entries, readErr := os.ReadDir(target); readErr != nil || len(entries) != 0 {
+		t.Errorf("export wrote into the symlink target directory (entries=%d, err=%v)", len(entries), readErr)
 	}
 }
 
