@@ -337,6 +337,97 @@ func TestLinkTransformerExtended(t *testing.T) {
 	}
 }
 
+// TestWikiHeadingIDs covers the dead-fragment bug from issue #638: the
+// candidate heading id must derive from the heading's full text so wiki links
+// like [[page#Foo Bar]] land on a real element.
+func TestWikiHeadingIDs(t *testing.T) {
+	tests := []struct {
+		name        string
+		markdown    string
+		wanted      []string
+		wantSub     string
+		notWantSubs []string
+	}{
+		{
+			name:     "multi-line setext heading gets id from all lines",
+			markdown: "Foo\nBar\n===\n",
+			wanted:   []string{"foo-bar"},
+			wantSub:  `<h1 id="foo-bar">`,
+		},
+		{
+			name:     "three-line setext heading joins continuation lines",
+			markdown: "Foo\nBar\n Baz\n===\n",
+			wanted:   []string{"foo-bar-baz"},
+			wantSub:  `<h1 id="foo-bar-baz">`,
+		},
+		{
+			name:     "multi-line setext with inline markup",
+			markdown: "Foo *em*\nBar\n===\n",
+			wanted:   []string{"foo-em-bar"},
+			wantSub:  `<h1 id="foo-em-bar">`,
+		},
+		{
+			name:     "single-line atx heading unchanged",
+			markdown: "## Foo Bar\n",
+			wanted:   []string{"foo-bar"},
+			wantSub:  `<h2 id="foo-bar">`,
+		},
+		{
+			name:        "atx heading followed by paragraph is not multi-line",
+			markdown:    "## Foo\nBar\n",
+			wanted:      []string{"foo-bar"},
+			notWantSubs: []string{`id="`},
+		},
+		{
+			name:     "single-line heading still matched",
+			markdown: "## Foo\nBar\n",
+			wanted:   []string{"foo"},
+			wantSub:  `<h2 id="foo">`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			wanted := make(map[string]bool, len(tc.wanted))
+			for _, id := range tc.wanted {
+				wanted[id] = true
+			}
+			transformer := &LinkTransformer{
+				CurrentFile:  "target.md",
+				FileMap:      map[string]*content.FileMeta{},
+				MissingFiles: map[string][]string{},
+				Backlinks:    map[string][]string{},
+				Graph:        &graph.Graph{Nodes: make(map[string]graph.Node)},
+				WikiHeadingTargets: map[string]map[string]bool{
+					"target.md": wanted,
+				},
+			}
+
+			md := goldmark.New(
+				goldmark.WithParserOptions(
+					parser.WithASTTransformers(
+						util.Prioritized(transformer, 100),
+					),
+				),
+			)
+
+			var buf bytes.Buffer
+			if err := md.Convert([]byte(tc.markdown), &buf); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			got := buf.String()
+			if tc.wantSub != "" && !strings.Contains(got, tc.wantSub) {
+				t.Errorf("expected output to contain %q, got:\n%s", tc.wantSub, got)
+			}
+			for _, sub := range tc.notWantSubs {
+				if strings.Contains(got, sub) {
+					t.Errorf("expected output to omit %q, got:\n%s", sub, got)
+				}
+			}
+		})
+	}
+}
+
 func TestLinkTransformerRenderFalse(t *testing.T) {
 	fileMap := map[string]*content.FileMeta{
 		"raw.md": {Render: new(bool)}, // false
