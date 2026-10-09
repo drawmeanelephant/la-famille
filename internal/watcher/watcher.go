@@ -15,7 +15,7 @@ import (
 
 // Watch starts an fsnotify watcher on the given config's ContentDir, Templates, and Assets dir.
 // It explicitly unbinds and tears down resources once the passed context registers Done.
-func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildResult)) error {
+func Watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildResult, error)) error {
 	return watch(ctx, cfg, onBuild, generator.Build, 500*time.Millisecond)
 }
 
@@ -24,7 +24,7 @@ type buildFunc func(config.Config) (generator.BuildResult, error)
 // watch contains the event loop with injectable build and debounce behavior so
 // lifecycle tests do not need to invoke the full generator or wait half a
 // second for every assertion.
-func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildResult), build buildFunc, debounce time.Duration) error {
+func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildResult, error), build buildFunc, debounce time.Duration) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 		res, err := build(cfg)
 		if err != nil {
 			if onBuild != nil {
-				onBuild(res)
+				onBuild(res, err)
 			}
 			// Deliberately no BroadcastReload here. The build failed, so the
 			// output directory still holds the previous site; telling the
@@ -82,7 +82,7 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 		}
 		slog.Info("Rebuild complete", "duration", time.Since(start))
 		if onBuild != nil {
-			onBuild(res)
+			onBuild(res, nil)
 		}
 		BroadcastReload()
 	}
