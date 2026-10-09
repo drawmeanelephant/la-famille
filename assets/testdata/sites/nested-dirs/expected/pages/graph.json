@@ -7,7 +7,7 @@
     "blog/missing": {
       "type": "stub",
       "referenced_by": [
-        "blog/post.md"
+        "blog/post"
       ],
       "render": true,
       "missing": true

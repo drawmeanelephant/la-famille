@@ -71,11 +71,23 @@ func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, paren
 		}
 	}
 	id := strings.TrimSuffix(missingRelPath, ".md")
+	// referenced_by lives in the same node-id space as edge endpoints and
+	// backlinks.json: rendered parents drop the .md suffix, render:false
+	// parents keep the relPath because that is their node id (#651).
+	referencedBy := make([]string, 0, len(parents))
+	seen := make(map[string]bool, len(parents))
+	for _, parent := range parents {
+		parentID := transform.NodeID(parent, fileMap[parent])
+		if !seen[parentID] {
+			seen[parentID] = true
+			referencedBy = append(referencedBy, parentID)
+		}
+	}
 	g.Nodes[id] = graph.Node{
 		Type:         "stub",
 		Render:       true,
 		Missing:      true,
-		ReferencedBy: parents,
+		ReferencedBy: referencedBy,
 	}
 
 	if !writeStub {

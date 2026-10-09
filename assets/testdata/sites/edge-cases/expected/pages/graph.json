@@ -3,7 +3,7 @@
     "absolute/path": {
       "type": "stub",
       "referenced_by": [
-        "index.md"
+        "index"
       ],
       "render": true,
       "missing": true
