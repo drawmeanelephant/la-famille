@@ -1,7 +1,10 @@
 package config
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path"
@@ -95,8 +98,14 @@ func Load(filepath string) (Config, error) {
 		return Config{}, err
 	}
 
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
+	// KnownFields turns unknown keys into errors that name the offending key —
+	// a typo like `output_dirr` or `site_nme` used to decode silently and the
+	// build ran on defaults, exit 0, with no warning (#639). Duplicate keys
+	// and type errors were already rejected; this closes the remaining gap.
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true)
+	err = dec.Decode(&config)
+	if err != nil && !errors.Is(err, io.EOF) {
 		// The YAML decoder applies every key it read before the one that
 		// failed, so config is now a mix of file values and defaults. Discard it.
 		return Config{}, err
@@ -327,7 +336,32 @@ func (c Config) validate(allowAbsolutePaths bool) error {
 		}
 	}
 
-	return c.validateOutputIsolation()
+	if err := c.validateOutputIsolation(); err != nil {
+		return err
+	}
+
+	// A filesystem check only makes sense once ResolvePaths has pinned the
+	// configured paths to the project root; before that, a relative asset_dir
+	// would be statted against whatever the process working directory happens
+	// to be (#642). A missing asset dir is legal — the copier tolerates it —
+	// so only an existing non-directory is rejected.
+	if allowAbsolutePaths {
+		if info, statErr := os.Stat(c.AssetDir); statErr == nil && !info.IsDir() {
+			return fmt.Errorf("asset_dir %q is not a directory", displayPath(c.AssetDir, c.ProjectRoot))
+		}
+	}
+	return nil
+}
+
+// displayPath renders p relative to root when it sits inside it, so error
+// messages name the path the way the operator wrote it in config.yaml
+// ("assets") instead of the absolute path resolution produced.
+func displayPath(p, root string) string {
+	rel, err := filepath.Rel(resolveDir(root), resolveDir(p))
+	if err != nil || rel == "" || !filepath.IsLocal(rel) {
+		return p
+	}
+	return filepath.ToSlash(rel)
 }
 
 // validateOutputIsolation rejects an output directory that overlaps an input.
@@ -379,6 +413,14 @@ func (c Config) validateOutputIsolation() error {
 		if other == root {
 			if other == output {
 				return fmt.Errorf("OutputDir (%s) is the same directory as %s (%s); a build would replace it and delete its contents", c.OutputDir, in.name, in.path)
+			}
+			// The asset directory is the exception: it is mirrored into the
+			// output wholesale rather than read selectively, so "." would walk
+			// content/, templates/, .git/ and the staging tree itself. This
+			// used to validate and then fail inside the copier on every build
+			// (#642); rejecting it here names the real problem.
+			if in.name == "AssetDir" {
+				return fmt.Errorf("AssetDir (%s) is the project root; the asset copier would publish the entire project tree, output directory included — point asset_dir at a dedicated subdirectory (e.g. \"assets\")", in.path)
 			}
 			continue
 		}

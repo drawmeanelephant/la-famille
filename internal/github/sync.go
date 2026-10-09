@@ -45,6 +45,12 @@ type SyncConfig struct {
 	CloseConflicts      bool
 	AllowNoChecks       bool
 	PublishLocalChanges bool
+	// WorkDir is the repository the local git operations run against — the
+	// remote lookup that picks owner/repo, and every step of
+	// --publish-local-changes. The CLI sets it to --project-root; empty keeps
+	// the historical process-working-directory behavior. Without it the sync
+	// reported and mutated whichever repo happened to be the CWD (#640).
+	WorkDir string
 }
 
 // GitRunner abstracts git operations used by local-change publishing.
@@ -59,20 +65,19 @@ type GitRunner interface {
 	Push(remote, branchName string) error
 }
 
-type realGit struct{}
+// realGit is the production GitRunner: the embedded git.Repo carries the
+// directory every command runs in.
+type realGit struct{ git.Repo }
 
-func (realGit) HasUncommittedChanges() (bool, error) { return git.HasUncommittedChanges() }
-func (realGit) GetRemoteURL(remote string) (string, error) {
-	return git.GetRemoteURL(remote)
+func (r realGit) CheckoutNewBranch(branchName string) error {
+	return r.CheckoutBranch(branchName)
 }
-func (realGit) CurrentBranch() (string, error)            { return git.CurrentBranch() }
-func (realGit) CheckoutNewBranch(branchName string) error { return git.CheckoutBranch(branchName) }
-func (realGit) Checkout(branchName string) error          { return git.Checkout(branchName) }
-func (realGit) AddAll() error                             { return git.AddAll() }
-func (realGit) Commit(message, authorName, authorEmail string) error {
-	return git.Commit(message, authorName, authorEmail)
+
+// defaultGitRunner returns the runner RunSync uses when no Git is injected:
+// real git commands bound to workDir ("" keeps the process CWD).
+func defaultGitRunner(workDir string) GitRunner {
+	return realGit{Repo: git.Repo{Dir: workDir}}
 }
-func (realGit) Push(remote, branchName string) error { return git.Push(remote, branchName) }
 
 // SyncResult is the structured outcome of a litterbox run.
 type SyncResult struct {
@@ -120,7 +125,7 @@ func RunSync(cfg SyncConfig) (SyncResult, error) {
 		cfg.BotAuthors = append([]string(nil), DefaultBotAuthors...)
 	}
 	if cfg.Git == nil {
-		cfg.Git = realGit{}
+		cfg.Git = defaultGitRunner(cfg.WorkDir)
 	}
 	if cfg.Now == nil {
 		cfg.Now = time.Now

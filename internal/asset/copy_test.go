@@ -3,6 +3,7 @@ package asset
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -45,6 +46,38 @@ func TestCopyAssets(t *testing.T) {
 	// Verify skipped testdata
 	if _, err := os.Stat(filepath.Join(outputDir, "assets", "testdata")); !os.IsNotExist(err) {
 		t.Errorf("testdata was copied, but should have been skipped")
+	}
+}
+
+// Issue #642: an asset_dir pointing at a regular file used to explode inside
+// the walk with `failed to establish destination: open …/.public.staging-…/
+// assets: is a directory` — blaming the staged output and leaking the
+// internal staging path. The copier must reject it up front, naming
+// asset_dir itself.
+func TestCopyAssets_RejectsRegularFileAssetDir(t *testing.T) {
+	tempDir := t.TempDir()
+
+	assetFile := filepath.Join(tempDir, "assets")
+	if err := os.WriteFile(assetFile, []byte("not a directory"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	outputDir := filepath.Join(tempDir, "public")
+
+	err := CopyAssets(config.Config{AssetDir: assetFile, OutputDir: outputDir}, nil)
+	if err == nil {
+		t.Fatal("CopyAssets accepted a regular-file asset_dir")
+	}
+	if !strings.Contains(err.Error(), "asset_dir") || !strings.Contains(err.Error(), "not a directory") {
+		t.Errorf("error should name asset_dir and the problem, got: %v", err)
+	}
+	for _, leak := range []string{"establish destination", ".staging", "is a directory: "} {
+		if strings.Contains(err.Error(), leak) {
+			t.Errorf("error leaked an internal/destination detail %q: %v", leak, err)
+		}
+	}
+	// The output tree must not have been half-built either.
+	if _, statErr := os.Stat(filepath.Join(outputDir, "assets")); !os.IsNotExist(statErr) {
+		t.Error("output assets dir was created for a rejected asset_dir")
 	}
 }
 

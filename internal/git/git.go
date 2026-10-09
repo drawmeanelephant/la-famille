@@ -7,9 +7,26 @@ import (
 	"strings"
 )
 
+// Repo binds a set of git commands to a repository working directory. The
+// zero value (empty Dir) keeps the historical behavior of running in the
+// process's current working directory; commands like `pr sync --project-root
+// <dir>` bind a Repo to the flag's target so the CWD repository can never
+// silently win (#640).
+type Repo struct {
+	// Dir is passed through to exec.Cmd.Dir; empty means the process working
+	// directory.
+	Dir string
+}
+
+func (r Repo) command(args ...string) *exec.Cmd {
+	cmd := exec.Command("git", args...)
+	cmd.Dir = r.Dir
+	return cmd
+}
+
 // HasUncommittedChanges returns true if there are uncommitted changes in the working directory.
-func HasUncommittedChanges() (bool, error) {
-	cmd := exec.Command("git", "status", "--porcelain")
+func (r Repo) HasUncommittedChanges() (bool, error) {
+	cmd := r.command("status", "--porcelain")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
@@ -20,8 +37,8 @@ func HasUncommittedChanges() (bool, error) {
 }
 
 // GetRemoteURL returns the URL of the specified remote (usually "origin").
-func GetRemoteURL(remote string) (string, error) {
-	cmd := exec.Command("git", "remote", "get-url", remote)
+func (r Repo) GetRemoteURL(remote string) (string, error) {
+	cmd := r.command("remote", "get-url", remote)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
@@ -69,8 +86,8 @@ func ParseOwnerRepo(url string) (string, string, error) {
 }
 
 // CurrentBranch returns the name of the currently checked-out branch.
-func CurrentBranch() (string, error) {
-	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+func (r Repo) CurrentBranch() (string, error) {
+	cmd := r.command("rev-parse", "--abbrev-ref", "HEAD")
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
@@ -86,8 +103,8 @@ func CurrentBranch() (string, error) {
 }
 
 // CheckoutBranch creates and checks out a new branch.
-func CheckoutBranch(branchName string) error {
-	cmd := exec.Command("git", "checkout", "-b", branchName)
+func (r Repo) CheckoutBranch(branchName string) error {
+	cmd := r.command("checkout", "-b", branchName)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -97,8 +114,8 @@ func CheckoutBranch(branchName string) error {
 }
 
 // Checkout switches to an existing branch.
-func Checkout(branchName string) error {
-	cmd := exec.Command("git", "checkout", branchName)
+func (r Repo) Checkout(branchName string) error {
+	cmd := r.command("checkout", branchName)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -108,8 +125,8 @@ func Checkout(branchName string) error {
 }
 
 // AddAll stages all changes.
-func AddAll() error {
-	cmd := exec.Command("git", "add", ".")
+func (r Repo) AddAll() error {
+	cmd := r.command("add", ".")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -119,9 +136,9 @@ func AddAll() error {
 }
 
 // Commit creates a commit with the specified message and author.
-func Commit(message string, authorName string, authorEmail string) error {
+func (r Repo) Commit(message string, authorName string, authorEmail string) error {
 	author := fmt.Sprintf("%s <%s>", authorName, authorEmail)
-	cmd := exec.Command("git", "commit", "-m", message, "--author", author)
+	cmd := r.command("commit", "-m", message, "--author", author)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -131,9 +148,9 @@ func Commit(message string, authorName string, authorEmail string) error {
 }
 
 // Push pushes the specified branch to the remote.
-func Push(remote string, branchName string) error {
+func (r Repo) Push(remote string, branchName string) error {
 	// Set upstream so that the branch tracks correctly.
-	cmd := exec.Command("git", "push", "--set-upstream", remote, branchName)
+	cmd := r.command("push", "--set-upstream", remote, branchName)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {

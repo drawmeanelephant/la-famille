@@ -475,7 +475,7 @@ func setupRootCmdState(cfg config.Config) (*cobra.Command, *cliState) {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(themesCmd)
 	rootCmd.AddCommand(ragCmd)
-	rootCmd.AddCommand(prCmd)
+	rootCmd.AddCommand(setupPrCmd(cfg))
 	rootCmd.AddCommand(setupTUICmd(st, tuiCfg, tuiCfgSet))
 	rootCmd.PersistentFlags().StringVar(&st.globalLogFile, "log-file", "", "Path to log file (default is stderr for CLI, la-famille.log for TUI)")
 	// The bootstrapper applies --project-root before constructing the command
@@ -655,6 +655,13 @@ const initConfigBackup = "config.yaml.bak"
 // The recovery path stays open: a config.yaml too broken to parse is repaired
 // with `init --force`, which keeps the old file as config.yaml.bak so even a
 // broken one can still be read back by hand.
+//
+// The pre-write inspection is an Lstat on purpose: projects that symlink
+// config.yaml at a shared team file were silently clobbered, because os.Stat
+// follows the link and os.WriteFile truncates through it. --force means
+// "replace the file you named", never "follow this link and truncate whatever
+// is on the other end" — the same refusal `new` applies (#641). A dangling
+// link is refused too: writing through it would *create* the link's target.
 func writeInitialConfig(path string, force bool, theme string) error {
 	layoutPath := ""
 	if theme != "" && !isBundledTheme(theme) {
@@ -664,8 +671,10 @@ func writeInitialConfig(path string, force bool, theme string) error {
 		layoutPath = "templates/" + theme + ".html"
 	}
 	backupPath := filepath.Join(filepath.Dir(path), initConfigBackup)
-	_, statErr := os.Stat(path)
+	info, statErr := os.Lstat(path)
 	switch {
+	case statErr == nil && info.Mode()&os.ModeSymlink != 0:
+		return fmt.Errorf("%s is a symlink; refusing to write through it even with --force, because the file it points to would be replaced by defaults — remove the link or pick another file with --config", path)
 	case statErr == nil && !force:
 		return fmt.Errorf("%s already exists; refusing to overwrite it. Edit it directly, or run `la-famille init --force` to replace it (the current file is kept as %s)", path, initConfigBackup)
 	case statErr == nil:
