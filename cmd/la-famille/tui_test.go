@@ -1034,3 +1034,207 @@ func TestTUIDiagnosticWarningLevelColor(t *testing.T) {
 		t.Errorf("diagnostics view missing Next for warnings: %s", view)
 	}
 }
+
+// Issue #660: while a build is in flight the working screen footer must
+// not promise Enter/Esc return keys that the update loop swallows.
+func TestTUIWorkingFooterDuringActiveBuild(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenWorking
+	m.workMsg = "Building site..."
+	m.workPhase = "Rendering pages"
+	m.workCompleted, m.workTotal = 2, 4
+
+	if view := m.View(); strings.Contains(view, "Press Enter or Esc to return to menu") {
+		t.Fatalf("mid-build footer advertises inert keys: %s", view)
+	}
+
+	// Esc/Enter remain inert mid-build (kept behavior; footer just stops lying).
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	if mEsc := updated.(model); mEsc.screen != screenWorking {
+		t.Fatalf("esc mid-build: screen = %v, want screenWorking", mEsc.screen)
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if mEnter := updated.(model); mEnter.screen != screenWorking {
+		t.Fatalf("enter mid-build: screen = %v, want screenWorking", mEnter.screen)
+	}
+
+	// Once work is done the return hint is advertised again.
+	m.workMsg = "Build complete (cache hit)"
+	m.workPhase = "Complete"
+	if view := m.View(); !strings.Contains(view, "Press Enter or Esc to return to menu") {
+		t.Fatalf("completed-work footer missing return hint: %s", view)
+	}
+}
+
+// Issue #661: selecting Build Site while a build is in flight must not
+// reset the shared work state — the running build keeps ownership of it.
+func TestTUIBuildSiteReentryMidBuild(t *testing.T) {
+	m := initialModel(config.Config{})
+
+	buildIdx, exportIdx := -1, -1
+	for i, choice := range m.choices {
+		switch choice.label {
+		case "Build Site":
+			buildIdx = i
+		case "RAG Export":
+			exportIdx = i
+		}
+	}
+	if buildIdx < 0 || exportIdx < 0 {
+		t.Fatal("menu missing Build Site / RAG Export entries")
+	}
+
+	// Start a build for real.
+	m.cursor = buildIdx
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(model)
+	if m.screen != screenWorking {
+		t.Fatalf("build start: screen = %v, want screenWorking", m.screen)
+	}
+
+	// Mark in-flight state that a second task must not clobber.
+	m.workMsg = "first build marker"
+	m.workPhase = "Rendering pages"
+	m.workEvents = []string{"first build event"}
+
+	// Wander away mid-build via the issue's repro path: d → l → esc.
+	for _, key := range []tea.KeyMsg{
+		{Type: tea.KeyRunes, Runes: []rune{'d'}},
+		{Type: tea.KeyRunes, Runes: []rune{'l'}},
+		{Type: tea.KeyEscape},
+	} {
+		updated, _ = m.Update(key)
+		m = updated.(model)
+	}
+	if m.screen != screenMenu {
+		t.Fatalf("repro path should land on menu, got %v", m.screen)
+	}
+
+	// Trigger Build Site again — must not reset the running build's state.
+	m.cursor = buildIdx
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(model)
+	if m.workMsg != "first build marker" || m.workPhase != "Rendering pages" || len(m.workEvents) != 1 {
+		t.Fatalf("second Build Site reset in-flight state: msg=%q phase=%q events=%v", m.workMsg, m.workPhase, m.workEvents)
+	}
+	if m.screen != screenWorking {
+		t.Fatalf("second Build Site should surface the running build, got %v", m.screen)
+	}
+
+	// RAG Export shares the same async work state — guard it identically.
+	m.screen = screenMenu
+	m.cursor = exportIdx
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(model)
+	if m.workMsg != "first build marker" || m.workPhase != "Rendering pages" {
+		t.Fatalf("RAG Export mid-build reset in-flight state: msg=%q phase=%q", m.workMsg, m.workPhase)
+	}
+	if m.screen != screenWorking {
+		t.Fatalf("RAG Export mid-build should surface the running task, got %v", m.screen)
+	}
+}
+
+// Issue #663: starting a build or export must clear leftover confetti so
+// the new run shows only its own animation.
+func TestTUIBuildStartResetsConfetti(t *testing.T) {
+	buildIdx, exportIdx := -1, -1
+	for i, choice := range initialModel(config.Config{}).choices {
+		switch choice.label {
+		case "Build Site":
+			buildIdx = i
+		case "RAG Export":
+			exportIdx = i
+		}
+	}
+
+	for _, tc := range []struct {
+		name   string
+		cursor int
+	}{
+		{"build site", buildIdx},
+		{"rag export", exportIdx},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := initialModel(config.Config{})
+			m.confetti = confettiTotalFrames - 3 // leftover frozen rain
+			m.cursor = tc.cursor
+			updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+			m = updated.(model)
+			if m.confetti != 0 {
+				t.Fatalf("confetti after task start = %d, want 0", m.confetti)
+			}
+		})
+	}
+}
+
+// Issue #663: leftover confetti must never paint over a running build.
+func TestTUIConfettiNotRenderedMidBuild(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenWorking
+	m.workMsg = "Building site..."
+	m.confetti = confettiTotalFrames / 2
+	if view := m.View(); strings.Contains(view, "✧") {
+		t.Fatalf("confetti rendered while build still running: %s", view)
+	}
+	m.workMsg = "Build complete (cache hit)"
+	if view := m.View(); !strings.Contains(view, "✧") {
+		t.Fatalf("confetti missing after successful build: %s", view)
+	}
+}
+
+// Issue #664: a server failure while the user is off the serve screen
+// must not yank them to the working screen or stamp a wrong message.
+func TestTUIServerErrorOnUnrelatedScreenStaysPut(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenChanges
+	m.workMsg = "Build complete (cache hit)"
+
+	wantErr := errors.New("listener blew up mid-run")
+	updated, _ := m.Update(serverErrorMsg{err: wantErr})
+	m = updated.(model)
+
+	if m.screen != screenChanges {
+		t.Fatalf("screen = %v, want %v (user should stay put)", m.screen, screenChanges)
+	}
+	if m.workMsg != "Build complete (cache hit)" {
+		t.Fatalf("workMsg clobbered: %q", m.workMsg)
+	}
+	if m.workErr != nil {
+		t.Fatalf("workErr stamped on unrelated screen: %v", m.workErr)
+	}
+	found := false
+	for _, d := range m.diagnostics {
+		if strings.Contains(d.message, wantErr.Error()) {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("server error missing from diagnostics")
+	}
+}
+
+// Issue #664: on the serve screen the error still surfaces (the screen
+// would otherwise claim RUNNING for a dead server), but the headline
+// must reflect the actual failure, not a fixed startup message.
+func TestTUIServerErrorOnServeScreenMessage(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.screen = screenServe
+	m.server = &http.Server{ReadHeaderTimeout: 5 * time.Second}
+
+	wantErr := errors.New("listener blew up mid-run")
+	updated, _ := m.Update(serverErrorMsg{err: wantErr})
+	m = updated.(model)
+
+	if m.screen != screenWorking {
+		t.Fatalf("screen = %v, want screenWorking", m.screen)
+	}
+	if !errors.Is(m.workErr, wantErr) {
+		t.Fatalf("workErr = %v, want %v", m.workErr, wantErr)
+	}
+	if strings.Contains(m.workMsg, "Unable to start server") {
+		t.Fatalf("workMsg = %q, still the wrong startup-failure text", m.workMsg)
+	}
+	if !strings.Contains(m.workMsg, wantErr.Error()) {
+		t.Fatalf("workMsg = %q, want it to reflect %q", m.workMsg, wantErr)
+	}
+}
