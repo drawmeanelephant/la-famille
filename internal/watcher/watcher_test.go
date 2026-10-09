@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -67,7 +68,7 @@ func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
 	done := make(chan error, 1)
 	debounce := 50 * time.Millisecond
 	go func() {
-		done <- watch(ctx, cfg, func(generator.BuildResult) { builds.Add(1); built <- struct{}{} }, func(config.Config) (generator.BuildResult, error) {
+		done <- watch(ctx, cfg, func(generator.BuildResult, error) { builds.Add(1); built <- struct{}{} }, func(config.Config) (generator.BuildResult, error) {
 			return generator.BuildResult{}, nil
 		}, debounce)
 	}()
@@ -287,7 +288,7 @@ func TestWatchTracksNestedNewDirectories(t *testing.T) {
 	done := make(chan error, 1)
 	debounce := 50 * time.Millisecond
 	go func() {
-		done <- watch(ctx, cfg, func(generator.BuildResult) { built <- struct{}{} }, func(config.Config) (generator.BuildResult, error) {
+		done <- watch(ctx, cfg, func(generator.BuildResult, error) { built <- struct{}{} }, func(config.Config) (generator.BuildResult, error) {
 			return generator.BuildResult{}, nil
 		}, debounce)
 	}()
@@ -311,6 +312,43 @@ func TestWatchTracksNestedNewDirectories(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("watch did not rebuild for file created inside nested directory")
 	}
+	cancel()
+	<-done
+}
+
+// TestWatchReportsBuildErrorToCallback covers the subscriber contract on a
+// failed rebuild: the UI cannot tell a broken build apart from a successful
+// empty one unless the error reaches onBuild (#658).
+func TestWatchReportsBuildErrorToCallback(t *testing.T) {
+	cfg := testConfig(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	wantErr := errors.New("synthetic build failure")
+	got := make(chan error, 4)
+	done := make(chan error, 1)
+	debounce := 20 * time.Millisecond
+
+	go func() {
+		done <- watch(ctx, cfg, func(_ generator.BuildResult, err error) { got <- err }, func(config.Config) (generator.BuildResult, error) {
+			return generator.BuildResult{}, wantErr
+		}, debounce)
+	}()
+
+	time.Sleep(2 * debounce)
+	if err := os.WriteFile(filepath.Join(cfg.ContentDir, "first.md"), []byte("a"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case err := <-got:
+		if !errors.Is(err, wantErr) {
+			t.Fatalf("onBuild error = %v, want %v", err, wantErr)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("onBuild was not invoked for the failed rebuild")
+	}
+
 	cancel()
 	<-done
 }

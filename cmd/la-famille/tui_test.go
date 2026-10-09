@@ -16,6 +16,24 @@ import (
 	"github.com/tbuddy/la-famille/internal/generator"
 )
 
+// driveServe selects the highlighted menu entry and feeds the initial build
+// result back through Update, mirroring the async tea.Sequence the program
+// runs for Serve Site (#662).
+func driveServe(t *testing.T, m model, cfg config.Config) model {
+	t.Helper()
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	m = updated.(model)
+	if cmd == nil {
+		t.Fatal("Serve Site did not schedule an async initial build")
+	}
+	res, err := generator.Build(cfg)
+	if err != nil {
+		t.Fatalf("initial build failed: %v", err)
+	}
+	updated, _ = m.Update(workResultMsg{msg: "Build complete (cache miss)", res: &res})
+	return updated.(model)
+}
+
 func getFreePort() (int, error) {
 	for i := 0; i < 20; i++ {
 		l, err := net.Listen("tcp", "127.0.0.1:0")
@@ -91,13 +109,7 @@ func TestTUIServeShutdownAndRestart(t *testing.T) {
 		}
 	}
 	m.cursor = serveIdx
-
-	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
-	m = newModel.(model)
-
-	if cmd != nil {
-		cmd()
-	}
+	m = driveServe(t, m, cfg)
 
 	if m.screen != screenServe {
 		t.Fatalf("Expected screenServe, got %v (workErr=%v)", m.screen, m.workErr)
@@ -106,7 +118,7 @@ func TestTUIServeShutdownAndRestart(t *testing.T) {
 		t.Fatalf("Expected m.server != nil")
 	}
 
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
 	m = newModel.(model)
 
 	if m.screen != screenMenu {
@@ -132,6 +144,17 @@ func TestTUIServeInitialBuildFailure(t *testing.T) {
 	m.cursor = serveIdx
 
 	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	m = newModel.(model)
+
+	if cmd == nil {
+		t.Errorf("Expected async build tea.Cmd on serve selection")
+	}
+	if m.screen != screenWorking {
+		t.Errorf("Expected screenWorking while initial build runs, got %v", m.screen)
+	}
+
+	wantErr := errors.New("template missing")
+	newModel, cmd = m.Update(workResultMsg{err: wantErr, msg: "Build failed"})
 	m = newModel.(model)
 
 	if cmd != nil {
@@ -169,13 +192,7 @@ func TestTUIServeWatchModeEnabled(t *testing.T) {
 		}
 	}
 	m.cursor = serveIdx
-
-	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
-	m = newModel.(model)
-
-	if cmd != nil {
-		cmd()
-	}
+	m = driveServe(t, m, cfg)
 
 	if m.screen != screenServe {
 		t.Fatalf("Expected screenServe, got %v (workErr: %v)", m.screen, m.workErr)
@@ -235,12 +252,7 @@ func TestTUIServeCancellationKeys(t *testing.T) {
 				}
 			}
 			m.cursor = serveIdx
-
-			newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
-			m = newModel.(model)
-			if cmd != nil {
-				cmd()
-			}
+			m = driveServe(t, m, cfg)
 
 			if m.server == nil || m.watcherCancel == nil {
 				t.Fatalf("Failed to start server/watcher")
@@ -897,7 +909,7 @@ func TestTUIMenuFooterShowsAllKeys(t *testing.T) {
 	}{
 		{screenStats, []string{"d for diagnostics", "?/h for help"}},
 		{screenWorking, []string{"d for diagnostics", "?/h for help"}},
-		{screenServe, []string{"d for diagnostics", "?/h for help", "w to toggle watch"}},
+		{screenServe, []string{"d for diagnostics", "?/h for help"}},
 		{screenRaoul, []string{"d for diagnostics", "?/h for help"}},
 		{screenHelp, []string{"d for diagnostics", "w: Toggle watch"}},
 		{screenDiagnostics, []string{"c: Clear", "?: Help", "w: Watch"}},
@@ -1236,5 +1248,169 @@ func TestTUIServerErrorOnServeScreenMessage(t *testing.T) {
 	}
 	if !strings.Contains(m.workMsg, wantErr.Error()) {
 		t.Fatalf("workMsg = %q, want it to reflect %q", m.workMsg, wantErr)
+	}
+}
+
+func TestTUIServeServesUnderSiteURLBasePath(t *testing.T) {
+	port, err := getFreePort()
+	if err != nil {
+		t.Fatalf("Failed to get free port: %v", err)
+	}
+	cfg := setupValidTestConfig(t, port)
+	cfg.SiteURL = "https://example.com/repo"
+	cfg.WatchMode = true
+
+	m := initialModel(cfg)
+	var serveIdx int
+	for i, choice := range m.choices {
+		if choice.label == "Serve Site" {
+			serveIdx = i
+			break
+		}
+	}
+	m.cursor = serveIdx
+	m = driveServe(t, m, cfg)
+	if m.screen != screenServe || m.server == nil {
+		t.Fatalf("serve did not start: screen=%v server=%v workErr=%v", m.screen, m.server, m.workErr)
+	}
+	defer m.stopServing()
+
+	origin := fmt.Sprintf("http://127.0.0.1:%d", port)
+	waitForServe(t, origin+"/")
+
+	noRedirect := &http.Client{
+		Timeout: 2 * time.Second,
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	resp, err := noRedirect.Get(origin + "/")
+	if err != nil {
+		t.Fatalf("GET / failed: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusFound {
+		t.Errorf("GET / = %d, want %d (redirect to base path)", resp.StatusCode, http.StatusFound)
+	} else if loc := resp.Header.Get("Location"); loc != "/repo/" {
+		t.Errorf("GET / Location = %q, want /repo/", loc)
+	}
+
+	resp, err = noRedirect.Get(origin + "/repo/")
+	if err != nil {
+		t.Fatalf("GET /repo/ failed: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("GET /repo/ = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	resp, err = noRedirect.Get(origin + "/repo/livereload")
+	if err != nil {
+		t.Fatalf("GET /repo/livereload failed: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("GET /repo/livereload = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	resp, err = noRedirect.Get(origin + "/livereload")
+	if err != nil {
+		t.Fatalf("GET /livereload failed: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("GET /livereload = %d, want %d under a base-path siteurl", resp.StatusCode, http.StatusNotFound)
+	}
+}
+
+func waitForServe(t *testing.T, url string) {
+	t.Helper()
+	client := &http.Client{Timeout: 250 * time.Millisecond}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		resp, err := client.Get(url)
+		if err == nil {
+			_ = resp.Body.Close()
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("server did not come up at %s: %v", url, err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+func TestTUIServeInitialBuildRunsAsync(t *testing.T) {
+	port, err := getFreePort()
+	if err != nil {
+		t.Fatalf("Failed to get free port: %v", err)
+	}
+	cfg := setupValidTestConfig(t, port)
+
+	m := initialModel(cfg)
+	var serveIdx int
+	for i, choice := range m.choices {
+		if choice.label == "Serve Site" {
+			serveIdx = i
+			break
+		}
+	}
+	m.cursor = serveIdx
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	m = newModel.(model)
+	if cmd == nil {
+		t.Fatal("Serve Site returned no command; the initial build still runs synchronously in Update")
+	}
+	if m.screen != screenWorking {
+		t.Fatalf("screen = %v, want screenWorking while the initial build runs", m.screen)
+	}
+	if m.server != nil || m.serverCancel != nil {
+		t.Fatal("server started before the initial build finished")
+	}
+
+	// The event loop stays live while the build runs: ctrl+c must still quit.
+	if _, quitCmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC}); quitCmd == nil {
+		t.Fatal("ctrl+c during the initial build produced no quit command")
+	}
+
+	res, berr := generator.Build(cfg)
+	if berr != nil {
+		t.Fatalf("initial build failed: %v", berr)
+	}
+	newModel, _ = m.Update(workResultMsg{msg: "Build complete (cache miss)", res: &res})
+	m = newModel.(model)
+	defer m.stopServing()
+	if m.screen != screenServe || m.server == nil {
+		t.Fatalf("screen=%v server=%v, want running server on screenServe", m.screen, m.server)
+	}
+}
+
+func TestTUIWatchRebuildFailureKeepsStatsAndRecordsDiagnostic(t *testing.T) {
+	m := initialModel(config.Config{})
+	m.stats = &generator.BuildResult{PageCount: 7, Duration: 5 * time.Millisecond}
+
+	newModel, _ := m.Update(statsUpdateMsg{err: errors.New("rebuild exploded")})
+	m = newModel.(model)
+
+	if m.stats == nil || m.stats.PageCount != 7 {
+		t.Fatalf("failed rebuild clobbered the last good stats: %#v", m.stats)
+	}
+	if len(m.diagnostics) == 0 {
+		t.Fatal("failed rebuild recorded no diagnostic")
+	}
+	last := m.diagnostics[len(m.diagnostics)-1]
+	if last.level != "error" || !strings.Contains(last.message, "rebuild exploded") {
+		t.Fatalf("diagnostic = %#v, want an error naming the failure", last)
+	}
+}
+
+func TestTUIServeFooterDoesNotAdvertiseDeadWatchKey(t *testing.T) {
+	m := initialModel(config.Config{WatchMode: true})
+	m.screen = screenServe
+	view := m.View()
+	if strings.Contains(view, "w to toggle watch") || strings.Contains(view, "Press w") {
+		t.Errorf("serve footer advertises the 'w' key but it is a no-op on this screen: %s", view)
 	}
 }

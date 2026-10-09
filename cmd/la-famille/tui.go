@@ -101,6 +101,7 @@ type tickMsg time.Time
 
 type statsUpdateMsg struct {
 	res generator.BuildResult
+	err error
 }
 
 type workResultMsg struct {
@@ -154,6 +155,7 @@ type model struct {
 	height            int
 	menuOpen          bool
 	working           bool
+	servePending      bool
 	spinner           spinner.Model
 	progress          progress.Model
 	confetti          int
@@ -323,6 +325,79 @@ func runServer(server *http.Server, report func(tea.Msg)) {
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		report(serverErrorMsg{err: err})
 	}
+}
+
+func (m *model) startWatcher() {
+	watchCtx, cancelWatch := context.WithCancel(context.Background())
+	m.watcherCancel = cancelWatch
+
+	go func(ctx context.Context, c config.Config) {
+		if err := watcher.Watch(ctx, c, func(res generator.BuildResult, buildErr error) {
+			if p != nil {
+				p.Send(statsUpdateMsg{res: res, err: buildErr})
+			}
+		}); err != nil {
+			slog.Error("Watcher thread exited", "error", err)
+		}
+	}(watchCtx, m.cfg)
+}
+
+func serveMux(cfg config.Config, watch bool) *http.ServeMux {
+	mux := http.NewServeMux()
+	base := cfg.BasePath()
+	if base != "" && base != "/" {
+		cleanBase := strings.TrimSuffix(base, "/")
+		mux.Handle(cleanBase+"/", http.StripPrefix(cleanBase, http.FileServer(http.Dir(cfg.OutputDir))))
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/" {
+				http.Redirect(w, r, cleanBase+"/", http.StatusFound)
+				return
+			}
+			http.NotFound(w, r)
+		})
+	} else {
+		mux.Handle("/", http.FileServer(http.Dir(cfg.OutputDir)))
+	}
+	if watch {
+		mux.HandleFunc(strings.TrimSuffix(base, "/")+"/livereload", watcher.LiveReloadHandler)
+	}
+	return mux
+}
+
+func (m *model) startServing() tea.Cmd {
+	if m.cfg.WatchMode {
+		m.startWatcher()
+	}
+
+	port := m.cfg.Port
+	if port == 0 {
+		port = config.DefaultConfig().Port
+	}
+
+	serverCtx, serverCancel := context.WithCancel(context.Background())
+	m.serverCancel = serverCancel
+
+	server := &http.Server{
+		Addr:              fmt.Sprintf("127.0.0.1:%d", port),
+		Handler:           serveMux(m.cfg, m.cfg.WatchMode),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		BaseContext: func(net.Listener) context.Context {
+			return serverCtx
+		},
+	}
+	m.server = server
+	go func() {
+		runServer(server, func(msg tea.Msg) {
+			if p != nil {
+				p.Send(msg)
+			}
+		})
+	}()
+	m.screen = screenServe
+	m.frame = 0
+	return tickCmd()
 }
 
 func tickCmd() tea.Cmd {
@@ -529,75 +604,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return workResultMsg{err: err, msg: "RAG Export complete"}
 					}, m.spinner.Tick)
 				case "Serve Site", "Serve Site with Watch":
-					isWatch := choice == "Serve Site with Watch" || m.cfg.WatchMode
+					if m.working {
+						m.screen = screenWorking
+						return m, m.spinner.Tick
+					}
 					if choice == "Serve Site with Watch" {
 						m.cfg.WatchMode = true
 					}
-
-					res, err := generator.Build(m.cfg)
-					if err != nil {
-						m.server = nil
-						m.watcherCancel = nil
-						m.addDiagnostic("error", err)
-						m.screen = screenWorking
-						m.workMsg = "Unable to start serve (initial build failed)"
-						m.workErr = err
-						return m, nil
-					}
-
-					m.stats = &res
-					m.recordLedger(res)
-
-					if isWatch {
-						watchCtx, cancelWatch := context.WithCancel(context.Background())
-						m.watcherCancel = cancelWatch
-
-						go func(ctx context.Context, c config.Config) {
-							if err := watcher.Watch(ctx, c, func(res generator.BuildResult) {
-								if p != nil {
-									p.Send(statsUpdateMsg{res: res})
-								}
-							}); err != nil {
-								slog.Error("Watcher thread exited", "error", err)
-							}
-						}(watchCtx, m.cfg)
-					}
-
-					port := m.cfg.Port
-					if port == 0 {
-						port = config.DefaultConfig().Port
-					}
-
-					mux := http.NewServeMux()
-					mux.Handle("/", http.FileServer(http.Dir(m.cfg.OutputDir)))
-					if m.cfg.WatchMode {
-						mux.HandleFunc("/livereload", watcher.LiveReloadHandler)
-					}
-
-					serverCtx, serverCancel := context.WithCancel(context.Background())
-					m.serverCancel = serverCancel
-
-					server := &http.Server{
-						Addr:              fmt.Sprintf("127.0.0.1:%d", port),
-						Handler:           mux,
-						ReadHeaderTimeout: 5 * time.Second,
-						ReadTimeout:       10 * time.Second,
-						WriteTimeout:      10 * time.Second,
-						BaseContext: func(net.Listener) context.Context {
-							return serverCtx
-						},
-					}
-					m.server = server
-					go func() {
-						runServer(server, func(msg tea.Msg) {
-							if p != nil {
-								p.Send(msg)
-							}
-						})
-					}()
-					m.screen = screenServe
-					m.frame = 0
-					return m, tickCmd()
+					m.screen = screenWorking
+					m.working = true
+					m.servePending = true
+					m.workMsg = "Building site..."
+					m.workErr = nil
+					m.workPhase = "Preparing build"
+					m.workCompleted, m.workTotal = 0, 4
+					m.workEvents = nil
+					m.confetti = 0
+					m.progress.SetPercent(0)
+					return m, tea.Batch(buildProgressCmd(m.cfg), m.spinner.Tick)
 				}
 			} else if m.screen == screenWorking {
 				if m.workDone() {
@@ -631,6 +655,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case statsUpdateMsg:
+		if msg.err != nil {
+			m.addDiagnostic("error", fmt.Errorf("watch rebuild failed: %w", msg.err))
+			return m, nil
+		}
 		newRes := msg.res
 		m.stats = &newRes
 		m.recordLedger(newRes)
@@ -668,6 +696,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(msg.res.Warnings) > 0 {
 				m.workEvents = append(m.workEvents, fmt.Sprintf("Warning: %d warning(s) — open diagnostics (d) for next actions", len(msg.res.Warnings)))
 			}
+		}
+		if m.servePending {
+			m.servePending = false
+			if msg.err != nil {
+				m.workMsg = "Unable to start serve (initial build failed)"
+				return m, nil
+			}
+			return m, m.startServing()
 		}
 		if msg.err == nil {
 			m.confetti = confettiTotalFrames
@@ -1131,7 +1167,7 @@ func (m model) View() string {
 			s += subtleStyle.Render("Watch Mode: DISABLED") + "\n"
 		}
 		s += infoBadge.Render("Server Status: RUNNING") + " " + pulseDots(m.frame) + "\n\n"
-		s += "Press d for diagnostics • Press ?/h for help • Press w to toggle watch • Press Esc or q to stop serving and return to menu"
+		s += "Press d for diagnostics • Press ?/h for help • Press Esc or q to stop serving and return to menu"
 		if m.width > 0 {
 			return lipgloss.NewStyle().MaxWidth(m.width).Render(s)
 		}
