@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -130,6 +131,67 @@ func TestLoadUnreadableConfigIsNotUsable(t *testing.T) {
 	}
 	if !reflect.DeepEqual(cfg, Config{}) {
 		t.Errorf("Load returned a non-zero Config alongside a read error: %+v", cfg)
+	}
+}
+
+// Issue #639: unknown keys in config.yaml used to be silently ignored, so a
+// typo like `output_dirr` produced an exit-0 build on defaults with no
+// warning. Load must now reject them, naming the offending key, and must
+// still honour the zero-Config-on-error contract.
+func TestLoadRejectsUnknownKeys(t *testing.T) {
+	tmpDir := t.TempDir()
+	testConfigFile := filepath.Join(tmpDir, "config.yaml")
+	yamlContent := []byte("site_name: \"X\"\noutput_dirr: \"wrong-out\"\nsite_nme: \"nope\"\n")
+	if err := os.WriteFile(testConfigFile, yamlContent, 0600); err != nil {
+		t.Fatalf("Failed to write test config file: %v", err)
+	}
+
+	cfg, err := Load(testConfigFile)
+	if err == nil {
+		t.Fatal("Load accepted unknown keys without error")
+	}
+	for _, key := range []string{"output_dirr", "site_nme"} {
+		if !strings.Contains(err.Error(), key) {
+			t.Errorf("error should name the unknown key %q, got: %v", key, err)
+		}
+	}
+	if !reflect.DeepEqual(cfg, Config{}) {
+		t.Errorf("Load returned a non-zero Config alongside a strict error: %+v", cfg)
+	}
+}
+
+// An unknown key nested inside a known one (a site_links entry) is just as
+// invisible as a top-level typo and must be rejected too.
+func TestLoadRejectsUnknownNestedKeys(t *testing.T) {
+	tmpDir := t.TempDir()
+	testConfigFile := filepath.Join(tmpDir, "config.yaml")
+	yamlContent := []byte("site_links:\n  - label: \"RSS\"\n    urll: \"/feed.xml\"\n")
+	if err := os.WriteFile(testConfigFile, yamlContent, 0600); err != nil {
+		t.Fatalf("Failed to write test config file: %v", err)
+	}
+
+	_, err := Load(testConfigFile)
+	if err == nil {
+		t.Fatal("Load accepted an unknown nested key without error")
+	}
+	if !strings.Contains(err.Error(), "urll") {
+		t.Errorf("error should name the unknown key, got: %v", err)
+	}
+}
+
+// Strict decoding must not change the contract for a file with no keys: an
+// empty config.yaml still means defaults.
+func TestLoadEmptyConfigStillReturnsDefaults(t *testing.T) {
+	testConfigFile := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(testConfigFile, []byte(""), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(testConfigFile)
+	if err != nil {
+		t.Fatalf("Load(empty file) returned an error: %v", err)
+	}
+	if !reflect.DeepEqual(cfg, DefaultConfig()) {
+		t.Errorf("Load(empty file) = %+v, want DefaultConfig()", cfg)
 	}
 }
 

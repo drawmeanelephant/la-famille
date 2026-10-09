@@ -253,6 +253,74 @@ func TestWriteInitialConfig(t *testing.T) {
 		}
 	})
 
+	// Issue #641: config.yaml symlinked to a shared file must never have the
+	// shared file replaced by defaults. `os.Stat` follows the link and
+	// `os.WriteFile` writes through it, so --force used to clobber the target;
+	// `new` already refuses a symlinked destination outright and init must
+	// match (#641).
+	t.Run("--force refuses a symlinked config instead of clobbering its target", func(t *testing.T) {
+		dir := t.TempDir()
+		shared := filepath.Join(dir, "shared.yaml")
+		original := []byte("# shared team config\nsite_name: \"Shared\"\n")
+		if err := os.WriteFile(shared, original, 0600); err != nil {
+			t.Fatal(err)
+		}
+		link := filepath.Join(dir, "config.yaml")
+		if err := os.Symlink("shared.yaml", link); err != nil {
+			t.Skipf("symlinks not supported on this platform: %v", err)
+		}
+
+		err := writeInitialConfig(link, true, "")
+		if err == nil {
+			t.Fatal("expected init --force to refuse a symlinked config.yaml")
+		}
+		if !strings.Contains(err.Error(), "symlink") {
+			t.Errorf("error should name the symlink, got: %v", err)
+		}
+		got, readErr := os.ReadFile(shared)
+		if readErr != nil {
+			t.Fatalf("the shared file should still exist: %v", readErr)
+		}
+		if string(got) != string(original) {
+			t.Errorf("the symlink target was clobbered: %q", got)
+		}
+		if info, lerr := os.Lstat(link); lerr != nil || info.Mode()&os.ModeSymlink == 0 {
+			t.Errorf("the symlink itself should have been left in place: %v", lerr)
+		}
+	})
+
+	t.Run("refuses a symlinked config even without --force", func(t *testing.T) {
+		dir := t.TempDir()
+		shared := filepath.Join(dir, "shared.yaml")
+		if err := os.WriteFile(shared, []byte("site_name: \"Shared\"\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		link := filepath.Join(dir, "config.yaml")
+		if err := os.Symlink("shared.yaml", link); err != nil {
+			t.Skipf("symlinks not supported on this platform: %v", err)
+		}
+
+		if err := writeInitialConfig(link, false, ""); err == nil {
+			t.Fatal("expected init to refuse a symlinked config.yaml")
+		}
+	})
+
+	t.Run("refuses a dangling symlink rather than creating its target", func(t *testing.T) {
+		dir := t.TempDir()
+		link := filepath.Join(dir, "config.yaml")
+		if err := os.Symlink("missing.yaml", link); err != nil {
+			t.Skipf("symlinks not supported on this platform: %v", err)
+		}
+
+		err := writeInitialConfig(link, true, "")
+		if err == nil {
+			t.Fatal("expected init --force to refuse a dangling symlink")
+		}
+		if _, statErr := os.Stat(filepath.Join(dir, "missing.yaml")); !os.IsNotExist(statErr) {
+			t.Error("the write followed the dangling link and created its target")
+		}
+	})
+
 	t.Run("a themed init selects the themed layout", func(t *testing.T) {
 		if len(runtimeassets.CuratedLayoutNames) == 0 {
 			t.Fatal("no curated themes to test with")

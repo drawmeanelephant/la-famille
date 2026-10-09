@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -136,10 +137,6 @@ func TestValidateAllowsInputsThatAreTheProjectRoot(t *testing.T) {
 			name:   "content directory is the project root",
 			mutate: func(c *Config) { c.ContentDir = "." },
 		},
-		{
-			name:   "asset directory is the project root",
-			mutate: func(c *Config) { c.AssetDir = "." },
-		},
 	}
 
 	for _, c := range cases {
@@ -150,6 +147,72 @@ func TestValidateAllowsInputsThatAreTheProjectRoot(t *testing.T) {
 				t.Errorf("this layout must build, got: %v", err)
 			}
 		})
+	}
+}
+
+// Issue #642: `asset_dir: "."` used to validate and then fail on every build
+// when the copier refused to walk a root containing the output directory.
+// Unlike content_dir — which the generator only reads — the asset directory
+// is mirrored wholesale into the output, so an asset root that IS the project
+// root has no safe interpretation. It must now fail validation with a clear
+// message.
+func TestValidateRejectsAssetDirEqualToProjectRoot(t *testing.T) {
+	cfg := baseValidConfig()
+	cfg.AssetDir = "."
+
+	err := cfg.Validate()
+	if err == nil {
+		t.Fatal("asset_dir == project root must be rejected")
+	}
+	if !strings.Contains(err.Error(), "AssetDir") || !strings.Contains(err.Error(), "project root") {
+		t.Errorf("error should explain that the asset dir is the project root, got: %v", err)
+	}
+}
+
+// Issue #642: a regular file at the asset_dir path used to fail mid-build
+// with an error blaming the staging destination. ValidateResolved must catch
+// it instead, naming asset_dir; a missing asset dir stays legal.
+func TestValidateResolvedRejectsFileAssetDir(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "assets"), []byte("x"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	resolved, err := DefaultConfig().ResolvePaths(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = resolved.ValidateResolved()
+	if err == nil {
+		t.Fatal("a regular-file asset_dir must fail validation")
+	}
+	if !strings.Contains(err.Error(), `asset_dir "assets" is not a directory`) {
+		t.Errorf("error should name asset_dir and the non-directory problem, got: %v", err)
+	}
+}
+
+func TestValidateResolvedAllowsMissingAssetDir(t *testing.T) {
+	root := t.TempDir()
+	resolved, err := DefaultConfig().ResolvePaths(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := resolved.ValidateResolved(); err != nil {
+		t.Errorf("a missing asset dir is legal, the copier tolerates it; got: %v", err)
+	}
+}
+
+func TestValidateResolvedAllowsDirectoryAssetDir(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "assets"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := DefaultConfig().ResolvePaths(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := resolved.ValidateResolved(); err != nil {
+		t.Errorf("an ordinary asset dir must still validate, got: %v", err)
 	}
 }
 

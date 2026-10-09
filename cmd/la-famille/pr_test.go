@@ -2,16 +2,19 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/github"
 )
 
 func TestPRSyncFlagDefaults(t *testing.T) {
+	prSyncCmd := setupPrSyncCmd(config.Config{})
 	flags := map[string]string{
 		"base":                  "",
 		"apply":                 "false",
@@ -49,7 +52,7 @@ func TestPRSyncFlagDefaults(t *testing.T) {
 
 func TestPRSyncMissingToken(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "")
-	cmd := prSyncCmd
+	cmd := setupPrSyncCmd(config.Config{})
 	cmd.SetArgs([]string{})
 	// Reset flags between tests by re-parsing empty
 	_ = cmd.Flags().Parse([]string{})
@@ -69,7 +72,7 @@ func TestPRSyncMissingToken(t *testing.T) {
 
 func TestPRSyncEmptyRequiredLabelRejected(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "tok")
-	cmd := prSyncCmd
+	cmd := setupPrSyncCmd(config.Config{})
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
@@ -77,8 +80,6 @@ func TestPRSyncEmptyRequiredLabelRejected(t *testing.T) {
 		t.Fatal(err)
 	}
 	err := cmd.RunE(cmd, nil)
-	// restore default for other tests
-	_ = cmd.Flags().Set("required-label", github.DefaultRequiredLabel)
 	if err == nil {
 		t.Fatal("expected error for empty required-label")
 	}
@@ -88,9 +89,49 @@ func TestPRSyncEmptyRequiredLabelRejected(t *testing.T) {
 }
 
 func TestPRSyncDefaultIsDryRun(t *testing.T) {
-	apply := prSyncCmd.Flags().Lookup("apply")
+	apply := setupPrSyncCmd(config.Config{}).Flags().Lookup("apply")
 	if apply == nil || apply.DefValue != "false" {
 		t.Fatalf("apply default = %v", apply)
+	}
+}
+
+// Issue #640: `pr sync` used to resolve the repository from the process CWD,
+// ignoring --project-root entirely — reporting one repo while merging,
+// closing, and pushing to whichever checkout happened to be the working
+// directory. The sync's local git operations must be bound to the resolved
+// project root.
+func TestPRSyncThreadsProjectRootIntoSyncConfig(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "tok")
+	otherDir := t.TempDir()
+	projectB := t.TempDir()
+	t.Chdir(otherDir)
+
+	var captured github.SyncConfig
+	called := false
+	prev := runPRSync
+	runPRSync = func(cfg github.SyncConfig) (github.SyncResult, error) {
+		called = true
+		captured = cfg
+		return github.SyncResult{}, errors.New("captured; stopping before any git/GitHub work")
+	}
+	defer func() { runPRSync = prev }()
+
+	cfg := config.DefaultConfig()
+	cfg.ProjectRoot = projectB
+	rootCmd := setupRootCmd(cfg)
+	rootCmd.SetOut(&bytes.Buffer{})
+	rootCmd.SetErr(&bytes.Buffer{})
+	rootCmd.SetArgs([]string{"pr", "sync"})
+
+	err := rootCmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "captured") {
+		t.Fatalf("expected the sync to run and be captured, got: %v", err)
+	}
+	if !called {
+		t.Fatal("pr sync never invoked RunSync")
+	}
+	if captured.WorkDir != projectB {
+		t.Errorf("SyncConfig.WorkDir = %q, want the --project-root dir %q; the CWD repo must never win", captured.WorkDir, projectB)
 	}
 }
 

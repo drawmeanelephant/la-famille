@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os/exec"
 	"strings"
 	"sync"
 	"testing"
@@ -153,6 +154,48 @@ func (g *fakeGit) Push(remote, branchName string) error {
 }
 
 func boolPtr(b bool) *bool { return &b }
+
+// fixtureRepo creates a real git repository with the given origin remote.
+// Only the remote matters here: resolveClient reads it to pick owner/repo.
+func fixtureRepo(t *testing.T, remoteURL string) string {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	dir := t.TempDir()
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	run("init")
+	run("remote", "add", "origin", remoteURL)
+	return dir
+}
+
+// Issue #640: with --project-root pointing at repo B while the process runs
+// from repo A, every local git operation — including the remote lookup that
+// decides which repository RunSync reports and mutates — must target B.
+func TestSyncGitRunnerRunsInWorkDir(t *testing.T) {
+	repoA := fixtureRepo(t, "https://github.com/alice/repo-a.git")
+	repoB := fixtureRepo(t, "https://github.com/bob/repo-b.git")
+	t.Chdir(repoA)
+
+	g := defaultGitRunner(repoB)
+	owner, repo, client, err := resolveClient(SyncConfig{Token: "t", Git: g})
+	if err != nil {
+		t.Fatalf("resolveClient: %v", err)
+	}
+	if client == nil {
+		t.Fatal("resolveClient returned no client")
+	}
+	if owner != "bob" || repo != "repo-b" {
+		t.Errorf("resolved %s/%s from CWD repo A; want bob/repo-b from WorkDir", owner, repo)
+	}
+}
 
 func eligibleListedPR(n int, sha string) PullRequest {
 	return PullRequest{

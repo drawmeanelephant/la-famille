@@ -59,12 +59,18 @@ func CopyAssets(cfg config.Config, claim ClaimOutput) error {
 
 	assetRootExists := cfg.AssetDir != ""
 	if assetRootExists {
-		if _, err := os.Stat(cfg.AssetDir); err != nil {
+		info, err := os.Stat(cfg.AssetDir)
+		if err != nil {
 			if os.IsNotExist(err) {
 				assetRootExists = false
 			} else {
 				return err
 			}
+		} else if !info.IsDir() {
+			// Without this the walk treats the file as its own root and the
+			// copy fails on the staging destination instead — blaming the
+			// internal .staging path rather than the configured dir (#642).
+			return fmt.Errorf("asset_dir %q is not a directory", cfg.AssetDir)
 		}
 	}
 
