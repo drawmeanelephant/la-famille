@@ -153,6 +153,7 @@ type model struct {
 	width             int
 	height            int
 	menuOpen          bool
+	working           bool
 	spinner           spinner.Model
 	progress          progress.Model
 	confetti          int
@@ -495,21 +496,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.workMsg = fmt.Sprintf("Watch mode %s", map[bool]string{true: "enabled", false: "disabled"}[m.cfg.WatchMode])
 					return m, nil
 				case "Build Site":
+					if m.working {
+						m.screen = screenWorking
+						return m, m.spinner.Tick
+					}
 					m.screen = screenWorking
+					m.working = true
 					m.workMsg = "Building site..."
 					m.workErr = nil
 					m.workPhase = "Preparing build"
 					m.workCompleted, m.workTotal = 0, 4
 					m.workEvents = nil
+					m.confetti = 0
 					m.progress.SetPercent(0)
 					return m, tea.Batch(buildProgressCmd(m.cfg), m.spinner.Tick)
 				case "RAG Export":
+					if m.working {
+						m.screen = screenWorking
+						return m, m.spinner.Tick
+					}
 					m.screen = screenWorking
+					m.working = true
 					m.workMsg = "Exporting RAG data..."
 					m.workErr = nil
 					m.workPhase = ""
 					m.workCompleted, m.workTotal = 0, 0
 					m.workEvents = nil
+					m.confetti = 0
 					m.progress.SetPercent(0)
 					return m, tea.Batch(func() tea.Msg {
 						err := ragexport.RunExport(m.cfg)
@@ -624,6 +637,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case workResultMsg:
+		m.working = false
 		m.workMsg = msg.msg
 		m.workErr = msg.err
 		if msg.err != nil {
@@ -674,9 +688,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case serverErrorMsg:
 		m.addDiagnostic("error", msg.err)
 		m.stopServing()
-		m.screen = screenWorking
-		m.workMsg = "Unable to start server"
-		m.workErr = msg.err
+		// Only the serve screen gets yanked to the error view — anywhere
+		// else the diagnostics drawer records the failure without tearing
+		// the user away from what they were doing.
+		if m.screen == screenServe {
+			m.screen = screenWorking
+			m.workMsg = fmt.Sprintf("Server error: %v", msg.err)
+			m.workErr = msg.err
+		}
 
 	}
 
@@ -1057,7 +1076,7 @@ func (m model) View() string {
 
 	case screenWorking:
 		s := titleStyle.Render("Task Progress") + "\n\n"
-		if m.confetti > 0 {
+		if m.confetti > 0 && m.workDone() {
 			s = confettiRain(confettiTotalFrames-m.confetti, confettiWidth(m.width)) + "\n" + s
 		}
 		if !m.workDone() {
@@ -1088,7 +1107,11 @@ func (m model) View() string {
 				s += warningBadge.Render(fmt.Sprintf("Warning: Build completed with %d error(s). Press 'd' to view diagnostics.", m.stats.ErrorCount)) + "\n"
 			}
 		}
-		s += "\nPress d for diagnostics • Press ?/h for help • Press Enter or Esc to return to menu"
+		if m.workDone() {
+			s += "\nPress d for diagnostics • Press ?/h for help • Press Enter or Esc to return to menu"
+		} else {
+			s += "\nPress d for diagnostics • Press ?/h for help • Working…"
+		}
 		if m.width > 0 {
 			return boxBorder.MaxWidth(m.width).Render(s)
 		}
