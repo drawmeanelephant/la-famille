@@ -59,48 +59,53 @@ func promoteFigures(n ast.Node, source []byte) {
 	child := n.FirstChild()
 	for child != nil {
 		next := child.NextSibling()
-		if para, ok := child.(*ast.Paragraph); ok && isStandaloneImage(para, source) {
-			img := para.FirstChild().(*ast.Image)
-			parent := para.Parent()
-			fig := NewImageFigure()
-			para.RemoveChild(para, img)
-			fig.AppendChild(fig, img)
-			parent.InsertBefore(parent, para, fig)
-			parent.RemoveChild(parent, para)
-		} else {
-			promoteFigures(child, source)
+		para, ok := child.(*ast.Paragraph)
+		if ok {
+			if img := standaloneImage(para, source); img != nil {
+				parent := para.Parent()
+				fig := NewImageFigure()
+				para.RemoveChild(para, img)
+				fig.AppendChild(fig, img)
+				parent.InsertBefore(parent, para, fig)
+				parent.RemoveChild(parent, para)
+				child = next
+				continue
+			}
 		}
+		promoteFigures(child, source)
 		child = next
 	}
 }
 
-// isStandaloneImage reports whether the paragraph holds exactly one image and
-// no other meaningful inline content. Whitespace-only text around the image is
-// tolerated because CommonMark paragraphs routinely wrap across lines.
-func isStandaloneImage(para *ast.Paragraph, source []byte) bool {
+// standaloneImage returns the image when the paragraph holds exactly one image
+// and no other meaningful inline content, or nil otherwise. Whitespace-only
+// text around the image is tolerated because CommonMark paragraphs routinely
+// wrap across lines, and Unicode whitespace (U+00A0, U+2009, U+3000, ...) is
+// not stripped as indentation so it arrives as real *ast.Text siblings.
+func standaloneImage(para *ast.Paragraph, source []byte) *ast.Image {
 	var img *ast.Image
 	for c := para.FirstChild(); c != nil; c = c.NextSibling() {
 		switch n := c.(type) {
 		case *ast.Image:
 			if img != nil {
-				return false
+				return nil
 			}
 			img = n
 		case *ast.Text:
 			if len(bytes.TrimSpace(n.Segment.Value(source))) > 0 {
-				return false
+				return nil
 			}
 		default:
-			return false
+			return nil
 		}
 	}
 	if img == nil {
-		return false
+		return nil
 	}
 	if strings.Contains(strings.ToLower(string(img.Destination)), emojiKitchenURLFragment) {
-		return false
+		return nil
 	}
-	return true
+	return img
 }
 
 // FigureRenderer renders ImageFigure blocks as semantic <figure> markup with
@@ -117,7 +122,10 @@ func (r *FigureRenderer) renderImageFigure(w util.BufWriter, source []byte, node
 		return ast.WalkContinue, nil
 	}
 
-	img := node.FirstChild().(*ast.Image)
+	img, ok := node.FirstChild().(*ast.Image)
+	if !ok {
+		return ast.WalkContinue, nil
+	}
 
 	_, _ = w.WriteString(`<figure class="lf-figure"><img src="`)
 	_, _ = w.Write(util.EscapeHTML(util.URLEscape(img.Destination, true)))

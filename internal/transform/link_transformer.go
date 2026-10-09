@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"bytes"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -209,18 +210,36 @@ func (t *LinkTransformer) addWikiHeadingIDs(node ast.Node, source []byte) {
 		if !ok {
 			return ast.WalkContinue, nil
 		}
-		lines := heading.Lines()
-		var text []byte
-		if lines != nil && lines.Len() > 0 {
-			segment := lines.At(lines.Len() - 1)
-			text = segment.Value(source)
-		}
-		id := string(ids.Generate(text, ast.KindHeading))
+		id := string(ids.Generate(headingText(heading, source), ast.KindHeading))
 		if wanted[id] {
 			heading.SetAttributeString("id", id)
 		}
 		return ast.WalkContinue, nil
 	})
+}
+
+// headingText returns the heading's full raw text. Multi-line headings (Setext
+// underlines can stack several source lines into one heading) join every line
+// with a single space so the generated id matches the fragment a wiki-link
+// author types, e.g. [[page#Foo Bar]] -> foo-bar for "Foo\nBar\n===".
+func headingText(heading *ast.Heading, source []byte) []byte {
+	lines := heading.Lines()
+	var text []byte
+	if lines == nil {
+		return text
+	}
+	for i := 0; i < lines.Len(); i++ {
+		segment := lines.At(i)
+		line := bytes.TrimSpace(segment.Value(source))
+		if len(line) == 0 {
+			continue
+		}
+		if len(text) > 0 {
+			text = append(text, ' ')
+		}
+		text = append(text, line...)
+	}
+	return text
 }
 
 // transformWikiLink returns true when the caller must unwrap an excluded link
