@@ -26,7 +26,9 @@ func ExtractManifestReferences(
 	published := content.PublishedFiles(fileMap)
 	linksByPage := make(map[string][]sitedata.ManifestLink, len(published))
 	assetsByPage := make(map[string][]string, len(published))
-	expectedOutputs := buildExpectedOutputs(published, graphExplorer)
+	// A stub output the build will emit resolves an output-tree link the same
+	// as a real page (#647).
+	expectedOutputs, _ := buildExpectedOutputs(published, graphExplorer, collectStubTargets(published, fileMap))
 	engine := markdown.NewEngine(nil)
 
 	for relPath, meta := range published {
@@ -110,19 +112,16 @@ func manifestLinkReference(
 	ext := strings.ToLower(path.Ext(u.Path))
 	line := findLinkLine(meta.Content, meta.Rest, node, dest)
 	if ext == ".md" {
-		var targetRelPath string
-		if strings.HasPrefix(u.Path, "/") {
-			targetRelPath = filepath.ToSlash(filepath.Clean(strings.TrimPrefix(u.Path, "/")))
-		} else {
-			dir := filepath.Dir(relPath)
-			if dir == "." {
-				targetRelPath = filepath.ToSlash(filepath.Clean(u.Path))
-			} else {
-				targetRelPath = filepath.ToSlash(filepath.Clean(dir + "/" + u.Path))
-			}
-		}
-		if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) || strings.Contains(dest, "%2E%2E") {
-			return sitedata.ManifestLink{}, false
+		targetRelPath := sourceTreeTarget(relPath, u.Path)
+		if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) {
+			// A link whose target escapes the content root ships verbatim and
+			// 404s (#648); record it unresolved so check --manifest reports it.
+			return sitedata.ManifestLink{
+				Destination: dest,
+				Target:      targetRelPath,
+				Line:        line,
+				Resolved:    false,
+			}, true
 		}
 
 		targetID := strings.TrimSuffix(targetRelPath, ".md")
@@ -150,17 +149,7 @@ func manifestLinkReference(
 		return sitedata.ManifestLink{}, false
 	}
 
-	raw := u.Path
-	if strings.HasPrefix(raw, "/") {
-		raw = strings.TrimPrefix(raw, "/")
-	} else if dir := filepath.ToSlash(filepath.Dir(relPath)); dir != "." {
-		raw = dir + "/" + raw
-	}
-	cleaned := path.Clean(raw)
-	if cleaned == ".." || strings.HasPrefix(cleaned, "../") || strings.Contains(dest, "%2E%2E") {
-		return sitedata.ManifestLink{}, false
-	}
-	target := normalizeOutputCandidate(cleaned)
+	target := normalizeOutputCandidate(outputTreeTarget(relPath, u.Path, meta))
 	return sitedata.ManifestLink{
 		Destination: dest,
 		Target:      target,

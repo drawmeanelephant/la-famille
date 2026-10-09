@@ -250,3 +250,240 @@ func TestAssetHealthScansTemplates(t *testing.T) {
 		t.Errorf("embedded runtime assets deploy on every build and must not be flagged: %v", resOn.Findings)
 	}
 }
+
+// Issue #647: a link whose target the build publishes as a generated
+// "Missing Page" stub ([missing](missing.md), [[Future Note]]) resolves in the
+// artifact, so it is at most a warning — matching publish-check semantics —
+// never a broken-link error. Output-style links also resolve once any page
+// causes the stub to be written.
+func TestValidateStubLinksWarnNotError(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	indexDoc := `---
+title: Home
+description: home
+date: 2026-08-25
+---
+[Missing source](missing.md)
+[[Future Note]]
+[Stub via output](/missing)
+[Stub via output dir](/missing/)
+`
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte(indexDoc), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.SiteURL = "https://example.com"
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+	if res.ErrorCount() != 0 {
+		t.Fatalf("links resolving to stub outputs must not be errors, got: %v", res.Findings)
+	}
+	var stubWarnings int
+	for _, f := range res.Findings {
+		if f.Level == LevelWarn && strings.Contains(f.Message, "Missing Page") && f.File == "index.md" {
+			stubWarnings++
+		}
+	}
+	if stubWarnings != 2 {
+		t.Errorf("expected 2 stub warnings (missing.md and Future Note), got %d: %v", stubWarnings, res.Findings)
+	}
+}
+
+// Issue #647: an extensionless link to a page no stub covers still 404s —
+// it must remain an error.
+func TestValidateExtensionlessMissingLinkStillErrors(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	doc := "---\ntitle: Home\ndescription: d\n---\n[missing](/missing)\n"
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte(doc), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.SiteURL = "https://example.com"
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+	found := false
+	for _, f := range res.Findings {
+		if f.Level == LevelError && f.Category == CategoryBrokenLink && strings.Contains(f.Message, `"/missing"`) {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected a broken-link error for /missing (no stub is generated for it), got: %v", res.Findings)
+	}
+}
+
+// Issue #648: a link that escapes the content root ([escape](../../outside.md)
+// or its %2e%2e-encoded form) ships verbatim into the artifact where it 404s —
+// check must report it instead of skipping it silently.
+func TestValidateFlagsRootEscapingLinks(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	doc := `---
+title: Home
+description: home
+date: 2026-08-25
+---
+[escape](../../outside.md)
+[enc](%2e%2e/outside.md)
+`
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte(doc), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.SiteURL = "https://example.com"
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+	var escaped, encoded bool
+	for _, f := range res.Findings {
+		if f.File != "index.md" || f.Category != CategoryBrokenLink {
+			continue
+		}
+		if strings.Contains(f.Message, "../../outside.md") {
+			escaped = true
+		}
+		if strings.Contains(f.Message, "%2e%2e/outside.md") {
+			encoded = true
+		}
+	}
+	if !escaped {
+		t.Errorf("root-escaping link ../../outside.md not reported: %v", res.Findings)
+	}
+	if !encoded {
+		t.Errorf("percent-encoded escaping link %%2e%%2e/outside.md not reported: %v", res.Findings)
+	}
+}
+
+// Issue #648: output-tree links that climb above the site root are clamped to
+// the root by browsers — the checker resolves them the same way, so
+// ../../real-page resolves while ../../nope is a broken-link finding.
+func TestValidateOutputRefClampsAtOutputRoot(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	if err := os.MkdirAll(filepath.Join(contentDir, "blog"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	blogPost := `---
+title: Post
+description: post
+date: 2026-08-25
+---
+[clamped hit](../../about)
+[clamped miss](../../nope)
+`
+	aboutDoc := `---
+title: About
+description: about
+date: 2026-08-25
+---
+[Home](/)
+`
+	if err := os.WriteFile(filepath.Join(contentDir, "blog", "post.md"), []byte(blogPost), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "about.md"), []byte(aboutDoc), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.SiteURL = "https://example.com"
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+	var miss bool
+	for _, f := range res.Findings {
+		if f.Category != CategoryBrokenLink {
+			continue
+		}
+		if strings.Contains(f.Message, `"../../about"`) {
+			t.Errorf("../../about resolves to /about via root clamping and must not be flagged: %s", f.Message)
+		}
+		if strings.Contains(f.Message, `"../../nope"`) {
+			miss = true
+		}
+	}
+	if !miss {
+		t.Errorf("expected broken-link finding for ../../nope, got: %v", res.Findings)
+	}
+}
+
+// Issue #652: a page linked only via its output URL ([c](/c), [c](c.html),
+// or a slug-aliased path) is not orphaned — the build resolves and publishes
+// the link, so it counts as an inbound reference.
+func TestValidateOutputStyleLinksCountAsInbound(t *testing.T) {
+	tempDir := t.TempDir()
+	contentDir := filepath.Join(tempDir, "content")
+	if err := os.MkdirAll(filepath.Join(contentDir, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	files := map[string]string{
+		"index.md": `---
+title: Home
+description: home
+date: 2026-08-25
+---
+[c](/c)
+[aliased](/aliased)
+[clamped](../c-deeper)
+`,
+		"c.md":        "---\ntitle: C\ndescription: d\n---\nx\n",
+		"hidden.md":   "---\ntitle: Aliased\ndescription: d\nslug: aliased\n---\nx\n",
+		"c-deeper.md": "---\ntitle: Deeper\ndescription: d\n---\nx\n",
+		"sub/page.md": "---\ntitle: Sub\ndescription: d\n---\n[deeper](../../c-deeper)\n",
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(contentDir, filepath.FromSlash(name)), []byte(body), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.ContentDir = contentDir
+	cfg.SiteURL = "https://example.com"
+
+	res, err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+	for _, f := range res.Findings {
+		if f.Category != CategoryOrphan {
+			continue
+		}
+		switch f.File {
+		case "c.md", "hidden.md", "c-deeper.md":
+			t.Errorf("page reachable via output-style link reported as orphan: %s", f)
+		}
+	}
+}

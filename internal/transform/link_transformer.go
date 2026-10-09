@@ -70,8 +70,13 @@ func (t *LinkTransformer) Transform(node *ast.Document, reader text.Reader, _ pa
 				}
 			}
 
-			// Prevent path traversal
-			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) || strings.Contains(dest, "%2E%2E") {
+			// Refuse path traversal: a target outside the content root can
+			// never resolve after build, so the link is unwrapped to its text
+			// instead of shipping a guaranteed-broken href verbatim (#648).
+			// Locality is judged on the decoded path, which covers %-encoded
+			// ".." segments too.
+			if !filepath.IsLocal(filepath.FromSlash(targetRelPath)) {
+				excludedLinks = append(excludedLinks, link)
 				return ast.WalkContinue, nil
 			}
 

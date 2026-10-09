@@ -143,7 +143,7 @@ title: Broken Page
 date: 2026-99-99
 ---
 # Broken Page
-Link to [missing](missing.md).
+Link to [missing](/missing).
 `
 	if err := os.WriteFile(filepath.Join(contentDir, "broken.md"), []byte(doc), 0600); err != nil {
 		t.Fatal(err)
@@ -185,7 +185,7 @@ func TestCheckCommand_ManifestReferences(t *testing.T) {
 		t.Fatal(err)
 	}
 	for name, body := range map[string]string{
-		"index.md":  "---\ntitle: Home\ndescription: Home page\n---\n[About](about.md)\n[Missing](missing.md)\n",
+		"index.md":  "---\ntitle: Home\ndescription: Home page\n---\n[About](about.md)\n[Missing](/missing)\n",
 		"about.md":  "---\ntitle: About\ndescription: About page\n---\n[Home](index.md)\n",
 		"orphan.md": "---\ntitle: Orphan\ndescription: Orphan page\n---\nNo inbound links.\n",
 	} {
@@ -374,8 +374,8 @@ date: 2026-05-10
 description: desc
 ---
 # Broken
-Link to [missing](missing.md).
-Link to [also-missing](also_missing.md).
+Link to [missing](/missing).
+Link to [also-missing](/also_missing).
 `
 	orphanDoc := `---
 title: Orphan
