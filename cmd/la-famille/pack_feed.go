@@ -112,7 +112,11 @@ func setupPackWatchCmd(cfg config.Config) *cobra.Command {
 					return
 				}
 				if event.Err != nil {
-					_, outputErr = fmt.Fprintf(cmd.ErrOrStderr(), "Pack poll failed; current version preserved: %v\n", event.Err)
+					if event.Preserved {
+						_, outputErr = fmt.Fprintf(cmd.ErrOrStderr(), "Pack poll failed; current version preserved: %v\n", event.Err)
+					} else {
+						_, outputErr = fmt.Fprintf(cmd.ErrOrStderr(), "Pack poll failed: %v\n", event.Err)
+					}
 				} else if !event.Unchanged {
 					_, outputErr = fmt.Fprintf(cmd.OutOrStdout(), "Current pack: %s\nMode: %s\nTarget archive SHA256: %s\n",
 						event.Current, event.Result.Mode, event.Result.TargetSHA256)

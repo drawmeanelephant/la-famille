@@ -130,6 +130,9 @@ func TestWatchFailedSelectedDeltaPreservesCurrentAndRecovers(t *testing.T) {
 					if event.Err == nil {
 						t.Fatal("broken selected delta succeeded")
 					}
+					if !event.Preserved {
+						t.Fatal("failed poll did not verify the preserved current pack")
+					}
 					if !bytes.Equal(oldPointer, readTestFile(t, filepath.Join(stateDir, CurrentName))) ||
 						!bytes.Equal(before, readTestFile(t, filepath.Join(stateDir, versionPath(initial.Full.SHA256)))) {
 						t.Fatal("failed update changed last current pack")
@@ -147,6 +150,90 @@ func TestWatchFailedSelectedDeltaPreservesCurrentAndRecovers(t *testing.T) {
 				t.Fatalf("watch: %v polls %d", err, polls)
 			}
 		})
+	}
+}
+
+// A deleted or corrupt installed pack must be re-pulled from the feed; the
+// watch must not poll forever reporting a preserved version that does not
+// exist (#655).
+func TestWatchHealsDamagedInstalledPack(t *testing.T) {
+	for _, name := range []string{"missing pack", "corrupt pack", "missing packs dir"} {
+		t.Run(name, func(t *testing.T) {
+			dir, _, _, target, feed := pullFixture(t)
+			stateDir := filepath.Join(t.TempDir(), "state")
+			installed := filepath.Join(stateDir, versionPath(feed.Full.SHA256))
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			polls := 0
+			var events []WatchEvent
+			options := WatchOptions{Source: dir, StateDir: stateDir, Interval: time.Second}
+			options.wait = func(context.Context, time.Duration) error {
+				switch polls {
+				case 1:
+					switch name {
+					case "missing pack":
+						if err := os.Remove(installed); err != nil {
+							t.Fatal(err)
+						}
+					case "corrupt pack":
+						writeInput(t, installed, []byte("bad"))
+					case "missing packs dir":
+						if err := os.RemoveAll(filepath.Join(stateDir, "packs")); err != nil {
+							t.Fatal(err)
+						}
+					}
+				case 3:
+					cancel()
+				}
+				return nil
+			}
+			if err := Watch(ctx, options, func(event WatchEvent) {
+				polls++
+				events = append(events, event)
+			}); err != nil {
+				t.Fatal(err)
+			}
+			if len(events) != 3 || events[0].Err != nil || events[0].Result.Mode != "full" {
+				t.Fatalf("events: %+v", events)
+			}
+			healed := events[1]
+			if healed.Err != nil || healed.Unchanged || healed.Result.Mode != "full" {
+				t.Fatalf("healing poll: %+v", healed)
+			}
+			if !bytes.Equal(target, readTestFile(t, healed.Current)) {
+				t.Fatal("reinstalled pack differs from feed target")
+			}
+			if _, err := VerifyFile(healed.Current); err != nil {
+				t.Fatal(err)
+			}
+			if events[2].Err != nil || !events[2].Unchanged {
+				t.Fatalf("healed state did not return to unchanged polls: %+v", events[2])
+			}
+		})
+	}
+}
+
+// A poll that fails before proving the installed pack intact must not claim
+// the current version is preserved (#655).
+func TestWatchFailedPollWithoutUsablePackIsNotPreserved(t *testing.T) {
+	state := t.TempDir()
+	hash := strings.Repeat("a", 64)
+	data, _ := json.Marshal(SubscriberState{SchemaVersion: 1, SHA256: hash, Path: versionPath(hash)})
+	writeInput(t, filepath.Join(state, CurrentName), data)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	reported := false
+	err := Watch(ctx, WatchOptions{
+		Source: filepath.Join(t.TempDir(), "no-feed"), StateDir: state, Interval: time.Second,
+		wait: func(context.Context, time.Duration) error { cancel(); return nil },
+	}, func(event WatchEvent) {
+		reported = true
+		if event.Err == nil || event.Preserved {
+			t.Fatalf("poll without any usable pack must fail without claiming preservation: %+v", event)
+		}
+	})
+	if err != nil || !reported {
+		t.Fatalf("watch: %v reported %v", err, reported)
 	}
 }
 
@@ -238,7 +325,7 @@ func TestSubscriberStateStrictFieldsAndCapturedIdentity(t *testing.T) {
 func TestWatchRejectsBadStateAndConcurrentWriter(t *testing.T) {
 	for _, name := range []string{"lock", "metadata", "corrupt current", "symlink versions"} {
 		t.Run(name, func(t *testing.T) {
-			dir, _, before, _, _ := pullFixture(t)
+			dir, _, before, _, feed := pullFixture(t)
 			state := t.TempDir()
 			switch name {
 			case "lock":
@@ -250,6 +337,12 @@ func TestWatchRejectsBadStateAndConcurrentWriter(t *testing.T) {
 				data, _ := json.Marshal(SubscriberState{SchemaVersion: 1, SHA256: hash, Path: versionPath(hash)})
 				writeInput(t, filepath.Join(state, CurrentName), data)
 				writeInput(t, filepath.Join(state, versionPath(hash)), []byte("bad"))
+				// A damaged installed pack is now re-pulled from the feed
+				// (#655); with the feed target also absent the poll must
+				// still fail loudly instead of healing.
+				if err := os.Remove(filepath.Join(dir, feed.Full.Path)); err != nil {
+					t.Fatal(err)
+				}
 			case "symlink versions":
 				if err := os.Symlink(t.TempDir(), filepath.Join(state, "packs")); err != nil {
 					t.Fatal(err)

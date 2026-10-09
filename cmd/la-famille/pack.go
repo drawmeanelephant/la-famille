@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -85,8 +84,10 @@ func setupPackPullCmd(cfg config.Config) *cobra.Command {
 				resolveProjectPath(cfg.ProjectRoot, destination),
 				pack.RemoteOptions{AllowHTTPS: allowHTTPS, Timeout: timeout, OnTransfer: packTransferReporter(cmd, traceHTTP)})
 			if err != nil {
-				if ctx.Err() == context.Canceled {
-					return nil
+				// An interrupted pull must not exit 0 silently: no pack was
+				// installed, so callers and CI need a failure (#656).
+				if ctx.Err() != nil {
+					return fmt.Errorf("pull interrupted: %w", ctx.Err())
 				}
 				return err
 			}

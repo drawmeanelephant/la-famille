@@ -30,6 +30,9 @@ type WatchOptions struct {
 
 type WatchEvent struct {
 	Unchanged bool
+	// Preserved is set only when this poll verified that the recorded current
+	// pack is still intact, so reports must not claim preservation otherwise.
+	Preserved bool
 	Current   string
 	Result    PullResult
 	Err       error
@@ -161,6 +164,18 @@ func captureStatePack(root *os.Root, state SubscriberState) (*snapshot, error) {
 	return s, nil
 }
 
+// discardStatePack drops a recorded pack whose bytes failed verification and
+// restores the packs directory, so the poll falls through to a reinstall.
+func discardStatePack(root *os.Root, state SubscriberState) error {
+	if err := root.Mkdir("packs", 0700); err != nil && !os.IsExist(err) {
+		return err
+	}
+	if err := root.Remove(state.Path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
 func pollWatch(ctx context.Context, options WatchOptions, root *os.Root) (event WatchEvent) {
 	state, err := readSubscriberState(root)
 	if err != nil {
@@ -181,22 +196,27 @@ func pollWatch(ctx context.Context, options WatchOptions, root *os.Root) (event 
 		event.Err = err
 		return
 	}
-	if state != nil && state.SHA256 == feed.Full.SHA256 {
-		if err := verifiedStatePack(root, *state); err != nil {
-			event.Err = fmt.Errorf("current subscriber pack: %w", err)
-			return
-		}
-		event.Unchanged = true
-		return
-	}
 	var base *snapshot
 	if state != nil {
-		base, err = captureStatePack(root, *state)
-		if err != nil {
-			event.Err = fmt.Errorf("current subscriber pack: %w", err)
-			return
+		if state.SHA256 == feed.Full.SHA256 {
+			if err := verifiedStatePack(root, *state); err == nil {
+				event.Unchanged, event.Preserved = true, true
+				return
+			}
+		} else if base, err = captureStatePack(root, *state); err == nil {
+			event.Preserved = true
+			defer base.close()
 		}
-		defer base.close()
+		if base == nil {
+			// Bytes recorded under a content-addressed name that fail
+			// verification can never become valid again; drop the entry and
+			// reinstall from the feed rather than fail every poll while
+			// reporting a preserved version that does not exist (#655).
+			if err := discardStatePack(root, *state); err != nil {
+				event.Err = fmt.Errorf("current subscriber pack: %w", err)
+				return
+			}
+		}
 	}
 	current := SubscriberState{SchemaVersion: 1, SHA256: feed.Full.SHA256, Path: versionPath(feed.Full.SHA256)}
 	destination := filepath.Join(options.StateDir, filepath.FromSlash(current.Path))
