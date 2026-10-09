@@ -293,7 +293,24 @@ func writeBuildCache(path, fingerprint string, files []generatedFile, pageCount 
 		return err
 	}
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, append(data, '\n'), 0600); err != nil {
+	root, err := os.OpenRoot(filepath.Dir(path))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = root.Close() }()
+	// A confined open never follows a symlink at the final path component,
+	// so a .tmp link planted in a cloned repository cannot redirect the
+	// write outside the project (#646). The rename below replaces — rather
+	// than follows — a symlinked cache path itself.
+	f, err := root.OpenFile(filepath.Base(tmp), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(append(data, '\n')); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
 		return err
 	}
 	return os.Rename(tmp, path)
