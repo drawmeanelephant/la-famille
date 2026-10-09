@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -106,6 +105,15 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 		<-buildDone
 	}()
 
+	// The build writes its own bookkeeping beside the output directory — the
+	// cache file and the .<output>.staging-*/.<output>.previous-* swap trees —
+	// and a flat layout (content_dir: ".") puts all of them inside the watched
+	// root. Treating those writes as changes made every rebuild schedule the
+	// next one forever (#633): a staging directory got watched on create, the
+	// fsnotify watch followed the inode through the rename into public/, and
+	// the cache write then retriggered the cycle.
+	ignore := generator.BuildArtifactFilter(cfg)
+
 	// Orchestrate directories to monitor
 	dirsToWatch := []string{cfg.ContentDir}
 
@@ -117,7 +125,6 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 		dirsToWatch = append(dirsToWatch, cfg.AssetDir)
 	}
 
-	outDirClean := filepath.Clean(cfg.OutputDir)
 	for _, dir := range dirsToWatch {
 		err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
@@ -128,8 +135,7 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 				return ctx.Err()
 			default:
 			}
-			cleanPath := filepath.Clean(path)
-			if cleanPath == outDirClean || strings.HasPrefix(cleanPath, outDirClean+string(filepath.Separator)) {
+			if ignore(path) {
 				if d.IsDir() {
 					return filepath.SkipDir
 				}
@@ -159,29 +165,32 @@ func watch(ctx context.Context, cfg config.Config, onBuild func(generator.BuildR
 			}
 
 			if event.Has(fsnotify.Write) || event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) {
+				// Build bookkeeping writes — the cache file, the swap's
+				// staging/previous trees, the output directory itself — are
+				// consequences of a build, not content changes; acting on
+				// them schedules rebuilds forever (#633).
+				if ignore(event.Name) {
+					continue
+				}
 				if event.Has(fsnotify.Create) {
 					stat, err := os.Stat(event.Name)
 					if err == nil && stat.IsDir() {
-						cleanName := filepath.Clean(event.Name)
-						if !(cleanName == outDirClean || strings.HasPrefix(cleanName, outDirClean+string(filepath.Separator))) {
-							slog.Info("Dynamic directory tracking added", "dir", event.Name)
-							_ = filepath.WalkDir(event.Name, func(path string, d os.DirEntry, err error) error {
-								if err != nil {
-									return nil
-								}
-								cleanPath := filepath.Clean(path)
-								if cleanPath == outDirClean || strings.HasPrefix(cleanPath, outDirClean+string(filepath.Separator)) {
-									if d.IsDir() {
-										return filepath.SkipDir
-									}
-									return nil
-								}
+						slog.Info("Dynamic directory tracking added", "dir", event.Name)
+						_ = filepath.WalkDir(event.Name, func(path string, d os.DirEntry, err error) error {
+							if err != nil {
+								return nil
+							}
+							if ignore(path) {
 								if d.IsDir() {
-									return watcher.Add(path)
+									return filepath.SkipDir
 								}
 								return nil
-							})
-						}
+							}
+							if d.IsDir() {
+								return watcher.Add(path)
+							}
+							return nil
+						})
 					}
 				}
 

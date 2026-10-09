@@ -95,10 +95,10 @@ func syntheticSiteT(t *testing.T, n int) config.Config {
 func BenchmarkBuild_Cold_25(b *testing.B) {
 	cfg := syntheticSite(b, 25)
 	// Ensure the cache starts cold once before the timed loop.
-	_ = os.Remove(cachePath(cfg))
+	_ = os.Remove(CachePath(cfg))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = os.Remove(cachePath(cfg))
+		_ = os.Remove(CachePath(cfg))
 		// Remove output to force cold path that also checks generatedFiles.
 		_ = os.RemoveAll(cfg.OutputDir)
 		if _, err := Build(cfg); err != nil {
@@ -147,10 +147,10 @@ func BenchmarkBuild_WarmSingleTouch_25(b *testing.B) {
 // BenchmarkBuild_Cold_300 measures a cold build on a 300-page synthetic site.
 func BenchmarkBuild_Cold_300(b *testing.B) {
 	cfg := syntheticSite(b, 300)
-	_ = os.Remove(cachePath(cfg))
+	_ = os.Remove(CachePath(cfg))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = os.Remove(cachePath(cfg))
+		_ = os.Remove(CachePath(cfg))
 		_ = os.RemoveAll(cfg.OutputDir)
 		if _, err := Build(cfg); err != nil {
 			b.Fatalf("Build failed: %v", err)
@@ -202,7 +202,7 @@ func TestBuild_BenchColdVsWarm(t *testing.T) {
 			cfg := syntheticSiteT(t, n)
 
 			// Cold: remove cache + output, time the build.
-			_ = os.Remove(cachePath(cfg))
+			_ = os.Remove(CachePath(cfg))
 			_ = os.RemoveAll(cfg.OutputDir)
 			startCold := time.Now()
 			resCold, err := Build(cfg)

@@ -115,7 +115,10 @@ func Write(cfg config.Config, items []Item) error {
 		return fmt.Errorf("marshal RSS feed: %w", err)
 	}
 	contents = append([]byte(xml.Header), append(contents, '\n')...)
-	if err := os.WriteFile(feedPath, contents, 0600); err != nil {
+	// The feed is part of the published artifact: 0644 like every other
+	// generated file, or a non-owner web server 403s it (#637).
+	// #nosec G306 -- published artifact must be readable by the web server (#637)
+	if err := os.WriteFile(feedPath, contents, 0644); err != nil {
 		return fmt.Errorf("write RSS feed: %w", err)
 	}
 	return nil

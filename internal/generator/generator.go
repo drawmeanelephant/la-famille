@@ -127,7 +127,7 @@ func Build(cfg config.Config) (BuildResult, error) {
 	if err != nil {
 		return BuildResult{}, fmt.Errorf("failed to fingerprint build inputs: %w", err)
 	}
-	if cache, cacheErr := loadBuildCache(cachePath(cfg)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
+	if cache, cacheErr := loadBuildCache(CachePath(cfg)); cacheErr == nil && cacheUsable(cache, cfg.OutputDir, fingerprint) {
 		if err := os.RemoveAll(stagingDir); err != nil {
 			return BuildResult{}, fmt.Errorf("remove unused build staging directory: %w", err)
 		}
@@ -574,7 +574,10 @@ func (bc *buildContext) processJob(j job, buf *bytes.Buffer) {
 		if convertErr != nil {
 			slog.Warn("Failed to scan links in unrendered page", "file", relPath, "error", convertErr)
 		}
-		if err := os.WriteFile(outPath, meta.Content, 0600); err != nil {
+		// The verbatim copy is part of the published artifact, so it gets the
+		// same mode as every generated file: 0644 subject to umask (#637).
+		// #nosec G306 -- published artifact must be readable by the web server
+		if err := os.WriteFile(outPath, meta.Content, 0644); err != nil {
 			update.errs = append(update.errs, err)
 		}
 		return
@@ -711,7 +714,7 @@ func (bc *buildContext) collectRenderOutputs() error {
 func (bc *buildContext) writeStubsAndAssets() error {
 	// 3. Generate stubs for missing files in deterministic order.
 	claimStub := bc.claims.stubClaimer()
-	if err := stub.GenerateStubs(bc.cfg, bc.siteCfg, bc.missingFiles, bc.missingTitles, &bc.g, bc.sanitizer, bc.fileMap, func(missingRelPath, relOut string) (string, bool) {
+	if err := stub.GenerateStubs(bc.cfg, bc.siteCfg, bc.missingFiles, bc.missingTitles, &bc.g, bc.sanitizer, bc.fileMap, bc.renderer, func(missingRelPath, relOut string) (string, bool) {
 		owner, ok := claimStub(missingRelPath, relOut)
 		if ok {
 			bc.generatedStubIDs = append(bc.generatedStubIDs, strings.TrimSuffix(missingRelPath, ".md"))
@@ -839,7 +842,7 @@ func (bc *buildContext) cacheBuild(fingerprint string) error {
 	// warnings.
 	bc.result.Warnings = append(bc.result.Warnings, bc.claims.Warnings()...)
 	sort.Strings(bc.result.Warnings)
-	if err := writeBuildCache(cachePath(bc.siteCfg), fingerprint, files, bc.result.PageCount, bc.result.Health, bc.result.Warnings, bc.manifest, bc.result.Ledger); err != nil {
+	if err := writeBuildCache(CachePath(bc.siteCfg), fingerprint, files, bc.result.PageCount, bc.result.Health, bc.result.Warnings, bc.manifest, bc.result.Ledger); err != nil {
 		return fmt.Errorf("failed to write build cache: %w", err)
 	}
 	return nil

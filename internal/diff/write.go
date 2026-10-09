@@ -34,5 +34,6 @@ func Write(dir string, ledger Ledger) error {
 	if ledger.Baseline {
 		text = "Baseline established; no previous build to compare.\n" + text
 	}
-	return os.WriteFile(filepath.Join(dir, TextFileName), []byte(text), 0600)
+	// #nosec G306 -- published artifact must be readable by the web server (#637)
+	return os.WriteFile(filepath.Join(dir, TextFileName), []byte(text), 0644)
 }

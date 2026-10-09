@@ -57,7 +57,7 @@ func TestBuildWritesDeterministicSiteManifestAndGolden(t *testing.T) {
 		t.Fatalf("cached Build() error = %v", err)
 	}
 	if !cachedResult.CacheHit {
-		cache, cacheErr := loadBuildCache(cachePath(firstCfg))
+		cache, cacheErr := loadBuildCache(CachePath(firstCfg))
 		if cacheErr != nil {
 			t.Fatalf("second Build() missed cache and cache load failed: %v", cacheErr)
 		}
@@ -100,7 +100,7 @@ func TestBuildWritesDeterministicSiteManifestAndGolden(t *testing.T) {
 		t.Fatalf("manifest differs from golden %s:\n%s", goldenPath, firstManifest)
 	}
 
-	cache, err := loadBuildCache(cachePath(firstCfg))
+	cache, err := loadBuildCache(CachePath(firstCfg))
 	if err != nil {
 		t.Fatalf("load build cache: %v", err)
 	}

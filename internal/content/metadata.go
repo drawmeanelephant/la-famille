@@ -49,7 +49,21 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 	fileMap := make(map[string]*FileMeta)
 	bodyTagParser := newBodyTagParser()
 
-	err := filepath.WalkDir(contentDir, func(path string, d fs.DirEntry, err error) error {
+	// filepath.WalkDir lstats its root, so a symlinked content_dir arrives at
+	// the callback as a symlink entry, hits the skip below, and the build
+	// publishes an empty site at exit 0 (#635). Resolve the root once so a
+	// symlinked content_dir gathers exactly what the real directory holds.
+	// Symlinks *inside* the tree keep the skip-and-warn behavior.
+	walkDir := contentDir
+	if info, err := os.Lstat(contentDir); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		resolved, err := filepath.EvalSymlinks(contentDir)
+		if err != nil {
+			return nil, fmt.Errorf("content directory %s is a symlink that cannot be resolved: %w", contentDir, err)
+		}
+		walkDir = resolved
+	}
+
+	err := filepath.WalkDir(walkDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("error accessing path %s: %w", path, err)
 		}
@@ -65,7 +79,7 @@ func GatherMetadata(contentDir string) (map[string]*FileMeta, error) {
 			return nil
 		}
 
-		relPath, err := filepath.Rel(contentDir, path)
+		relPath, err := filepath.Rel(walkDir, path)
 		if err != nil {
 			return fmt.Errorf("failed to get relative path for %s: %w", path, err)
 		}

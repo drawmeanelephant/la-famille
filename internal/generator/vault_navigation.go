@@ -62,7 +62,8 @@ func (bc *buildContext) renderBacklinksPanels() error {
 			updated = append(updated, panel...)
 			data = append(updated, data[bodyEnd:]...)
 		}
-		if err := os.WriteFile(outputPath, data, 0600); err != nil {
+		// #nosec G306 -- published artifact must be readable by the web server (#637)
+		if err := os.WriteFile(outputPath, data, 0644); err != nil {
 			return fmt.Errorf("write rendered note %q with backlinks: %w", output, err)
 		}
 	}
