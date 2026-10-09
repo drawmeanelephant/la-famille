@@ -373,9 +373,21 @@ func matchPages(
 	}
 	titles := make([]string, 0, len(beforeTitles))
 	for title := range beforeTitles {
-		if len(beforeTitles[title]) == 1 && len(afterTitles[title]) == 1 {
-			titles = append(titles, title)
+		if len(beforeTitles[title]) != 1 || len(afterTitles[title]) != 1 {
+			continue
 		}
+		// A shared title is evidence of a rename, not proof: an unrelated
+		// new page can reuse it. When both snapshots carry a content hash,
+		// identical bodies corroborate the pairing; different bodies mean a
+		// removal plus an addition and pairing them would hide both. A
+		// missing hash (v1 snapshots) leaves the title as the only signal.
+		beforePage := before[beforeTitles[title][0]]
+		afterPage := after[afterTitles[title][0]]
+		if beforePage.ContentHash != "" && afterPage.ContentHash != "" &&
+			beforePage.ContentHash != afterPage.ContentHash {
+			continue
+		}
+		titles = append(titles, title)
 	}
 	sort.Strings(titles)
 	for _, title := range titles {

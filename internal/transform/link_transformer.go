@@ -292,11 +292,19 @@ func (t *LinkTransformer) transformWikiLink(link *ast.Link, target, heading stri
 }
 
 func (t *LinkTransformer) sourceID() string {
-	id := strings.TrimSuffix(t.CurrentFile, ".md")
-	if meta, ok := t.FileMap[t.CurrentFile]; ok && meta != nil && meta.Render != nil && !*meta.Render {
-		return t.CurrentFile
+	return NodeID(t.CurrentFile, t.FileMap[t.CurrentFile])
+}
+
+// NodeID maps a content relPath to the identity the page carries in the
+// site graph: rendered pages drop the ".md" suffix, render:false pages keep
+// the relPath. Edge endpoints, backlinks, manifest identities and stub
+// referenced_by lists must all use this one rule or graph.json speaks two
+// identity spaces at once.
+func NodeID(relPath string, meta *content.FileMeta) string {
+	if meta != nil && meta.Render != nil && !*meta.Render {
+		return relPath
 	}
-	return id
+	return strings.TrimSuffix(relPath, ".md")
 }
 
 func containsString(values []string, target string) bool {

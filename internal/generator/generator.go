@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -429,10 +430,7 @@ func (bc *buildContext) processJob(j job, buf *bytes.Buffer) {
 		shouldRender = false
 	}
 
-	id := strings.TrimSuffix(relPath, ".md")
-	if !shouldRender {
-		id = relPath
-	}
+	id := transform.NodeID(relPath, meta)
 
 	update.node = graph.Node{
 		Type:   "page",
@@ -667,12 +665,22 @@ func (bc *buildContext) collectRenderOutputs() error {
 		return bc.searchIndex[i].Title < bc.searchIndex[j].Title
 	})
 
+	// Edges and backlink lists are sets, not multisets: a page linking to the
+	// same target several times contributes one edge and one inbound
+	// reference. The full (from, to) ordering also keeps graph.json byte
+	// stable when several edges share a source, which a source-only sort
+	// left to worker append order.
 	sort.SliceStable(bc.g.Edges, func(i, j int) bool {
-		return bc.g.Edges[i][0] < bc.g.Edges[j][0]
+		if bc.g.Edges[i][0] != bc.g.Edges[j][0] {
+			return bc.g.Edges[i][0] < bc.g.Edges[j][0]
+		}
+		return bc.g.Edges[i][1] < bc.g.Edges[j][1]
 	})
+	bc.g.Edges = slices.Compact(bc.g.Edges)
 
 	for k := range bc.backlinks {
 		sort.Strings(bc.backlinks[k])
+		bc.backlinks[k] = slices.Compact(bc.backlinks[k])
 	}
 
 	// Sort errs for deterministic order

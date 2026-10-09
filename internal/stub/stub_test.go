@@ -3,6 +3,7 @@ package stub
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -134,4 +135,34 @@ func TestGenerateStubs(t *testing.T) {
 		`<a href="../../parent2/" rel="nofollow">parent2.md</a>`,
 		`<a href="../parent3/" rel="nofollow">dir/parent3.md</a>`,
 	})
+}
+
+// Stub nodes share the graph's node-id space: referenced_by must carry the
+// same identities used by edge endpoints and backlinks.json, not source
+// relPaths. A rendered parent drops the .md suffix; a render:false parent
+// keeps the relPath because that is its node id (#651).
+func TestGenerateStubs_ReferencedByUsesNodeIDs(t *testing.T) {
+	cfg := stubTestConfig(t)
+
+	renderFalse := false
+	fileMap := map[string]*content.FileMeta{
+		"parent.md": {},
+		"raw.md":    {Render: &renderFalse},
+	}
+	missingFiles := map[string][]string{
+		"ghost.md": {"parent.md", "raw.md"},
+	}
+	g := &graph.Graph{Nodes: make(map[string]graph.Node)}
+
+	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, bluemonday.UGCPolicy(), fileMap, nil); err != nil {
+		t.Fatalf("GenerateStubs() error = %v", err)
+	}
+
+	node, ok := g.Nodes["ghost"]
+	if !ok || node.Type != "stub" {
+		t.Fatalf("g.Nodes[\"ghost\"] = %+v, ok=%v, want a stub node", node, ok)
+	}
+	if want := []string{"parent", "raw.md"}; !slices.Equal(node.ReferencedBy, want) {
+		t.Errorf("referenced_by = %v, want %v — node ids, not relPaths", node.ReferencedBy, want)
+	}
 }

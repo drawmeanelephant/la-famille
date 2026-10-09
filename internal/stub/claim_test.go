@@ -127,7 +127,7 @@ func TestGenerateStubsLabelsUnresolvedWikiNote(t *testing.T) {
 		t.Errorf("stub = %q, want visible unresolved-note title", output)
 	}
 	if node, ok := g.Nodes["future-note"]; !ok || node.Type != "stub" ||
-		!node.Missing || !strings.Contains(strings.Join(node.ReferencedBy, ","), "parent.md") {
+		!node.Missing || !strings.Contains(strings.Join(node.ReferencedBy, ","), "parent") {
 		t.Errorf("graph node = %+v, ok=%v, want unresolved stub with inbound parent", node, ok)
 	}
 }

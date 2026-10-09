@@ -7,7 +7,7 @@
     "missing": {
       "type": "stub",
       "referenced_by": [
-        "index.md"
+        "index"
       ],
       "render": true,
       "missing": true
@@ -20,23 +20,11 @@
   "edges": [
     [
       "index",
-      "page"
-    ],
-    [
-      "index",
-      "page"
-    ],
-    [
-      "index",
-      "page"
-    ],
-    [
-      "index",
       "missing"
     ],
     [
       "index",
-      "missing"
+      "page"
     ]
   ]
 }

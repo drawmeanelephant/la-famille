@@ -92,6 +92,76 @@ func TestCompareGoldenManifestDiff(t *testing.T) {
 	}
 }
 
+// A shared title alone does not make a rename: when both manifests carry a
+// content hash and the bodies differ, the pair is a removal plus an
+// unrelated addition and both pages must show up in the report (#654).
+func TestCompareSameTitleDifferentContentIsNotRename(t *testing.T) {
+	before := sitedata.Manifest{Version: sitedata.ManifestVersion, Pages: []sitedata.ManifestPage{
+		{Identity: "x", SourcePath: "x.md", Title: "Same", ContentHash: "aaa"},
+	}}
+	after := sitedata.Manifest{Version: sitedata.ManifestVersion, Pages: []sitedata.ManifestPage{
+		{Identity: "y", SourcePath: "y.md", Title: "Same", ContentHash: "bbb"},
+	}}
+
+	report, err := Compare(before, after)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+	if len(report.RemovedPages) != 1 || report.RemovedPages[0].Identity != "x" {
+		t.Errorf("removed pages = %+v, want [x]", report.RemovedPages)
+	}
+	if len(report.AddedPages) != 1 || report.AddedPages[0].Identity != "y" {
+		t.Errorf("added pages = %+v, want [y]", report.AddedPages)
+	}
+	for _, change := range report.ChangedPages {
+		if change.Kind == "renamed" {
+			t.Errorf("changed pages = %+v, want no rename pairing", report.ChangedPages)
+		}
+	}
+}
+
+// The title signal still pairs a page whose body is unchanged under a new
+// identity — the corroborating evidence a rename needs.
+func TestCompareSameTitleIdenticalContentIsRename(t *testing.T) {
+	before := sitedata.Manifest{Version: sitedata.ManifestVersion, Pages: []sitedata.ManifestPage{
+		{Identity: "x", SourcePath: "x.md", Title: "Same", ContentHash: "aaa"},
+	}}
+	after := sitedata.Manifest{Version: sitedata.ManifestVersion, Pages: []sitedata.ManifestPage{
+		{Identity: "y", SourcePath: "y.md", Title: "Same", ContentHash: "aaa"},
+	}}
+
+	report, err := Compare(before, after)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+	if len(report.AddedPages) != 0 || len(report.RemovedPages) != 0 {
+		t.Fatalf("added = %+v, removed = %+v, want a rename instead", report.AddedPages, report.RemovedPages)
+	}
+	if len(report.ChangedPages) != 1 || report.ChangedPages[0].Kind != "renamed" ||
+		report.ChangedPages[0].Before.Identity != "x" || report.ChangedPages[0].After.Identity != "y" {
+		t.Errorf("changed pages = %+v, want rename x → y", report.ChangedPages)
+	}
+}
+
+// Snapshots without a content hash (v1 manifests, partial data) keep the
+// legacy title-only pairing: it is the only signal they carry.
+func TestCompareSameTitleWithoutHashStillPairs(t *testing.T) {
+	before := sitedata.Manifest{Version: 1, Pages: []sitedata.ManifestPage{
+		{Identity: "x", SourcePath: "x.md", Title: "Same"},
+	}}
+	after := sitedata.Manifest{Version: sitedata.ManifestVersion, Pages: []sitedata.ManifestPage{
+		{Identity: "y", SourcePath: "y.md", Title: "Same"},
+	}}
+
+	report, err := Compare(before, after)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+	if len(report.ChangedPages) != 1 || report.ChangedPages[0].Kind != "renamed" {
+		t.Errorf("changed pages = %+v, want title-only rename pairing", report.ChangedPages)
+	}
+}
+
 func TestCompareRejectsDuplicatePageIdentity(t *testing.T) {
 	manifest := sitedata.Manifest{
 		Version: sitedata.ManifestVersion,
