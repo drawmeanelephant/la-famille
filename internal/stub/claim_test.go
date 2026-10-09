@@ -11,6 +11,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/graph"
+	"github.com/tbuddy/la-famille/internal/render"
 )
 
 func stubTestConfig(t *testing.T) config.Config {
@@ -52,7 +53,7 @@ func TestGenerateStubs_SkipsClaimedPaths(t *testing.T) {
 		return "", true
 	}
 
-	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, p, map[string]*content.FileMeta{}, claim); err != nil {
+	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, p, map[string]*content.FileMeta{}, render.New(filepath.Dir(cfg.Template)), claim); err != nil {
 		t.Fatalf("GenerateStubs() error = %v", err)
 	}
 
@@ -94,7 +95,7 @@ func TestGenerateStubs_ParentLinkIgnoresUnusableSlug(t *testing.T) {
 	missingFiles := map[string][]string{"ghost.md": {"parent.md"}}
 	g := &graph.Graph{Nodes: make(map[string]graph.Node)}
 
-	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, bluemonday.UGCPolicy(), fileMap, nil); err != nil {
+	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, bluemonday.UGCPolicy(), fileMap, render.New(filepath.Dir(cfg.Template)), nil); err != nil {
 		t.Fatalf("GenerateStubs() error = %v", err)
 	}
 
@@ -116,7 +117,7 @@ func TestGenerateStubsLabelsUnresolvedWikiNote(t *testing.T) {
 	missingTitles := map[string]string{"future-note.md": "Future Note"}
 	g := &graph.Graph{Nodes: make(map[string]graph.Node)}
 
-	if err := GenerateStubs(cfg, cfg, missingFiles, missingTitles, g, bluemonday.UGCPolicy(), nil, nil); err != nil {
+	if err := GenerateStubs(cfg, cfg, missingFiles, missingTitles, g, bluemonday.UGCPolicy(), nil, render.New(filepath.Dir(cfg.Template)), nil); err != nil {
 		t.Fatalf("GenerateStubs() error = %v", err)
 	}
 	output, err := os.ReadFile(filepath.Join(cfg.OutputDir, "future-note", "index.html"))

@@ -40,7 +40,8 @@ func Write(cfg config.Config, renderedPaths []string) error {
 		return fmt.Errorf("marshal sitemap: %w", err)
 	}
 	contents = append([]byte(xml.Header), append(contents, '\n')...)
-	if err := os.WriteFile(filepath.Join(cfg.OutputDir, "sitemap.xml"), contents, 0600); err != nil {
+	// #nosec G306 -- published artifact must be readable by the web server (#637)
+	if err := os.WriteFile(filepath.Join(cfg.OutputDir, "sitemap.xml"), contents, 0644); err != nil {
 		return fmt.Errorf("write sitemap: %w", err)
 	}
 
@@ -48,7 +49,8 @@ func Write(cfg config.Config, renderedPaths []string) error {
 	if sitemapURL := cfg.URLForOutputPath("sitemap.xml"); sitemapURL != "" {
 		robots += "\nSitemap: " + sitemapURL + "\n"
 	}
-	if err := os.WriteFile(filepath.Join(cfg.OutputDir, "robots.txt"), []byte(robots), 0600); err != nil {
+	// #nosec G306 -- published artifact must be readable by the web server (#637)
+	if err := os.WriteFile(filepath.Join(cfg.OutputDir, "robots.txt"), []byte(robots), 0644); err != nil {
 		return fmt.Errorf("write robots: %w", err)
 	}
 	return nil

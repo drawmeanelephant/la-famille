@@ -373,6 +373,79 @@ func TestGatherMetadataPreservesNativeLanguageTaxonomies(t *testing.T) {
 	}
 }
 
+// TestGatherMetadataFollowsSymlinkedRoot guards #635: filepath.WalkDir lstats
+// its root, so a content_dir that is a symlink was reported as a symlink on
+// the first callback, skipped, and the build published an empty site at
+// exit 0. A symlinked root must gather exactly what the real directory holds;
+// symlinks *inside* the tree keep the existing skip-and-warn behavior.
+func TestGatherMetadataFollowsSymlinkedRoot(t *testing.T) {
+	root := t.TempDir()
+	realDir := filepath.Join(root, "real-content")
+	nested := filepath.Join(realDir, "nested")
+	if err := os.MkdirAll(nested, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(realDir, "index.md"), []byte("---\ntitle: Home\n---\nhi\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(nested, "page.md"), []byte("---\ntitle: P\n---\nx\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// A symlink inside the tree is still skipped — only the root resolves.
+	outside := filepath.Join(root, "outside.md")
+	if err := os.WriteFile(outside, []byte("---\ntitle: Out\n---\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(realDir, "linked.md")); err != nil {
+		t.Fatalf("cannot create inner symlink: %v", err)
+	}
+
+	linkDir := filepath.Join(root, "content")
+	if err := os.Symlink(realDir, linkDir); err != nil {
+		t.Fatalf("cannot create content_dir symlink: %v", err)
+	}
+
+	viaLink, err := GatherMetadata(linkDir)
+	if err != nil {
+		t.Fatalf("GatherMetadata on symlinked content_dir failed: %v", err)
+	}
+	viaReal, err := GatherMetadata(realDir)
+	if err != nil {
+		t.Fatalf("GatherMetadata on real dir failed: %v", err)
+	}
+	if len(viaLink) != len(viaReal) {
+		t.Fatalf("symlinked content_dir gathered %d files, real dir gathered %d", len(viaLink), len(viaReal))
+	}
+	for relPath := range viaReal {
+		if viaLink[relPath] == nil {
+			t.Errorf("symlinked content_dir missing %q", relPath)
+		}
+	}
+	if viaLink["index.md"] == nil || viaLink["nested/page.md"] == nil {
+		t.Fatalf("expected index.md and nested/page.md, got keys %v", viaLink)
+	}
+	if viaLink["linked.md"] != nil {
+		t.Error("a symlink inside the content tree must still be skipped")
+	}
+	if viaLink["index.md"].Title != "Home" {
+		t.Errorf("index.md title = %q, want Home", viaLink["index.md"].Title)
+	}
+}
+
+// A content_dir symlink that cannot be resolved must fail loudly rather than
+// publishing an empty site at exit 0.
+func TestGatherMetadataDanglingSymlinkedRootFails(t *testing.T) {
+	root := t.TempDir()
+	linkDir := filepath.Join(root, "content")
+	if err := os.Symlink(filepath.Join(root, "missing-target"), linkDir); err != nil {
+		t.Fatalf("cannot create dangling symlink: %v", err)
+	}
+	if _, err := GatherMetadata(linkDir); err == nil {
+		t.Fatal("GatherMetadata on a dangling content_dir symlink must error, not publish an empty site")
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (func() bool {
 		for i := 0; i <= len(s)-len(substr); i++ {

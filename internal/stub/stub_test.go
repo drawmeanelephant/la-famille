@@ -10,6 +10,7 @@ import (
 	"github.com/tbuddy/la-famille/internal/config"
 	"github.com/tbuddy/la-famille/internal/content"
 	"github.com/tbuddy/la-famille/internal/graph"
+	"github.com/tbuddy/la-famille/internal/render"
 )
 
 func TestRelPathFromTo(t *testing.T) {
@@ -93,7 +94,7 @@ func TestGenerateStubs(t *testing.T) {
 	// Execute GenerateStubs
 
 	fileMap := make(map[string]*content.FileMeta)
-	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, p, fileMap, nil); err != nil {
+	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, p, fileMap, render.New(tempDir), nil); err != nil {
 		t.Fatalf("unexpected error from GenerateStubs: %v", err)
 	}
 

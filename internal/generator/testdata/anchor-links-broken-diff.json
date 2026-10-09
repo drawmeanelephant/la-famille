@@ -64,7 +64,7 @@
       "path": "nonexistent/index.html",
       "action": "added",
       "before": "",
-      "after": "beceb7ed601cb37e8af7910e56648a86cbe3eb0924a2ca31639656269127e0cf"
+      "after": "00ae10fc324b693bff4a6917db48ffeef5518075be8f3768098a4cbfcad28f95"
     },
     {
       "path": "search.json",

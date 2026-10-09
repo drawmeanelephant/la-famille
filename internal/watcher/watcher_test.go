@@ -353,6 +353,113 @@ func TestWatchReportsBuildErrorToCallback(t *testing.T) {
 	<-done
 }
 
+// TestWatchIgnoresBuildArtifactsOnFlatLayout guards #633: on a flat layout
+// (content_dir == project root) the watcher used to treat the build's own
+// bookkeeping writes as content changes — the cache file, the
+// .public.staging-*/.public.previous-* swap directories, and the output tree
+// (which stays watched through the staging->public rename because fsnotify
+// watches follow the inode). Each rebuild then wrote more of them, looping
+// forever.
+func TestWatchIgnoresBuildArtifactsOnFlatLayout(t *testing.T) {
+	root := t.TempDir()
+	for _, dir := range []string{"templates", "assets"} {
+		if err := os.MkdirAll(filepath.Join(root, dir), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	template := filepath.Join(root, "templates", "layout.html")
+	if err := os.WriteFile(template, []byte("ok"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Config{
+		ContentDir:  root,
+		ProjectRoot: root,
+		Template:    template,
+		AssetDir:    filepath.Join(root, "assets"),
+		OutputDir:   filepath.Join(root, "public"),
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var builds atomic.Int32
+	built := make(chan struct{}, 8)
+	done := make(chan error, 1)
+	debounce := 40 * time.Millisecond
+	go func() {
+		done <- watch(ctx, cfg, func(generator.BuildResult, error) { builds.Add(1); built <- struct{}{} }, func(config.Config) (generator.BuildResult, error) {
+			return generator.BuildResult{}, nil
+		}, debounce)
+	}()
+	time.Sleep(2 * debounce)
+
+	// Control: a genuine content edit must schedule exactly one build, and
+	// proves the watcher is registered before the artifact writes below.
+	if err := os.WriteFile(filepath.Join(cfg.ContentDir, "page.md"), []byte("a"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-built:
+	case <-time.After(2 * time.Second):
+		t.Fatal("watch did not rebuild after a content edit")
+	}
+
+	// Now replay what a build writes inside the watched root: the cache file
+	// and its temp sibling, a staging tree that fills up and is then renamed
+	// into place, and the removed previous-output tree.
+	staging := filepath.Join(root, ".public.staging-test123")
+	if err := os.MkdirAll(filepath.Join(staging, "assets"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(staging, "meta.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(staging, "assets", "style.css"), []byte("body{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(staging, filepath.Join(root, "public")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "public", "index.html"), []byte("<html>"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	previous := filepath.Join(root, ".public.previous-test456")
+	if err := os.MkdirAll(previous, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(previous, "meta.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(previous); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".la-famille-cache.json.tmp"), []byte("{"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(
+		filepath.Join(root, ".la-famille-cache.json.tmp"),
+		filepath.Join(root, ".la-famille-cache.json"),
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(5 * debounce)
+	if got := builds.Load(); got != 1 {
+		t.Fatalf("build artifacts inside the watched root scheduled %d extra builds, want 0", got-1)
+	}
+
+	// The watcher must still be alive for real edits afterwards.
+	if err := os.WriteFile(filepath.Join(cfg.ContentDir, "second.md"), []byte("b"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-built:
+	case <-time.After(2 * time.Second):
+		t.Fatal("watch stopped rebuilding after build artifact writes")
+	}
+	cancel()
+	<-done
+}
+
 type syncResponseWriter struct {
 	header http.Header
 	body   bytes.Buffer

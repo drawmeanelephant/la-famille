@@ -31,24 +31,22 @@ import (
 // means "nothing else writes here" and every stub is written.
 type ClaimOutput func(missingRelPath, relOut string) (owner string, ok bool)
 
-func GenerateStubs(cfg, siteCfg config.Config, missingFiles map[string][]string, missingTitles map[string]string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, claim ClaimOutput) error {
+func GenerateStubs(cfg, siteCfg config.Config, missingFiles map[string][]string, missingTitles map[string]string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, renderer *render.Renderer, claim ClaimOutput) error {
 	missingKeys := make([]string, 0, len(missingFiles))
 	for k := range missingFiles {
 		missingKeys = append(missingKeys, k)
 	}
 	sort.Strings(missingKeys)
 
-	partials, _ := render.DiscoverPartials(filepath.Dir(cfg.Template))
-
 	for _, missingRelPath := range missingKeys {
-		if err := generateSingleStub(cfg, siteCfg, missingRelPath, missingFiles[missingRelPath], missingTitles[missingRelPath], g, p, fileMap, partials, claim); err != nil {
+		if err := generateSingleStub(cfg, siteCfg, missingRelPath, missingFiles[missingRelPath], missingTitles[missingRelPath], g, p, fileMap, renderer, claim); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, parents []string, missingTitle string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, partials map[string]string, claim ClaimOutput) error {
+func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, parents []string, missingTitle string, g *graph.Graph, p *bluemonday.Policy, fileMap map[string]*content.FileMeta, renderer *render.Renderer, claim ClaimOutput) error {
 	outDirClean := filepath.Clean(cfg.OutputDir)
 	relOut := transform.GetOutputURL(missingRelPath, "", true)
 	outPath := filepath.Join(outDirClean, filepath.FromSlash(relOut))
@@ -147,35 +145,12 @@ func generateSingleStub(cfg, siteCfg config.Config, missingRelPath string, paren
 		CanonicalURL: siteCfg.URLForOutputPath(relOut),
 	}
 
-	outFile, err := os.Create(outPath)
-	if err != nil {
-		return err
-	}
-	defer outFile.Close()
-
-	b, err := os.ReadFile(cfg.Template)
-	if err != nil {
-		return fmt.Errorf("failed to read layout: %w", err)
-	}
-
-	defaultTmpl := template.New(filepath.Base(cfg.Template))
-	defaultTmpl, err = defaultTmpl.Parse(string(b))
-	if err != nil {
-		return err
-	}
-
-	for name, path := range partials {
-		pb, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		_, err = defaultTmpl.New(name).Parse(string(pb))
-		if err != nil {
-			return err
-		}
-	}
-
-	return defaultTmpl.ExecuteTemplate(outFile, filepath.Base(cfg.Template), pageStruct)
+	// Render through the shared renderer so stubs get the same treatment as
+	// real pages: base-path rebasing and the la-famille-base-path meta under a
+	// subpath siteurl, plus livereload injection in watch mode (#636). The raw
+	// template.Parse this replaced emitted /assets/... links that 404ed on a
+	// subpath deploy.
+	return renderer.HTML(cfg, pageStruct, "", outPath)
 }
 
 // usableSlug mirrors the check the render worker applies before it computes a

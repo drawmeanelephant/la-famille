@@ -146,7 +146,7 @@ func Write(in Input) (Result, error) {
 		DataURL:      DataRel(),
 	}
 
-	out, err := os.OpenFile(indexPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
+	out, err := os.OpenFile(indexPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)
 	if err != nil {
 		return res, fmt.Errorf("create graphexplorer file: %w", err)
 	}

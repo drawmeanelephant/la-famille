@@ -44,11 +44,11 @@ type buildCache struct {
 	PageCount      int               `json:"page_count"`
 }
 
-// cachePath keeps incremental state beside the project, never inside the
+// CachePath keeps incremental state beside the project, never inside the
 // publish artifact. Direct library callers that leave ProjectRoot at "." and
 // build into a temporary output get an output-specific sibling cache so tests
 // and independent sites cannot share state accidentally.
-func cachePath(cfg config.Config) string {
+func CachePath(cfg config.Config) string {
 	outputAbs, err := filepath.Abs(cfg.OutputDir)
 	if err != nil {
 		outputAbs = filepath.Clean(cfg.OutputDir)
@@ -91,17 +91,22 @@ var executableIdentity = sync.OnceValue(func() string {
 func cacheFingerprint(cfg config.Config, roots ...string) (string, error) {
 	h := sha256.New()
 	_, _ = io.WriteString(h, generatorIdentity()+"\x00")
-	// WatchMode is operational state and must not invalidate generated
-	// output. It is excluded from the fingerprint via yaml:"-" and
-	// json:"-" tags so it never enters the hash.
+	// WatchMode stays out of the serialized config (it is operational state,
+	// not site configuration), but it changes the rendered bytes — the
+	// livereload script is baked into the page — so it must invalidate the
+	// cache. Excluding it let a watch-mode serve republish production pages
+	// without livereload, and a production build republish watch pages with
+	// the script embedded (#634).
+	_, _ = io.WriteString(h, map[bool]string{true: "watch", false: "build"}[cfg.WatchMode]+"\x00")
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return "", err
 	}
 	_, _ = h.Write(data)
 
+	exclude := BuildArtifactFilter(cfg)
 	for _, root := range roots {
-		if err := hashTree(h, root); err != nil {
+		if err := hashTree(h, root, exclude); err != nil {
 			return "", err
 		}
 	}
@@ -153,7 +158,7 @@ func walkRootFor(root string) (string, error) {
 	return resolved, nil
 }
 
-func hashTree(h io.Writer, root string) error {
+func hashTree(h io.Writer, root string, exclude func(path string) bool) error {
 	walkRoot, err := walkRootFor(root)
 	if err != nil {
 		return err
@@ -163,6 +168,12 @@ func hashTree(h io.Writer, root string) error {
 	err = filepath.WalkDir(walkRoot, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
+		}
+		if exclude != nil && exclude(path) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 		if d.Type()&os.ModeSymlink != 0 {
 			if d.IsDir() {
@@ -199,6 +210,81 @@ func hashTree(h io.Writer, root string) error {
 		_, _ = h.Write(contents)
 	}
 	return nil
+}
+
+// BuildArtifactFilter returns a predicate reporting whether path names or
+// sits inside one of the generator's own working files: the incremental build
+// cache and its temp sibling, the output directory, and the transient
+// .<output>.staging-* / .<output>.previous-* directories the atomic output
+// swap rotates through.
+//
+// Flat layouts (content_dir: ".") place all of these inside the fingerprinted
+// content tree. Hashing the cache file makes every fingerprint differ from
+// the one just stored, so the cache can never hit; hashing a leftover staging
+// or previous tree does the same, and serves none of the inputs the build
+// actually reads. The watcher uses the same predicate so bookkeeping writes
+// inside the watched root cannot schedule rebuilds (#633).
+//
+// Paths are compared in both spellings — the plain absolute form and the
+// symlink-evaluated one — because the two sides cannot always share one:
+// EvalSymlinks fails on a path that no longer exists (a REMOVE event for a
+// deleted staging directory), while a walked tree rooted in a symlink only
+// ever produces resolved paths.
+func BuildArtifactFilter(cfg config.Config) func(path string) bool {
+	absOf := func(path string) string {
+		abs, err := filepath.Abs(path)
+		if err != nil {
+			return filepath.Clean(path)
+		}
+		return abs
+	}
+	resolve := func(path string) string {
+		if resolved, err := filepath.EvalSymlinks(path); err == nil {
+			return resolved
+		}
+		return path
+	}
+
+	outputAbs := absOf(cfg.OutputDir)
+	outputs := map[string]bool{outputAbs: true, resolve(outputAbs): true}
+	cacheAbs := absOf(CachePath(cfg))
+	cacheResolved := resolve(cacheAbs)
+	caches := map[string]bool{
+		cacheAbs: true, cacheResolved: true,
+		cacheAbs + ".tmp": true, cacheResolved + ".tmp": true,
+	}
+	parents := map[string]bool{}
+	for out := range outputs {
+		parents[filepath.Dir(out)] = true
+	}
+	stagingPrefix := "." + filepath.Base(outputAbs) + ".staging-"
+	previousPrefix := "." + filepath.Base(outputAbs) + ".previous-"
+
+	return func(path string) bool {
+		if strings.TrimSpace(path) == "" {
+			return false
+		}
+		abs := absOf(path)
+		for _, p := range []string{abs, resolve(abs)} {
+			if outputs[p] || caches[p] {
+				return true
+			}
+			for out := range outputs {
+				if strings.HasPrefix(p, out+string(filepath.Separator)) {
+					return true
+				}
+			}
+			for parent := range parents {
+				if rel, err := filepath.Rel(parent, p); err == nil {
+					first, _, _ := strings.Cut(filepath.ToSlash(rel), "/")
+					if strings.HasPrefix(first, stagingPrefix) || strings.HasPrefix(first, previousPrefix) {
+						return true
+					}
+				}
+			}
+		}
+		return false
+	}
 }
 
 func loadBuildCache(path string) (buildCache, error) {
