@@ -116,6 +116,35 @@ func TestFigureRendererEscapesHostileAttributes(t *testing.T) {
 	}
 }
 
+// TestFigureTransformerToleratesUnicodeWhitespaceSiblings covers the panic
+// from issue #632: bytes.TrimSpace strips Unicode whitespace, so a
+// whitespace-only *ast.Text node (U+00A0, U+2009, U+3000, ...) may precede or
+// follow the image and must not crash promotion.
+func TestFigureTransformerToleratesUnicodeWhitespaceSiblings(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"NBSP line before image", " \n![alt](x.png)\n"},
+		{"NBSP line after image", "![alt](x.png)\n \n"},
+		{"NBSP around image on one line", " ![alt](x.png) \n"},
+		{"ideographic space before image", "　\n![a](a.png)\n"},
+		{"thin space before image", " \n![a](a.png)\n"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := renderMarkdown(t, newFigureEngine(), tc.input)
+			if !strings.Contains(got, `<figure class="lf-figure">`) {
+				t.Errorf("expected figure promotion, got:\n%s", got)
+			}
+			if strings.Contains(got, "<p>") {
+				t.Errorf("expected no paragraph wrapper, got:\n%s", got)
+			}
+		})
+	}
+}
+
 // TestFigureInsideBlockContainers ensures promotion works within lists and
 // blockquotes, not just top-level paragraphs.
 func TestFigureInsideBlockContainers(t *testing.T) {
