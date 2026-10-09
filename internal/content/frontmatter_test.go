@@ -97,6 +97,20 @@ func TestGatherMetadataOverLongTagIsDropped(t *testing.T) {
 	}
 }
 
+// A page listing NFC "café" and NFD "café" (e + combining acute) holds one
+// tag: the two byte spellings name the same path component, and keeping both
+// publishes one archive that erases the other on normalization-insensitive
+// filesystems (#649). Categories follow the same rule.
+func TestGatherMetadataDedupesNormalizationForms(t *testing.T) {
+	meta := writeContentFile(t, "---\ntitle: T\ntags: [\"caf\u00e9\", \"cafe\u0301\"]\ncategories: [\"cafe\u0301\"]\n---\nBody.\n")
+	if len(meta.Tags) != 1 || meta.Tags[0] != "caf\u00e9" {
+		t.Errorf("tags = %v, want exactly one NFC caf\u00e9 tag", meta.Tags)
+	}
+	if len(meta.Categories) != 1 || meta.Categories[0] != "caf\u00e9" {
+		t.Errorf("categories = %v, want exactly one NFC caf\u00e9 category", meta.Categories)
+	}
+}
+
 func TestNormalizeTaxonomyValue(t *testing.T) {
 	cases := []struct {
 		in       string
@@ -109,6 +123,11 @@ func TestNormalizeTaxonomyValue(t *testing.T) {
 		{"起始", "起始", true},
 		{"  説明  ", "説明", true},
 		{"CAFÉ ☕", "café", true},
+		// Canonically equivalent spellings must produce one term: NFD
+		// "cafe + combining acute" composes to NFC "caf\u00e9" so both share a
+		// path component on every filesystem (#649).
+		{"cafe\u0301", "caf\u00e9", true},
+		{"Cafe\u0301", "caf\u00e9", true},
 		{"हिन्दी", "हिन्दी", true},
 		{"１２３", "１２３", true},
 		{"", "", false},

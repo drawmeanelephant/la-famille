@@ -95,8 +95,8 @@
     {
       "path": "search.json",
       "action": "modified",
-      "before": "bfed5b0b8fae5a3f861da91073ea10947c1362252df3787de20dbc42d089f5f9",
-      "after": "20123d46f21e59090a05d2bc61c89046a43024994bc0a238e822d7d252447e21"
+      "before": "24646ce3b6f24334e093ffa0505bed3cd82c78af6c47f98ff2a23434c42ace03",
+      "after": "fdd5f4ba236134357353c525dac75ed97f123ca3e2d214edda6e997fc89deb3f"
     },
     {
       "path": "tags/care/index.html",

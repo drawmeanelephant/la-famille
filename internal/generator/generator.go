@@ -18,6 +18,7 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
+	"golang.org/x/text/unicode/norm"
 
 	"github.com/tbuddy/la-famille/internal/asset"
 	"github.com/tbuddy/la-famille/internal/checker"
@@ -496,19 +497,24 @@ func (bc *buildContext) processJob(j job, buf *bytes.Buffer) {
 		relOut = transform.GetOutputURL(relPath, slug, shouldRender)
 		outPath = filepath.Join(outDirClean, filepath.FromSlash(relOut))
 
+		// Dedupe is per kind: a term used as both tag and category owns an
+		// archive under each prefix, so sharing one seen set would drop the
+		// category's URL from gu while /categories/<term>/ exists on disk
+		// (#653). g repeats the term to keep gu index-aligned.
 		var taxonomyTerms []string
 		var taxonomyURLs []string
-		taxonomySeen := make(map[string]bool)
+		tagSeen := make(map[string]bool)
 		for _, tag := range meta.Tags {
-			if tag != "" && !taxonomySeen[tag] {
-				taxonomySeen[tag] = true
+			if tag != "" && !tagSeen[tag] {
+				tagSeen[tag] = true
 				taxonomyTerms = append(taxonomyTerms, tag)
 				taxonomyURLs = append(taxonomyURLs, taxonomyArchiveURL(bc.siteCfg, "tags", tag))
 			}
 		}
+		catSeen := make(map[string]bool)
 		for _, cat := range meta.Categories {
-			if cat != "" && !taxonomySeen[cat] {
-				taxonomySeen[cat] = true
+			if cat != "" && !catSeen[cat] {
+				catSeen[cat] = true
 				taxonomyTerms = append(taxonomyTerms, cat)
 				taxonomyURLs = append(taxonomyURLs, taxonomyArchiveURL(bc.siteCfg, "categories", cat))
 			}
@@ -885,10 +891,12 @@ type outputOwner struct {
 // overwriting the first.
 //
 // Keys are case-folded, because macOS and Windows collapse paths differing only
-// in case onto one file. Whether the fold is enforced depends on the output
-// filesystem: exact duplicates always collide, while two paths differing only
-// in case are refused when that filesystem is case-insensitive and admitted
-// with a warning when it is case-sensitive.
+// in case onto one file, and NFC-composed, because normalization-insensitive
+// filesystems like APFS do the same to byte spellings differing only in
+// Unicode normalization (#649). Whether the fold is enforced depends on the
+// output filesystem: exact duplicates always collide, while two paths
+// differing only in case or normalization are refused when that filesystem is
+// case-insensitive and admitted with a warning when it is case-sensitive.
 type outputClaims struct {
 	owners        map[string][]outputOwner
 	outputDir     string
@@ -948,13 +956,14 @@ func (c *outputClaims) absPath(relOut string) string {
 }
 
 func (c *outputClaims) key(relOut string) string {
-	return strings.ToLower(c.absPath(relOut))
+	return norm.NFC.String(strings.ToLower(c.absPath(relOut)))
 }
 
 // claim reserves relOut for source. It returns the writer that already holds
 // the path, and false, when the path is taken. An exact duplicate is always
-// refused; a pair differing only in case is refused on case-insensitive
-// filesystems and admitted with a warning on case-sensitive ones.
+// refused; a pair differing only in case or Unicode normalization is refused
+// on case-insensitive filesystems and admitted with a warning on
+// case-sensitive ones.
 func (c *outputClaims) claim(source, relOut string) (outputOwner, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -976,7 +985,7 @@ func (c *outputClaims) claim(source, relOut string) (outputOwner, bool) {
 	}
 	if haveCaseDiff {
 		c.warnings = append(c.warnings, fmt.Sprintf(
-			"output path warning: %s maps to %q and %s maps to %q, which would be the same file on a case-insensitive filesystem",
+			"output path warning: %s maps to %q and %s maps to %q, which would be the same file on a case-insensitive filesystem or one insensitive to Unicode normalization",
 			firstCaseDiff.source, firstCaseDiff.relOut, source, relOut))
 	}
 	c.owners[key] = append(c.owners[key], outputOwner{source: source, relOut: relOut})
@@ -1028,7 +1037,7 @@ func collisionError(previous outputOwner, source, relOut string) error {
 		return fmt.Errorf("output path collision: %s and %s both map to %q", previous.source, source, relOut)
 	}
 	return fmt.Errorf(
-		"output path collision: %s maps to %q and %s maps to %q, which are the same file on case-insensitive filesystems",
+		"output path collision: %s maps to %q and %s maps to %q, which are the same file on case-insensitive or normalization-insensitive filesystems",
 		previous.source, previous.relOut, source, relOut,
 	)
 }

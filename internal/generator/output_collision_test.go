@@ -429,3 +429,39 @@ func TestOutputClaimsAllowsCaseOnlyOnCaseSensitiveFS(t *testing.T) {
 		t.Fatal("an exact duplicate of an admitted case-differing owner must collide")
 	}
 }
+
+// Normalization-insensitive filesystems (macOS APFS) also treat NFC "café"
+// and NFD "café" (e + combining acute) as one name, so a path pair differing
+// only in Unicode normalization is the same hazard as a case-only pair:
+// refused when the filesystem folds, warned when it does not (#649).
+func TestOutputClaimsNormalizationOnlyDifference(t *testing.T) {
+	const nfc = "caf\u00e9/index.html"
+	const nfd = "cafe\u0301/index.html"
+
+	t.Run("insensitive filesystem refuses", func(t *testing.T) {
+		claims := newOutputClaims(t.TempDir(), 2, false)
+		if _, ok := claims.claim("the page \"a.md\"", nfc); !ok {
+			t.Fatal("first claim should succeed")
+		}
+		previous, ok := claims.claim("the page \"b.md\"", nfd)
+		if ok {
+			t.Fatal("an NFD spelling of an NFC-claimed path must collide")
+		}
+		if previous.relOut != nfc {
+			t.Errorf("collision should name the NFC owner, got %q", previous.relOut)
+		}
+	})
+
+	t.Run("sensitive filesystem warns and admits", func(t *testing.T) {
+		claims := newOutputClaims(t.TempDir(), 2, true)
+		if _, ok := claims.claim("the page \"a.md\"", nfc); !ok {
+			t.Fatal("first claim should succeed")
+		}
+		if _, ok := claims.claim("the page \"b.md\"", nfd); !ok {
+			t.Fatal("normalization-differing claim should be admitted on a filesystem that stores both")
+		}
+		if warns := claims.Warnings(); len(warns) != 1 {
+			t.Fatalf("Warnings() = %v, want exactly one warning", warns)
+		}
+	})
+}

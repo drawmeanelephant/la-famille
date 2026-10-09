@@ -69,8 +69,8 @@
     {
       "path": "search.json",
       "action": "modified",
-      "before": "20123d46f21e59090a05d2bc61c89046a43024994bc0a238e822d7d252447e21",
-      "after": "710dabda6e30ad11680688df90e68811f8d53bc1f2b0c261f69d8b9c0b33bb54"
+      "before": "fdd5f4ba236134357353c525dac75ed97f123ca3e2d214edda6e997fc89deb3f",
+      "after": "fe4c23bb1c150e21c9a27818150b11cdca1e75104af3758b45687e904773a5bf"
     },
     {
       "path": "sitemap.xml",

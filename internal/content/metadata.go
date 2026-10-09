@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/adrg/frontmatter"
+	"golang.org/x/text/unicode/norm"
 )
 
 // MaxTaxonomyValueLen bounds the length of a normalized tag or category.
@@ -208,6 +209,9 @@ func extractStringSlice(val interface{}) []string {
 // NormalizeTaxonomyValue reduces one raw tag or category to lowercase letters,
 // numbers, combining marks, and hyphens for a single output path component.
 // Unlike transliteration, this keeps native-language terms readable on disk.
+// The result is NFC-composed so canonically equivalent spellings (NFC "café"
+// and NFD "café") produce one path component; byte-distinct forms name the
+// same file on normalization-insensitive filesystems like APFS (#649).
 // The second return value reports whether the result is usable: an empty
 // result, or one longer than MaxTaxonomyValueLen bytes, is not.
 //
@@ -236,11 +240,11 @@ func NormalizeTaxonomyValue(item string) (string, bool) {
 			attachedToWord = false
 		}
 	}
-	norm := sb.String()
-	if norm == "" || len(norm) > MaxTaxonomyValueLen {
-		return norm, false
+	normalized := norm.NFC.String(sb.String())
+	if normalized == "" || len(normalized) > MaxTaxonomyValueLen {
+		return normalized, false
 	}
-	return norm, true
+	return normalized, true
 }
 
 func normalizeTaxonomyList(items []string, relPath, kind string, warnings *[]string) []string {
@@ -252,13 +256,13 @@ func normalizeTaxonomyList(items []string, relPath, kind string, warnings *[]str
 		if item == "" {
 			continue
 		}
-		norm, usable := NormalizeTaxonomyValue(item)
+		value, usable := NormalizeTaxonomyValue(item)
 		if !usable {
 			// Dropping one is lossy, so it must be counted, naming the file.
-			if len(norm) > MaxTaxonomyValueLen {
-				msg := fmt.Sprintf("dropped over-long %s in %s: %q normalizes to %d bytes, over the %d-byte limit", kind, relPath, item, len(norm), MaxTaxonomyValueLen)
+			if len(value) > MaxTaxonomyValueLen {
+				msg := fmt.Sprintf("dropped over-long %s in %s: %q normalizes to %d bytes, over the %d-byte limit", kind, relPath, item, len(value), MaxTaxonomyValueLen)
 				*warnings = append(*warnings, msg)
-				slog.Warn("Dropped over-long "+kind, "length", len(norm), "limit", MaxTaxonomyValueLen, "file", relPath)
+				slog.Warn("Dropped over-long "+kind, "length", len(value), "limit", MaxTaxonomyValueLen, "file", relPath)
 			} else {
 				msg := fmt.Sprintf("dropped %s in %s: %q normalizes to an empty value, which cannot be published as a path", kind, relPath, item)
 				*warnings = append(*warnings, msg)
@@ -266,16 +270,16 @@ func normalizeTaxonomyList(items []string, relPath, kind string, warnings *[]str
 			}
 			continue
 		}
-		if norm != item {
+		if value != item {
 			// Punctuation is still stripped ("café ☕" → "café"), so count
 			// any rewrite in the build summary instead of only logging it.
-			warnMsg := fmt.Sprintf("normalized %s in %s: %q became %q", kind, relPath, item, norm)
+			warnMsg := fmt.Sprintf("normalized %s in %s: %q became %q", kind, relPath, item, value)
 			*warnings = append(*warnings, warnMsg)
-			slog.Warn("Normalized "+kind, "original", item, "normalized", norm, "file", relPath)
+			slog.Warn("Normalized "+kind, "original", item, "normalized", value, "file", relPath)
 		}
-		if !seen[norm] {
-			seen[norm] = true
-			normalizedList = append(normalizedList, norm)
+		if !seen[value] {
+			seen[value] = true
+			normalizedList = append(normalizedList, value)
 		}
 	}
 	return normalizedList
