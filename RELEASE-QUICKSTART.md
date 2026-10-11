@@ -155,7 +155,8 @@ needed.
 
 Hybrid: **GitHub Releases are the source of truth**.
 
-- `release.yml:165` publishes each tag via `gh release create --verify-tag --generate-notes` after proving the tag commit equals the built commit (`.github/scripts/release/tag.sh:resolve_and_checkout`). Notes are auto-generated from merged PR titles between tags.
+- `release.yml:165` publishes each tag via `gh release create --verify-tag --generate-notes` after proving the tag commit equals the built commit (`.github/scripts/release/tag.sh:resolve_and_checkout`). Notes are auto-generated from merged PR titles between tags, then curated by the release owner.
+- **Versioning (settled at v0.2.0):** semver tags `vX.Y.Z` are the only version source — `--version` is stamped by linker flags from the tag; there is no version file. While pre-1.0, minor bumps (`v0.X.0`) mark feature drops, patch bumps (`v0.X.Y`) mark fix-only releases, and prerelease suffixes (`-prealpha`, `-rc.N`) mark preview cuts.
 - `content/docs/changelog.md` is a **curated snapshot** updated once per release (not per PR). Copy the highlights from the generated Release notes, de-dupe, and add human context. Keep the header's link to `https://github.com/drawmeanelephant/la-famille/releases`.
 - No per-PR changelog lint gate; `jules` nightly maintenance and small fixes do not need a changelog entry. If you want a check, watch for drift between `content/docs/changelog.md` and the latest Release during release.
 - This keeps `plan.md:15` and `content/meta/roadmap.md:20` honest: one convention, automated where it matters (provenance + notes generation), curated where humans add value.

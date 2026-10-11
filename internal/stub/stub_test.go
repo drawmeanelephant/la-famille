@@ -155,7 +155,7 @@ func TestGenerateStubs_ReferencedByUsesNodeIDs(t *testing.T) {
 	}
 	g := &graph.Graph{Nodes: make(map[string]graph.Node)}
 
-	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, bluemonday.UGCPolicy(), fileMap, nil); err != nil {
+	if err := GenerateStubs(cfg, cfg, missingFiles, nil, g, bluemonday.UGCPolicy(), fileMap, render.New(filepath.Dir(cfg.Template)), nil); err != nil {
 		t.Fatalf("GenerateStubs() error = %v", err)
 	}
 
