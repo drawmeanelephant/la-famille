@@ -10,6 +10,21 @@ This page is the curated, site-published changelog. **GitHub Releases are the so
 
 > **Convention (hybrid, decided 2026-08-20 for #466):** No per-PR changelog gate. Keep this file tidy and de-duplicated; link to the Release for the full PR list. See `plan.md:15` roadmap and milestone `1. Release Readiness` (`content/meta/roadmap.md:20`).
 
+> **Versioning (settled at v0.2.0):** semver tags `vX.Y.Z` are the only version source — `--version` is stamped by linker flags from the tag, there is no version file. While pre-1.0: minor bumps (`v0.X.0`) mark feature drops, patch bumps (`v0.X.Y`) mark fix-only releases, and prerelease suffixes (`-prealpha`, `-rc.N`) mark preview cuts.
+
+## 2026-10-11 — v0.2.0: packs, ledgers, and vaults
+
+The first stable-line release ([full notes](https://github.com/drawmeanelephant/la-famille/releases/tag/v0.2.0)). Three feature epics landed since the pre-alpha cut, alongside a deep hardening pass; one supported surface was retired.
+
+- **Corpus Packs:** `la-famille pack` builds, verifies, diffs, applies, publishes, pulls, and watches content-only site archives — deterministic output, member-level integrity checks, local and HTTPS feeds, and a durable `pack watch` subscriber that re-pulls when verification fails.
+- **Change Ledger (#580):** every build emits a deterministic `site-manifest.json`; `la-famille diff` compares two manifests — output directories, manifest files, or Git revisions — and `diff.json`/`diff.txt` plus a `--gate` flag make a site diff reviewable, scriptable, and gate-able in CI.
+- **Vault Mode (#589–594):** `[[wiki links]]`, body `#hashtags` in the taxonomy, an unresolved-notes index, and `publish: false` frontmatter to keep working notes out of the shipped site. Site search indexes wiki-link targets.
+- **Themes:** octoburger becomes the flagship default and the bundled packet is fully self-contained — no CDN. `init` scaffolds a goldmark showcase page and a warm homestead starter set (AGENTS.md, deploy workflow, next-steps greeting).
+- **TUI:** octoburger glow-up — progress, cook spinner, confetti; `serve` honors the base path, builds asynchronously, and reports watch errors.
+- **Site & publishing:** flagship website plus a Cloudflare publishing path; `publish-check` honors the site base path.
+- **Removed (breaking):** `la-famille ask` and the local-assistant/Ollama stack are retired. RAG export (`la-famille rag`), site search, and Corpus Packs carry that work forward.
+- **Hardening:** the post-prealpha WOLF review (three tiers), dogfood triage (#506–#518), and a closing sweep across pack pulls, durable watch, cache, symlinks, taxonomy identity, graph edges, markdown panics, and TUI serve.
+
 ## 2026-08-25 — v0.1.0-prealpha: the first cut
 
 The first tagged release ([full notes](https://github.com/drawmeanelephant/la-famille/releases/tag/v0.1.0-prealpha)). Intentionally pre-alpha: rough edges are expected, and black-box review findings (#500) drive the next iteration. Because it is the first tag, the generated notes list every merged PR in project history; the highlights below are what the release actually means.
