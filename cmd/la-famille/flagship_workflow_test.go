@@ -86,7 +86,7 @@ func TestFlagshipWorkflowPublishesOnlyTrustedMasterBuilds(t *testing.T) {
 	}
 	foundPublisher := false
 	for _, step := range deploy.Steps {
-		if step.Uses != "cloudflare/wrangler-action@v3" {
+		if !strings.HasPrefix(step.Uses, "cloudflare/wrangler-action@v") {
 			continue
 		}
 		foundPublisher = true
