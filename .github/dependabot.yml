@@ -6,7 +6,23 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
+    groups:
+      go-modules:
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+    groups:
+      github-actions:
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "devcontainers"
     directory: "/"
     schedule:
       interval: "weekly"
