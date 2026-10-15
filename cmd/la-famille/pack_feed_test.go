@@ -254,7 +254,7 @@ func TestFlagshipCorpusFeedWorkflowContract(t *testing.T) {
 		}
 	}
 	for i, step := range workflow.Jobs["deploy"].Steps {
-		if step.Uses == "cloudflare/wrangler-action@v3" {
+		if strings.HasPrefix(step.Uses, "cloudflare/wrangler-action@v") {
 			deployment = i
 		}
 		if step.Uses == "actions/cache/save@v6" {
