@@ -302,7 +302,7 @@
     var desired = 90;
     // Each spring's pull is split across an endpoint's edges; summed
     // unscaled pulls overshoot on hub pages and the simulation diverges.
-    var degree = {};
+    var degree = Object.create(null);
     for (var de = 0; de < state.edges.length; de++) {
       degree[state.edges[de][0]] = (degree[state.edges[de][0]] || 0) + 1;
       degree[state.edges[de][1]] = (degree[state.edges[de][1]] || 0) + 1;
