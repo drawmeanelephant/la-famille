@@ -49,6 +49,7 @@
     els.help = $('kgx-help');
     els.canvasWrap = $('kgx-canvas-wrap');
     els.svg = $('kgx-svg');
+    els.legend = $('kgx-legend');
     els.edgesLayer = $('kgx-edges');
     els.nodesLayer = $('kgx-nodes');
     els.detail = $('kgx-detail');
@@ -142,7 +143,9 @@
     state.selected = readQueryParam('node') || null;
     applyFilter();
     renderControls();
+    measureCanvas();
     reseedLayout();
+    placeUnlinked();
 
     // Search-first mode: hold the visualization back entirely rather than
     // drawing every node and merely skipping the animation. A deep link to a
@@ -248,7 +251,7 @@
     for (var i = 0; i < n; i++) {
       var node = state.nodes[i];
       var theta = (i + 0.5) / Math.max(1, n) * 2 * Math.PI;
-      var r = 220 + 80 * hash(i);
+      var r = Math.min(state.palette.w, state.palette.h) * (0.25 + 0.15 * hash(i));
       node.x = state.palette.w / 2 + Math.cos(theta) * r;
       node.y = state.palette.h / 2 + Math.sin(theta) * r;
       node.vx = 0;
@@ -261,20 +264,60 @@
     return x - Math.floor(x);
   }
 
+  function isUnlinked(n) {
+    return !n.inbound.length && !n.outbound.length;
+  }
+
+  // Pages with no links have no forces to settle them, so instead of
+  // floating in the simulation they are laid out as a label-sized grid
+  // just below the linked cluster.
+  var GRID_CELL_W = 200;
+  var GRID_ROW_H = 22;
+  function placeUnlinked() {
+    var W = state.palette.w, H = state.palette.h;
+    var unlinked = [];
+    var linkedBottom = -Infinity;
+    for (var i = 0; i < state.nodes.length; i++) {
+      var n = state.nodes[i];
+      if (isUnlinked(n)) unlinked.push(n);
+      else if (n.y > linkedBottom) linkedBottom = n.y;
+    }
+    if (!unlinked.length) return;
+    var cols = Math.max(1, Math.floor((W - 2 * VIEW_PAD) / GRID_CELL_W));
+    var rows = Math.ceil(unlinked.length / cols);
+    var left = W / 2 - (cols * GRID_CELL_W) / 2 + 10;
+    var top = linkedBottom === -Infinity ? H / 2 - (rows * GRID_ROW_H) / 2 : linkedBottom + 48;
+    for (var k = 0; k < unlinked.length; k++) {
+      unlinked[k].x = left + (k % cols) * GRID_CELL_W;
+      unlinked[k].y = top + Math.floor(k / cols) * GRID_ROW_H;
+      unlinked[k].vx = 0;
+      unlinked[k].vy = 0;
+    }
+  }
+
   function startLayout() {
     if (state._layoutRaf) return;
     var ticks = 0;
     var nodeTotal = state.nodes.length;
     var desired = 90;
+    // Each spring's pull is split across an endpoint's edges; summed
+    // unscaled pulls overshoot on hub pages and the simulation diverges.
+    var degree = Object.create(null);
+    for (var de = 0; de < state.edges.length; de++) {
+      degree[state.edges[de][0]] = (degree[state.edges[de][0]] || 0) + 1;
+      degree[state.edges[de][1]] = (degree[state.edges[de][1]] || 0) + 1;
+    }
     function tick() {
       ticks++;
       var W = state.palette.w, H = state.palette.h;
       for (var i = 0; i < nodeTotal; i++) {
         var n = state.nodes[i];
         var fx = 0, fy = 0;
+        if (isUnlinked(n)) continue;
         for (var j = 0; j < nodeTotal; j++) {
           if (i === j) continue;
           var m = state.nodes[j];
+          if (isUnlinked(m)) continue;
           var dx = n.x - m.x, dy = n.y - m.y;
           var d2 = dx * dx + dy * dy;
           if (d2 < 0.001) d2 = 0.001;
@@ -298,19 +341,20 @@
         if (d < 0.001) d = 0.001;
         var diff = (d - desired) / d;
         var force = diff * 0.06;
-        var fx2 = ddx * force, fy2 = ddy * force;
-        a.vx += fx2; a.vy += fy2;
-        b.vx -= fx2; b.vy -= fy2;
+        var fa = force / Math.max(1, degree[a.id]);
+        var fb = force / Math.max(1, degree[b.id]);
+        a.vx += ddx * fa; a.vy += ddy * fa;
+        b.vx -= ddx * fb; b.vy -= ddy * fb;
       }
+      // No clamping to the canvas: clamped nodes stack on the border. The
+      // viewBox is fitted to the visible nodes instead (see fitView).
       for (var l = 0; l < nodeTotal; l++) {
         var nd = state.nodes[l];
+        if (isUnlinked(nd)) continue;
         nd.x += nd.vx;
         nd.y += nd.vy;
-        if (nd.x < 8) { nd.x = 8; nd.vx *= -0.5; }
-        if (nd.y < 8) { nd.y = 8; nd.vy *= -0.5; }
-        if (nd.x > W - 8) { nd.x = W - 8; nd.vx *= -0.5; }
-        if (nd.y > H - 8) { nd.y = H - 8; nd.vy *= -0.5; }
       }
+      placeUnlinked();
       if (ticks % 2 === 0) updatePositions();
       if (ticks < 400) {
         state._layoutRaf = requestAnimationFrame(tick);
@@ -364,6 +408,7 @@
     else { hide(els.noResults); }
     drawEdges();
     drawNodes();
+    fitView();
     if (state.selected && state.nodeIndex[state.selected]) {
       renderDetail(state.nodeIndex[state.selected]);
     } else {
@@ -477,6 +522,38 @@
       line.setAttribute('x2', sb.x);
       line.setAttribute('y2', sb.y);
     }
+    fitView();
+  }
+
+  // Frames the visible nodes (circles plus labels) inside the canvas, above
+  // the legend overlay. The view only zooms out, never in, so a lone
+  // filtered node is centred at its normal size rather than blown up.
+  var LABEL_CHAR_WIDTH = 6.5;
+  var VIEW_PAD = 24;
+  function fitView() {
+    if (!els.svg) return;
+    var W = state.palette.w, H = state.palette.h;
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (var i = 0; i < state.nodes.length; i++) {
+      var n = state.nodes[i];
+      if (!n._visible) continue;
+      var label = truncate(n.title || n.id, 28).length * LABEL_CHAR_WIDTH;
+      if (n.x - 10 < minX) minX = n.x - 10;
+      if (n.x + 12 + label > maxX) maxX = n.x + 12 + label;
+      if (n.y - 10 < minY) minY = n.y - 10;
+      if (n.y + 10 > maxY) maxY = n.y + 10;
+    }
+    if (minX === Infinity) {
+      els.svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      return;
+    }
+    var reserve = els.legend ? els.legend.offsetHeight + 12 : 0;
+    var Ha = Math.max(H / 2, H - reserve);
+    var vw = Math.max(W, maxX - minX + 2 * VIEW_PAD);
+    var vh = Math.max(Ha, maxY - minY + 2 * VIEW_PAD);
+    if (vw / vh > W / Ha) vh = vw * Ha / W; else vw = vh * W / Ha;
+    var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    els.svg.setAttribute('viewBox', (cx - vw / 2) + ' ' + (cy - vh / 2) + ' ' + vw + ' ' + (vh * H / Ha));
   }
 
   function renderDetail(n) {
@@ -584,7 +661,12 @@
     if (els.detailClose) els.detailClose.addEventListener('click', function () {
       hide(els.detail); els.main.classList.remove('with-detail'); state.selected = null; updateUrl();
     });
-    window.addEventListener('resize', onResize);
+    // Opening the detail panel narrows the canvas without a window resize.
+    if (window.ResizeObserver && els.canvasWrap) {
+      new ResizeObserver(onResize).observe(els.canvasWrap);
+    } else {
+      window.addEventListener('resize', onResize);
+    }
     window.addEventListener('popstate', function () {
       state.selected = readQueryParam('node'); selectNode(state.selected, false);
     });
@@ -661,6 +743,9 @@
       renderControls();
       renderGraph();
     } else {
+      // The focus toggle's enabled state tracks the selection, so controls
+      // must refresh on every pick, not only when the graph is rebuilt.
+      renderControls();
       // Even when focus mode is off, redrawing the SVG highlights the new
       // selected node via CSS .selected.
       drawNodes();
@@ -702,13 +787,16 @@
     }
   }
 
-  function onResize() {
+  function measureCanvas() {
     if (!els.canvasWrap) return;
     var r = els.canvasWrap.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) return;
     state.palette.w = Math.max(400, r.width);
     state.palette.h = Math.max(300, r.height);
-    if (els.svg) els.svg.setAttribute('viewBox', '0 0 ' + state.palette.w + ' ' + state.palette.h);
+  }
+
+  function onResize() {
+    measureCanvas();
     updatePositions();
   }
 
