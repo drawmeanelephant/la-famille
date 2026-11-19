@@ -556,3 +556,73 @@ func TestShippedCSSBacksItsAccessibilityClasses(t *testing.T) {
 		t.Error(`SVG must not use role="img": it prunes the focusable nodes from the accessibility tree`)
 	}
 }
+
+// jsFunctionBody returns the brace-delimited body of a top-level function in
+// the shipped explorer script.
+func jsFunctionBody(t *testing.T, js, name string) string {
+	t.Helper()
+	start := strings.Index(js, "function "+name+"(")
+	if start < 0 {
+		t.Fatalf("explorer.js missing function %s", name)
+	}
+	open := strings.Index(js[start:], "{")
+	if open < 0 {
+		t.Fatalf("function %s has no body", name)
+	}
+	depth := 0
+	for i := start + open; i < len(js); i++ {
+		switch js[i] {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return js[start+open : i+1]
+			}
+		}
+	}
+	t.Fatalf("function %s body is unterminated", name)
+	return ""
+}
+
+func TestShippedJSSelectNodeRefreshesControlsOnEveryPath(t *testing.T) {
+	body := jsFunctionBody(t, readRepoFile(t, "assets/graph/explorer.js"), "selectNode")
+	elseAt := strings.Index(body, "} else {")
+	if elseAt < 0 {
+		t.Fatal("selectNode no longer has the redraw-only branch this test guards")
+	}
+	branch := body[elseAt:]
+	if end := strings.Index(branch, "updateUrl()"); end >= 0 {
+		branch = branch[:end]
+	}
+	if !strings.Contains(branch, "renderControls()") {
+		t.Error("selectNode must call renderControls() when it only redraws, or the Focus toggle stays disabled after picking a search suggestion")
+	}
+}
+
+func TestShippedJSLayoutKeepsUnlinkedNodesReadable(t *testing.T) {
+	js := readRepoFile(t, "assets/graph/explorer.js")
+	layout := jsFunctionBody(t, js, "startLayout")
+	for _, clamp := range []string{"W - 8", "H - 8", "nd.x = 8", "nd.y = 8"} {
+		if strings.Contains(layout, clamp) {
+			t.Errorf("startLayout clamps nodes to the canvas edge (%q); clamped nodes pile up on the border", clamp)
+		}
+	}
+	if !strings.Contains(layout, "placeUnlinked()") {
+		t.Error("startLayout must lay out unlinked nodes with placeUnlinked()")
+	}
+	if !strings.Contains(jsFunctionBody(t, js, "placeUnlinked"), "isUnlinked(") {
+		t.Error("placeUnlinked must select nodes via isUnlinked")
+	}
+	fit := jsFunctionBody(t, js, "fitView")
+	for _, needle := range []string{"_visible", "LABEL_CHAR_WIDTH", "viewBox"} {
+		if !strings.Contains(fit, needle) {
+			t.Errorf("fitView must frame visible nodes and their labels; missing %s", needle)
+		}
+	}
+	for _, caller := range []string{"renderGraph", "updatePositions"} {
+		if !strings.Contains(jsFunctionBody(t, js, caller), "fitView()") {
+			t.Errorf("%s must call fitView() so the viewBox follows the layout", caller)
+		}
+	}
+}
