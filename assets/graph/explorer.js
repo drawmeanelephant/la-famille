@@ -300,6 +300,13 @@
     var ticks = 0;
     var nodeTotal = state.nodes.length;
     var desired = 90;
+    // Each spring's pull is split across an endpoint's edges; summed
+    // unscaled pulls overshoot on hub pages and the simulation diverges.
+    var degree = {};
+    for (var de = 0; de < state.edges.length; de++) {
+      degree[state.edges[de][0]] = (degree[state.edges[de][0]] || 0) + 1;
+      degree[state.edges[de][1]] = (degree[state.edges[de][1]] || 0) + 1;
+    }
     function tick() {
       ticks++;
       var W = state.palette.w, H = state.palette.h;
@@ -334,9 +341,10 @@
         if (d < 0.001) d = 0.001;
         var diff = (d - desired) / d;
         var force = diff * 0.06;
-        var fx2 = ddx * force, fy2 = ddy * force;
-        a.vx += fx2; a.vy += fy2;
-        b.vx -= fx2; b.vy -= fy2;
+        var fa = force / Math.max(1, degree[a.id]);
+        var fb = force / Math.max(1, degree[b.id]);
+        a.vx += ddx * fa; a.vy += ddy * fa;
+        b.vx -= ddx * fb; b.vy -= ddy * fb;
       }
       // No clamping to the canvas: clamped nodes stack on the border. The
       // viewBox is fitted to the visible nodes instead (see fitView).

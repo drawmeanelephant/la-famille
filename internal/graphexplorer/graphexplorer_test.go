@@ -608,6 +608,9 @@ func TestShippedJSLayoutKeepsUnlinkedNodesReadable(t *testing.T) {
 			t.Errorf("startLayout clamps nodes to the canvas edge (%q); clamped nodes pile up on the border", clamp)
 		}
 	}
+	if !strings.Contains(layout, "degree[a.id]") || !strings.Contains(layout, "degree[b.id]") {
+		t.Error("startLayout must scale spring pulls by endpoint degree; unscaled pulls diverge on hub pages now that nodes are not clamped")
+	}
 	if !strings.Contains(layout, "placeUnlinked()") {
 		t.Error("startLayout must lay out unlinked nodes with placeUnlinked()")
 	}
