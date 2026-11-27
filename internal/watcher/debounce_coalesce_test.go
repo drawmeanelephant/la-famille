@@ -102,7 +102,7 @@ func TestWatchCoalescesChangesDuringABuild(t *testing.T) {
 	}
 
 	cancel()
-	<-done
+	requireWatchStopped(t, done)
 }
 
 // TestWatchReturnsOnStartupErrorWithoutHanging guards the interaction between
@@ -190,5 +190,5 @@ func TestWatchDoesNotReloadAfterAFailedBuild(t *testing.T) {
 	}
 
 	cancel()
-	<-done
+	requireWatchStopped(t, done)
 }

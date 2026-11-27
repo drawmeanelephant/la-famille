@@ -206,6 +206,47 @@ func TestJulesCINoIndependentMerge(t *testing.T) {
 	}
 }
 
+func TestJulesCILintToolchainMatchesLintWorkflow(t *testing.T) {
+	julesAction, julesVersion := golangciLintToolchain(t, readRepoFile(t, ".github/workflows/jules-ci.yml"))
+	lintAction, lintVersion := golangciLintToolchain(t, readRepoFile(t, ".github/workflows/lint.yml"))
+	if julesAction != lintAction {
+		t.Errorf("jules-ci golangci-lint action = %q, lint workflow uses %q", julesAction, lintAction)
+	}
+	if julesVersion != lintVersion {
+		t.Errorf("jules-ci golangci-lint version = %q, lint workflow uses %q", julesVersion, lintVersion)
+	}
+	if !strings.HasPrefix(julesVersion, "v2.") {
+		t.Errorf("jules-ci golangci-lint version = %q, want a v2 release compatible with the repository config", julesVersion)
+	}
+}
+
+func golangciLintToolchain(t *testing.T, workflow string) (action, version string) {
+	t.Helper()
+	const usesKey = "uses: golangci/golangci-lint-action@"
+	usesAt := strings.Index(workflow, usesKey)
+	if usesAt < 0 {
+		t.Fatal("workflow missing golangci-lint action")
+	}
+	rest := workflow[usesAt+len(usesKey):]
+	if end := strings.IndexAny(rest, " \t\n"); end >= 0 {
+		action = rest[:end]
+	} else {
+		action = rest
+	}
+	const versionKey = "version: v"
+	versionAt := strings.Index(rest, versionKey)
+	if versionAt < 0 {
+		t.Fatal("workflow missing golangci-lint version")
+	}
+	versionRest := rest[versionAt+len(versionKey):]
+	if end := strings.IndexAny(versionRest, " \t\n"); end >= 0 {
+		version = "v" + versionRest[:end]
+	} else {
+		version = "v" + versionRest
+	}
+	return action, version
+}
+
 func TestDocsAgreeWithPolicy(t *testing.T) {
 	prDoc := readRepoFile(t, "content/docs/pr.md")
 	cliDoc := readRepoFile(t, "content/docs/cli.md")

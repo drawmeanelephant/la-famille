@@ -29,13 +29,13 @@ func TestFeedLeafRejectsLinksAndDoesNotWaitForFIFO(t *testing.T) {
 	if err := syscall.Mkfifo(fifo, 0600); err != nil {
 		t.Fatal(err)
 	}
-	done := make(chan error, 1)
+	done := make(chan struct{}, 1)
 	go func() {
-		f, err := openFeedLeaf(root, "fifo")
+		f, _ := openFeedLeaf(root, "fifo")
 		if f != nil {
 			_ = f.Close()
 		}
-		done <- err
+		done <- struct{}{}
 	}()
 	select {
 	case <-done:
