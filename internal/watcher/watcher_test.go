@@ -41,6 +41,18 @@ func testConfig(t *testing.T) config.Config {
 	}
 }
 
+func requireWatchStopped(t *testing.T, done <-chan error) {
+	t.Helper()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("watch returned %v, want context.Canceled", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("watch did not stop after cancellation")
+	}
+}
+
 func TestWatchCancellation(t *testing.T) {
 	cfg := testConfig(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -49,14 +61,7 @@ func TestWatchCancellation(t *testing.T) {
 		done <- watch(ctx, cfg, nil, func(config.Config) (generator.BuildResult, error) { return generator.BuildResult{}, nil }, time.Millisecond)
 	}()
 	cancel()
-	select {
-	case err := <-done:
-		if err != context.Canceled {
-			t.Fatalf("watch returned %v, want context.Canceled", err)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("watch did not stop after cancellation")
-	}
+	requireWatchStopped(t, done)
 }
 
 func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
@@ -122,7 +127,7 @@ func TestWatchDebouncesAndTracksNewDirectories(t *testing.T) {
 		t.Fatalf("a burst of %d edits produced %d builds, want at least one and fewer than one per edit", writes, got)
 	}
 	cancel()
-	<-done
+	requireWatchStopped(t, done)
 }
 
 func TestLiveReloadBroadcastAndDisconnect(t *testing.T) {
@@ -209,7 +214,7 @@ func TestWatchDoesNotOverlapBuilds(t *testing.T) {
 		t.Fatalf("observed %d rebuilds running at once, want 1", got)
 	}
 	cancel()
-	<-done
+	requireWatchStopped(t, done)
 }
 
 func TestLiveReloadSurvivesServerWriteTimeout(t *testing.T) {
@@ -313,7 +318,7 @@ func TestWatchTracksNestedNewDirectories(t *testing.T) {
 		t.Fatal("watch did not rebuild for file created inside nested directory")
 	}
 	cancel()
-	<-done
+	requireWatchStopped(t, done)
 }
 
 // TestWatchReportsBuildErrorToCallback covers the subscriber contract on a
@@ -350,7 +355,7 @@ func TestWatchReportsBuildErrorToCallback(t *testing.T) {
 	}
 
 	cancel()
-	<-done
+	requireWatchStopped(t, done)
 }
 
 // TestWatchIgnoresBuildArtifactsOnFlatLayout guards #633: on a flat layout
@@ -457,7 +462,7 @@ func TestWatchIgnoresBuildArtifactsOnFlatLayout(t *testing.T) {
 		t.Fatal("watch stopped rebuilding after build artifact writes")
 	}
 	cancel()
-	<-done
+	requireWatchStopped(t, done)
 }
 
 type syncResponseWriter struct {
